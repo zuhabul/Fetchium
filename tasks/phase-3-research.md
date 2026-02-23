@@ -23,17 +23,17 @@ Phase 3 transforms HyperSearchX from a multi-engine search tool into a validated
 
 All of the following must be `DONE` before starting any Phase 3 task:
 
-| Dependency | Phase | What It Provides |
-|-----------|-------|-----------------|
-| P2-E3 (Parallel orchestrator) | Phase 2 | Full multi-backend search orchestrator |
-| P2-E4 (HyperFusion ranking) | Phase 2 | 8-signal ranking with per-result confidence scores |
-| P2-E5 (CEP L3-5 + QADD) | Phase 2 | Headless extraction and query-aware DOM distillation |
-| P1-E3-T2 (QATBE) | Phase 1 | Token-budgeted extraction |
-| P1-E3-T3 (SCS) | Phase 1 | Semantic content segmentation |
-| P1-E3-T4 (PDS) | Phase 1 | Progressive detail streaming tiers |
-| P1-E5-T1 (BM25) | Phase 1 | BM25 scoring for relevance evaluation |
-| P1-E6-T1 (Cache) | Phase 1 | Memory + disk cache |
-| P1-E1-T1 (HTTP client) | Phase 1 | HTTP fetching with retry |
+| Dependency                    | Phase   | What It Provides                                     |
+| ----------------------------- | ------- | ---------------------------------------------------- |
+| P2-E3 (Parallel orchestrator) | Phase 2 | Full multi-backend search orchestrator               |
+| P2-E4 (HyperFusion ranking)   | Phase 2 | 8-signal ranking with per-result confidence scores   |
+| P2-E5 (CEP L3-5 + QADD)       | Phase 2 | Headless extraction and query-aware DOM distillation |
+| P1-E3-T2 (QATBE)              | Phase 1 | Token-budgeted extraction                            |
+| P1-E3-T3 (SCS)                | Phase 1 | Semantic content segmentation                        |
+| P1-E3-T4 (PDS)                | Phase 1 | Progressive detail streaming tiers                   |
+| P1-E5-T1 (BM25)               | Phase 1 | BM25 scoring for relevance evaluation                |
+| P1-E6-T1 (Cache)              | Phase 1 | Memory + disk cache                                  |
+| P1-E1-T1 (HTTP client)        | Phase 1 | HTTP fetching with retry                             |
 
 ---
 
@@ -46,7 +46,7 @@ All of the following must be `DONE` before starting any Phase 3 task:
 ### P3-E1-T1: Cross-Source Verification (V4)
 
 **ID:** `P3-E1-T1`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 3-4 days
 
@@ -54,11 +54,13 @@ All of the following must be `DONE` before starting any Phase 3 task:
 Build cross-source verification (V4 in the 6-layer pipeline). Compares claims across multiple sources to detect agreement, contradiction, and partial support. Each claim receives a consensus score and contradictions get a severity rating. Also defines all shared validation types used by every other task in this epic.
 
 **PRD References:**
+
 - SS19 "V4: Cross-Source Validation -- Claim consistency, triangulation, contradiction detection"
 - SS43 `Contradiction`, `EvidenceLink` with `evidence_type: Supports | Contradicts | PartiallySupports`
 - SS42 Features 9-10: contradiction detection, consensus scoring
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/validate/mod.rs          -- Module root, re-exports
 crates/hsx-core/src/validate/types.rs        -- All validation types
@@ -343,6 +345,7 @@ impl CrossSourceVerifier {
 ```
 
 **Acceptance criteria:**
+
 - [ ] `verify()` returns `passed: true` when sources agree on claims
 - [ ] Contradictions detected when sources contain negated or numerically conflicting claims
 - [ ] `ContradictionSeverity` classified correctly (High/Medium/Low)
@@ -394,7 +397,7 @@ mod tests {
 ### P3-E1-T2: Temporal Validation (V3)
 
 **ID:** `P3-E1-T2`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 2-3 days
 
@@ -402,6 +405,7 @@ mod tests {
 Build the temporal/freshness validation layer (V3). Checks published dates, detects staleness using query-intent-aware thresholds, and penalizes undated content. Uses exponential decay scoring.
 
 **PRD References:**
+
 - SS19 "V3: Freshness Validation -- Published date, staleness, cache freshness"
 - SS21 "Temporal: Exponential decay with intent-calibrated half-life"
 
@@ -496,6 +500,7 @@ impl TemporalValidator {
 ```
 
 **Acceptance criteria:**
+
 - [ ] `classify_intent` returns `Recent` for "latest Rust 2026", `Historical` for "history of Linux"
 - [ ] Fresh content (age < max) yields score > 0.9; stale content yields warning/error
 - [ ] Undated content penalized to 0.3
@@ -543,7 +548,7 @@ mod tests {
 ### P3-E1-T3: Authority Scoring (V1 partial)
 
 **ID:** `P3-E1-T3`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 2 days
 
@@ -551,6 +556,7 @@ mod tests {
 Build authority scoring as part of V1 (Source Validation). Assigns a trust score to each source based on domain reputation tiers, SSL validity, redirect analysis, and known-good/known-bad domain lists. This feeds into both the validation pipeline and HyperFusion ranking.
 
 **PRD References:**
+
 - SS19 "V1: Source Validation -- Reachability, SSL, domain reputation, redirect analysis"
 - SS21 "Authority: Domain scoring + citation chain analysis"
 
@@ -662,6 +668,7 @@ impl AuthorityScorer {
 ```
 
 **Acceptance criteria:**
+
 - [ ] `.gov`/`.edu` domains score >= 0.9; blocklisted domains score <= 0.1
 - [ ] No-SSL penalty reduces score by 30%
 - [ ] Excessive redirects (>5) reduce score
@@ -694,7 +701,7 @@ mod tests {
 ### P3-E1-T4: Consistency Checking (V2 + V5 + V6)
 
 **ID:** `P3-E1-T4`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 2-3 days
 
@@ -702,11 +709,13 @@ mod tests {
 Build the remaining validation layers: V2 (content validation -- relevance, language detection, paywall/error page detection), V5 (extraction quality -- completeness, structure, truncation), and V6 (output integrity -- citation verification, link validity). These are grouped because they are lighter layers that share similar patterns.
 
 **PRD References:**
+
 - SS19 V2: "Relevance, language, dedup, paywall, error page detection"
 - SS19 V5: "Completeness, structure, encoding, truncation"
 - SS19 V6: "Citation verification, link validity, format compliance"
 
 **Files to create:**
+
 ```
 crates/hsx-core/src/validate/content.rs     -- V2
 crates/hsx-core/src/validate/extraction.rs  -- V5
@@ -909,6 +918,7 @@ pub struct CitationCheck {
 ```
 
 **Acceptance criteria:**
+
 - [ ] V2 detects paywall/error pages and flags low-relevance content
 - [ ] V5 flags truncated extractions and zero-segment results
 - [ ] V6 detects broken citation links and content-hash mismatches
@@ -919,7 +929,7 @@ pub struct CitationCheck {
 ### P3-E1-T5: Confidence Calibration
 
 **ID:** `P3-E1-T5`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 1-2 days
 
@@ -927,6 +937,7 @@ pub struct CitationCheck {
 Build the confidence calibration module that aggregates scores from all 6 validation layers into a single calibrated confidence score per source, and an overall confidence for the result set. Uses weighted combination based on layer reliability.
 
 **PRD References:**
+
 - SS19 "6-Layer Validation" aggregate confidence
 - SS42 Feature 10: "Consensus scoring"
 
@@ -1010,6 +1021,7 @@ impl ConfidenceCalibrator {
 ```
 
 **Acceptance criteria:**
+
 - [ ] Weighted average correctly combines layer scores
 - [ ] All-pass layers yield confidence > 0.8; any critical failure drops confidence below 0.5
 - [ ] `build_result` produces complete `ValidationResult` with all fields populated
@@ -1051,7 +1063,7 @@ mod tests {
 ### P3-E1-T6: RAR Retry-and-Refine Loop
 
 **ID:** `P3-E1-T6`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 3-4 days
 
@@ -1059,6 +1071,7 @@ mod tests {
 Build the Reflection-Augmented Research (RAR) self-correction loop. After V4 validation, RAR evaluates retrieval quality at 5 reflection checkpoints (R1-R5) and auto-corrects by reformulating queries, fetching more sources, or flagging contradictions. The loop runs up to `max_reflection_loops` (configurable, default 3) before returning results.
 
 **PRD References:**
+
 - SS8.6 "RAR Research Loop" -- Full flow diagram with R1-R5 checkpoints
 - SS8.6 "Reflection tokens: R1 [NEED_MORE], R2 [RELEVANT], R3 [SUFFICIENT], R4 [SUPPORTED], R5 [CONSISTENT]"
 - SS19 "RAR Integration -- After V4, RAR reflection kicks in"
@@ -1286,6 +1299,7 @@ impl RarState {
 ```
 
 **Acceptance criteria:**
+
 - [ ] R1 triggers `ExpandQuery` when `total_results < min_results`
 - [ ] R2 triggers `ReformulateQuery` when `relevant_ratio < 0.5`
 - [ ] R3 triggers `FetchMore` when `sufficiency_score < 0.4`
@@ -1368,7 +1382,7 @@ mod tests {
 ### P3-E2-T1: Citation Formatters (6 styles)
 
 **ID:** `P3-E2-T1`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 3 days
 
@@ -1376,10 +1390,12 @@ mod tests {
 Implement 6 citation formatters: APA, MLA, Chicago, IEEE, BibTeX, and inline `[N]`. Each formatter takes source metadata (author, title, URL, date, publisher) and produces a correctly formatted citation string. The system supports both inline markers (inserted into text) and a reference list appended to output.
 
 **PRD References:**
+
 - SS24 "6 styles: inline [1] | footnote ^1 | apa (Author, Year) | ieee [1] | chicago | bibtex"
 - SS42 Feature 134: "6 citation styles (inline, footnote, APA, IEEE, Chicago, BibTeX)"
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/citation/mod.rs       -- Module root
 crates/hsx-core/src/citation/types.rs     -- Citation types
@@ -1576,6 +1592,7 @@ impl CitationFormatter {
 ```
 
 **Acceptance criteria:**
+
 - [ ] All 6 styles produce correctly formatted inline markers and reference entries
 - [ ] APA format: `(Author, Year)` inline, full reference with "Retrieved from"
 - [ ] MLA format: `(Author)` inline, italicized publisher
@@ -1638,7 +1655,7 @@ mod tests {
 ### P3-E2-T2: Evidence Graph Protocol (EGP)
 
 **ID:** `P3-E2-T2`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 3-4 days
 
@@ -1646,11 +1663,13 @@ mod tests {
 Implement the Evidence Graph Protocol -- a graph-based evidence linking system with claim provenance, SHA-256 content hashes, confidence scoring per claim, and contradiction edges. The graph is serializable to JSON and can be exported alongside research reports.
 
 **PRD References:**
+
 - SS8.7 Full EGP specification: `EvidenceGraph`, `EvidenceNode`, `EvidenceEdge` types
 - SS24 "EGP: Graph-based evidence linking with claim->source edges, SHA-256 hashes, confidence scoring, contradiction edges"
 - SS43 `EvidenceLink` with `quote_hash: String // SHA-256`
 
 **Files to create:**
+
 ```
 crates/hsx-core/src/citation/evidence_graph.rs -- EGP implementation
 ```
@@ -1854,6 +1873,7 @@ impl EvidenceGraph {
 ```
 
 **Acceptance criteria:**
+
 - [ ] `EvidenceGraphBuilder::new()` creates root claim node as `n1`
 - [ ] `add_source()` registers SHA-256 content hash in `content_hashes` map
 - [ ] `add_edge()` computes SHA-256 of the supporting quote
@@ -1913,7 +1933,7 @@ mod tests {
 ### P3-E2-T3: Evidence Chain Tracking
 
 **ID:** `P3-E2-T3`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 2 days
 
@@ -1921,6 +1941,7 @@ mod tests {
 Build the evidence chain tracker that connects citations to EGP nodes, enabling strict evidence mode where every factual claim must cite a source. Uncitable claims are marked `[unverified]`. Integrates citations from P3-E2-T1 with the evidence graph from P3-E2-T2.
 
 **PRD References:**
+
 - SS24 "Strict Evidence Mode -- Every factual statement must cite a source. Uncitable claims marked [unverified]."
 
 **Files to create:** `crates/hsx-core/src/citation/evidence_tracker.rs`
@@ -2053,6 +2074,7 @@ impl EvidenceTracker {
 ```
 
 **Acceptance criteria:**
+
 - [ ] Claims matching evidence graph nodes get citation markers injected
 - [ ] Strict mode marks unmatched factual claims as `[unverified]`
 - [ ] Non-factual sentences (questions, transitions) are not flagged in strict mode
@@ -2097,7 +2119,7 @@ mod tests {
 ### P3-E3-T1: Multi-Source Research Pipeline
 
 **ID:** `P3-E3-T1`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 4-5 days
 
@@ -2105,10 +2127,12 @@ mod tests {
 Build the research pipeline orchestrator that chains together: query decomposition, parallel multi-backend search, CEP extraction, QATBE budgeting, RAR reflection loop, HyperFusion ranking, cross-source validation, EGP evidence mapping, and citation injection. This is the core engine behind both `hsx research` and `hsx agent-research`.
 
 **PRD References:**
+
 - SS10 Mode B behavior steps 1-9
 - SS8.6 RAR integration in research pipeline
 
 **Files to create:**
+
 ```
 crates/hsx-core/src/research/mod.rs       -- Module root
 crates/hsx-core/src/research/pipeline.rs  -- Research pipeline orchestrator
@@ -2314,6 +2338,7 @@ impl ResearchPipeline {
 ```
 
 **Acceptance criteria:**
+
 - [ ] `decompose_query` splits "compare X vs Y" into per-item sub-queries
 - [ ] Pipeline struct defines all 9 steps from PRD SS10 Mode B
 - [ ] `ResearchReport` contains all required fields: synthesis, sources, citations, validation, EGP, RAR iterations
@@ -2353,7 +2378,7 @@ mod tests {
 ### P3-E3-T2: Research Command CLI
 
 **ID:** `P3-E3-T2`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 2-3 days
 
@@ -2361,10 +2386,12 @@ mod tests {
 Build the `hsx research` CLI command that wraps the research pipeline with human-friendly markdown output. Supports `--citations`, `--validate`, `--strict-evidence`, `--evidence-graph`, `--output`, and `--format` flags.
 
 **PRD References:**
+
 - SS10 Mode B: `hsx research "GDPR implications for AI training data" --citations apa`
 - SS11 CLI flags: `--citations`, `--validate`, `--evidence-graph`, `--output`, `--format`
 
 **Files to create/modify:**
+
 ```
 crates/hsx-cli/src/commands/research.rs  -- research command
 crates/hsx-cli/src/cli.rs               -- Add ResearchCommand to clap enum
@@ -2494,6 +2521,7 @@ impl ResearchCommand {
 ```
 
 **Acceptance criteria:**
+
 - [ ] `hsx research "query"` executes the pipeline and prints markdown report to stdout
 - [ ] `--citations apa` uses APA citation style throughout
 - [ ] `--output report.md` writes to file instead of stdout
@@ -2508,7 +2536,7 @@ impl ResearchCommand {
 ### P3-E3-T3: Agent Research JSON Output
 
 **ID:** `P3-E3-T3`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 2 days
 
@@ -2516,10 +2544,12 @@ impl ResearchCommand {
 Build the `hsx agent-research` command that wraps the same research pipeline but outputs structured JSON for consumption by AI agents. Supports `--budget`, `--tier`, `--schema`, and `--framework` flags.
 
 **PRD References:**
+
 - SS9: `hsx agent-research "query" --budget 4000 --schema output.json --strict-evidence`
 - SS43: `AgentSearchResult` data model
 
 **Files to create/modify:**
+
 ```
 crates/hsx-cli/src/commands/agent_research.rs  -- agent-research command
 crates/hsx-cli/src/cli.rs                     -- Add AgentResearchCommand
@@ -2650,6 +2680,7 @@ impl AgentResearchCommand {
 ```
 
 **Acceptance criteria:**
+
 - [ ] `hsx agent-research "query"` outputs valid JSON to stdout
 - [ ] JSON matches `AgentSearchResult` structure from PRD SS43
 - [ ] `--budget 4000` limits total output tokens
@@ -2694,6 +2725,7 @@ mod tests {
 After all tasks are complete, update the module roots:
 
 **`crates/hsx-core/src/validate/mod.rs`:**
+
 ```rust
 pub mod types;
 pub mod cross_source;
@@ -2714,6 +2746,7 @@ pub use rar::{RarEngine, RarConfig, RarState};
 ```
 
 **`crates/hsx-core/src/citation/mod.rs`:**
+
 ```rust
 pub mod types;
 pub mod formatter;
@@ -2727,6 +2760,7 @@ pub use evidence_tracker::EvidenceTracker;
 ```
 
 **`crates/hsx-core/src/research/mod.rs`:**
+
 ```rust
 pub mod pipeline;
 pub mod decompose;
@@ -2738,20 +2772,20 @@ pub use pipeline::ResearchPipeline;
 
 ## Dependency Matrix
 
-| Task | Depends On | Provides |
-|------|-----------|----------|
-| P3-E1-T1 (Cross-source) | P2-E4, P1-E5-T1 | V4 layer, shared types |
-| P3-E1-T2 (Temporal) | P3-E1-T1 (types) | V3 layer |
-| P3-E1-T3 (Authority) | P3-E1-T1 (types) | V1 layer |
-| P3-E1-T4 (Content/Extract/Output) | P3-E1-T1 (types) | V2, V5, V6 layers |
-| P3-E1-T5 (Calibration) | P3-E1-T1..T4 | Aggregate confidence |
-| P3-E1-T6 (RAR) | P3-E1-T1, P3-E1-T5 | Self-correction loop |
-| P3-E2-T1 (Citations) | P1-E7-T1 | 6 citation formatters |
-| P3-E2-T2 (EGP) | P3-E2-T1 | Evidence graph builder |
-| P3-E2-T3 (Evidence tracker) | P3-E2-T1, P3-E2-T2 | Strict evidence mode |
-| P3-E3-T1 (Pipeline) | All E1, all E2 | Research orchestrator |
-| P3-E3-T2 (research cmd) | P3-E3-T1 | `hsx research` CLI |
-| P3-E3-T3 (agent-research) | P3-E3-T1 | `hsx agent-research` CLI |
+| Task                              | Depends On         | Provides                 |
+| --------------------------------- | ------------------ | ------------------------ |
+| P3-E1-T1 (Cross-source)           | P2-E4, P1-E5-T1    | V4 layer, shared types   |
+| P3-E1-T2 (Temporal)               | P3-E1-T1 (types)   | V3 layer                 |
+| P3-E1-T3 (Authority)              | P3-E1-T1 (types)   | V1 layer                 |
+| P3-E1-T4 (Content/Extract/Output) | P3-E1-T1 (types)   | V2, V5, V6 layers        |
+| P3-E1-T5 (Calibration)            | P3-E1-T1..T4       | Aggregate confidence     |
+| P3-E1-T6 (RAR)                    | P3-E1-T1, P3-E1-T5 | Self-correction loop     |
+| P3-E2-T1 (Citations)              | P1-E7-T1           | 6 citation formatters    |
+| P3-E2-T2 (EGP)                    | P3-E2-T1           | Evidence graph builder   |
+| P3-E2-T3 (Evidence tracker)       | P3-E2-T1, P3-E2-T2 | Strict evidence mode     |
+| P3-E3-T1 (Pipeline)               | All E1, all E2     | Research orchestrator    |
+| P3-E3-T2 (research cmd)           | P3-E3-T1           | `hsx research` CLI       |
+| P3-E3-T3 (agent-research)         | P3-E3-T1           | `hsx agent-research` CLI |
 
 ## Parallelization Guide
 
@@ -2776,18 +2810,18 @@ P3-E1-T6 (RAR)                  |
 
 ## Testing Strategy
 
-| Type | Scope | Approach |
-|------|-------|----------|
-| Unit | Each validation layer | Fixture data with known properties |
-| Unit | Citation formatters | Known metadata -> expected formatted strings per style |
-| Unit | EGP builder | Build graph -> verify structure, hashes, confidence |
-| Unit | RAR checkpoints | Mock state with controlled scores -> verify actions |
-| Unit | Query decomposition | Known complex queries -> expected sub-questions |
-| Integration | Full pipeline | Mock search backend (wiremock) -> verify report structure |
-| E2E | `hsx research` | `assert_cmd` -> verify stdout is valid markdown with citations |
-| E2E | `hsx agent-research` | `assert_cmd` -> verify stdout is valid JSON matching schema |
-| Snapshot | Report output | `insta` snapshots for known queries with mock data |
+| Type        | Scope                 | Approach                                                       |
+| ----------- | --------------------- | -------------------------------------------------------------- |
+| Unit        | Each validation layer | Fixture data with known properties                             |
+| Unit        | Citation formatters   | Known metadata -> expected formatted strings per style         |
+| Unit        | EGP builder           | Build graph -> verify structure, hashes, confidence            |
+| Unit        | RAR checkpoints       | Mock state with controlled scores -> verify actions            |
+| Unit        | Query decomposition   | Known complex queries -> expected sub-questions                |
+| Integration | Full pipeline         | Mock search backend (wiremock) -> verify report structure      |
+| E2E         | `hsx research`        | `assert_cmd` -> verify stdout is valid markdown with citations |
+| E2E         | `hsx agent-research`  | `assert_cmd` -> verify stdout is valid JSON matching schema    |
+| Snapshot    | Report output         | `insta` snapshots for known queries with mock data             |
 
 ---
 
-*For the master task index and dependency graph, see [`../TASKS.md`](../TASKS.md).*
+_For the master task index and dependency graph, see [`../TASKS.md`](../TASKS.md)._

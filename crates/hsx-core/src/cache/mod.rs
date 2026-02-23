@@ -15,9 +15,9 @@ use std::time::Duration;
 use tracing::debug;
 
 /// Default TTL for cached entries (1 hour).
-const DEFAULT_TTL_SECS: u64 = 3600;
+const _DEFAULT_TTL_SECS: u64 = 3600;
 /// Default maximum number of entries in the memory cache.
-const DEFAULT_MAX_ENTRIES: u64 = 1000;
+const _DEFAULT_MAX_ENTRIES: u64 = 1000;
 /// Maximum size of a single cached value (in bytes of JSON).
 const MAX_ENTRY_BYTES: usize = 10 * 1024 * 1024; // 10 MB
 

@@ -293,7 +293,7 @@ fn truncate_to_budget(text: &str, budget: u32) -> String {
     }
 
     let truncated = &text[..max_chars.min(text.len())];
-    match truncated.rfind(|c: char| c == ' ' || c == '\n') {
+    match truncated.rfind([' ', '\n']) {
         Some(pos) if pos > max_chars / 2 => {
             format!("{}...", truncated[..pos].trim_end())
         }

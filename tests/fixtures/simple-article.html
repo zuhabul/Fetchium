@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="Understanding Rust ownership system">
+  <title>Understanding Rust Ownership</title>
+</head>
+<body>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/docs">Docs</a>
+  </nav>
+  <article>
+    <h1>Understanding Rust Ownership</h1>
+    <p>Rust's ownership system is the foundation of its memory safety guarantees.
+    Unlike garbage-collected languages, Rust enforces memory management at compile time.</p>
+    <h2>The Three Rules of Ownership</h2>
+    <ul>
+      <li>Each value in Rust has an <em>owner</em></li>
+      <li>There can only be one owner at a time</li>
+      <li>When the owner goes out of scope, the value is dropped</li>
+    </ul>
+    <pre><code>fn main() {
+    let s = String::from("hello");
+    let s2 = s; // s is moved into s2
+    // println!("{}", s); // ERROR: s is no longer valid
+    println!("{}", s2); // OK
+}</code></pre>
+    <p>After the move, <code>s</code> is no longer valid. This prevents use-after-free bugs.</p>
+    <h2>Borrowing</h2>
+    <p>References allow you to use a value without taking ownership:</p>
+    <pre><code>fn calculate_length(s: &String) -> usize {
+    s.len()
+}
+
+fn main() {
+    let s1 = String::from("hello");
+    let len = calculate_length(&s1);
+    println!("Length of '{}' is {}", s1, len);
+}</code></pre>
+  </article>
+  <footer>
+    <p>Copyright 2026 HyperSearchX Docs. All rights reserved.</p>
+  </footer>
+</body>
+</html>

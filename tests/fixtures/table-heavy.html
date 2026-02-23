@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Rust Web Framework Benchmark Results 2026</title>
+</head>
+<body>
+  <article>
+    <h1>Framework Comparison</h1>
+    <p>This benchmark compares the most popular Rust web frameworks on a standard
+    HTTP workload: 1000 concurrent connections, keep-alive, 64-byte response body.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Framework</th>
+          <th>Requests/sec</th>
+          <th>Latency p50</th>
+          <th>Latency p99</th>
+          <th>Memory (MB)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Actix-web</td><td>125,000</td><td>1.2ms</td><td>2.1ms</td><td>8</td></tr>
+        <tr><td>Axum</td><td>118,000</td><td>1.4ms</td><td>2.3ms</td><td>9</td></tr>
+        <tr><td>Warp</td><td>112,000</td><td>1.5ms</td><td>2.5ms</td><td>10</td></tr>
+        <tr><td>Rocket</td><td>95,000</td><td>1.8ms</td><td>3.1ms</td><td>12</td></tr>
+        <tr><td>Tide</td><td>88,000</td><td>2.1ms</td><td>3.8ms</td><td>11</td></tr>
+      </tbody>
+    </table>
+    <p>All frameworks tested on Rust 1.85, tokio runtime, release mode.</p>
+    <h2>Conclusions</h2>
+    <p>Actix-web leads in raw throughput, while Axum offers the best balance of
+    performance, ergonomics, and ecosystem integration with the Tower middleware stack.</p>
+  </article>
+</body>
+</html>

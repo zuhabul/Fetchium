@@ -376,16 +376,16 @@ mod tests {
 ```
 
 **Acceptance criteria:**
-- [ ] `cargo test --workspace` passes with zero failures
-- [ ] `cargo llvm-cov --workspace` produces a coverage report
-- [ ] Coverage floor is enforced in CI at >= 60% (ratchets to 70% after Phase 2, 80% after Phase 4)
-- [ ] Test helpers `make_search_result()`, `make_segment()`, `load_fixture()` work correctly
-- [ ] At least 3 test fixtures exist under `tests/fixtures/`
-- [ ] Types roundtrip through serde serialization
-- [ ] Config rejects invalid values (zero timeout, negative results)
-- [ ] Error retryability is tested for every variant
-- [ ] Property-based tests exist for token counting and ranking scores
-- [ ] `cargo clippy --workspace -- -D warnings` produces zero warnings
+- [x] `cargo test --workspace` passes with zero failures
+- [x] `cargo llvm-cov --workspace` produces a coverage report
+- [x] Coverage floor is enforced in CI at >= 60% (ratchets to 70% after Phase 2, 80% after Phase 4)
+- [x] Test helpers `make_search_result()`, `make_segment()`, `load_fixture()` work correctly
+- [x] At least 3 test fixtures exist under `tests/fixtures/`
+- [x] Types roundtrip through serde serialization
+- [x] Config rejects invalid values (zero timeout, negative results)
+- [x] Error retryability is tested for every variant
+- [x] Property-based tests exist for token counting and ranking scores
+- [x] `cargo clippy --workspace -- -D warnings` produces zero warnings
 
 **Pitfalls:**
 - **Flaky tests**: Tests depending on external services are flaky. Always use `wiremock` or mock servers for HTTP tests.
@@ -577,16 +577,16 @@ async fn timeout_triggers_graceful_error() {
 ```
 
 **Acceptance criteria:**
-- [ ] `cargo test --test integration` passes with zero failures
-- [ ] Fetch -> extract pipeline strips boilerplate from article HTML
-- [ ] Code blocks tagged as `SegmentType::CodeBlock`, tables as `SegmentType::Table`
-- [ ] SPA shell detection produces minimal text content
-- [ ] Search results are ranked with scores in descending order
-- [ ] Duplicate URLs with query param differences are deduplicated
-- [ ] HTTP 403 produces a non-retryable error
-- [ ] HTTP 429 triggers retry logic (up to 3 attempts)
-- [ ] Timeout error fires within the configured duration
-- [ ] All tests use `wiremock` -- no real network calls
+- [x] `cargo test --test integration` passes with zero failures
+- [x] Fetch -> extract pipeline strips boilerplate from article HTML
+- [x] Code blocks tagged as `SegmentType::CodeBlock`, tables as `SegmentType::Table`
+- [x] SPA shell detection produces minimal text content
+- [x] Search results are ranked with scores in descending order
+- [x] Duplicate URLs with query param differences are deduplicated
+- [x] HTTP 403 produces a non-retryable error
+- [x] HTTP 429 triggers retry logic (up to 3 attempts)
+- [x] Timeout error fires within the configured duration
+- [x] All tests use `wiremock` -- no real network calls
 
 ---
 
@@ -769,16 +769,16 @@ fn fetch_with_invalid_url_shows_error() {
 ```
 
 **Acceptance criteria:**
-- [ ] `hsx --version` outputs a semver string
-- [ ] `hsx --help` lists all commands: search, fetch, agent-search, agent-fetch, doctor
-- [ ] `hsx` with no args produces an error with usage info
-- [ ] `hsx doctor` runs without crashing and prints system info
-- [ ] `hsx search ... --format json` produces valid JSON
-- [ ] `hsx search ... --max-results 3` returns at most 3 results
-- [ ] `hsx agent-search` always outputs JSON
-- [ ] `hsx fetch <invalid-url>` produces a clear error
-- [ ] Unknown commands produce a helpful error message
-- [ ] All E2E tests use mock servers where possible
+- [x] `hsx --version` outputs a semver string
+- [x] `hsx --help` lists all commands: search, fetch, agent-search, agent-fetch, doctor
+- [x] `hsx` with no args produces an error with usage info
+- [x] `hsx doctor` runs without crashing and prints system info
+- [x] `hsx search ... --format json` produces valid JSON
+- [x] `hsx search ... --max-results 3` returns at most 3 results
+- [x] `hsx agent-search` always outputs JSON
+- [x] `hsx fetch <invalid-url>` produces a clear error
+- [x] Unknown commands produce a helpful error message
+- [x] All E2E tests use mock servers where possible
 
 ---
 
@@ -1018,13 +1018,13 @@ criterion_main!(benches);
 | Extraction 250KB HTML | <100ms |
 
 **Acceptance criteria:**
-- [ ] `cargo bench --workspace` runs all benchmarks without errors
-- [ ] Extraction benchmark covers simple article, table-heavy, and scaling tests
-- [ ] Token estimation on 1MB text completes in <100ms (PRD SS40)
-- [ ] Ranking benchmark tests 10, 50, 100, 500 result counts
-- [ ] Criterion generates HTML reports in `target/criterion/`
-- [ ] CI alerts on >20% regression
-- [ ] All benchmarks use `black_box()` to prevent dead code elimination
+- [x] `cargo bench --workspace` runs all benchmarks without errors
+- [x] Extraction benchmark covers simple article, table-heavy, and scaling tests
+- [x] Token estimation on 1MB text completes in <100ms (PRD SS40)
+- [x] Ranking benchmark tests 10, 50, 100, 500 result counts
+- [x] Criterion generates HTML reports in `target/criterion/`
+- [x] CI alerts on >20% regression
+- [x] All benchmarks use `black_box()` to prevent dead code elimination
 
 ---
 
@@ -1204,12 +1204,12 @@ https://example.com/path?query=value&other=123#fragment
 ```
 
 **Acceptance criteria:**
-- [ ] `cargo +nightly fuzz list` shows all 4 fuzz targets
-- [ ] Each target runs for 60s without crashes locally
-- [ ] Seed corpus files exist for each target
-- [ ] No panics discovered -- any found panics are fixed and regression-tested
-- [ ] CI runs fuzz tests weekly for 5 minutes per target
-- [ ] Crash artifacts are uploaded on failure
+- [x] `cargo +nightly fuzz list` shows all 4 fuzz targets
+- [x] Each target runs for 60s without crashes locally
+- [x] Seed corpus files exist for each target
+- [x] No panics discovered -- any found panics are fixed and regression-tested
+- [x] CI runs fuzz tests weekly for 5 minutes per target
+- [x] Crash artifacts are uploaded on failure
 
 ---
 
@@ -1349,13 +1349,13 @@ pub fn extract_content(html: &str, url: &str, config: &ExtractorConfig) -> Resul
 ```
 
 **Acceptance criteria:**
-- [ ] `cargo doc --workspace --no-deps` builds with zero warnings
-- [ ] `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps` passes
-- [ ] Every public type has a `///` doc comment
-- [ ] Every public function has `# Arguments`, `# Returns`, `# Examples`
-- [ ] Doc tests (`cargo test --doc`) pass
-- [ ] `#![deny(missing_docs)]` is set in all crate roots
-- [ ] CI deploys docs to GitHub Pages on merge to main
+- [x] `cargo doc --workspace --no-deps` builds with zero warnings
+- [x] `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps` passes
+- [x] Every public type has a `///` doc comment
+- [x] Every public function has `# Arguments`, `# Returns`, `# Examples`
+- [x] Doc tests (`cargo test --doc`) pass
+- [x] `#![deny(missing_docs)]` is set in all crate roots
+- [x] CI deploys docs to GitHub Pages on merge to main
 
 ---
 
@@ -1460,12 +1460,12 @@ Add to `.mcp.json` in your project root:
 ```
 
 **Acceptance criteria:**
-- [ ] Installation guide covers npm, cargo, and binary download
-- [ ] Quickstart gets a user from zero to first search in <2 minutes
-- [ ] Every CLI command documented with syntax, flags, and at least 2 examples
-- [ ] Config guide covers file location, all settings, env var overrides
-- [ ] Agent integration guide covers MCP, LangChain, CrewAI with working examples
-- [ ] Troubleshooting covers: Ollama not found, Chromium not found, rate limiting, timeouts
+- [x] Installation guide covers npm, cargo, and binary download
+- [x] Quickstart gets a user from zero to first search in <2 minutes
+- [x] Every CLI command documented with syntax, flags, and at least 2 examples
+- [x] Config guide covers file location, all settings, env var overrides
+- [x] Agent integration guide covers MCP, LangChain, CrewAI with working examples
+- [x] Troubleshooting covers: Ollama not found, Chromium not found, rate limiting, timeouts
 
 ---
 
@@ -1490,12 +1490,12 @@ docs/architecture/extending.md                   -- How to add backends, plugins
 ```
 
 **Acceptance criteria:**
-- [ ] Architecture overview explains the 4-crate workspace (hsx-core, hsx-cli, hsx-mcp, hsx-api)
-- [ ] Data flow diagram: query -> search -> extract -> rank -> output
-- [ ] Each of the 17 novel algorithms has a 1-paragraph summary
-- [ ] Extension guide explains how to add a new search backend
-- [ ] Extension guide explains the plugin system interface
-- [ ] Diagrams in ASCII art or Mermaid (renderable in GitHub markdown)
+- [x] Architecture overview explains the 4-crate workspace (hsx-core, hsx-cli, hsx-mcp, hsx-api)
+- [x] Data flow diagram: query -> search -> extract -> rank -> output
+- [x] Each of the 17 novel algorithms has a 1-paragraph summary
+- [x] Extension guide explains how to add a new search backend
+- [x] Extension guide explains the plugin system interface
+- [x] Diagrams in ASCII art or Mermaid (renderable in GitHub markdown)
 
 ---
 
@@ -1679,14 +1679,14 @@ mod tests {
 ```
 
 **Acceptance criteria:**
-- [ ] `sanitize_html()` strips all `<script>`, `<iframe>`, event handlers
-- [ ] `sanitize_html()` preserves `<p>`, `<code>`, `<pre>`, `<table>`, headings
-- [ ] `enforce_tls()` rejects `http://` for remote hosts, allows localhost
-- [ ] `cargo audit` runs in CI with zero known vulnerabilities
-- [ ] Per-domain rate limiting prevents >1 req/sec to any single domain by default
-- [ ] robots.txt is fetched, cached, and respected
-- [ ] `--redact-pii` flag strips emails, phone numbers from output
-- [ ] All security code has unit tests
+- [x] `sanitize_html()` strips all `<script>`, `<iframe>`, event handlers
+- [x] `sanitize_html()` preserves `<p>`, `<code>`, `<pre>`, `<table>`, headings
+- [x] `enforce_tls()` rejects `http://` for remote hosts, allows localhost
+- [x] `cargo audit` runs in CI with zero known vulnerabilities
+- [x] Per-domain rate limiting prevents >1 req/sec to any single domain by default
+- [x] robots.txt is fetched, cached, and respected
+- [x] `--redact-pii` flag strips emails, phone numbers from output
+- [x] All security code has unit tests
 
 ---
 
@@ -1768,12 +1768,12 @@ mod perf_tests {
 ```
 
 **Acceptance criteria:**
-- [ ] Release binary uses `opt-level = 3`, `lto = "fat"`, `codegen-units = 1`
-- [ ] `hsx search` cached <1s, `agent-search` cached <500ms, `agent-fetch` cached <300ms (PRD SS40)
-- [ ] `hsx fetch` cached <200ms, token estimation <100ms (PRD SS40)
-- [ ] Extraction of 250KB HTML completes in <100ms
-- [ ] Benchmark suite shows no regressions vs baseline
-- [ ] Release binary size under 25MB (stripped)
+- [x] Release binary uses `opt-level = 3`, `lto = "fat"`, `codegen-units = 1`
+- [x] `hsx search` cached <1s, `agent-search` cached <500ms, `agent-fetch` cached <300ms (PRD SS40)
+- [x] `hsx fetch` cached <200ms, token estimation <100ms (PRD SS40)
+- [x] Extraction of 250KB HTML completes in <100ms
+- [x] Benchmark suite shows no regressions vs baseline
+- [x] Release binary size under 25MB (stripped)
 
 ---
 
@@ -1861,14 +1861,14 @@ impl HsxError {
 ```
 
 **Acceptance criteria:**
-- [ ] Zero `unwrap()` calls in non-test production code (verified by grep)
-- [ ] Every async operation wrapped with a timeout
-- [ ] Every HTTP request has per-request timeout (default 10s)
-- [ ] Every error has `is_retryable()`, `suggested_action()`
-- [ ] Fallback chain pattern used for fetch, search, cache reads
-- [ ] All errors serialize to JSON with `error_type`, `retryable`, `message`, `suggested_action`
-- [ ] Killing Ollama mid-request produces clean error, not panic
-- [ ] Disconnecting network mid-search produces partial results with explanation
+- [x] Zero `unwrap()` calls in non-test production code (verified by grep)
+- [x] Every async operation wrapped with a timeout
+- [x] Every HTTP request has per-request timeout (default 10s)
+- [x] Every error has `is_retryable()`, `suggested_action()`
+- [x] Fallback chain pattern used for fetch, search, cache reads
+- [x] All errors serialize to JSON with `error_type`, `retryable`, `message`, `suggested_action`
+- [x] Killing Ollama mid-request produces clean error, not panic
+- [x] Disconnecting network mid-search produces partial results with explanation
 
 ---
 
@@ -2300,16 +2300,16 @@ image = "ghcr.io/cross-rs/x86_64-unknown-linux-gnu:main"
 ```
 
 **Acceptance criteria:**
-- [ ] Pushing a `v*` tag triggers the release workflow
-- [ ] GitHub Release created with archives + SHA256 checksums for all 5 platforms
-- [ ] npm package installs correct binary for current platform
-- [ ] `npm install -g hypersearchx && hsx --version` works
-- [ ] `cargo publish --dry-run --package hsx-core` succeeds
-- [ ] Windows binary packaged as `.zip`, Unix as `.tar.gz`
-- [ ] Pre-release tags (`-rc`, `-beta`) create prerelease GitHub Releases
-- [ ] CI runs: fmt, clippy, build (3 OS), test, coverage, audit, docs on every PR
-- [ ] CI passes on Ubuntu, macOS ARM64, and Windows
-- [ ] Weekly fuzz testing runs automatically
+- [x] Pushing a `v*` tag triggers the release workflow
+- [x] GitHub Release created with archives + SHA256 checksums for all 5 platforms
+- [x] npm package installs correct binary for current platform
+- [x] `npm install -g hypersearchx && hsx --version` works
+- [x] `cargo publish --dry-run --package hsx-core` succeeds
+- [x] Windows binary packaged as `.zip`, Unix as `.tar.gz`
+- [x] Pre-release tags (`-rc`, `-beta`) create prerelease GitHub Releases
+- [x] CI runs: fmt, clippy, build (3 OS), test, coverage, audit, docs on every PR
+- [x] CI passes on Ubuntu, macOS ARM64, and Windows
+- [x] Weekly fuzz testing runs automatically
 
 ---
 

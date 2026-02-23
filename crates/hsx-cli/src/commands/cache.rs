@@ -3,21 +3,22 @@
 use crate::cli::{CacheAction, CacheArgs};
 use hsx_core::config::HsxConfig;
 
-pub async fn run(args: CacheArgs, _config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(args: CacheArgs, config: &HsxConfig) -> anyhow::Result<()> {
     match args.action {
         CacheAction::Stats => {
             println!("Cache statistics:");
-            // TODO: Implement in Phase 1 (P1-E6-T1)
-            println!("  Memory entries: 0");
-            println!("  Disk size: 0 MB");
+            println!("  Memory Cache Enabled: {}", config.cache.enabled);
+            println!("  Memory Cache Max Entries: {}", config.cache.memory_max_entries);
+            println!("  Memory Cache TTL: {}s", config.cache.ttl_secs);
+            println!("  Disk caching is not yet implemented (SQLite pending).");
         }
         CacheAction::Clear => {
-            println!("Cache cleared");
-            // TODO: Implement
+            println!("Memory Cache is ephemeral and clears on exit.");
+            println!("Disk caching is not yet implemented.");
         }
         CacheAction::Prune => {
-            println!("Expired entries pruned");
-            // TODO: Implement
+            println!("Memory Cache automatically prunes expired entries.");
+            println!("Disk caching is not yet implemented.");
         }
     }
     Ok(())

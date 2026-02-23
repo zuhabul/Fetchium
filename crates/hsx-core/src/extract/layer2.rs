@@ -4,7 +4,7 @@
 //! Uses lol_html to stream through HTML, stripping boilerplate in a single
 //! pass without building a full DOM tree.
 
-use crate::extract::boilerplate::{clean_text, MIN_CONTENT_LENGTH};
+use crate::extract::boilerplate::{self, clean_text, MIN_CONTENT_LENGTH};
 use crate::extract::layer1::estimate_tokens;
 use crate::extract::{ContentMetadata, ExtractedContent};
 use crate::types::CepLayer;
@@ -35,11 +35,18 @@ const REMOVE_TAGS: &[&str] = &[
 /// This method is more aggressive at stripping boilerplate than Layer 1.
 /// It processes HTML in a single streaming pass, making it memory-efficient
 /// for large pages.
+///
+/// QADD pre-filtering with `boilerplate::strip_heavy_tags` is applied before
+/// the lol_html pass to further reduce the amount of data the streamer must
+/// process.
 pub fn extract(html: &str, url: &str) -> ExtractedContent {
-    let title = extract_title_simple(html);
-    let metadata = extract_metadata_simple(html);
+    // QADD: strip heavy tags before DOM parsing to reduce parse cost
+    let stripped_html = boilerplate::strip_heavy_tags(html);
 
-    let cleaned_html = strip_boilerplate(html);
+    let title = extract_title_simple(&stripped_html);
+    let metadata = extract_metadata_simple(&stripped_html);
+
+    let cleaned_html = strip_boilerplate(&stripped_html);
     let text = html_to_text(&cleaned_html);
     let cleaned = clean_text(&text);
     let tokens = estimate_tokens(&cleaned);
@@ -143,8 +150,8 @@ fn html_to_text(html: &str) -> String {
             "apos" => "'".to_string(),
             "nbsp" => " ".to_string(),
             s if s.starts_with('#') => {
-                let num = if s.starts_with("#x") {
-                    u32::from_str_radix(&s[2..], 16).ok()
+                let num = if let Some(hex) = s.strip_prefix("#x") {
+                    u32::from_str_radix(hex, 16).ok()
                 } else {
                     s[1..].parse::<u32>().ok()
                 };

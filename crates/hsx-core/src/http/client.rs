@@ -18,7 +18,7 @@ const MAX_RETRIES: u32 = 3;
 /// Base delay for exponential backoff (milliseconds).
 const BASE_DELAY_MS: u64 = 500;
 /// Maximum response body size (10 MB).
-const MAX_BODY_SIZE: u64 = 10 * 1024 * 1024;
+const _MAX_BODY_SIZE: u64 = 10 * 1024 * 1024;
 
 /// Per-domain rate limit state.
 #[derive(Debug)]
@@ -240,12 +240,10 @@ impl HttpClient {
                     });
                 }
                 Err(e) => {
-                    if e.is_timeout() || e.is_connect() {
-                        if attempt < MAX_RETRIES {
-                            warn!("Transient error for {url}: {e}");
-                            last_err = Some(HsxError::Network(e));
-                            continue;
-                        }
+                    if (e.is_timeout() || e.is_connect()) && attempt < MAX_RETRIES {
+                        warn!("Transient error for {url}: {e}");
+                        last_err = Some(HsxError::Network(e));
+                        continue;
                     }
                     return Err(HsxError::Network(e));
                 }

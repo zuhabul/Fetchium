@@ -20,7 +20,7 @@ description = "AI-native search engine for humans and agents"
 tokio = { version = "1", features = ["full"] }
 
 # HTTP
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip", "brotli", "cookies"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip", "brotli", "cookies", "stream"] }
 
 # HTML parsing
 scraper = "0.21"
@@ -76,21 +76,57 @@ tokio-stream = "0.1"
 # Cache
 moka = { version = "0.12", features = ["future"] }
 
+# Diff / change detection
+similar = "2"
+
+# Encryption (privacy module)
+aes-gcm = "0.10"
+argon2 = "0.5"
+
+# TUI
+ratatui = "0.29"
+crossterm = { version = "0.28", features = ["event-stream"] }
+
+# Shell completions
+clap_complete = "4"
+
 # Testing
 assert_cmd = "2"
 predicates = "3"
 insta = { version = "1", features = ["yaml"] }
 wiremock = "0.6"
 tempfile = "3"
+pretty_assertions = "1"
+proptest = "1"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+# Security
+ammonia = "4"
+
+# HTTP API server
+axum = { version = "0.7", features = ["json", "macros"] }
+tower = { version = "0.4" }
+tower-http = { version = "0.5", features = ["cors", "trace"] }
 
 # Core library (internal)
 hsx-core = { path = "crates/hsx-core" }
 
 [profile.release]
-lto = "thin"
-codegen-units = 1
-strip = true
 opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.release-with-debug]
+inherits = "release"
+debug = true
+strip = false
+
+[profile.bench]
+inherits = "release"
+debug = true
+strip = false
 
 [profile.dev]
 opt-level = 1

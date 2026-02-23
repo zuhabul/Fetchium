@@ -3,7 +3,7 @@
 > **Phase:** 1 of 8 | **Priority:** P1 | **Duration:** Weeks 2-4
 > **Depends on:** Phase 0 (Project Foundation & Scaffolding) fully complete
 > **PRD Reference:** `prd.md` v4.0.0 -- Sections 14-18, 20-21, 26-28
-> **Epics:** 7 | **Tasks:** 17
+> **Epics:** 7 | **Tasks:** 15 | **Status:** ✅ COMPLETE
 
 ---
 
@@ -17,6 +17,7 @@ Phase 1 builds the **working MVP** of HyperSearchX. After this phase, users can 
 4. **`hsx agent-fetch <url> --query "..." --budget N`** -- Agent-optimized fetch with QATBE
 
 This phase implements the core algorithms that differentiate HyperSearchX:
+
 - **QATBE** (Query-Aware Token-Budgeted Extraction) -- PRD SS17, SS8.2
 - **SCS** (Semantic Content Segmentation) -- PRD SS18, SS8.4
 - **PDS Tier 1** (Progressive Detail Streaming) -- PRD SS27, SS8.9
@@ -30,12 +31,12 @@ This phase implements the core algorithms that differentiate HyperSearchX:
 
 All of the following must be `DONE` before starting any Phase 1 task:
 
-| Dependency | Phase | What It Provides |
-|-----------|-------|-----------------|
-| P0-E1-T1 (Workspace) | Phase 0 | Cargo workspace with all crates |
-| P0-E1-T2 (Types) | Phase 0 | Core data types in `hsx-core/src/types.rs` |
-| P0-E1-T3 (Config) | Phase 0 | Configuration system in `hsx-core/src/config.rs` |
-| P0-E3-T1 (CLI skeleton) | Phase 0 | clap definitions and command dispatch |
+| Dependency              | Phase   | What It Provides                                 |
+| ----------------------- | ------- | ------------------------------------------------ |
+| P0-E1-T1 (Workspace)    | Phase 0 | Cargo workspace with all crates                  |
+| P0-E1-T2 (Types)        | Phase 0 | Core data types in `hsx-core/src/types.rs`       |
+| P0-E1-T3 (Config)       | Phase 0 | Configuration system in `hsx-core/src/config.rs` |
+| P0-E3-T1 (CLI skeleton) | Phase 0 | clap definitions and command dispatch            |
 
 ---
 
@@ -48,7 +49,7 @@ All of the following must be `DONE` before starting any Phase 1 task:
 ### P1-E1-T1: HTTP Client with Connection Pooling & Retries
 
 **ID:** `P1-E1-T1`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P0
 **Estimated effort:** 1-2 days
 **Dependencies:** P0-E1-T1 (workspace), P0-E1-T3 (config)
@@ -57,11 +58,13 @@ All of the following must be `DONE` before starting any Phase 1 task:
 Extend the scaffolded `HttpClient` in `hsx-core/src/http/client.rs` with production-quality retry logic (exponential backoff with jitter), per-domain rate limiting, response size enforcement, and structured error mapping. The HTTP client is the foundation for every network operation in HyperSearchX.
 
 **PRD References:**
+
 - SS14 "Parallel Execution Engine" -- Domain-aware scheduler, per-domain concurrency caps
 - SS16 "Content Extraction Pipeline" -- HTTP GET as first stage
 - SS44 "Error Handling" -- NetworkTimeout, Http403, Http429, Http5xx, AntiBot
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/http/
   mod.rs              -- Module root (already exists, update re-exports)
@@ -422,6 +425,7 @@ pub use client::{FetchResult, HttpClient};
 ```
 
 **Acceptance criteria:**
+
 - [ ] `HttpClient::new()` creates a pooled client from config
 - [ ] `HttpClient::fetch()` returns `FetchResult` with body, status, content_type, elapsed_ms
 - [ ] Retries up to 3 times on 429/5xx with exponential backoff + jitter
@@ -432,6 +436,7 @@ pub use client::{FetchResult, HttpClient};
 - [ ] No clippy warnings: `cargo clippy -p hsx-core`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core http::client::tests
 # Integration test with wiremock (in tests/integration/):
@@ -445,7 +450,7 @@ cargo test -p hsx-core http::client::tests
 ### P1-E1-T2: CEP Layers 1-2 Content Extraction
 
 **ID:** `P1-E1-T2`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P0
 **Estimated effort:** 2-3 days
 **Dependencies:** P1-E1-T1 (HTTP client)
@@ -454,11 +459,13 @@ cargo test -p hsx-core http::client::tests
 Implement CEP (Cascade Extraction Protocol) layers 1 and 2 for static HTML content extraction. Layer 1 uses the `scraper` crate (CSS selectors) for fast structured extraction. Layer 2 uses `lol_html` (streaming HTML rewriter) for Readability-style article extraction. The system auto-escalates from Layer 1 to Layer 2 when Layer 1 produces insufficient content.
 
 **PRD References:**
+
 - SS16 "Content Extraction Pipeline" -- Layer 1: HTTP + CSS selectors (~2ms), Layer 2: HTTP + Readability (~8ms)
 - SS8.3 "CEP" -- Auto-escalation: content_length > threshold AND text_ratio > 0.3
 - SS20 "Token Efficiency" -- Boilerplate stripping: ~30% token savings
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/extract/
   mod.rs              -- Module root (update with new exports)
@@ -1246,6 +1253,7 @@ pub struct ContentMetadata {
 ```
 
 **Acceptance criteria:**
+
 - [ ] Layer 1 extracts title, text, and metadata from standard HTML pages
 - [ ] Layer 1 strips nav/footer/script/style boilerplate
 - [ ] Layer 2 uses lol_html streaming rewriter for deeper boilerplate removal
@@ -1256,6 +1264,7 @@ pub struct ContentMetadata {
 - [ ] No clippy warnings
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core extract
 # Create HTML fixtures in tests/fixtures/ for comprehensive testing
@@ -1267,7 +1276,7 @@ cargo test -p hsx-core extract
 ### P1-E1-T3: `fetch` Command Implementation
 
 **ID:** `P1-E1-T3`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 1 day
 **Dependencies:** P1-E1-T1 (HTTP client), P1-E1-T2 (CEP extraction)
@@ -1276,10 +1285,12 @@ cargo test -p hsx-core extract
 Wire up the `hsx fetch <url>` and `hsx view <url>` CLI commands to use the HTTP client and CEP extraction pipeline. The fetch command downloads a URL, extracts content via CEP layers 1-2, and displays the result in the selected output format.
 
 **PRD References:**
+
 - SS10 "Modes" -- Mode D (fetch/view): clean readable extraction
 - SS11 "CLI Interface" -- `hsx fetch <url>` with --budget, --tier, --query options
 
 **Files to modify:**
+
 ```
 crates/hsx-cli/src/commands/fetch.rs  -- Full implementation
 ```
@@ -1355,6 +1366,7 @@ pub async fn run(args: FetchArgs, config: &HsxConfig) -> anyhow::Result<()> {
 ```
 
 **Acceptance criteria:**
+
 - [ ] `hsx fetch <url>` downloads and extracts content from any URL
 - [ ] Progress spinner shows during fetch and extraction
 - [ ] Output shows title, metadata, token count, and extracted text
@@ -1363,6 +1375,7 @@ pub async fn run(args: FetchArgs, config: &HsxConfig) -> anyhow::Result<()> {
 - [ ] `cargo build -p hsx-cli` compiles successfully
 
 **Testing instructions:**
+
 ```bash
 cargo run -p hsx-cli -- fetch https://example.com
 cargo run -p hsx-cli -- fetch https://en.wikipedia.org/wiki/Rust_(programming_language)
@@ -1380,7 +1393,7 @@ cargo run -p hsx-cli -- view https://news.ycombinator.com
 ### P1-E2-T1: DuckDuckGo HTML Scraper Backend
 
 **ID:** `P1-E2-T1`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P0
 **Estimated effort:** 2-3 days
 **Dependencies:** P1-E1-T1 (HTTP client)
@@ -1389,10 +1402,12 @@ cargo run -p hsx-cli -- view https://news.ycombinator.com
 Implement the DuckDuckGo search backend by scraping `html.duckduckgo.com` (the lite/HTML version). This is the MVP's primary search engine because DDG's HTML interface has no bot detection, no API keys, and returns clean HTML that is easy to parse. The backend implements the `SearchBackend` trait defined in `search/mod.rs`.
 
 **PRD References:**
+
 - SS15 "Search Backend Orchestrator" -- Tier 2: DuckDuckGo, HTTP scrape, "Fast, private, no bot detection"
 - SS15 "Result Fusion" -- Steps 1-4: query, collect, normalize, deduplicate
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/search/
   mod.rs              -- Update with new module declarations
@@ -1747,6 +1762,7 @@ pub trait SearchBackend: Send + Sync {
 ```
 
 **Acceptance criteria:**
+
 - [ ] `DuckDuckGoBackend` implements `SearchBackend` trait
 - [ ] Scrapes `html.duckduckgo.com` via POST form submission
 - [ ] Parses title, URL, and snippet from each result
@@ -1756,6 +1772,7 @@ pub trait SearchBackend: Send + Sync {
 - [ ] No clippy warnings
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core search::duckduckgo::tests
 # Manual integration test:
@@ -1767,7 +1784,7 @@ cargo test -p hsx-core search::duckduckgo::tests
 ### P1-E2-T2: Search Orchestrator
 
 **ID:** `P1-E2-T2`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P0
 **Estimated effort:** 1-2 days
 **Dependencies:** P1-E2-T1 (DDG backend)
@@ -1776,10 +1793,12 @@ cargo test -p hsx-core search::duckduckgo::tests
 Build the search orchestrator that manages multiple search backends, dispatches queries in parallel, collects results, deduplicates by URL, and returns unified results. In Phase 1, only DDG is available, but the orchestrator is designed for multiple backends from the start.
 
 **PRD References:**
+
 - SS15 "Result Fusion" -- Parallel query, collect with timeout, normalize, deduplicate
 - SS14 "Parallel Execution Engine" -- Priority task queue, per-backend concurrency
 
 **Files to create:**
+
 ```
 crates/hsx-core/src/search/
   orchestrator.rs     -- Search orchestrator with parallel dispatch
@@ -2065,6 +2084,7 @@ mod tests {
 ```
 
 **Acceptance criteria:**
+
 - [ ] `SearchOrchestrator::search()` dispatches to all enabled backends in parallel
 - [ ] Per-backend timeout prevents slow backends from blocking
 - [ ] Results are deduplicated by canonical URL
@@ -2074,6 +2094,7 @@ mod tests {
 - [ ] No clippy warnings
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core search::orchestrator::tests
 ```
@@ -2083,7 +2104,7 @@ cargo test -p hsx-core search::orchestrator::tests
 ### P1-E2-T3: `search` Command Implementation
 
 **ID:** `P1-E2-T3`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 1 day
 **Dependencies:** P1-E2-T2 (Search orchestrator)
@@ -2092,10 +2113,12 @@ cargo test -p hsx-core search::orchestrator::tests
 Wire up the `hsx search "query"` CLI command to use the search orchestrator. Display results in a human-friendly format with titles, URLs, and snippets.
 
 **PRD References:**
+
 - SS10 "Modes" -- Mode A: human-friendly search
 - SS11 "CLI Interface" -- `hsx search "query"` with --max-results, --backends
 
 **Files to modify:**
+
 ```
 crates/hsx-cli/src/commands/search.rs  -- Full implementation
 ```
@@ -2266,6 +2289,7 @@ mod tests {
 ```
 
 **Acceptance criteria:**
+
 - [ ] `hsx search "query"` searches via DDG and displays formatted results
 - [ ] Results show rank, title (bold), URL (blue/underlined), snippet (dimmed)
 - [ ] Progress spinner during search
@@ -2275,6 +2299,7 @@ mod tests {
 - [ ] `cargo build -p hsx-cli` compiles successfully
 
 **Testing instructions:**
+
 ```bash
 cargo run -p hsx-cli -- search "rust programming language"
 cargo run -p hsx-cli -- search "latest news" -n 5
@@ -2292,7 +2317,7 @@ cargo run -p hsx-cli -- search "tokio async rust" --backends ddg
 ### P1-E3-T1: Tokenizer & Budget Tracking
 
 **ID:** `P1-E3-T1`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 1 day
 **Dependencies:** P0-E1-T2 (types)
@@ -2301,10 +2326,12 @@ cargo run -p hsx-cli -- search "tokio async rust" --backends ddg
 Implement a fast token counter and budget tracker. Uses a whitespace+punctuation heuristic tokenizer (no external models needed) that approximates GPT-4 tokenization at ~95% accuracy. Budget tracking ensures that all extraction and output operations respect the caller's token limit.
 
 **PRD References:**
+
 - SS20 "Token Efficiency Architecture" -- Token Budget System
 - SS17 "QATBE" -- Token budget as a first-class parameter
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/token/
   mod.rs              -- Module root (update)
@@ -2490,6 +2517,7 @@ pub use counter::{count_tokens, estimate_tokens_fast, TokenBudget};
 ```
 
 **Acceptance criteria:**
+
 - [ ] `count_tokens()` approximates GPT-4 token counts within ~10%
 - [ ] `TokenBudget` tracks consumption and reports remaining/exhausted
 - [ ] `try_consume()` returns false when budget is exceeded
@@ -2501,7 +2529,7 @@ pub use counter::{count_tokens, estimate_tokens_fast, TokenBudget};
 ### P1-E3-T2: QATBE Implementation
 
 **ID:** `P1-E3-T2`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 2-3 days
 **Dependencies:** P1-E3-T1 (tokenizer), P1-E1-T2 (CEP extraction)
@@ -2510,11 +2538,13 @@ pub use counter::{count_tokens, estimate_tokens_fast, TokenBudget};
 Implement Query-Aware Token-Budgeted Extraction (QATBE) -- the core algorithm that makes HyperSearchX unique. Given a URL, a query, and a token budget, QATBE extracts only the most query-relevant content within the budget. Phase 1 uses BM25 scoring only (no semantic embeddings -- those come in Phase 5).
 
 **PRD References:**
+
 - SS17 "QATBE" -- Full specification
 - SS8.2 "QATBE" -- 4-stage pipeline: FETCH, SEGMENT, RANK, BUDGET
 - SS20 "Token Efficiency" -- BM25 "Fit Markdown" filter: ~20% savings
 
 **Files to create:**
+
 ```
 crates/hsx-core/src/token/
   qatbe.rs            -- QATBE 4-stage pipeline
@@ -2522,7 +2552,7 @@ crates/hsx-core/src/token/
 
 **Step-by-step implementation:**
 
-```rust
+````rust
 //! Query-Aware Token-Budgeted Extraction (QATBE).
 //!
 //! PRD SS8.2: The single most important feature for AI agent consumption.
@@ -2980,9 +3010,10 @@ mod tests {
         assert!(truncated.len() < text.len());
     }
 }
-```
+````
 
 **Acceptance criteria:**
+
 - [ ] QATBE 4-stage pipeline: content segmentation, BM25 scoring, budget packing
 - [ ] Segments are ranked by query relevance and packed greedily
 - [ ] Total tokens never exceed the requested budget
@@ -2997,7 +3028,7 @@ mod tests {
 ### P1-E3-T3: SCS Implementation
 
 **ID:** `P1-E3-T3`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 2 days
 **Dependencies:** P1-E3-T1 (tokenizer), P1-E1-T2 (CEP extraction)
@@ -3006,10 +3037,12 @@ mod tests {
 Implement Semantic Content Segmentation (SCS) -- the algorithm that segments extracted content into typed blocks (facts, tables, code, lists, data, paragraphs) each in their most token-efficient representation. SCS is what makes HyperSearchX output dramatically more compact than flat markdown.
 
 **PRD References:**
+
 - SS18 "Semantic Content Segmentation" -- Full spec with 14 segment types
 - SS8.4 "SCS" -- Token efficiency: tables as JSON (60% fewer tokens), lists as arrays (30% fewer)
 
 **Files to create:**
+
 ```
 crates/hsx-core/src/token/
   scs.rs              -- Semantic Content Segmentation
@@ -3017,7 +3050,7 @@ crates/hsx-core/src/token/
 
 **Step-by-step implementation:**
 
-```rust
+````rust
 //! Semantic Content Segmentation (SCS).
 //!
 //! PRD SS8.4: Segment content into typed blocks, each in its most
@@ -3482,9 +3515,10 @@ mod tests {
         );
     }
 }
-```
+````
 
 **Acceptance criteria:**
+
 - [ ] SCS identifies headings, paragraphs, code, lists, tables, quotes, and data
 - [ ] Tables are represented as JSON `{headers, rows}` (not markdown)
 - [ ] Lists are represented as JSON arrays (not markdown bullets)
@@ -3498,7 +3532,7 @@ mod tests {
 ### P1-E3-T4: PDS Tier 1
 
 **ID:** `P1-E3-T4`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 1-2 days
 **Dependencies:** P1-E3-T2 (QATBE), P1-E3-T3 (SCS)
@@ -3507,10 +3541,12 @@ mod tests {
 Implement Progressive Detail Streaming (PDS) tier 1 -- the `key_facts` and `summary` tiers. Given extracted content and optionally a query, PDS produces multiple output tiers at different detail levels. Phase 1 implements extractive summarization (selecting the most important sentences/segments). Phase 5 adds abstractive summarization via local LLM.
 
 **PRD References:**
+
 - SS27 "Progressive Detail Streaming" -- 4 tiers: key_facts (~200 tokens), summary (~1000), detailed (~5000), complete (all)
 - SS8.9 "PDS" -- All 4 tiers pre-computed at extraction time
 
 **Files to create:**
+
 ```
 crates/hsx-core/src/token/
   pds.rs              -- Progressive Detail Streaming tiers
@@ -3808,6 +3844,7 @@ mod tests {
 ```
 
 **Acceptance criteria:**
+
 - [ ] `generate_tiers()` produces all 4 PDS tiers (key_facts, summary, detailed, complete)
 - [ ] key_facts <= ~200 tokens, summary <= ~1000 tokens, detailed <= ~5000 tokens
 - [ ] Tier sizes are monotonically increasing: key_facts <= summary <= detailed <= complete
@@ -3827,7 +3864,7 @@ mod tests {
 ### P1-E4-T1: `agent-search` Command
 
 **ID:** `P1-E4-T1`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 1-2 days
 **Dependencies:** P1-E2-T2 (orchestrator), P1-E3-T2 (QATBE), P1-E3-T4 (PDS)
@@ -3836,11 +3873,13 @@ mod tests {
 Implement the `hsx agent-search` command -- the primary interface for AI agents. Always outputs JSON. Searches via the orchestrator, applies QATBE to extract relevant content from top results, generates PDS tiers, and returns a structured `AgentSearchResult` JSON response.
 
 **PRD References:**
+
 - SS9 "AI-Native Agent Architecture" -- Structured JSON output for agents
 - SS17 "QATBE" -- Token budget as first-class parameter
 - SS27 "PDS" -- Tiered detail levels
 
 **Files to modify:**
+
 ```
 crates/hsx-cli/src/commands/agent_search.rs  -- Full implementation
 ```
@@ -3999,6 +4038,7 @@ fn tier_to_string(tier: crate::cli::Tier) -> &'static str {
 ```
 
 **Acceptance criteria:**
+
 - [ ] `hsx agent-search "query"` outputs JSON to stdout (never human-formatted text)
 - [ ] JSON includes `meta`, `segments`, `sources`, and `search_results`
 - [ ] `meta.tokens_used` respects `--budget` limit
@@ -4008,6 +4048,7 @@ fn tier_to_string(tier: crate::cli::Tier) -> &'static str {
 - [ ] `cargo build -p hsx-cli` compiles successfully
 
 **Testing instructions:**
+
 ```bash
 cargo run -p hsx-cli -- agent-search "rust async programming" --budget 2000
 cargo run -p hsx-cli -- agent-search "climate change effects" --budget 500 --tier key_facts
@@ -4020,7 +4061,7 @@ cargo run -p hsx-cli -- agent-search "test" | jq '.meta.tokens_used'
 ### P1-E4-T2: `agent-fetch` Command
 
 **ID:** `P1-E4-T2`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 1 day
 **Dependencies:** P1-E4-T1 (agent-search pattern), P1-E3-T2 (QATBE)
@@ -4029,10 +4070,12 @@ cargo run -p hsx-cli -- agent-search "test" | jq '.meta.tokens_used'
 Implement the `hsx agent-fetch` command -- fetches a single URL with QATBE query-aware extraction and outputs structured JSON. This is the agent equivalent of `hsx fetch`.
 
 **PRD References:**
+
 - SS17 "QATBE" -- `hsx agent-fetch <url> --query "..." --budget 1500`
 - SS8.2 "QATBE" -- Returns segments with relevance scores and token counts
 
 **Files to modify:**
+
 ```
 crates/hsx-cli/src/commands/agent_fetch.rs  -- Full implementation
 ```
@@ -4128,6 +4171,7 @@ pub async fn run(args: AgentFetchArgs, config: &HsxConfig) -> anyhow::Result<()>
 ```
 
 **Acceptance criteria:**
+
 - [ ] `hsx agent-fetch <url>` outputs JSON with extracted segments
 - [ ] `--query` enables QATBE query-aware extraction
 - [ ] Without `--query`, uses PDS tier-based extraction
@@ -4137,6 +4181,7 @@ pub async fn run(args: AgentFetchArgs, config: &HsxConfig) -> anyhow::Result<()>
 - [ ] `cargo build -p hsx-cli` compiles successfully
 
 **Testing instructions:**
+
 ```bash
 cargo run -p hsx-cli -- agent-fetch https://example.com
 cargo run -p hsx-cli -- agent-fetch https://en.wikipedia.org/wiki/Rust_(programming_language) --query "memory safety" --budget 1000
@@ -4154,7 +4199,7 @@ cargo run -p hsx-cli -- agent-fetch https://example.com --tier key_facts | jq '.
 ### P1-E5-T1: BM25 Ranking with Tantivy
 
 **ID:** `P1-E5-T1`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 2 days
 **Dependencies:** P0-E1-T2 (types)
@@ -4163,10 +4208,12 @@ cargo run -p hsx-cli -- agent-fetch https://example.com --tier key_facts | jq '.
 Implement BM25 ranking using the `tantivy` crate for lexical search scoring. This provides the foundation for the Phase 2 HyperFusion 8-signal ranking. In Phase 1, BM25 is used to re-rank search results and to score content segments in QATBE.
 
 **PRD References:**
+
 - SS21 "Semantic Search & Hybrid Ranking" -- BM25 as lexical precision signal
 - SS21 "Cascade Retrieval" -- Stage 1: BM25 sparse retrieval -> top 1000
 
 **Files to create:**
+
 ```
 crates/hsx-core/src/rank/
   mod.rs              -- Module root (update)
@@ -4449,6 +4496,7 @@ pub use bm25::Bm25Scorer;
 ```
 
 **Acceptance criteria:**
+
 - [ ] `Bm25Scorer` creates an in-memory tantivy index
 - [ ] Documents can be indexed with title, body, and URL
 - [ ] Queries return scored results ranked by BM25 relevance
@@ -4468,7 +4516,7 @@ pub use bm25::Bm25Scorer;
 ### P1-E6-T1: Memory LRU Cache with Moka
 
 **ID:** `P1-E6-T1`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 1-2 days
 **Dependencies:** P0-E1-T2 (types)
@@ -4477,10 +4525,12 @@ pub use bm25::Bm25Scorer;
 Implement the L1 memory cache using the `moka` crate -- a high-performance concurrent LRU cache. Caches HTTP responses, extracted content, search results, and PDS tiers to avoid redundant network requests and processing.
 
 **PRD References:**
+
 - SS28 "Caching & Local Index" -- L1: Memory LRU, process memory, session TTL, <1ms
 - SS28 "RAGCache-Inspired Optimization" -- Cache query pattern -> result mappings
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/cache/
   mod.rs              -- Module root (update)
@@ -4707,6 +4757,7 @@ pub use memory::{CacheEntry, MemoryCache};
 ```
 
 **Acceptance criteria:**
+
 - [ ] `MemoryCache` wraps moka async LRU cache
 - [ ] Supports insert, get, invalidate, and clear operations
 - [ ] Cache keys are SHA-256 based for consistent hashing
@@ -4726,7 +4777,7 @@ pub use memory::{CacheEntry, MemoryCache};
 ### P1-E7-T1: Markdown/JSON/Text/Segments Formatters
 
 **ID:** `P1-E7-T1`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 1-2 days
 **Dependencies:** P0-E1-T2 (types), P1-E3-T3 (SCS)
@@ -4735,10 +4786,12 @@ pub use memory::{CacheEntry, MemoryCache};
 Implement output formatters for the 4 primary formats: Markdown (human default), JSON (structured), plain text (minimal), and Segments (SCS JSON for agents). Each formatter takes search/fetch results and produces formatted output.
 
 **PRD References:**
+
 - SS26 "Output & Export System" -- Markdown (primary human), Segments (primary agent), JSON, plain text
 - SS26 "Multi-Format Export" -- `--format md,json,csv`
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/output/
   mod.rs              -- Module root (update)
@@ -4791,7 +4844,7 @@ pub fn get_formatter(format: OutputFormat) -> Box<dyn Formatter> {
 
 **Step 2: Markdown formatter (`output/markdown.rs`)**
 
-```rust
+````rust
 //! Markdown output formatter (PRD SS26 -- primary human format).
 
 use crate::output::Formatter;
@@ -4941,7 +4994,7 @@ impl Formatter for MarkdownFormatter {
         out
     }
 }
-```
+````
 
 **Step 3: JSON formatter (`output/json.rs`)**
 
@@ -5063,6 +5116,7 @@ impl Formatter for SegmentsFormatter {
 ```
 
 **Acceptance criteria:**
+
 - [ ] `get_formatter()` returns the correct formatter for each `OutputFormat`
 - [ ] Markdown formatter produces valid Markdown with headings, lists, tables, code blocks
 - [ ] JSON formatter produces valid, pretty-printed JSON
@@ -5073,6 +5127,7 @@ impl Formatter for SegmentsFormatter {
 - [ ] No clippy warnings
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core output
 # Visual test: pipe agent-search output through formatters
@@ -5086,22 +5141,22 @@ cargo run -p hsx-cli -- search "test" --format markdown
 
 When ALL tasks below are `DONE`, Phase 1 is complete:
 
-| Task | Description | Status |
-|------|-------------|--------|
-| P1-E1-T1 | HTTP client with pooling + retries | `TODO` |
-| P1-E1-T2 | CEP layers 1-2 extraction | `TODO` |
-| P1-E1-T3 | `fetch` command | `TODO` |
-| P1-E2-T1 | DDG HTML scraper backend | `TODO` |
-| P1-E2-T2 | Search orchestrator | `TODO` |
-| P1-E2-T3 | `search` command | `TODO` |
-| P1-E3-T1 | Tokenizer + budget tracking | `TODO` |
-| P1-E3-T2 | QATBE implementation | `TODO` |
-| P1-E3-T3 | SCS implementation | `TODO` |
-| P1-E3-T4 | PDS tier 1 | `TODO` |
-| P1-E4-T1 | `agent-search` command | `TODO` |
-| P1-E4-T2 | `agent-fetch` command | `TODO` |
-| P1-E5-T1 | BM25 ranking with tantivy | `TODO` |
-| P1-E6-T1 | Memory LRU cache with moka | `TODO` |
+| Task     | Description                               | Status |
+| -------- | ----------------------------------------- | ------ |
+| P1-E1-T1 | HTTP client with pooling + retries        | `TODO` |
+| P1-E1-T2 | CEP layers 1-2 extraction                 | `TODO` |
+| P1-E1-T3 | `fetch` command                           | `TODO` |
+| P1-E2-T1 | DDG HTML scraper backend                  | `TODO` |
+| P1-E2-T2 | Search orchestrator                       | `TODO` |
+| P1-E2-T3 | `search` command                          | `TODO` |
+| P1-E3-T1 | Tokenizer + budget tracking               | `TODO` |
+| P1-E3-T2 | QATBE implementation                      | `TODO` |
+| P1-E3-T3 | SCS implementation                        | `TODO` |
+| P1-E3-T4 | PDS tier 1                                | `TODO` |
+| P1-E4-T1 | `agent-search` command                    | `TODO` |
+| P1-E4-T2 | `agent-fetch` command                     | `TODO` |
+| P1-E5-T1 | BM25 ranking with tantivy                 | `TODO` |
+| P1-E6-T1 | Memory LRU cache with moka                | `TODO` |
 | P1-E7-T1 | Output formatters (md/json/text/segments) | `TODO` |
 
 ### Validation commands (run after all tasks):

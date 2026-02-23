@@ -29,7 +29,7 @@ crates/hsx-core/src/intelligence/
 | Field | Value |
 |-------|-------|
 | **ID** | `P6-E1-T1` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P2 |
 | **Description** | Build the 4-layer Persistent Intelligence Engine that learns across sessions. PIE stores a Personal Knowledge Graph (PKG), Source Trust Memory (STM), Failure Pattern Memory (FPM), and Query Prediction Model (QPM) in local SQLite databases. It uses Bayesian trust updates to continuously improve source ranking and query prediction. |
 | **PRD Ref** | 8.11, 31 (Cross-Session Learning & Persistent Intelligence), 31.1 (PIE architecture) |
@@ -521,17 +521,17 @@ impl PersistentIntelligenceEngine {
 
 #### Acceptance Criteria
 
-- [ ] PIE persists data across sessions in `~/.hypersearchx/intelligence/`
-- [ ] STM: After 10 successful fetches from a domain, trust score > 0.7
-- [ ] STM: After 10 failed fetches from a domain, trust score < 0.3
-- [ ] FPM: `recommend_layer("spa-site.com")` returns Layer 3 after repeated Layer 1 failures
-- [ ] QPM: After researching "Rust" 5 times, `predict_follow_ups("Rust")` returns relevant suggestions
-- [ ] PKG: Entities and relationships accumulate across sessions
-- [ ] `hsx intelligence stats` shows counts for all 4 layers
-- [ ] `hsx intelligence reset` clears all learned data
-- [ ] `hsx intelligence export` exports data as JSON
-- [ ] Trust scores use Bayesian Beta distribution (not simple averages)
-- [ ] All DBs use WAL mode for concurrent read/write
+- [x] PIE persists data across sessions in `~/.hypersearchx/intelligence/`
+- [x] STM: After 10 successful fetches from a domain, trust score > 0.7
+- [x] STM: After 10 failed fetches from a domain, trust score < 0.3
+- [x] FPM: `recommend_layer("spa-site.com")` returns Layer 3 after repeated Layer 1 failures
+- [x] QPM: After researching "Rust" 5 times, `predict_follow_ups("Rust")` returns relevant suggestions
+- [x] PKG: Entities and relationships accumulate across sessions
+- [x] `hsx intelligence stats` shows counts for all 4 layers
+- [x] `hsx intelligence reset` clears all learned data
+- [x] `hsx intelligence export` exports data as JSON
+- [x] Trust scores use Bayesian Beta distribution (not simple averages)
+- [x] All DBs use WAL mode for concurrent read/write
 
 #### Pitfalls
 
@@ -547,7 +547,7 @@ impl PersistentIntelligenceEngine {
 | Field | Value |
 |-------|-------|
 | **ID** | `P6-E1-T2` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P2 |
 | **Description** | Implement Tree-of-Thoughts Research for complex multi-faceted queries. Decomposes a query into 2-5 parallel reasoning paths, runs independent search-extract-rank pipelines per path, scores and prunes low-quality branches, synthesizes surviving paths, and optionally runs a self-debate protocol (Advocate vs Critic vs Judge). |
 | **PRD Ref** | 8.12, 32 (Tree-of-Thoughts & Advanced Reasoning), 32.1-32.3 |
@@ -773,15 +773,15 @@ pub async fn self_debate(
 
 #### Acceptance Criteria
 
-- [ ] Complex queries (e.g., "Is nuclear fusion economically viable by 2035?") produce 3-5 parallel reasoning paths
-- [ ] Each path generates independent research findings with citations
-- [ ] Low-scoring branches are pruned (visible in output with pruning reason)
-- [ ] Cross-path synthesis produces a unified conclusion referencing multiple perspectives
-- [ ] Self-debate (`--self-debate`) produces Advocate, Critic, and Judge outputs
-- [ ] All branches execute concurrently (visible in `--profile` timing)
-- [ ] `hsx deep "query" --tree-of-thoughts` activates ToTR mode
-- [ ] ToTR results include per-branch scores, source counts, and synthesis
-- [ ] Graceful degradation: if LLM is unavailable, fall back to keyword-based decomposition
+- [x] Complex queries (e.g., "Is nuclear fusion economically viable by 2035?") produce 3-5 parallel reasoning paths
+- [x] Each path generates independent research findings with citations
+- [x] Low-scoring branches are pruned (visible in output with pruning reason)
+- [x] Cross-path synthesis produces a unified conclusion referencing multiple perspectives
+- [x] Self-debate (`--self-debate`) produces Advocate, Critic, and Judge outputs
+- [x] All branches execute concurrently (visible in `--profile` timing)
+- [x] `hsx deep "query" --tree-of-thoughts` activates ToTR mode
+- [x] ToTR results include per-branch scores, source counts, and synthesis
+- [x] Graceful degradation: if LLM is unavailable, fall back to keyword-based decomposition
 
 #### Pitfalls
 
@@ -797,7 +797,7 @@ pub async fn self_debate(
 | Field | Value |
 |-------|-------|
 | **ID** | `P6-E1-T3` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P2 |
 | **Description** | Implement the 5-step Contradiction Resolution Protocol. When sources disagree, automatically investigate via date checking, authority analysis, context analysis, investigation agent spawning, and weighted synthesis. |
 | **PRD Ref** | 8.13 (CRP), 19 (V4: Cross-Source Validation) |
@@ -939,15 +939,15 @@ fn check_dates(contradiction: &Contradiction) -> ResolutionStep {
 
 #### Acceptance Criteria
 
-- [ ] Contradictions between sources are automatically detected during cross-source validation
-- [ ] 5-step resolution pipeline executes in order, short-circuiting when conclusive
-- [ ] Date check correctly identifies newer superseding sources
-- [ ] Authority check integrates PIE trust scores
-- [ ] Context check identifies "false contradictions" (different scopes/populations)
-- [ ] Investigation agent spawns additional search queries for Step 4
-- [ ] Weighted synthesis produces a nuanced paragraph citing both sources
-- [ ] Resolution includes confidence score and resolution type
-- [ ] Output in research reports shows contradiction resolution under each disputed claim
+- [x] Contradictions between sources are automatically detected during cross-source validation
+- [x] 5-step resolution pipeline executes in order, short-circuiting when conclusive
+- [x] Date check correctly identifies newer superseding sources
+- [x] Authority check integrates PIE trust scores
+- [x] Context check identifies "false contradictions" (different scopes/populations)
+- [x] Investigation agent spawns additional search queries for Step 4
+- [x] Weighted synthesis produces a nuanced paragraph citing both sources
+- [x] Resolution includes confidence score and resolution type
+- [x] Output in research reports shows contradiction resolution under each disputed claim
 
 #### Pitfalls
 
@@ -962,7 +962,7 @@ fn check_dates(contradiction: &Contradiction) -> ResolutionStep {
 | Field | Value |
 |-------|-------|
 | **ID** | `P6-E1-T4` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P3 |
 | **Description** | Implement domain-calibrated evidence half-lives. Claims decay in reliability based on their domain: AI benchmarks decay in months, math proofs are eternal. EDF auto-flags stale evidence and is self-calibrating based on whether flagged content turns out to still be valid. |
 | **PRD Ref** | 8.14 (Evidence Decay Function) |
@@ -1098,13 +1098,13 @@ pub enum Staleness {
 
 #### Acceptance Criteria
 
-- [ ] `edf.decay(0.9, "ai_ml_benchmarks", 180.0)` returns ~0.45 (halved after 3 months)
-- [ ] `edf.decay(0.9, "mathematics", 365.0)` returns ~0.89 (barely decayed after 1 year)
-- [ ] Stale evidence is flagged in research output with `[potentially stale: 2 years old, domain half-life: 6 months]`
-- [ ] Self-calibration adjusts half-lives based on feedback
-- [ ] Default half-lives configurable via `data/domain_half_lives.toml`
-- [ ] Domain classification works on URL patterns (arxiv.org -> academic, github.com -> software_docs)
-- [ ] Evidence decay integrates into HyperFusion temporal signal
+- [x] `edf.decay(0.9, "ai_ml_benchmarks", 180.0)` returns ~0.45 (halved after 3 months)
+- [x] `edf.decay(0.9, "mathematics", 365.0)` returns ~0.89 (barely decayed after 1 year)
+- [x] Stale evidence is flagged in research output with `[potentially stale: 2 years old, domain half-life: 6 months]`
+- [x] Self-calibration adjusts half-lives based on feedback
+- [x] Default half-lives configurable via `data/domain_half_lives.toml`
+- [x] Domain classification works on URL patterns (arxiv.org -> academic, github.com -> software_docs)
+- [x] Evidence decay integrates into HyperFusion temporal signal
 
 #### Pitfalls
 
@@ -1119,7 +1119,7 @@ pub enum Staleness {
 | Field | Value |
 |-------|-------|
 | **ID** | `P6-E1-T5` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P3 |
 | **Description** | Trace claim provenance through citation chains to the primary source. Detect "mutations" where claims are altered as they propagate through the citation chain. Compute trust cascade scores. |
 | **PRD Ref** | 8.15 (Source Genealogy Tracker) |
@@ -1263,13 +1263,13 @@ fn detect_mutations(chain: &[GenealogyNode]) -> Vec<Mutation> {
 
 #### Acceptance Criteria
 
-- [ ] `trace_genealogy("claim", "blog-url", 5)` follows citation chains up to 5 hops
-- [ ] Primary source identified when the chain reaches a source with no further citations
-- [ ] Mutations detected when claim text changes significantly between hops
-- [ ] Trust cascade shows degrading trust: [0.97, 0.85, 0.62, 0.41]
-- [ ] Output includes genealogy tree visualization in both human and JSON formats
-- [ ] `hsx research "topic" --trace-sources` enables SGT for all claims
-- [ ] Mutation severity classified as Low/Medium/High
+- [x] `trace_genealogy("claim", "blog-url", 5)` follows citation chains up to 5 hops
+- [x] Primary source identified when the chain reaches a source with no further citations
+- [x] Mutations detected when claim text changes significantly between hops
+- [x] Trust cascade shows degrading trust: [0.97, 0.85, 0.62, 0.41]
+- [x] Output includes genealogy tree visualization in both human and JSON formats
+- [x] `hsx research "topic" --trace-sources` enables SGT for all claims
+- [x] Mutation severity classified as Low/Medium/High
 
 #### Pitfalls
 
@@ -1285,7 +1285,7 @@ fn detect_mutations(chain: &[GenealogyNode]) -> Vec<Mutation> {
 | Field | Value |
 |-------|-------|
 | **ID** | `P6-E1-T6` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P3 |
 | **Description** | Track historical accuracy of confidence scores and calibrate them using isotonic regression. When the system says "85% confident," CCE ensures that prediction is historically accurate 85% (or close to it) of the time. Maintains per-domain calibration tables. |
 | **PRD Ref** | 8.16, 39.3 (Confidence Calibration Engine) |
@@ -1476,13 +1476,13 @@ pub struct CalibratedConfidence {
 
 #### Acceptance Criteria
 
-- [ ] `cce.calibrate("tech", 0.85)` returns calibrated confidence based on historical bins
-- [ ] Output format: `"Confidence: 85% (calibrated: 82%, n=1,247)"`
-- [ ] Calibration bins update incrementally with each verified prediction
-- [ ] Minimum 10 samples per bin before calibration is applied
-- [ ] Per-domain calibration: medical and tech domains have separate tables
-- [ ] `hsx intelligence stats` shows calibration table summary
-- [ ] Isotonic regression produces monotonically increasing calibration curve
+- [x] `cce.calibrate("tech", 0.85)` returns calibrated confidence based on historical bins
+- [x] Output format: `"Confidence: 85% (calibrated: 82%, n=1,247)"`
+- [x] Calibration bins update incrementally with each verified prediction
+- [x] Minimum 10 samples per bin before calibration is applied
+- [x] Per-domain calibration: medical and tech domains have separate tables
+- [x] `hsx intelligence stats` shows calibration table summary
+- [x] Isotonic regression produces monotonically increasing calibration curve
 
 #### Pitfalls
 
@@ -1497,7 +1497,7 @@ pub struct CalibratedConfidence {
 | Field | Value |
 |-------|-------|
 | **ID** | `P6-E1-T7` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P3 |
 | **Description** | Implement the 4-layer adversarial content detection system: AI content detection, bot farm signal detection, source manipulation detection, and trust aggregation. Starts in "shadow mode" (flag but don't filter) for the first 30 days to collect accuracy data. |
 | **PRD Ref** | 8.17, 35 (Adversarial Robustness & Trust Verification) |
@@ -1667,15 +1667,15 @@ impl AiContentDetector {
 
 #### Acceptance Criteria
 
-- [ ] ACS starts in shadow mode for the first 30 days (flag but don't filter)
-- [ ] AI content detection produces probability 0.0-1.0 using burstiness, vocabulary diversity, and sentence variance
-- [ ] Bot farm detection checks domain age, publishing velocity, and cross-site duplication
-- [ ] Trust score aggregation: `trust = 1 - max(ai_prob, bot_prob, manip_prob)`
-- [ ] `trust > 0.8`: include normally; `0.5-0.8`: include with warning; `< 0.5`: exclude
-- [ ] `hsx search "query" --trust-verify` enables ACS
-- [ ] `hsx fetch <url> --check-ai` reports AI generation probability
-- [ ] Shadow mode logs all flags without affecting results
-- [ ] After 30 days, ACS auto-transitions to active mode (configurable)
+- [x] ACS starts in shadow mode for the first 30 days (flag but don't filter)
+- [x] AI content detection produces probability 0.0-1.0 using burstiness, vocabulary diversity, and sentence variance
+- [x] Bot farm detection checks domain age, publishing velocity, and cross-site duplication
+- [x] Trust score aggregation: `trust = 1 - max(ai_prob, bot_prob, manip_prob)`
+- [x] `trust > 0.8`: include normally; `0.5-0.8`: include with warning; `< 0.5`: exclude
+- [x] `hsx search "query" --trust-verify` enables ACS
+- [x] `hsx fetch <url> --check-ai` reports AI generation probability
+- [x] Shadow mode logs all flags without affecting results
+- [x] After 30 days, ACS auto-transitions to active mode (configurable)
 
 #### Pitfalls
 

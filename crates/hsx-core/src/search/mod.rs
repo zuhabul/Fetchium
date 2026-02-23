@@ -1,10 +1,32 @@
 //! Search backends and orchestrator (PRD §15).
 //!
-//! Phase 1: DuckDuckGo HTML scraper backend + search orchestrator.
-//! Phase 2: Google, Bing, Scholar, SearXNG, Wikipedia, Brave, HN, ArXiv, GitHub, Reddit, SO.
+//! Phase 1: DuckDuckGo HTML scraper.
+//! Phase 2: 10 additional backends (HTTP + headless Chromium).
+//!
+//! ## HTTP backends (no feature flag required):
+//! - DuckDuckGo, SearXNG, Wikipedia, Brave, HackerNews, ArXiv, GitHub, Reddit, StackOverflow
+//!
+//! ## Headless backends (`--features headless`):
+//! - Google, Bing, Google Scholar
 
+// HTTP backends (always available)
+pub mod arxiv;
+pub mod brave;
+pub mod dedup;
 pub mod duckduckgo;
+pub mod fallback;
+pub mod github;
+pub mod hackernews;
 pub mod orchestrator;
+pub mod reddit;
+pub mod searxng;
+pub mod stackoverflow;
+pub mod wikipedia;
+
+// Headless backends (compiled unconditionally; return empty results without `headless` feature)
+pub mod bing;
+pub mod google;
+pub mod scholar;
 
 use crate::error::HsxResult;
 use crate::types::{BackendId, ResultItem};
@@ -22,7 +44,7 @@ pub trait SearchBackend: Send + Sync {
     fn id(&self) -> BackendId;
 
     /// Whether this backend requires a headless Chromium browser.
-    /// Phase 1 backends are all HTTP-only (no headless required).
+    /// HTTP-only backends return `false` (default).
     fn requires_headless(&self) -> bool {
         false
     }

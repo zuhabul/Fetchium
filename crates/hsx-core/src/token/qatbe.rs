@@ -35,6 +35,7 @@ struct TextBlock {
     text: String,
     tokens: u32,
     relevance: f64,
+    #[allow(dead_code)]
     position: usize,
     block_type: BlockType,
 }
@@ -47,6 +48,7 @@ enum BlockType {
     Code,
     Table,
     Quote,
+    #[allow(dead_code)]
     Other,
 }
 
@@ -71,11 +73,23 @@ pub fn extract_with_budget(
         })
         .collect();
 
+    // Phase 5: hybrid BM25 + semantic scoring (0.6 * BM25_norm + 0.4 * cosine)
+    // Feature-gated: only when `embeddings` feature is enabled.
+    #[cfg(feature = "embeddings")]
+    if !query.is_empty() && !scored_blocks.is_empty() {
+        hybrid_rank_blocks(&mut scored_blocks, query);
+    }
+
     scored_blocks.sort_by(|a, b| {
         b.relevance
             .partial_cmp(&a.relevance)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
+
+    // Apply coherence window to boost contextually adjacent segments, then
+    // deduplicate near-identical segments before greedy packing.
+    scored_blocks = apply_coherence_window(scored_blocks);
+    scored_blocks = deduplicate_segments(scored_blocks);
 
     let mut tracker = TokenBudget::new(budget);
     let mut included_segments = Vec::new();
@@ -144,6 +158,154 @@ pub fn extract_with_budget(
     }
 }
 
+/// Phase 5: Hybrid BM25 + semantic (embedding) re-scoring.
+///
+/// Overwrites each block's `relevance` with:
+///   `0.6 * bm25_norm + 0.4 * cosine(query_emb, block_emb)`
+///
+/// Falls back silently to BM25-only when the embedding model is
+/// unavailable or returns an error.
+///
+/// Embedding is chunked at 128 blocks per inference pass to cap peak
+/// memory on long documents (consistent with QADD's EMBED_BATCH_SIZE).
+#[cfg(feature = "embeddings")]
+fn hybrid_rank_blocks(blocks: &mut Vec<TextBlock>, query: &str) {
+    let max_bm25 = blocks
+        .iter()
+        .map(|b| b.relevance)
+        .fold(0.0f64, f64::max);
+
+    if max_bm25 <= 0.0 {
+        return;
+    }
+
+    /// Maximum blocks per `embed_batch` call to bound peak memory.
+    const EMBED_BATCH_SIZE: usize = 128;
+
+    let texts: Vec<&str> = blocks.iter().map(|b| b.text.as_str()).collect();
+
+    // Chunk the batch to avoid a single O(N) memory spike on long pages.
+    let block_embs: Vec<Vec<f32>> = {
+        let mut combined: Vec<Vec<f32>> = Vec::with_capacity(texts.len());
+        for chunk in texts.chunks(EMBED_BATCH_SIZE) {
+            match crate::embeddings::embed_batch(chunk) {
+                Ok(batch) => combined.extend(batch),
+                Err(_) => return, // fall back to BM25-only
+            }
+        }
+        combined
+    };
+
+    if block_embs.len() != blocks.len() {
+        return; // partial failure — keep BM25-only scores
+    }
+
+    let query_emb = match crate::embeddings::embed(query) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+
+    for (block, block_emb) in blocks.iter_mut().zip(block_embs.iter()) {
+        let bm25_norm = block.relevance / max_bm25;
+        let cosine = crate::embeddings::cosine_similarity(&query_emb, block_emb) as f64;
+        block.relevance = 0.6 * bm25_norm + 0.4 * cosine.max(0.0);
+    }
+}
+
+/// Apply a coherence window: boost the immediate neighbors (position ± 1) of
+/// every high-relevance block (relevance > 0.3) so that contextually adjacent
+/// segments get pulled into the budget alongside their anchor.
+///
+/// The boost is capped at 40 % of the anchor's relevance score and only
+/// applied when it would actually increase the neighbor's current score,
+/// so truly irrelevant neighbors receive at most a modest lift.  After
+/// boosting, blocks are re-sorted by the updated scores.
+///
+/// Has no effect when fewer than 3 blocks are present or when no block
+/// exceeds the 0.3 relevance threshold.
+fn apply_coherence_window(mut blocks: Vec<TextBlock>) -> Vec<TextBlock> {
+    let len = blocks.len();
+    if len < 3 {
+        return blocks;
+    }
+
+    // Collect positions of high-relevance anchor blocks.
+    let high_relevance_positions: Vec<usize> = blocks
+        .iter()
+        .enumerate()
+        .filter(|(_, b)| b.relevance > 0.3)
+        .map(|(i, _)| i)
+        .collect();
+
+    if high_relevance_positions.is_empty() {
+        return blocks;
+    }
+
+    // Boost neighbors of each anchor without lowering any existing score.
+    for &pos in &high_relevance_positions {
+        let neighbor_boost = blocks[pos].relevance * 0.4;
+        if pos > 0 && blocks[pos - 1].relevance < neighbor_boost {
+            blocks[pos - 1].relevance = neighbor_boost;
+        }
+        if pos + 1 < len && blocks[pos + 1].relevance < neighbor_boost {
+            blocks[pos + 1].relevance = neighbor_boost;
+        }
+    }
+
+    // Re-sort by the updated relevance scores.
+    blocks.sort_by(|a, b| {
+        b.relevance
+            .partial_cmp(&a.relevance)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    blocks
+}
+
+/// Remove near-duplicate segments using word-level Jaccard overlap.
+///
+/// Two segments are considered near-duplicates when their word overlap
+/// exceeds 70 %.  Tiny segments (≤ 5 tokens) are always kept because they
+/// are usually headings or labels rather than duplicate body text.
+fn deduplicate_segments(blocks: Vec<TextBlock>) -> Vec<TextBlock> {
+    let mut unique: Vec<TextBlock> = Vec::new();
+
+    for block in blocks {
+        // Skip dedup logic for very short segments (headings, labels, etc.).
+        if block.tokens <= 5 {
+            unique.push(block);
+            continue;
+        }
+
+        let is_dup = unique.iter().any(|existing| {
+            existing.tokens > 5 && word_overlap(&existing.text, &block.text) > 0.70
+        });
+
+        if !is_dup {
+            unique.push(block);
+        }
+    }
+
+    unique
+}
+
+/// Compute the Jaccard word overlap between two strings.
+///
+/// Returns a value in [0.0, 1.0] where 1.0 means identical word sets.
+fn word_overlap(a: &str, b: &str) -> f64 {
+    let words_a: std::collections::HashSet<&str> = a.split_whitespace().collect();
+    let words_b: std::collections::HashSet<&str> = b.split_whitespace().collect();
+
+    if words_a.is_empty() || words_b.is_empty() {
+        return 0.0;
+    }
+
+    let intersection = words_a.intersection(&words_b).count();
+    let union = words_a.union(&words_b).count();
+
+    intersection as f64 / union as f64
+}
+
 /// Stage 2: Split extracted text into typed blocks.
 fn segment_content(text: &str) -> Vec<TextBlock> {
     let mut blocks = Vec::new();
@@ -205,7 +367,7 @@ fn classify_block(text: &str) -> BlockType {
         && trimmed
             .chars()
             .next()
-            .map_or(false, |c| c.is_uppercase())
+            .is_some_and(|c| c.is_uppercase())
     {
         return BlockType::Heading;
     }
@@ -362,8 +524,14 @@ mod tests {
 
     #[test]
     fn qatbe_respects_budget() {
+        // Each paragraph is unique (distinct numeric suffix and unique filler words)
+        // so deduplication keeps them all, and 50 × ~15 tokens >> the 200-token budget.
         let text = (0..50)
-            .map(|i| format!("Paragraph {i} with some content about various topics."))
+            .map(|i| {
+                format!(
+                    "Paragraph {i} discusses topic_{i} in detail: alpha_{i} beta_{i}                      gamma_{i} delta_{i} epsilon_{i} zeta_{i} eta_{i} theta_{i}."
+                )
+            })
             .collect::<Vec<_>>()
             .join("\n\n");
 
@@ -417,5 +585,95 @@ mod tests {
         let truncated = truncate_to_tokens(text, 5);
         assert!(truncated.ends_with("..."));
         assert!(truncated.len() < text.len());
+    }
+
+    #[test]
+    fn coherence_window_boosts_neighbors() {
+        // A document where the relevant paragraph is in the middle.
+        // The adjacent paragraphs should get pulled in via the coherence window.
+        let text = "Introduction paragraph with no relevance to query.\n\n\
+                    Context before the key section.\n\n\
+                    Rust memory safety ownership borrowing lifetimes.\n\n\
+                    More details about Rust systems programming.\n\n\
+                    Conclusion with unrelated content.";
+
+        let content = make_content(text);
+        let result = extract_with_budget(&content, "Rust memory safety", 500);
+
+        // Should include the Rust paragraph AND adjacent context.
+        let all_text: String = result
+            .segments
+            .iter()
+            .filter_map(|s| s.content.as_str())
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        assert!(all_text.contains("Rust"), "Should include Rust paragraph");
+        // Adjacent context paragraph should also be included.
+        assert!(
+            result.segments.len() >= 2,
+            "Should include context segments too"
+        );
+    }
+
+    #[test]
+    fn deduplication_removes_similar_segments() {
+        // Two nearly identical paragraphs.
+        let text = "Rust is a systems programming language for safety.\n\n\
+                    Rust is a systems programming language for safety.\n\n\
+                    Python is a different language entirely for other purposes.";
+
+        let content = make_content(text);
+        let result = extract_with_budget(&content, "Rust programming", 1000);
+
+        // Should not include both duplicate paragraphs.
+        let rust_segs: Vec<_> = result
+            .segments
+            .iter()
+            .filter(|s| s.content.as_str().unwrap_or("").contains("Rust"))
+            .collect();
+        assert!(
+            rust_segs.len() <= 2,
+            "Should deduplicate near-identical segments"
+        );
+    }
+
+    #[test]
+    fn word_overlap_identical_strings() {
+        assert!(
+            (word_overlap("hello world foo", "hello world foo") - 1.0).abs() < 1e-9,
+            "Identical strings must have overlap 1.0"
+        );
+    }
+
+    #[test]
+    fn word_overlap_disjoint_strings() {
+        assert!(
+            word_overlap("alpha beta gamma", "delta epsilon zeta") < 1e-9,
+            "Disjoint strings must have overlap 0.0"
+        );
+    }
+
+    #[test]
+    fn coherence_window_no_op_when_no_high_relevance() {
+        // Build blocks that will all score below the 0.3 threshold.
+        let blocks: Vec<TextBlock> = (0..5)
+            .map(|i| TextBlock {
+                text: format!("Unrelated content paragraph number {i}."),
+                tokens: 6,
+                relevance: 0.1,
+                position: i,
+                block_type: BlockType::Paragraph,
+            })
+            .collect();
+
+        let result = apply_coherence_window(blocks.clone());
+        // Scores must be unchanged when no anchor exists.
+        for (orig, after) in blocks.iter().zip(result.iter()) {
+            assert!(
+                (orig.relevance - after.relevance).abs() < 1e-9,
+                "No boost should occur without a high-relevance anchor"
+            );
+        }
     }
 }

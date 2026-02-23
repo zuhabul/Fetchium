@@ -4,17 +4,8 @@
 //! a whitespace+punctuation heuristic (~95% accuracy for English text).
 //! For exact counts, integrate tiktoken in Phase 5.
 
-use once_cell::sync::Lazy;
-use regex::Regex;
-
 /// Average characters per token for the heuristic estimator.
 const CHARS_PER_TOKEN: f64 = 4.0;
-
-/// Regex pattern that splits text into approximate token boundaries.
-static TOKEN_SPLIT_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"[\s]+|(?<=[a-z])(?=[A-Z])|(?<=[.,;:!?\-/\\()\[\]{}\"'])"#)
-        .expect("valid regex")
-});
 
 /// Count tokens in a text string using the heuristic estimator.
 ///
@@ -104,7 +95,7 @@ mod tests {
     #[test]
     fn count_tokens_short_text() {
         let tokens = count_tokens("Hello, world!");
-        assert!(tokens >= 2 && tokens <= 6, "got {tokens}");
+        assert!((2..=6).contains(&tokens), "got {tokens}");
     }
 
     #[test]
@@ -112,7 +103,7 @@ mod tests {
         let text = "Rust is a multi-paradigm, general-purpose programming language. \
                     It emphasizes performance, type safety, and concurrency.";
         let tokens = count_tokens(text);
-        assert!(tokens >= 15 && tokens <= 45, "got {tokens}");
+        assert!((15..=45).contains(&tokens), "got {tokens}");
     }
 
     #[test]

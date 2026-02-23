@@ -12,6 +12,8 @@ path = "src/main.rs"
 
 [dependencies]
 hsx-core.workspace = true
+hsx-mcp = { path = "../hsx-mcp" }
+hsx-api = { path = "../hsx-api" }
 
 # CLI
 clap.workspace = true
@@ -40,7 +42,20 @@ tracing-subscriber.workspace = true
 # Error handling
 anyhow.workspace = true
 
+# Time and unique IDs (needed by search, agent-search, agent-fetch, agent-research)
+chrono.workspace = true
+uuid.workspace = true
+url.workspace = true
+sha2.workspace = true
+
+# Phase 7: TUI + shell completions
+ratatui.workspace = true
+crossterm.workspace = true
+clap_complete.workspace = true
+
 [dev-dependencies]
 assert_cmd.workspace = true
 predicates.workspace = true
 tempfile.workspace = true
+serde_json.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

@@ -23,14 +23,14 @@ Phase 2 upgrades HyperSearchX from single-backend DuckDuckGo search to **full mu
 
 All of the following must be `DONE` before starting any Phase 2 task:
 
-| Dependency | Phase | What It Provides |
-|-----------|-------|-----------------|
-| P1-E1-T1 (HTTP client) | Phase 1 | Pooled reqwest client with retries |
-| P1-E1-T2 (CEP layers 1-2) | Phase 1 | Static HTML extraction pipeline |
-| P1-E2-T1 (DuckDuckGo backend) | Phase 1 | `SearchBackend` trait definition |
-| P1-E3-T1 (BM25 ranking) | Phase 1 | Tantivy index, `RankingSignal` trait |
-| P1-E4-T1 (SCS) | Phase 1 | Semantic segmentation pipeline |
-| P1-E5-T1 (QATBE) | Phase 1 | Token-budgeted extraction |
+| Dependency                    | Phase   | What It Provides                     |
+| ----------------------------- | ------- | ------------------------------------ |
+| P1-E1-T1 (HTTP client)        | Phase 1 | Pooled reqwest client with retries   |
+| P1-E1-T2 (CEP layers 1-2)     | Phase 1 | Static HTML extraction pipeline      |
+| P1-E2-T1 (DuckDuckGo backend) | Phase 1 | `SearchBackend` trait definition     |
+| P1-E3-T1 (BM25 ranking)       | Phase 1 | Tantivy index, `RankingSignal` trait |
+| P1-E4-T1 (SCS)                | Phase 1 | Semantic segmentation pipeline       |
+| P1-E5-T1 (QATBE)              | Phase 1 | Token-budgeted extraction            |
 
 ---
 
@@ -43,7 +43,7 @@ All of the following must be `DONE` before starting any Phase 2 task:
 ### P2-E1-T1: Chromiumoxide Pool Manager
 
 **ID:** `P2-E1-T1`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P0
 **Estimated effort:** 3-4 days
 **Dependencies:** P1-E1-T1 (HTTP client), P0-E1-T3 (config)
@@ -52,10 +52,12 @@ All of the following must be `DONE` before starting any Phase 2 task:
 Implement a managed pool of headless Chromium browser instances using `chromiumoxide`. The pool manages browser lifecycle, tab recycling, memory limits per resource tier, and graceful shutdown.
 
 **PRD References:**
+
 - SS8.3 "CEP" -- Layers 3-5 require headless browser
 - SS14 "Parallel Execution" -- Resource-aware concurrency
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/browser/
   mod.rs              -- Module root with re-exports
@@ -121,20 +123,23 @@ impl BrowserPool {
 ```
 
 Key implementation details:
+
 - `init()` launches headless Chromium with `--no-sandbox --disable-gpu --disable-dev-shm-usage`
 - `acquire_tab()` uses `Semaphore::acquire_owned()` so the permit is returned when `ManagedTab` drops
 - Handler loop spawned in background to process browser events
 
 **Acceptance criteria:**
-- [ ] `BrowserPool::new()` creates pool with correct tier limits
-- [ ] `BrowserPool::init()` launches headless Chromium instances
-- [ ] `acquire_tab()` returns `ManagedTab` with semaphore-backed concurrency
-- [ ] Tab concurrency enforced: beyond-limit requests block until release
-- [ ] `ManagedTab::navigate()` respects timeout
-- [ ] `BrowserPool::shutdown()` cleans up all resources
-- [ ] All tests pass: `cargo test -p hsx-core browser`
+
+- [x] `BrowserPool::new()` creates pool with correct tier limits
+- [x] `BrowserPool::init()` launches headless Chromium instances
+- [x] `acquire_tab()` returns `ManagedTab` with semaphore-backed concurrency
+- [x] Tab concurrency enforced: beyond-limit requests block until release
+- [x] `ManagedTab::navigate()` respects timeout
+- [x] `BrowserPool::shutdown()` cleans up all resources
+- [x] All tests pass: `cargo test -p hsx-core browser`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core browser::pool::tests
 # Integration: launch pool, acquire tab, navigate to httpbin.org, verify content
@@ -146,7 +151,7 @@ cargo test -p hsx-core browser::pool::tests
 ### P2-E1-T2: Google Search Scraper
 
 **ID:** `P2-E1-T2`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P0
 **Estimated effort:** 2-3 days
 **Dependencies:** P2-E1-T1 (browser pool), P1-E2-T1 (SearchBackend trait)
@@ -155,6 +160,7 @@ cargo test -p hsx-core browser::pool::tests
 Google search backend using headless Chromium. Scrapes SERPs, parses titles/snippets/URLs/pagination. Implements `SearchBackend` trait. Includes anti-detection (random delays, viewport variation).
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/search/
   google.rs           -- Google SERP scraper
@@ -204,14 +210,16 @@ impl SearchBackend for GoogleBackend {
 CSS selectors for Google SERP: `div.g` (result container), `h3` (title), `a[href]` (link), `div.VwiC3b` / `span.aCOpRe` (snippet).
 
 **Acceptance criteria:**
-- [ ] `GoogleBackend` implements `SearchBackend` trait
-- [ ] `parse_serp()` extracts title, URL, snippet from Google SERP HTML
-- [ ] Pagination up to 3 pages (30 results max)
-- [ ] Anti-detection delay between page loads
-- [ ] Graceful handling of CAPTCHA/blocks
-- [ ] All tests pass: `cargo test -p hsx-core search::google`
+
+- [x] `GoogleBackend` implements `SearchBackend` trait
+- [x] `parse_serp()` extracts title, URL, snippet from Google SERP HTML
+- [x] Pagination up to 3 pages (30 results max)
+- [x] Anti-detection delay between page loads
+- [x] Graceful handling of CAPTCHA/blocks
+- [x] All tests pass: `cargo test -p hsx-core search::google`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core search::google::tests
 # Unit: parse_serp with saved SERP HTML fixture
@@ -223,7 +231,7 @@ cargo test -p hsx-core search::google::tests
 ### P2-E1-T3: Bing Search Scraper
 
 **ID:** `P2-E1-T3`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 1-2 days
 **Dependencies:** P2-E1-T1 (browser pool), P1-E2-T1 (SearchBackend trait)
@@ -232,6 +240,7 @@ cargo test -p hsx-core search::google::tests
 Bing search backend using headless Chromium. Same pattern as Google with Bing-specific selectors. Bing is less aggressive with bot detection, making it a reliable fallback.
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/search/
   bing.rs             -- Bing SERP scraper
@@ -256,12 +265,14 @@ impl BingBackend {
 ```
 
 **Acceptance criteria:**
-- [ ] `BingBackend` implements `SearchBackend` trait
-- [ ] Parses Bing SERP correctly (title, URL, snippet)
-- [ ] Pagination up to 3 pages
-- [ ] All tests pass: `cargo test -p hsx-core search::bing`
+
+- [x] `BingBackend` implements `SearchBackend` trait
+- [x] Parses Bing SERP correctly (title, URL, snippet)
+- [x] Pagination up to 3 pages
+- [x] All tests pass: `cargo test -p hsx-core search::bing`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core search::bing::tests
 # Unit: parse saved Bing SERP HTML fixture
@@ -272,7 +283,7 @@ cargo test -p hsx-core search::bing::tests
 ### P2-E1-T4: Google Scholar Scraper
 
 **ID:** `P2-E1-T4`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 2 days
 **Dependencies:** P2-E1-T1 (browser pool), P1-E2-T1 (SearchBackend trait)
@@ -281,6 +292,7 @@ cargo test -p hsx-core search::bing::tests
 Google Scholar backend with extra metadata: authors, publication year, citation count, venue. Citation counts feed into the authority signal of HyperFusion.
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/search/
   scholar.rs          -- Google Scholar scraper
@@ -318,13 +330,15 @@ impl ScholarBackend {
 Key: parse `div.gs_a` text line "A Smith, B Jones - Nature, 2024" for metadata. Extract citation count from "Cited by N" link text in `div.gs_fl`.
 
 **Acceptance criteria:**
-- [ ] `ScholarBackend` implements `SearchBackend` trait
-- [ ] Parses title, URL, snippet, citation count
-- [ ] Citation count extracted from "Cited by N" links
-- [ ] Pagination up to 2 pages (20 results)
-- [ ] All tests pass: `cargo test -p hsx-core search::scholar`
+
+- [x] `ScholarBackend` implements `SearchBackend` trait
+- [x] Parses title, URL, snippet, citation count
+- [x] Citation count extracted from "Cited by N" links
+- [x] Pagination up to 2 pages (20 results)
+- [x] All tests pass: `cargo test -p hsx-core search::scholar`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core search::scholar::tests
 # Unit: parse saved Scholar SERP HTML fixture, verify citation_count
@@ -341,7 +355,7 @@ cargo test -p hsx-core search::scholar::tests
 ### P2-E2-T1: SearXNG Backend
 
 **ID:** `P2-E2-T1`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 1-2 days
 **Dependencies:** P1-E1-T1 (HTTP client), P1-E2-T1 (SearchBackend trait)
@@ -350,6 +364,7 @@ cargo test -p hsx-core search::scholar::tests
 SearXNG meta-search backend using its JSON API. Free, self-hostable, aggregates 70+ sources. Configurable instance URL with public instance defaults.
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/search/
   searxng.rs          -- SearXNG API backend
@@ -383,13 +398,15 @@ impl SearchBackend for SearxngBackend {
 ```
 
 **Acceptance criteria:**
-- [ ] Uses JSON API (no browser required)
-- [ ] Configurable instance URL
-- [ ] Parses title, URL, snippet, engine, published date
-- [ ] Graceful fallback if primary instance is down
-- [ ] All tests pass: `cargo test -p hsx-core search::searxng`
+
+- [x] Uses JSON API (no browser required)
+- [x] Configurable instance URL
+- [x] Parses title, URL, snippet, engine, published date
+- [x] Graceful fallback if primary instance is down
+- [x] All tests pass: `cargo test -p hsx-core search::searxng`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core search::searxng::tests
 # Unit: parse saved SearXNG JSON response fixture
@@ -400,7 +417,7 @@ cargo test -p hsx-core search::searxng::tests
 ### P2-E2-T2: Wikipedia API Backend
 
 **ID:** `P2-E2-T2`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 1 day
 **Dependencies:** P1-E1-T1 (HTTP client), P1-E2-T1 (SearchBackend trait)
@@ -409,6 +426,7 @@ cargo test -p hsx-core search::searxng::tests
 Wikipedia search via MediaWiki API. High authority signal for factual queries. Returns article summaries and metadata.
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/search/
   wikipedia.rs        -- Wikipedia API backend
@@ -435,13 +453,15 @@ impl SearchBackend for WikipediaBackend {
 ```
 
 **Acceptance criteria:**
-- [ ] Uses MediaWiki JSON API (no browser)
-- [ ] Clean snippets with HTML tags stripped
-- [ ] Correct Wikipedia article URLs from titles
-- [ ] Respects `max_results` (capped at 20)
-- [ ] All tests pass: `cargo test -p hsx-core search::wikipedia`
+
+- [x] Uses MediaWiki JSON API (no browser)
+- [x] Clean snippets with HTML tags stripped
+- [x] Correct Wikipedia article URLs from titles
+- [x] Respects `max_results` (capped at 20)
+- [x] All tests pass: `cargo test -p hsx-core search::wikipedia`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core search::wikipedia::tests
 # Unit: parse saved Wikipedia API response, verify HTML stripped from snippets
@@ -452,7 +472,7 @@ cargo test -p hsx-core search::wikipedia::tests
 ### P2-E2-T3: Additional HTTP Backends (Brave, HN, ArXiv, GitHub, Reddit, SO)
 
 **ID:** `P2-E2-T3`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P2
 **Estimated effort:** 3-4 days
 **Dependencies:** P1-E1-T1 (HTTP client), P1-E2-T1 (SearchBackend trait)
@@ -461,6 +481,7 @@ cargo test -p hsx-core search::wikipedia::tests
 Six additional HTTP-based search backends, each implementing `SearchBackend`.
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/search/
   brave.rs            -- Brave Search API (free tier: 2000 req/month)
@@ -474,14 +495,14 @@ crates/hsx-core/src/search/
 
 **API details per backend:**
 
-| Backend | API URL | Format | Notes |
-|---------|---------|--------|-------|
-| Brave | `api.search.brave.com/res/v1/web/search` | JSON | Free tier, optional API key |
-| HackerNews | `hn.algolia.com/api/v1/search` | JSON | No auth, `hitsPerPage` param |
-| ArXiv | `export.arxiv.org/api/query` | Atom XML | `search_query` param, parse `<entry>` |
-| GitHub | `api.github.com/search/repositories` | JSON | Unauthenticated: 10 req/min |
-| Reddit | `www.reddit.com/search.json` | JSON | `q` param, parse `data.children` |
-| StackOverflow | `api.stackexchange.com/2.3/search` | JSON | `intitle` param, gzip response |
+| Backend       | API URL                                  | Format   | Notes                                 |
+| ------------- | ---------------------------------------- | -------- | ------------------------------------- |
+| Brave         | `api.search.brave.com/res/v1/web/search` | JSON     | Free tier, optional API key           |
+| HackerNews    | `hn.algolia.com/api/v1/search`           | JSON     | No auth, `hitsPerPage` param          |
+| ArXiv         | `export.arxiv.org/api/query`             | Atom XML | `search_query` param, parse `<entry>` |
+| GitHub        | `api.github.com/search/repositories`     | JSON     | Unauthenticated: 10 req/min           |
+| Reddit        | `www.reddit.com/search.json`             | JSON     | `q` param, parse `data.children`      |
+| StackOverflow | `api.stackexchange.com/2.3/search`       | JSON     | `intitle` param, gzip response        |
 
 Each backend follows the same pattern:
 
@@ -510,15 +531,17 @@ pub mod github; pub mod reddit; pub mod stackoverflow;
 ```
 
 **Acceptance criteria:**
-- [ ] All 6 backends implement `SearchBackend` trait
-- [ ] Each parses its API's response format correctly
-- [ ] ArXiv handles Atom XML parsing
-- [ ] Reddit appends `.json` and parses listing format
-- [ ] GitHub uses unauthenticated search (respects rate limit)
-- [ ] StackOverflow handles gzip-compressed responses
-- [ ] All tests pass: `cargo test -p hsx-core search`
+
+- [x] All 6 backends implement `SearchBackend` trait
+- [x] Each parses its API's response format correctly
+- [x] ArXiv handles Atom XML parsing
+- [x] Reddit appends `.json` and parses listing format
+- [x] GitHub uses unauthenticated search (respects rate limit)
+- [x] StackOverflow handles gzip-compressed responses
+- [x] All tests pass: `cargo test -p hsx-core search`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core search::brave::tests
 cargo test -p hsx-core search::hackernews::tests
@@ -536,7 +559,7 @@ cargo test -p hsx-core search::hackernews::tests
 ### P2-E3-T1: Parallel Execution Across All Backends
 
 **ID:** `P2-E3-T1`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P0
 **Estimated effort:** 2-3 days
 **Dependencies:** P2-E1-T2, P2-E1-T3, P2-E1-T4, P2-E2-T1, P2-E2-T2, P2-E2-T3
@@ -545,6 +568,7 @@ cargo test -p hsx-core search::hackernews::tests
 Parallel search orchestrator dispatching to all backends via `tokio::JoinSet`. Per-backend timeout. Failed backends logged but don't fail overall search.
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/search/
   orchestrator.rs     -- Parallel search orchestrator
@@ -604,14 +628,16 @@ impl SearchOrchestrator {
 ```
 
 **Acceptance criteria:**
-- [ ] Dispatches to all registered backends in parallel
-- [ ] Per-backend timeout prevents slow backends from blocking
-- [ ] Failed backends produce `BackendResult` with error, not panic
-- [ ] `enabled_backends` filter works
-- [ ] Results include timing metadata
-- [ ] All tests pass: `cargo test -p hsx-core search::orchestrator`
+
+- [x] Dispatches to all registered backends in parallel
+- [x] Per-backend timeout prevents slow backends from blocking
+- [x] Failed backends produce `BackendResult` with error, not panic
+- [x] `enabled_backends` filter works
+- [x] Results include timing metadata
+- [x] All tests pass: `cargo test -p hsx-core search::orchestrator`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core search::orchestrator::tests
 # Mock backends (fast, slow, failing), verify parallel execution
@@ -623,7 +649,7 @@ cargo test -p hsx-core search::orchestrator::tests
 ### P2-E3-T2: Cross-Source Deduplication
 
 **ID:** `P2-E3-T2`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 2 days
 **Dependencies:** P2-E3-T1 (orchestrator)
@@ -632,10 +658,12 @@ cargo test -p hsx-core search::orchestrator::tests
 Two-strategy deduplication: (1) URL dedup with normalization (strip tracking params), (2) SimHash content similarity for near-duplicates. Merge metadata on match.
 
 **PRD References:**
+
 - SS8.1 "HyperFusion" -- `duplicate_penalty * SimHash(result.content, seen_content)`
 - Gap 8 -- Cross-source deduplication and merging
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/search/
   dedup.rs            -- Deduplication engine
@@ -679,14 +707,16 @@ pub fn deduplicate(results: Vec<SearchResult>, simhash_threshold: u32) -> Vec<Se
 ```
 
 **Acceptance criteria:**
-- [ ] `normalize_url()` strips tracking params, fragment, trailing slash
-- [ ] `SimHash::compute()` produces consistent fingerprints
-- [ ] `SimHash::distance()` measures Hamming distance correctly
-- [ ] `deduplicate()` merges URL-identical results from different backends
-- [ ] `deduplicate()` detects near-duplicate content via SimHash
-- [ ] All tests pass: `cargo test -p hsx-core search::dedup`
+
+- [x] `normalize_url()` strips tracking params, fragment, trailing slash
+- [x] `SimHash::compute()` produces consistent fingerprints
+- [x] `SimHash::distance()` measures Hamming distance correctly
+- [x] `deduplicate()` merges URL-identical results from different backends
+- [x] `deduplicate()` detects near-duplicate content via SimHash
+- [x] All tests pass: `cargo test -p hsx-core search::dedup`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core search::dedup::tests
 # Test normalize_url with utm_source, fbclid, trailing slash, fragment
@@ -699,7 +729,7 @@ cargo test -p hsx-core search::dedup::tests
 ### P2-E3-T3: Fallback Chains and Error Recovery
 
 **ID:** `P2-E3-T3`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 1-2 days
 **Dependencies:** P2-E3-T1 (orchestrator)
@@ -708,9 +738,11 @@ cargo test -p hsx-core search::dedup::tests
 Fallback chains: when primary backends fail, secondary backends are tried. If a backend returns suspiciously few results, fall back to next in chain.
 
 **PRD References:**
+
 - SS44 "Error Handling" -- Fallback: cache -> alternative source -> Wayback -> partial
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/search/
   fallback.rs         -- Fallback chain logic
@@ -748,14 +780,16 @@ pub fn web_search_chain(backends: &HashMap<String, Arc<dyn SearchBackend + Send 
 ```
 
 **Acceptance criteria:**
-- [ ] `FallbackChain::execute()` tries backends in priority order
-- [ ] Backends with fewer than `min_results` trigger fallback
-- [ ] Backend errors trigger fallback
-- [ ] Returns error when all backends exhausted
-- [ ] `web_search_chain()` builds correct priority order
-- [ ] All tests pass: `cargo test -p hsx-core search::fallback`
+
+- [x] `FallbackChain::execute()` tries backends in priority order
+- [x] Backends with fewer than `min_results` trigger fallback
+- [x] Backend errors trigger fallback
+- [x] Returns error when all backends exhausted
+- [x] `web_search_chain()` builds correct priority order
+- [x] All tests pass: `cargo test -p hsx-core search::fallback`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core search::fallback::tests
 # Mock: first fails, second succeeds -> second's results returned
@@ -773,7 +807,7 @@ cargo test -p hsx-core search::fallback::tests
 ### P2-E4-T1: Eight Ranking Signals Implementation
 
 **ID:** `P2-E4-T1`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P0
 **Estimated effort:** 3-4 days
 **Dependencies:** P1-E3-T1 (BM25 ranking via tantivy)
@@ -782,9 +816,11 @@ cargo test -p hsx-core search::fallback::tests
 Implement all 8 HyperFusion signals. Phase 1 provides BM25. This adds the remaining 7.
 
 **PRD References:**
+
 - SS8.1 "HyperFusion" -- Full formula with 8 signals + intent categories
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/rank/
   signals.rs          -- Individual signal implementations
@@ -805,32 +841,35 @@ pub struct ScoringContext {
 
 **Signal implementations** (each returns `f64` in `[0.0, 1.0]`):
 
-| # | Signal | Function | Logic |
-|---|--------|----------|-------|
-| 1 | BM25 | `bm25_score(result, ctx)` | Term frequency with k1=1.2, b=0.75 over title+snippet |
-| 2 | Semantic | `semantic_score(result, ctx)` | Jaccard word overlap (proxy until embeddings) |
-| 3 | Temporal | `temporal_score(result, freshness)` | Exponential decay: `exp(-freshness * days_old / 365)` |
-| 4 | Authority | `authority_score(result)` | Domain tier list + `ln(citation_count)` boost |
-| 5 | Evidence | `evidence_score(result)` | Detect numbers, citations, percentages, "et al" |
-| 6 | Diversity | `diversity_score(result, ctx)` | 1.0 for new domain, 0.2 for seen domain |
-| 7 | Depth | `depth_score(result)` | `min(word_count / 100, 1.0)` |
-| 8 | Consensus | `consensus_score(result, ctx)` | Term overlap with other results' claims |
+| #   | Signal    | Function                            | Logic                                                 |
+| --- | --------- | ----------------------------------- | ----------------------------------------------------- |
+| 1   | BM25      | `bm25_score(result, ctx)`           | Term frequency with k1=1.2, b=0.75 over title+snippet |
+| 2   | Semantic  | `semantic_score(result, ctx)`       | Jaccard word overlap (proxy until embeddings)         |
+| 3   | Temporal  | `temporal_score(result, freshness)` | Exponential decay: `exp(-freshness * days_old / 365)` |
+| 4   | Authority | `authority_score(result)`           | Domain tier list + `ln(citation_count)` boost         |
+| 5   | Evidence  | `evidence_score(result)`            | Detect numbers, citations, percentages, "et al"       |
+| 6   | Diversity | `diversity_score(result, ctx)`      | 1.0 for new domain, 0.2 for seen domain               |
+| 7   | Depth     | `depth_score(result)`               | `min(word_count / 100, 1.0)`                          |
+| 8   | Consensus | `consensus_score(result, ctx)`      | Term overlap with other results' claims               |
 
 Authority domain tiers:
+
 - **High (0.9):** wikipedia.org, github.com, arxiv.org, nature.com, nih.gov, .gov
 - **Medium (0.7):** stackoverflow.com, medium.com, bbc.com, nytimes.com, reuters.com
 - **Default (0.5):** Everything else
 
 **Acceptance criteria:**
-- [ ] All 8 signals return values in `[0.0, 1.0]`
-- [ ] `temporal_score` decays with age, returns 0.5 for unknown dates
-- [ ] `authority_score` gives higher scores to known authoritative domains
-- [ ] `evidence_score` detects statistical/citation patterns
-- [ ] `diversity_score` penalizes same-domain results
-- [ ] `consensus_score` measures agreement across results
-- [ ] All tests pass: `cargo test -p hsx-core rank::signals`
+
+- [x] All 8 signals return values in `[0.0, 1.0]`
+- [x] `temporal_score` decays with age, returns 0.5 for unknown dates
+- [x] `authority_score` gives higher scores to known authoritative domains
+- [x] `evidence_score` detects statistical/citation patterns
+- [x] `diversity_score` penalizes same-domain results
+- [x] `consensus_score` measures agreement across results
+- [x] All tests pass: `cargo test -p hsx-core rank::signals`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core rank::signals::tests
 # Test each signal with known inputs and expected ranges
@@ -843,7 +882,7 @@ cargo test -p hsx-core rank::signals::tests
 ### P2-E4-T2: Score Normalization and Fusion
 
 **ID:** `P2-E4-T2`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P0
 **Estimated effort:** 2 days
 **Dependencies:** P2-E4-T1 (signals)
@@ -852,9 +891,11 @@ cargo test -p hsx-core rank::signals::tests
 Combine 8 signals into HyperFusion score. Min-max normalize across result set, then apply intent-weighted linear combination.
 
 **PRD References:**
+
 - SS8.1 -- `w_intent` weight vector per query intent category
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/rank/
   fusion.rs           -- HyperFusion score computation
@@ -899,6 +940,7 @@ impl IntentWeights {
 ```
 
 **Fusion pipeline:**
+
 1. Compute raw scores for all 8 signals per result
 2. Min-max normalize each signal across the result set to `[0, 1]`
 3. Apply weighted sum: `score = sum(w_i * normalized_i)`
@@ -920,14 +962,16 @@ fn min_max_normalize(scores: &[RawScores]) -> Vec<RawScores> {
 ```
 
 **Acceptance criteria:**
-- [ ] `IntentWeights::for_intent()` returns different weights per intent
-- [ ] All weight vectors sum to ~1.0
-- [ ] `min_max_normalize()` scales all signals to [0, 1]
-- [ ] `hyperfusion_rank()` sorts results by fused score descending
-- [ ] Results have `fusion_score` populated after ranking
-- [ ] All tests pass: `cargo test -p hsx-core rank::fusion`
+
+- [x] `IntentWeights::for_intent()` returns different weights per intent
+- [x] All weight vectors sum to ~1.0
+- [x] `min_max_normalize()` scales all signals to [0, 1]
+- [x] `hyperfusion_rank()` sorts results by fused score descending
+- [x] Results have `fusion_score` populated after ranking
+- [x] All tests pass: `cargo test -p hsx-core rank::fusion`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core rank::fusion::tests
 # 3 results with known signals -> verify correct ranking order
@@ -940,7 +984,7 @@ cargo test -p hsx-core rank::fusion::tests
 ### P2-E4-T3: Configurable Weights
 
 **ID:** `P2-E4-T3`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P2
 **Estimated effort:** 1 day
 **Dependencies:** P2-E4-T2 (fusion)
@@ -949,6 +993,7 @@ cargo test -p hsx-core rank::fusion::tests
 Allow weight overrides via config file (`[ranking]` section) and CLI flags (`--boost-signal temporal=0.5`).
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/config.rs  -- Add RankingConfig with weight_overrides
 crates/hsx-core/src/rank/fusion.rs -- IntentWeights::with_overrides()
@@ -981,13 +1026,15 @@ impl IntentWeights {
 ```
 
 **Acceptance criteria:**
-- [ ] Weight overrides from `~/.config/hsx/config.toml` under `[ranking]`
-- [ ] CLI flag `--boost-signal temporal=0.5` overrides individual weights
-- [ ] Overrides merge with intent defaults
-- [ ] Invalid values produce config validation error
-- [ ] All tests pass: `cargo test -p hsx-core rank`
+
+- [x] Weight overrides from `~/.config/hsx/config.toml` under `[ranking]`
+- [x] CLI flag `--boost-signal temporal=0.5` overrides individual weights
+- [x] Overrides merge with intent defaults
+- [x] Invalid values produce config validation error
+- [x] All tests pass: `cargo test -p hsx-core rank`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core rank::fusion::tests
 # with_overrides: set temporal=0.9, verify it persists
@@ -1005,7 +1052,7 @@ cargo test -p hsx-core rank::fusion::tests
 ### P2-E5-T1: CEP Layer 3 -- JavaScript Rendering via Headless
 
 **ID:** `P2-E5-T1`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P1
 **Estimated effort:** 2-3 days
 **Dependencies:** P2-E1-T1 (browser pool), P1-E1-T2 (CEP layers 1-2)
@@ -1014,9 +1061,11 @@ cargo test -p hsx-core rank::fusion::tests
 Extend CEP with Layer 3: headless Chromium rendering for JS-heavy pages. Triggered when layers 1-2 detect insufficient content (SPAs, dynamic content).
 
 **PRD References:**
+
 - SS8.3 "CEP" -- Layer 3: ~400ms, ~100MB, check rendered_content_differs_from_static
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/extract/
   layer3.rs           -- Headless rendering extraction
@@ -1051,14 +1100,16 @@ impl Layer3Extractor {
 Update `pipeline.rs` to escalate to Layer 3 when layers 1-2 yield `content.len() < min_threshold`.
 
 **Acceptance criteria:**
-- [ ] Renders page via headless Chromium, waits for load + network idle
-- [ ] Uses Layer 2 extraction on rendered HTML
-- [ ] CEP pipeline auto-escalates to Layer 3 when Layers 1-2 insufficient
-- [ ] `was_beneficial()` detects significant content difference
-- [ ] Timeout prevents hanging on slow pages
-- [ ] All tests pass: `cargo test -p hsx-core extract::layer3`
+
+- [x] Renders page via headless Chromium, waits for load + network idle
+- [x] Uses Layer 2 extraction on rendered HTML
+- [x] CEP pipeline auto-escalates to Layer 3 when Layers 1-2 insufficient
+- [x] `was_beneficial()` detects significant content difference
+- [x] Timeout prevents hanging on slow pages
+- [x] All tests pass: `cargo test -p hsx-core extract::layer3`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core extract::layer3::tests
 # Integration: extract from known SPA, verify more content than layers 1-2
@@ -1070,7 +1121,7 @@ cargo test -p hsx-core extract::layer3::tests
 ### P2-E5-T2: CEP Layers 4-5 -- PDF/Document Extraction + Screenshot OCR
 
 **ID:** `P2-E5-T2`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P2
 **Estimated effort:** 2-3 days
 **Dependencies:** P2-E5-T1 (Layer 3)
@@ -1079,9 +1130,11 @@ cargo test -p hsx-core extract::layer3::tests
 Layer 4: PDF/document extraction via `pdf-extract`/`lopdf`. Layer 5: screenshot OCR for canvas-rendered/image-based text (requires `tesseract` installed).
 
 **PRD References:**
+
 - SS8.3 "CEP" -- Layer 4: ~2s, Layer 5: ~5s (last resort)
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/extract/
   layer4.rs           -- PDF/document extraction
@@ -1092,6 +1145,7 @@ crates/hsx-core/src/extract/
 **Step-by-step implementation:**
 
 **Layer 4 (`extract/layer4.rs`):**
+
 ```rust
 pub struct Layer4Extractor;
 
@@ -1108,6 +1162,7 @@ impl Layer4Extractor {
 ```
 
 **Layer 5 (`extract/layer5.rs`):**
+
 ```rust
 pub struct Layer5Extractor { pool: Arc<BrowserPool> }
 
@@ -1131,15 +1186,17 @@ async fn run_tesseract_ocr(png_bytes: &[u8]) -> anyhow::Result<String> {
 ```
 
 **Acceptance criteria:**
-- [ ] Layer 4 extracts text from PDF bytes
-- [ ] `is_document()` detects PDF/DOCX content types
-- [ ] Layer 5 takes screenshot and runs OCR
-- [ ] Layer 5 scrolls to trigger lazy loading before screenshot
-- [ ] Graceful fallback when tesseract not installed
-- [ ] Pipeline escalates to Layer 4 for documents, Layer 5 as last resort
-- [ ] All tests pass: `cargo test -p hsx-core extract::layer4 extract::layer5`
+
+- [x] Layer 4 extracts text from PDF bytes
+- [x] `is_document()` detects PDF/DOCX content types
+- [x] Layer 5 takes screenshot and runs OCR
+- [x] Layer 5 scrolls to trigger lazy loading before screenshot
+- [x] Graceful fallback when tesseract not installed
+- [x] Pipeline escalates to Layer 4 for documents, Layer 5 as last resort
+- [x] All tests pass: `cargo test -p hsx-core extract::layer4 extract::layer5`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core extract::layer4::tests   # Parse test PDF fixture
 cargo test -p hsx-core extract::layer5::tests   # Requires tesseract installed
@@ -1150,7 +1207,7 @@ cargo test -p hsx-core extract::layer5::tests   # Requires tesseract installed
 ### P2-E5-T3: QADD -- Query-Aware DOM Distillation
 
 **ID:** `P2-E5-T3`
-**Status:** `TODO`
+**Status:** `DONE`
 **Priority:** P0
 **Estimated effort:** 3-4 days
 **Dependencies:** P2-E5-T1 (Layer 3 for rendered DOM), P1-E3-T1 (BM25 scoring)
@@ -1159,10 +1216,12 @@ cargo test -p hsx-core extract::layer5::tests   # Requires tesseract installed
 QADD reduces DOM to query-relevant nodes BEFORE extraction. 5-step pipeline: structural pruning -> BM25 scoring -> semantic check -> context preservation -> token budget packing. Target: 50K tokens -> ~2.5K tokens.
 
 **PRD References:**
+
 - SS8.10 "QADD" -- Full 5-step pipeline
 - Combined with D2Snap DOM downsampling for 5-10x additional reduction
 
 **Files to create/modify:**
+
 ```
 crates/hsx-core/src/qadd/
   mod.rs              -- Module root
@@ -1224,16 +1283,18 @@ impl QaddPipeline {
 ```
 
 **Acceptance criteria:**
-- [ ] Step 1: removes nav, footer, aside, scripts, ads
-- [ ] Step 2: BM25 prunes irrelevant text nodes
-- [ ] Step 3: semantic check provides additional filtering
-- [ ] Step 4: heading context preserved near relevant nodes
-- [ ] Step 5: greedy knapsack packs within token budget
-- [ ] `QaddResult` reports original vs distilled token counts
-- [ ] Achieves 10-20x token reduction on typical pages
-- [ ] All tests pass: `cargo test -p hsx-core qadd`
+
+- [x] Step 1: removes nav, footer, aside, scripts, ads
+- [x] Step 2: BM25 prunes irrelevant text nodes
+- [x] Step 3: semantic check provides additional filtering
+- [x] Step 4: heading context preserved near relevant nodes
+- [x] Step 5: greedy knapsack packs within token budget
+- [x] `QaddResult` reports original vs distilled token counts
+- [x] Achieves 10-20x token reduction on typical pages
+- [x] All tests pass: `cargo test -p hsx-core qadd`
 
 **Testing instructions:**
+
 ```bash
 cargo test -p hsx-core qadd::pipeline::tests
 # Test with large HTML fixture, query "specific topic"
@@ -1290,11 +1351,11 @@ P1-E3-T1 (BM25) ─────── P2-E4-T1 (8 Signals) ── P2-E4-T2 (Fusi
 
 ## Estimated Phase 2 Timeline
 
-| Week | Epic | Tasks | Focus |
-|------|------|-------|-------|
-| 5 | 2.1 | T1-T4 | Browser pool + Google/Bing/Scholar scrapers |
-| 6 | 2.2 + 2.3 | T1-T3 + T1-T3 | HTTP backends + orchestrator + dedup |
-| 7 | 2.4 | T1-T3 | HyperFusion 8-signal ranking |
-| 8 | 2.5 | T1-T3 | CEP layers 3-5 + QADD |
+| Week | Epic      | Tasks         | Focus                                       |
+| ---- | --------- | ------------- | ------------------------------------------- |
+| 5    | 2.1       | T1-T4         | Browser pool + Google/Bing/Scholar scrapers |
+| 6    | 2.2 + 2.3 | T1-T3 + T1-T3 | HTTP backends + orchestrator + dedup        |
+| 7    | 2.4       | T1-T3         | HyperFusion 8-signal ranking                |
+| 8    | 2.5       | T1-T3         | CEP layers 3-5 + QADD                       |
 
 **Total estimated effort:** 28-38 developer-days

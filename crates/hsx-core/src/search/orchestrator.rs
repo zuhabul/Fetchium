@@ -1,14 +1,26 @@
 //! Search orchestrator — parallel dispatch, dedup, ranking (PRD §15).
 //!
-//! Phase 1: DDG only, parallel-ready architecture for Phase 2+ backends.
-//! Phase 2: Google, Bing, Scholar, SearXNG, Wikipedia, Brave, etc.
+//! Phase 2: All HTTP backends + HyperFusion 8-signal ranking.
+//! Dispatches to all enabled backends in parallel via tokio::spawn,
+//! deduplicates via URL normalization + SimHash, then applies HyperFusion ranking.
 
 use crate::error::HsxResult;
 use crate::http::HttpClient;
 use crate::rank;
+use crate::rank::fusion::{detect_intent, hyperfusion_rank};
+use crate::search::arxiv::ArxivBackend;
+use crate::search::brave::BraveBackend;
+use crate::search::dedup::deduplicate;
 use crate::search::duckduckgo::DuckDuckGoBackend;
+use crate::search::github::GithubBackend;
+use crate::search::hackernews::HackerNewsBackend;
+use crate::search::reddit::RedditBackend;
+use crate::search::searxng::SearxngBackend;
+use crate::search::stackoverflow::StackOverflowBackend;
+use crate::search::wikipedia::WikipediaBackend;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::timeout;
@@ -23,8 +35,14 @@ pub struct OrchestratorConfig {
     pub max_total_results: u32,
     /// Per-backend search timeout.
     pub backend_timeout: Duration,
-    /// Which backends to use.
+    /// Which backends to use (empty = all available HTTP backends).
     pub enabled_backends: Vec<BackendId>,
+    /// SimHash threshold for near-duplicate detection (0–64, default: 6).
+    pub simhash_threshold: u32,
+    /// Freshness need for temporal signal (0.0–1.0, default: 0.5).
+    pub freshness_need: f64,
+    /// Use HyperFusion ranking (true) or legacy BM25 rerank (false).
+    pub use_hyperfusion: bool,
 }
 
 impl Default for OrchestratorConfig {
@@ -34,16 +52,16 @@ impl Default for OrchestratorConfig {
             max_total_results: 10,
             backend_timeout: Duration::from_secs(15),
             enabled_backends: vec![BackendId::DuckDuckGo],
+            simhash_threshold: 6,
+            freshness_need: 0.5,
+            use_hyperfusion: true,
         }
     }
 }
 
 impl OrchestratorConfig {
     /// Create config from HsxConfig settings.
-    pub fn from_hsx_config(
-        hsx: &crate::config::HsxConfig,
-        max_results: u32,
-    ) -> Self {
+    pub fn from_hsx_config(hsx: &crate::config::HsxConfig, max_results: u32) -> Self {
         let enabled_backends = hsx
             .search
             .backends
@@ -62,6 +80,9 @@ impl OrchestratorConfig {
             max_total_results: max_results,
             backend_timeout: Duration::from_secs(hsx.search.timeout_secs),
             enabled_backends,
+            simhash_threshold: hsx.ranking.simhash_threshold,
+            freshness_need: hsx.ranking.freshness_need,
+            use_hyperfusion: true,
         }
     }
 }
@@ -70,11 +91,21 @@ impl OrchestratorConfig {
 pub struct SearchOrchestrator {
     backends: Vec<Arc<dyn SearchBackend>>,
     config: OrchestratorConfig,
+    weight_overrides: HashMap<String, f64>,
 }
 
 impl SearchOrchestrator {
     /// Create an orchestrator with backends from the given config.
     pub fn new(http_client: HttpClient, config: OrchestratorConfig) -> Self {
+        Self::with_overrides(http_client, config, HashMap::new())
+    }
+
+    /// Create an orchestrator with custom ranking weight overrides.
+    pub fn with_overrides(
+        http_client: HttpClient,
+        config: OrchestratorConfig,
+        weight_overrides: HashMap<String, f64>,
+    ) -> Self {
         let mut backends: Vec<Arc<dyn SearchBackend>> = Vec::new();
 
         for id in &config.enabled_backends {
@@ -82,20 +113,50 @@ impl SearchOrchestrator {
                 BackendId::DuckDuckGo => {
                     backends.push(Arc::new(DuckDuckGoBackend::new(http_client.clone())));
                 }
-                // Placeholders for Phase 2 backends
+                BackendId::Searxng => {
+                    backends.push(Arc::new(SearxngBackend::new(http_client.clone())));
+                }
+                BackendId::Wikipedia => {
+                    backends.push(Arc::new(WikipediaBackend::new(http_client.clone())));
+                }
+                BackendId::Brave => {
+                    backends.push(Arc::new(BraveBackend::new(http_client.clone())));
+                }
+                BackendId::HackerNews => {
+                    backends.push(Arc::new(HackerNewsBackend::new(http_client.clone())));
+                }
+                BackendId::Arxiv => {
+                    backends.push(Arc::new(ArxivBackend::new(http_client.clone())));
+                }
+                BackendId::Github => {
+                    backends.push(Arc::new(GithubBackend::new(http_client.clone())));
+                }
+                BackendId::Reddit => {
+                    backends.push(Arc::new(RedditBackend::new(http_client.clone())));
+                }
+                BackendId::StackOverflow => {
+                    backends.push(Arc::new(StackOverflowBackend::new(http_client.clone())));
+                }
+                // Headless backends — warn and skip if feature not enabled
+                BackendId::Google | BackendId::Bing | BackendId::GoogleScholar => {
+                    warn!("Backend {:?} requires --features headless (Phase 2), skipping", id);
+                }
                 other => {
-                    warn!("Backend {:?} not yet available (Phase 2+), skipping", other);
+                    warn!("Unknown backend {:?}, skipping", other);
                 }
             }
         }
 
         if backends.is_empty() {
-            // Always fall back to DDG
             warn!("No backends configured — falling back to DuckDuckGo");
             backends.push(Arc::new(DuckDuckGoBackend::new(http_client)));
         }
 
-        Self { backends, config }
+        Self {
+            backends,
+            config,
+            weight_overrides,
+        }
     }
 
     /// Execute a search across all enabled backends, returning fused results.
@@ -103,8 +164,8 @@ impl SearchOrchestrator {
     /// # Pipeline
     /// 1. Dispatch query to all backends concurrently
     /// 2. Collect results with per-backend timeout (failures = empty list)
-    /// 3. Deduplicate by canonical URL (tracking params stripped)
-    /// 4. Rerank by BM25 relevance against the query
+    /// 3. Deduplicate by URL normalization + SimHash content similarity
+    /// 4. Rank by HyperFusion 8-signal (or BM25 if disabled)
     /// 5. Return top N results
     pub async fn search(
         &self,
@@ -160,22 +221,41 @@ impl SearchOrchestrator {
             return Ok(Vec::new());
         }
 
-        // Step 3: Deduplicate
-        let deduped = rank::deduplicate(all);
+        // Step 3: Deduplicate (URL normalization + SimHash)
+        let deduped = deduplicate(all, self.config.simhash_threshold);
 
-        // Step 4: Rerank by BM25
-        let reranked = rank::rerank(deduped, query);
+        // Step 4: Rank
+        // HyperFusion computes its own BM25 via the signals module; no pre-scoring needed.
+        let mut ranked = if self.config.use_hyperfusion {
+            let intent = detect_intent(query);
+            let mut results = deduped;
+            hyperfusion_rank(
+                &mut results,
+                query,
+                intent,
+                self.config.freshness_need,
+                &self.weight_overrides,
+            );
+            results
+        } else {
+            rank::rerank(deduped, query)
+        };
 
         // Step 5: Take top N
-        let final_results: Vec<ResultItem> = reranked.into_iter().take(max as usize).collect();
+        ranked.truncate(max as usize);
 
         info!(
             "Orchestrator: returning {} results for {:?}",
-            final_results.len(),
+            ranked.len(),
             query
         );
 
-        Ok(final_results)
+        Ok(ranked)
+    }
+
+    /// Add a custom backend at runtime.
+    pub fn add_backend(&mut self, backend: Arc<dyn SearchBackend>) {
+        self.backends.push(backend);
     }
 }
 
@@ -211,20 +291,35 @@ mod tests {
         assert_eq!(parse_backend_id("scholar"), Some(BackendId::GoogleScholar));
         assert_eq!(parse_backend_id("hn"), Some(BackendId::HackerNews));
         assert_eq!(parse_backend_id("so"), Some(BackendId::StackOverflow));
+        assert_eq!(parse_backend_id("arxiv"), Some(BackendId::Arxiv));
+        assert_eq!(parse_backend_id("reddit"), Some(BackendId::Reddit));
+        assert_eq!(parse_backend_id("wikipedia"), Some(BackendId::Wikipedia));
+        assert_eq!(parse_backend_id("brave"), Some(BackendId::Brave));
+        assert_eq!(parse_backend_id("github"), Some(BackendId::Github));
+        assert_eq!(parse_backend_id("gh"), Some(BackendId::Github));
         assert_eq!(parse_backend_id("invalid_backend"), None);
     }
 
     #[test]
-    fn orchestrator_fallsback_to_ddg() {
-        let config_str = "duckduckgo";
-        let backend = parse_backend_id(config_str);
-        assert!(backend.is_some());
-    }
-
-    #[test]
-    fn orchestrator_config_from_defaults() {
+    fn orchestrator_config_defaults() {
         let cfg = OrchestratorConfig::default();
         assert_eq!(cfg.max_total_results, 10);
         assert!(cfg.enabled_backends.contains(&BackendId::DuckDuckGo));
+        assert_eq!(cfg.simhash_threshold, 6);
+        assert!(cfg.use_hyperfusion);
+    }
+
+    #[test]
+    fn orchestrator_config_from_hsx() {
+        let mut hsx = crate::config::HsxConfig::default();
+        hsx.search.backends = vec!["duckduckgo".to_string(), "wikipedia".to_string()];
+        hsx.ranking.simhash_threshold = 8;
+        hsx.ranking.freshness_need = 0.8;
+        let cfg = OrchestratorConfig::from_hsx_config(&hsx, 20);
+        assert_eq!(cfg.max_total_results, 20);
+        assert_eq!(cfg.simhash_threshold, 8);
+        assert!((cfg.freshness_need - 0.8).abs() < 1e-9);
+        assert!(cfg.enabled_backends.contains(&BackendId::DuckDuckGo));
+        assert!(cfg.enabled_backends.contains(&BackendId::Wikipedia));
     }
 }

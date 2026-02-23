@@ -315,8 +315,6 @@ fn collect_list_items(lines: &[&str], start: usize, ordered: bool) -> (Vec<Strin
                     .unwrap_or_default(),
             );
             i += 1;
-        } else if trimmed.is_empty() {
-            break;
         } else {
             break;
         }
@@ -347,8 +345,6 @@ fn collect_kv_pairs(
             map.insert("value".into(), Value::String(val));
             pairs.push(map);
             i += 1;
-        } else if trimmed.is_empty() {
-            break;
         } else {
             break;
         }

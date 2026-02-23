@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hypersearchx-crewai"
+version = "0.1.0"
+description = "CrewAI Tool adapter for HyperSearchX — token-efficient AI-native web search"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+keywords = ["crewai", "tool", "search", "hypersearchx", "agent"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "crewai>=0.28",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+rest = ["requests>=2.31"]
+dev = ["pytest>=8"]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/HyperSearchX"
+Repository = "https://github.com/yourusername/HyperSearchX"
+Issues = "https://github.com/yourusername/HyperSearchX/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hypersearchx_crewai"]

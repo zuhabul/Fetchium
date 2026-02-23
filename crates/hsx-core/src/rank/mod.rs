@@ -4,6 +4,13 @@
 //! Phase 2: HyperFusion 8-signal ranking.
 //! Phase 5: Semantic/embedding-based ranking.
 
+
+pub mod bm25;
+pub mod fusion;
+pub mod signals;
+
+pub use bm25::{Bm25Scorer, ScoredResult, ScoringDocument};
+pub use fusion::{detect_intent, hyperfusion_rank, IntentWeights, QueryIntent};
 use crate::types::ResultItem;
 use std::collections::HashMap;
 use tracing::debug;
@@ -225,7 +232,7 @@ mod tests {
     #[test]
     fn bm25_score_range() {
         let score = bm25_score("Rust is a great systems programming language", "Rust systems");
-        assert!(score >= 0.0 && score <= 1.0, "score out of range: {score}");
+        assert!((0.0..=1.0).contains(&score), "score out of range: {score}");
     }
 
     #[test]

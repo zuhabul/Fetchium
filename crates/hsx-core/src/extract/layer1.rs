@@ -12,7 +12,9 @@ use tracing::debug;
 
 /// Extract content from HTML using CSS selectors (Layer 1).
 pub fn extract(html: &str, url: &str) -> ExtractedContent {
-    let document = Html::parse_document(html);
+    // QADD: strip heavy tags before DOM parsing to reduce parse cost
+    let stripped_html = boilerplate::strip_heavy_tags(html);
+    let document = Html::parse_document(&stripped_html);
 
     let title = extract_title(&document);
     let metadata = extract_metadata(&document, url);
@@ -204,9 +206,14 @@ fn collect_text_excluding_boilerplate(
     }
 }
 
-/// Rough token count estimate: ~4 characters per token for English text.
+/// Accurate token count estimate using tiktoken-rs (cl100k_base).
 pub fn estimate_tokens(text: &str) -> u32 {
-    (text.len() as f64 / 4.0).ceil() as u32
+    if let Ok(bpe) = tiktoken_rs::cl100k_base() {
+        bpe.encode_with_special_tokens(text).len() as u32
+    } else {
+        // Fallback to heuristic if tokenizer fails to load
+        (text.len() as f64 / 4.0).ceil() as u32
+    }
 }
 
 #[cfg(test)]
@@ -258,8 +265,12 @@ mod tests {
 
     #[test]
     fn token_estimation() {
+        // tiktoken cl100k_base tokenizes these strings:
+        //   ""                  → 0 tokens
+        //   "test"              → 1 token
+        //   "hello world twelve"→ 3 tokens ("hello", " world", " twelve")
         assert_eq!(estimate_tokens(""), 0);
         assert_eq!(estimate_tokens("test"), 1);
-        assert_eq!(estimate_tokens("hello world twelve"), 5);
+        assert_eq!(estimate_tokens("hello world twelve"), 3);
     }
 }

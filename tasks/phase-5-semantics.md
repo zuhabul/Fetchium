@@ -13,7 +13,7 @@
 | Field | Value |
 |-------|-------|
 | **ID** | `P5-E1-T1` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P2 |
 | **Description** | Integrate local ONNX-based embedding generation using the `ort` crate with the `all-MiniLM-L6-v2` model. Provide an `embed()` function returning `Vec<f32>`, batch embedding support, an embedding cache backed by SQLite, and feature-gate the entire subsystem behind the `embeddings` Cargo feature flag. |
 | **PRD Ref** | 8.1 (HyperFusion semantic signal), 21 (Semantic Search & Hybrid Ranking), 48 (ort crate) |
@@ -336,7 +336,7 @@ pub fn download_model(model_path: &Path) -> Result<(), crate::Error> {
 | Field | Value |
 |-------|-------|
 | **ID** | `P5-E1-T2` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P2 |
 | **Description** | Replace the placeholder/stub semantic similarity signal in the HyperFusion ranking algorithm with real cosine similarity using the ONNX embedding engine from P5-E1-T1. When the `embeddings` feature is disabled, fall back to BM25-only scoring. |
 | **PRD Ref** | 8.1 (HyperFusion formula), 21 (Semantic Search & Hybrid Ranking) |
@@ -478,7 +478,7 @@ pub fn rank_results(
 | Field | Value |
 |-------|-------|
 | **ID** | `P5-E1-T3` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P2 |
 | **Description** | Build a local HNSW vector index for storing and searching document embeddings. Expose via `hsx index add`, `hsx index search`, and `hsx index build` CLI commands. Uses the `usearch` or `hnswlib-rs` crate for SIMD-accelerated nearest neighbor search. |
 | **PRD Ref** | 28 (Caching & Local Index), 21 (Cascade Retrieval), 48 (hnswlib-rs / usearch) |
@@ -695,7 +695,7 @@ pub enum IndexCommand {
 | Field | Value |
 |-------|-------|
 | **ID** | `P5-E1-T4` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P2 |
 | **Description** | Implement Hypothetical Document Embeddings (HyDE) for ambiguous queries. When the query intent classifier detects ambiguity (low confidence), generate a hypothetical answer via the local LLM, embed it, and use that embedding for vector search instead of the raw query embedding. This dramatically improves retrieval for vague or underspecified queries. |
 | **PRD Ref** | 21 (Query Understanding - HyDE), 22 (HyDE reference) |
@@ -798,7 +798,7 @@ pub async fn smart_embed(
 | Field | Value |
 |-------|-------|
 | **ID** | `P5-E2-T1` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P2 |
 | **Description** | Upgrade the QATBE (Query-Aware Token-Budgeted Extraction) Stage 3 ranking to use the formula from PRD 8.2: `relevance_score = BM25(segment, query) * 0.6 + CosineSim(embed(segment), embed(query)) * 0.4`. Previously QATBE used BM25-only. |
 | **PRD Ref** | 8.2 (QATBE Stage 3: RANK), 17 |
@@ -868,7 +868,7 @@ pub fn rank_segments(
 | Field | Value |
 |-------|-------|
 | **ID** | `P5-E2-T2` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P2 |
 | **Description** | Upgrade QADD (Query-Aware DOM Distillation) Step 3 to use real semantic embedding checks. After BM25 text-node scoring, embed remaining DOM nodes and remove those with cosine similarity below threshold. This is the second stage of QADD's pruning pipeline per PRD 8.10. |
 | **PRD Ref** | 8.10 (QADD Step 3: Semantic embedding check), 16 (QADD) |
@@ -971,7 +971,7 @@ pub fn distill(
 | Field | Value |
 |-------|-------|
 | **ID** | `P5-E3-T1` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P2 |
 | **Description** | Build an ML classifier that predicts the required CEP extraction layer for a URL *before* attempting extraction. Uses URL features (domain, path patterns, content-type header, known SPA domain list) to predict Layer 1-5. Trains on historical extraction success/failure data stored by PIE. |
 | **PRD Ref** | 8.3 (CEP ML Method Predictor), 16 |
@@ -1118,7 +1118,7 @@ pub fn predict_layer(features: &CepFeatures) -> u8 {
 | Field | Value |
 |-------|-------|
 | **ID** | `P5-E4-T1` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P2 |
 | **Description** | Complete the PDS (Progressive Detail Streaming) system with all 4 tiers: `key_facts` (~200 tokens), `summary` (~1000 tokens), `detailed` (~5000 tokens), and `complete` (all tokens). MVP built tiers 0-1. This task adds tiers 2-3 and the tier expansion API that lets agents request more detail without re-fetching. |
 | **PRD Ref** | 8.9 (PDS), 27 (Progressive Detail Streaming), 28 (PDS tier cache) |
@@ -1277,7 +1277,7 @@ pub async fn expand_tier(
 | Field | Value |
 |-------|-------|
 | **ID** | `P5-E5-T1` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P2 |
 | **Description** | Implement `hsx compare "A vs B vs C"` that researches each item in parallel, extracts comparison dimensions, and generates a structured comparison table with per-cell citations. |
 | **PRD Ref** | 10 (Mode F: Compare Mode) |
@@ -1376,7 +1376,7 @@ pub async fn compare(
 | Field | Value |
 |-------|-------|
 | **ID** | `P5-E5-T2` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P2 |
 | **Description** | Implement `hsx monitor <url>` for content-hash-based change detection with diff output and optional notifications. Supports interval-based polling and query-based monitoring. |
 | **PRD Ref** | 10 (Mode G: Monitor Mode) |
@@ -1502,7 +1502,7 @@ pub fn compute_diff(old: &str, new: &str) -> ContentDiff {
 | Field | Value |
 |-------|-------|
 | **ID** | `P5-E6-T1` |
-| **Status** | `TODO` |
+| **Status** | `DONE` |
 | **Priority** | P2 |
 | **Description** | Add PDF and DOCX export formats by invoking Pandoc as an external process. Also add BibTeX citation export for academic use cases. Pandoc is an optional external dependency; provide clear error message if not installed. |
 | **PRD Ref** | 26 (Output & Export System), 48 (Pandoc external dependency) |

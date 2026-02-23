@@ -262,15 +262,15 @@ pub enum PluginCommand {
 
 #### Acceptance Criteria
 
-- [ ] `hsx plugin create my-arxiv-backend --type backend` scaffolds a new plugin project
-- [ ] Native plugins load via `libloading` on macOS/Linux/Windows
-- [ ] WASM plugins load via `wasmtime` (feature-gated)
-- [ ] Plugin manifest (`plugin.toml`) defines name, version, type, and config schema
-- [ ] `hsx plugin list` shows installed plugins with status
-- [ ] `hsx plugin install ./my-plugin` copies plugin to `~/.hypersearchx/plugins/`
-- [ ] Backend plugins integrate with the search orchestrator
-- [ ] Extractor plugins integrate with the CEP pipeline
-- [ ] Plugins are isolated: a crashing plugin does not crash the host
+- [x] `hsx plugin create my-arxiv-backend --type backend` scaffolds a new plugin project
+- [x] Native plugins load via `libloading` on macOS/Linux/Windows
+- [x] WASM plugins load via `wasmtime` (feature-gated)
+- [x] Plugin manifest (`plugin.toml`) defines name, version, type, and config schema
+- [x] `hsx plugin list` shows installed plugins with status
+- [x] `hsx plugin install ./my-plugin` copies plugin to `~/.hypersearchx/plugins/`
+- [x] Backend plugins integrate with the search orchestrator
+- [x] Extractor plugins integrate with the CEP pipeline
+- [x] Plugins are isolated: a crashing plugin does not crash the host
 
 #### Pitfalls
 
@@ -445,15 +445,15 @@ pub fn purge_expired(db: &rusqlite::Connection) -> Result<usize, crate::Error> {
 
 #### Acceptance Criteria
 
-- [ ] `hsx search "query" --private` leaves no traces (no cache, no history, no PIE updates)
-- [ ] `hsx search "query" --tor` routes requests through Tor SOCKS5 proxy
-- [ ] `hsx search "query" --air-gap` uses only local index (clear error if no local index)
-- [ ] `hsx research "topic" --redact-pii` strips emails, phones, SSNs, IPs from output
-- [ ] `hsx research "topic" --auto-expire 24h` schedules artifact deletion
-- [ ] `hsx config set privacy.cache_encryption_key <passphrase>` enables encrypted cache
-- [ ] Encrypted cache data is unreadable without the passphrase
-- [ ] `purge_expired()` runs on startup and cleans up expired artifacts
-- [ ] Tor mode requires Tor service running locally (clear error message if not)
+- [x] `hsx search "query" --private` leaves no traces (no cache, no history, no PIE updates)
+- [x] `hsx search "query" --tor` routes requests through Tor SOCKS5 proxy
+- [x] `hsx search "query" --air-gap` uses only local index (clear error if no local index)
+- [x] `hsx research "topic" --redact-pii` strips emails, phones, SSNs, IPs from output
+- [x] `hsx research "topic" --auto-expire 24h` schedules artifact deletion
+- [x] `hsx config set privacy.cache_encryption_key <passphrase>` enables encrypted cache
+- [x] Encrypted cache data is unreadable without the passphrase
+- [x] `purge_expired()` runs on startup and cleans up expired artifacts
+- [x] Tor mode requires Tor service running locally (clear error message if not)
 
 #### Pitfalls
 
@@ -598,13 +598,13 @@ pub fn merge_sessions(
 
 #### Acceptance Criteria
 
-- [ ] `hsx workspace create "project-alpha"` creates a workspace directory
-- [ ] `hsx research "topic" --workspace project-alpha` stores results in the workspace
-- [ ] `hsx research fork <session-id> --name "alt-approach"` creates a branch
-- [ ] `hsx research merge <session-a> <session-b> --deduplicate` combines findings
-- [ ] Workspace manifest (`workspace.json`) tracks metadata and members
-- [ ] Git-based sync: `hsx workspace sync` commits and pushes changes
-- [ ] Merged sessions preserve citation integrity across sources
+- [x] `hsx workspace create "project-alpha"` creates a workspace directory
+- [x] `hsx research "topic" --workspace project-alpha` stores results in the workspace
+- [x] `hsx research fork <session-id> --name "alt-approach"` creates a branch
+- [x] `hsx research merge <session-a> <session-b> --deduplicate` combines findings
+- [x] Workspace manifest (`workspace.json`) tracks metadata and members
+- [x] Git-based sync: `hsx workspace sync` commits and pushes changes
+- [x] Merged sessions preserve citation integrity across sources
 
 #### Pitfalls
 
@@ -748,13 +748,13 @@ pub fn mode() -> DomainMode {
 
 #### Acceptance Criteria
 
-- [ ] `hsx research "topic" --mode academic` uses ArXiv/Scholar backends with citation-heavy ranking
-- [ ] `hsx research "topic" --mode code` prioritizes GitHub/StackOverflow with code extraction
-- [ ] `hsx research "topic" --mode security` prioritizes NVD/CVE with CVSS scoring
-- [ ] Each mode adjusts HyperFusion weights per its domain requirements
-- [ ] Domain-specific output features (BibTeX for academic, CVSS for security) are enabled
-- [ ] `hsx research --mode medical` enables evidence grading (I-V)
-- [ ] Modes are extensible via TOML config files in `data/domain_configs/`
+- [x] `hsx research "topic" --mode academic` uses ArXiv/Scholar backends with citation-heavy ranking
+- [x] `hsx research "topic" --mode code` prioritizes GitHub/StackOverflow with code extraction
+- [x] `hsx research "topic" --mode security` prioritizes NVD/CVE with CVSS scoring
+- [x] Each mode adjusts HyperFusion weights per its domain requirements
+- [x] Domain-specific output features (BibTeX for academic, CVSS for security) are enabled
+- [x] `hsx research --mode medical` enables evidence grading (I-V)
+- [x] Modes are extensible via TOML config files in `data/domain_configs/`
 
 #### Pitfalls
 
@@ -884,13 +884,13 @@ pub async fn generate_radar(
 
 #### Acceptance Criteria
 
-- [ ] `hsx subscribe "TypeScript breaking changes" --interval weekly` registers a subscription
-- [ ] `hsx subscribe list` shows active subscriptions with next check time
-- [ ] `hsx radar --limit 10` shows personalized research suggestions
-- [ ] `hsx digest --period weekly --topics "rust,ai"` generates a digest of recent findings
-- [ ] Predictive prefetching pre-caches likely follow-up results
-- [ ] Anomaly detection flags significant content changes on monitored URLs
-- [ ] Webhook notifications send POST requests with structured JSON payloads
+- [x] `hsx subscribe "TypeScript breaking changes" --interval weekly` registers a subscription
+- [x] `hsx subscribe list` shows active subscriptions with next check time
+- [x] `hsx radar --limit 10` shows personalized research suggestions
+- [x] `hsx digest --period weekly --topics "rust,ai"` generates a digest of recent findings
+- [x] Predictive prefetching pre-caches likely follow-up results
+- [x] Anomaly detection flags significant content changes on monitored URLs
+- [x] Webhook notifications send POST requests with structured JSON payloads
 
 #### Pitfalls
 
@@ -1001,12 +1001,12 @@ pub fn extract_pdf(path: &std::path::Path) -> Result<PdfContent, crate::Error> {
 
 #### Acceptance Criteria
 
-- [ ] `hsx fetch <youtube-url> --transcript` extracts video transcript with timestamps
-- [ ] `hsx fetch <image-url> --ocr` extracts text from images (requires Tesseract)
-- [ ] `hsx fetch <pdf-url>` extracts text from PDF files with layout preservation
-- [ ] `hsx fetch <page> --multimodal` also extracts alt-text from images on the page
-- [ ] YouTube transcript extraction works without API keys
-- [ ] PDF metadata (title, author, page count) included in output
+- [x] `hsx fetch <youtube-url> --transcript` extracts video transcript with timestamps
+- [x] `hsx fetch <image-url> --ocr` extracts text from images (requires Tesseract)
+- [x] `hsx fetch <pdf-url>` extracts text from PDF files with layout preservation
+- [x] `hsx fetch <page> --multimodal` also extracts alt-text from images on the page
+- [x] YouTube transcript extraction works without API keys
+- [x] PDF metadata (title, author, page count) included in output
 
 #### Pitfalls
 
@@ -1131,12 +1131,12 @@ impl AbTest {
 
 #### Acceptance Criteria
 
-- [ ] HyperFusion weights auto-adjust after 50+ implicit feedback events
-- [ ] Adjusted weights persist across sessions in PIE storage
-- [ ] CEP predictor retrains from accumulated extraction data periodically
-- [ ] A/B tests can be defined for ranking algorithms, extraction methods, etc.
-- [ ] `hsx config show ranking-weights` displays current (auto-tuned) weights
-- [ ] A/B test results include sample sizes and significance levels
+- [x] HyperFusion weights auto-adjust after 50+ implicit feedback events
+- [x] Adjusted weights persist across sessions in PIE storage
+- [x] CEP predictor retrains from accumulated extraction data periodically
+- [x] A/B tests can be defined for ranking algorithms, extraction methods, etc.
+- [x] `hsx config show ranking-weights` displays current (auto-tuned) weights
+- [x] A/B test results include sample sizes and significance levels
 
 #### Pitfalls
 
@@ -1276,15 +1276,15 @@ impl App {
 
 #### Acceptance Criteria
 
-- [ ] `hsx tui` launches an interactive terminal UI
-- [ ] Search bar accepts input and triggers search on Enter
-- [ ] Results panel shows ranked results with scores
-- [ ] Preview panel shows extracted content for the selected result
-- [ ] Tab key switches between panels
-- [ ] Arrow keys navigate the results list
-- [ ] `e` key opens the evidence graph viewer for the current result
-- [ ] `q` or Ctrl+C exits the TUI
-- [ ] TUI handles terminal resize gracefully
+- [x] `hsx tui` launches an interactive terminal UI
+- [x] Search bar accepts input and triggers search on Enter
+- [x] Results panel shows ranked results with scores
+- [x] Preview panel shows extracted content for the selected result
+- [x] Tab key switches between panels
+- [x] Arrow keys navigate the results list
+- [x] `e` key opens the evidence graph viewer for the current result
+- [x] `q` or Ctrl+C exits the TUI
+- [x] TUI handles terminal resize gracefully
 
 #### Pitfalls
 
@@ -1410,13 +1410,13 @@ class HyperSearchXTool(BaseTool):
 
 #### Acceptance Criteria
 
-- [ ] `pip install hypersearchx-langchain` installs the LangChain adapter
-- [ ] `HyperSearchXRetriever(token_budget=3000).invoke("query")` returns LangChain `Document` objects
-- [ ] `pip install hypersearchx-crewai` installs the CrewAI adapter
-- [ ] `HyperSearchXTool().run("query")` returns string output suitable for CrewAI agents
-- [ ] Both adapters work via CLI subprocess (no network dependency beyond hsx binary)
-- [ ] Both adapters also support REST API mode when `hsx serve --api` is running
-- [ ] Error handling: clear messages when hsx binary is not found
+- [x] `pip install hypersearchx-langchain` installs the LangChain adapter
+- [x] `HyperSearchXRetriever(token_budget=3000).invoke("query")` returns LangChain `Document` objects
+- [x] `pip install hypersearchx-crewai` installs the CrewAI adapter
+- [x] `HyperSearchXTool().run("query")` returns string output suitable for CrewAI agents
+- [x] Both adapters work via CLI subprocess (no network dependency beyond hsx binary)
+- [x] Both adapters also support REST API mode when `hsx serve --api` is running
+- [x] Error handling: clear messages when hsx binary is not found
 
 #### Pitfalls
 
@@ -1477,13 +1477,13 @@ pub struct CompletionsArgs {
 
 #### Acceptance Criteria
 
-- [ ] `hsx completions bash` outputs valid bash completion script
-- [ ] `hsx completions zsh` outputs valid zsh completion script
-- [ ] `hsx completions fish` outputs valid fish completion script
-- [ ] Tab completion works for all commands: search, research, deep, fetch, etc.
-- [ ] Tab completion works for flags: --format, --tier, --mode, etc.
-- [ ] Enum values complete (e.g., --tier shows key_facts, summary, detailed, complete)
-- [ ] Alias `hyper` also has completions
+- [x] `hsx completions bash` outputs valid bash completion script
+- [x] `hsx completions zsh` outputs valid zsh completion script
+- [x] `hsx completions fish` outputs valid fish completion script
+- [x] Tab completion works for all commands: search, research, deep, fetch, etc.
+- [x] Tab completion works for flags: --format, --tier, --mode, etc.
+- [x] Enum values complete (e.g., --tier shows key_facts, summary, detailed, complete)
+- [x] Alias `hyper` also has completions
 
 #### Pitfalls
 

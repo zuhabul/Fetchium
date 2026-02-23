@@ -17,6 +17,7 @@ pub struct HsxConfig {
     pub cache: CacheConfig,
     pub ai: AiConfig,
     pub output: OutputConfig,
+    pub ranking: RankingConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -86,6 +87,9 @@ pub struct AiConfig {
     pub default_model: String,
     /// Max tokens for AI responses.
     pub max_tokens: u32,
+    /// Optional fast model for latency-sensitive tasks (HyDE, intent classification).
+    /// Falls back to `default_model` when unset.
+    pub fast_model: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -97,6 +101,37 @@ pub struct OutputConfig {
     pub include_sources: bool,
     /// Include confidence scores.
     pub include_confidence: bool,
+}
+
+/// Ranking configuration for HyperFusion signal weights and thresholds.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct RankingConfig {
+    /// Per-signal weight overrides (signal name → weight in [0.0, 1.0]).
+    /// Example: `{"temporal": 0.3, "authority": 0.2}`
+    #[serde(default)]
+    pub weight_overrides: std::collections::HashMap<String, f64>,
+    /// How much recency matters for temporal scoring (0.0 = ignore, 1.0 = max).
+    #[serde(default = "RankingConfig::default_freshness")]
+    pub freshness_need: f64,
+    /// SimHash Hamming distance threshold for near-duplicate detection (0–64).
+    #[serde(default = "RankingConfig::default_simhash_threshold")]
+    pub simhash_threshold: u32,
+}
+
+impl RankingConfig {
+    fn default_freshness() -> f64 { 0.5 }
+    fn default_simhash_threshold() -> u32 { 6 }
+}
+
+impl Default for RankingConfig {
+    fn default() -> Self {
+        Self {
+            weight_overrides: std::collections::HashMap::new(),
+            freshness_need: Self::default_freshness(),
+            simhash_threshold: Self::default_simhash_threshold(),
+        }
+    }
 }
 
 // ─── Defaults ────────────────────────────────────────────────────
@@ -159,6 +194,7 @@ impl Default for AiConfig {
             ollama_host: "http://localhost:11434".into(),
             default_model: "llama3.2".into(),
             max_tokens: 8192,
+            fast_model: None,
         }
     }
 }

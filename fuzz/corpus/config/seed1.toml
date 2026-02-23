@@ -1,0 +1,7 @@
+[general]
+max_results = 10
+data_dir = "/tmp/hsx"
+
+[fetch]
+timeout_secs = 15
+max_page_size = 5242880

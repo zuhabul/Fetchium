@@ -93,12 +93,67 @@ pub enum HsxError {
     #[error("{0}")]
     Structured(StructuredError),
 
+    #[error("AI engine unavailable: {0}")]
+    AiUnavailable(String),
+
+    #[error("Internal error: {0}")]
+    Internal(String),
+
+    #[error("Not found: {0}")]
+    NotFound(String),
+
+    #[error("External tool error: {0}")]
+    ExternalTool(String),
+
+    #[error("Insecure connection to {url}: {suggestion}")]
+    InsecureConnection { url: String, suggestion: String },
+
+    #[error("Invalid URL: {0}")]
+    InvalidUrl(String),
+
+    #[error("Operation '{operation}' timed out after {timeout_ms}ms: {suggestion}")]
+    OperationTimeout { operation: String, timeout_ms: u64, suggestion: String },
+
     #[error("{0}")]
     Other(#[from] anyhow::Error),
 }
 
 /// Convenience alias.
 pub type HsxResult<T> = Result<T, HsxError>;
+
+/// Wrap any async operation with a timeout (PRD SS44: "Never hang").
+///
+/// # Example
+/// ```rust,no_run
+/// use hsx_core::error::with_timeout;
+/// use tokio::time::Duration;
+/// # async fn example() -> hsx_core::error::HsxResult<()> {
+/// let result = with_timeout(Duration::from_secs(10), "fetch", async {
+///     Ok(())
+/// }).await;
+/// # result
+/// # }
+/// ```
+pub async fn with_timeout<F, T>(
+    duration: tokio::time::Duration,
+    op_name: &str,
+    future: F,
+) -> HsxResult<T>
+where
+    F: std::future::Future<Output = HsxResult<T>>,
+{
+    match tokio::time::timeout(duration, future).await {
+        Ok(result) => result,
+        Err(_) => Err(HsxError::OperationTimeout {
+            operation: op_name.to_string(),
+            timeout_ms: duration.as_millis() as u64,
+            suggestion: format!(
+                "{op_name} timed out after {}ms. Try increasing the timeout.",
+                duration.as_millis()
+            ),
+        }),
+    }
+}
 
 impl HsxError {
     /// Whether this error is retryable.
@@ -108,6 +163,19 @@ impl HsxError {
             Self::Structured(e) => e.retryable,
             Self::Database(_) => false,
             _ => false,
+        }
+    }
+
+    /// A human-readable suggestion for how to resolve this error.
+    pub fn suggested_action(&self) -> &str {
+        match self {
+            Self::Network(_) => "Retry the request or check network connectivity",
+            Self::InsecureConnection { .. } => "Use HTTPS instead of HTTP for remote hosts",
+            Self::InvalidUrl(_) => "Check the URL format (must start with https:// or http://)",
+            Self::OperationTimeout { suggestion, .. } => suggestion.as_str(),
+            Self::AiUnavailable(_) => "Start Ollama with: ollama serve",
+            Self::BudgetExceeded { .. } => "Increase --budget or use a lower PDS tier",
+            _ => "Check error details and try again",
         }
     }
 

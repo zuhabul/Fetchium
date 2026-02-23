@@ -3,6 +3,7 @@
 mod cli;
 mod commands;
 mod output;
+mod tui;
 
 use clap::Parser;
 use cli::{Cli, Commands};
@@ -40,10 +41,16 @@ async fn main() -> anyhow::Result<()> {
         config.general.verbose = true;
     }
 
+    // Capture global flags before moving cli
+    let format = cli.format;
+    let quiet = cli.quiet;
+
     // Dispatch command
     match cli.command {
-        Commands::Search(args) => commands::search::run(args, &config).await,
-        Commands::Fetch(args) | Commands::View(args) => commands::fetch::run(args, &config).await,
+        Commands::Search(args) => commands::search::run(args, &config, format, quiet).await,
+        Commands::Fetch(args) | Commands::View(args) => {
+            commands::fetch::run(args, &config, format).await
+        }
         Commands::Research(args) => commands::research::run(args, &config).await,
         Commands::Ai(args) => commands::ai::run(args, &config).await,
         Commands::Deep(args) => commands::deep::run(args, &config).await,
@@ -54,5 +61,25 @@ async fn main() -> anyhow::Result<()> {
         Commands::Config(args) => commands::config::run(args, &config).await,
         Commands::Cache(args) => commands::cache::run(args, &config).await,
         Commands::Serve(args) => commands::serve::run(args, &config).await,
+        Commands::Compare(args) => commands::compare::run(args, &config, format).await,
+        Commands::Monitor(args) => commands::monitor::run(args, &config).await,
+        Commands::Index(args) => commands::index::run(args, &config, format).await,
+        Commands::Intelligence { sub } => {
+            commands::intelligence::run(&config, sub)
+                .await
+                .map_err(|e| anyhow::anyhow!("{e}"))
+        }
+        Commands::Plugin { sub } => commands::plugin::run(sub),
+        Commands::Workspace { sub } => commands::workspace::run(sub),
+        Commands::Subscribe { sub } => commands::subscribe::run(sub),
+        Commands::Radar(args) => commands::radar::run(args.limit),
+        Commands::Digest(args) => {
+            commands::digest::run(&args.period, &args.topics, args.output.as_deref())
+        }
+        Commands::Tui => tui::run_tui(),
+        Commands::Completions { shell } => {
+            commands::completions::run(shell);
+            Ok(())
+        }
     }
 }

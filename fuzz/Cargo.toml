@@ -1,0 +1,42 @@
+[package]
+name = "hsx-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+hsx-core = { path = "../crates/hsx-core" }
+serde_json = "1"
+
+# Fuzz is its own workspace so cargo-fuzz can find the targets
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "fuzz_html_extract"
+path = "fuzz_targets/fuzz_html_extract.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_url_tls"
+path = "fuzz_targets/fuzz_url_tls.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_json_deser"
+path = "fuzz_targets/fuzz_json_deser.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_config_parse"
+path = "fuzz_targets/fuzz_config_parse.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_robots_parse"
+path = "fuzz_targets/fuzz_robots_parse.rs"
+doc = false
