@@ -3,6 +3,7 @@
 //! Layered: defaults → config file → env vars → CLI args.
 //! Config file: `~/.hypersearchx/config.toml`
 
+use crate::ai::providers::ProvidersConfig;
 use crate::types::{OutputFormat, PdsTier, ResourceTier};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -83,13 +84,18 @@ pub struct CacheConfig {
 pub struct AiConfig {
     /// Ollama host.
     pub ollama_host: String,
-    /// Default model.
+    /// Default model (Ollama).
     pub default_model: String,
     /// Max tokens for AI responses.
     pub max_tokens: u32,
     /// Optional fast model for latency-sensitive tasks (HyDE, intent classification).
     /// Falls back to `default_model` when unset.
     pub fast_model: Option<String>,
+    /// Multi-provider configuration block.
+    ///
+    /// Stored as `[ai.providers]` in config.toml. Defines the fallback chain
+    /// and per-provider API keys / model overrides.
+    pub providers: ProvidersConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -195,6 +201,7 @@ impl Default for AiConfig {
             default_model: "llama3.2".into(),
             max_tokens: 8192,
             fast_model: None,
+            providers: ProvidersConfig::default(),
         }
     }
 }
@@ -319,6 +326,33 @@ impl HsxConfig {
         if let Ok(val) = std::env::var("HSX_FETCH_RESPECT_ROBOTS") {
             if let Ok(b) = val.parse::<bool>() {
                 self.fetch.respect_robots = b;
+            }
+        }
+        // Provider API key overrides (also read directly by ProviderEntry::resolve_api_key)
+        if let Ok(val) = std::env::var("OPENAI_API_KEY") {
+            if !val.is_empty() {
+                self.ai.providers.openai.api_key = Some(val);
+            }
+        }
+        if let Ok(val) = std::env::var("ANTHROPIC_API_KEY") {
+            if !val.is_empty() {
+                self.ai.providers.anthropic.api_key = Some(val);
+            }
+        }
+        if let Ok(val) = std::env::var("GEMINI_API_KEY") {
+            if !val.is_empty() {
+                self.ai.providers.gemini.api_key = Some(val);
+            }
+        }
+        if let Ok(val) = std::env::var("OPENROUTER_API_KEY") {
+            if !val.is_empty() {
+                self.ai.providers.openrouter.api_key = Some(val);
+            }
+        }
+        // HSX_AI_PROVIDER — override primary provider (prepends to chain)
+        if let Ok(val) = std::env::var("HSX_AI_PROVIDER") {
+            if !val.is_empty() {
+                self.ai.providers.fallback_chain.insert(0, val);
             }
         }
     }

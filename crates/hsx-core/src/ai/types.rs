@@ -1,5 +1,6 @@
 //! AI-specific types: config, model tiers, chat messages, context assembly.
 
+use crate::ai::providers::ProvidersConfig;
 use serde::{Deserialize, Serialize};
 
 /// Which model tier to route to based on query complexity.
@@ -38,6 +39,8 @@ pub struct AiConfig {
     pub max_context_tokens: usize,
     /// Sampling temperature (default: 0.3 for factual synthesis)
     pub temperature: f32,
+    /// Multi-provider configuration with fallback chain.
+    pub providers: ProvidersConfig,
 }
 
 impl Default for AiConfig {
@@ -50,6 +53,7 @@ impl Default for AiConfig {
             timeout_secs: 120,
             max_context_tokens: 4096,
             temperature: 0.3,
+            providers: ProvidersConfig::default(),
         }
     }
 }
@@ -72,6 +76,7 @@ impl AiConfig {
             default_model,
             fast_model: hsx.ai.fast_model.clone(),
             max_context_tokens: hsx.ai.max_tokens as usize,
+            providers: hsx.ai.providers.clone(),
             ..Self::default()
         }
     }

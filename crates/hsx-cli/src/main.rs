@@ -81,5 +81,6 @@ async fn main() -> anyhow::Result<()> {
             commands::completions::run(shell);
             Ok(())
         }
+        Commands::Provider { action } => commands::provider::run(action, &config).await,
     }
 }

@@ -16,6 +16,7 @@ pub mod index;
 pub mod intelligence;
 pub mod monitor;
 pub mod plugin;
+pub mod provider;
 pub mod radar;
 pub mod research;
 pub mod search;

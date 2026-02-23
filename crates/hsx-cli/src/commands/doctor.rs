@@ -1,6 +1,9 @@
 //! `hsx doctor` — system health check (PRD §13).
 
 use colored::Colorize;
+use hsx_core::ai::setup::{DeviceSpec, RecommendCategory, format_setup_guide, recommend_models};
+use hsx_core::ai::{check_provider, AiConfig, ProviderStatus};
+use hsx_core::ai::providers::ProviderKind;
 use hsx_core::config::HsxConfig;
 use sysinfo::System;
 
@@ -110,16 +113,128 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
             .as_deref()
             .unwrap_or("not found (headless features unavailable)"),
     );
+    println!();
 
-    // Ollama
-    let ollama_status = check_ollama(&config.ai.ollama_host).await;
-    check(
-        "Ollama",
-        ollama_status.is_some(),
-        ollama_status
-            .as_deref()
-            .unwrap_or("not running (AI features unavailable)"),
+    // ---- AI Providers ----
+    println!("{}", "AI Providers".bold());
+
+    let ai_config = AiConfig::from_hsx_config(config);
+    let providers_cfg = &config.ai.providers;
+    let chain = providers_cfg.resolved_chain();
+
+    let chain_str: Vec<&str> = chain.iter().map(|k| k.slug()).collect();
+    println!(
+        "  Fallback chain: {}",
+        if chain_str.is_empty() {
+            "(none configured — run `hsx provider setup`)".yellow().to_string()
+        } else {
+            chain_str.join(" → ").green().to_string()
+        }
     );
+    println!();
+
+    const ALL_PROVIDERS: &[ProviderKind] = &[
+        ProviderKind::Ollama,
+        ProviderKind::OpenAi,
+        ProviderKind::Anthropic,
+        ProviderKind::Gemini,
+        ProviderKind::GeminiCli,
+        ProviderKind::OpenRouter,
+    ];
+
+    let mut ollama_ok = false;
+    let mut ollama_models: Vec<String> = Vec::new();
+
+    for kind in ALL_PROVIDERS {
+        let status = check_provider(*kind, providers_cfg, &ai_config).await;
+        let in_chain = chain.contains(kind);
+
+        match &status {
+            ProviderStatus::Available { model_count } => {
+                if *kind == ProviderKind::Ollama {
+                    ollama_ok = true;
+                }
+                let detail = match model_count {
+                    Some(n) => {
+                        if *kind == ProviderKind::Ollama {
+                            // Collect Ollama model list for recommendations below
+                            if let Ok(models) = get_ollama_model_names(&config.ai.ollama_host).await {
+                                ollama_models = models;
+                            }
+                            format!("running ({n} models installed)")
+                        } else {
+                            format!("({n} models)")
+                        }
+                    }
+                    None => "key configured".to_string(),
+                };
+                let chain_tag = if in_chain { " [in chain]".cyan().to_string() } else { String::new() };
+                check(kind.display_name(), true, &format!("{detail}{chain_tag}"));
+            }
+            ProviderStatus::Unavailable { reason } => {
+                let chain_tag = if in_chain { " [in chain — WILL FAIL]".red().to_string() } else { String::new() };
+                check(kind.display_name(), false, &format!("{reason}{chain_tag}"));
+            }
+        }
+    }
+
+    println!();
+
+    // ---- Ollama Model Recommendations (shown when Ollama is configured) ----
+    let spec = DeviceSpec::detect();
+    if ollama_ok || chain.contains(&ProviderKind::Ollama) {
+        println!("{}", "Ollama Model Recommendations".bold());
+        println!(
+            "  Device: {:.0} GB RAM, {} cores{}  |  Available for LLM: ~{:.0} GB",
+            spec.total_ram_gb,
+            spec.cpu_cores,
+            if spec.is_apple_silicon { " (Apple Silicon)" } else { "" },
+            spec.usable_ram_gb,
+        );
+        println!();
+
+        if ollama_ok && !ollama_models.is_empty() {
+            for model in &ollama_models {
+                println!("  {} {} (installed)", "✓".green(), model.green().bold());
+            }
+            println!();
+            println!("  {}", "Recommended additions:".dimmed());
+        }
+
+        let recs = recommend_models(&spec);
+        for rec in &recs {
+            let installed = ollama_models.iter().any(|m| m.contains(rec.name) || rec.name.contains(m.as_str()));
+            if installed { continue; }
+
+            let (label_color, cmd_note) = match rec.category {
+                RecommendCategory::BestForDevice => (format!("{}", "[BEST FOR YOU]".green().bold()), "← run this first"),
+                RecommendCategory::FastAndLight  => (format!("{}", "[FAST & LIGHT ]".cyan()),        "← quick responses"),
+                RecommendCategory::MaxQuality    => (format!("{}", "[MAX QUALITY  ]".yellow()),       "← best accuracy"),
+                RecommendCategory::Reasoning     => (format!("{}", "[REASONING    ]".magenta()),      "← logic & math"),
+                RecommendCategory::TooLarge      => (format!("{}", "[TOO LARGE    ]".red().dimmed()),  "← needs more RAM"),
+            };
+            println!("  {}  {:<22}  ~{:.0} GB  {}", label_color, rec.name, rec.size_gb, cmd_note);
+            if rec.category != RecommendCategory::TooLarge {
+                println!("    {}", format!("ollama pull {}", rec.name).dimmed());
+            }
+            println!("    {}", rec.description.dimmed());
+            println!();
+        }
+
+        if !ollama_ok {
+            println!("{}", format_setup_guide(&spec).yellow());
+        }
+    }
+
+    // Quick setup hint if no cloud providers have keys
+    let has_cloud = chain.iter().any(|k| *k != ProviderKind::Ollama && *k != ProviderKind::GeminiCli);
+    if !has_cloud {
+        println!("{}", "Tip: Configure a cloud provider for instant AI (no GPU needed):".yellow());
+        println!("  hsx provider setup gemini    # Free tier, gemini-2.0-flash");
+        println!("  hsx provider setup openai    # GPT-4o-mini");
+        println!("  hsx provider setup openrouter # 100+ models");
+        println!();
+    }
 
     println!();
 
@@ -145,7 +260,7 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
             "Install Chrome/Chromium for headless search (Google, Bing, Scholar)".yellow()
         );
     }
-    if ollama_status.is_none() {
+    if !ollama_ok {
         println!(
             "  {}",
             "Install Ollama for AI features: https://ollama.ai".yellow()
@@ -154,6 +269,26 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
 
     println!();
     Ok(())
+}
+
+async fn get_ollama_model_names(host: &str) -> anyhow::Result<Vec<String>> {
+    let url = format!("{host}/api/tags");
+    let resp = reqwest::Client::new()
+        .get(&url)
+        .timeout(std::time::Duration::from_secs(3))
+        .send()
+        .await?;
+    let body: serde_json::Value = resp.json().await?;
+    let models = body
+        .get("models")
+        .and_then(|m| m.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.get("name").and_then(|n| n.as_str()).map(|s| s.to_string()))
+                .collect()
+        })
+        .unwrap_or_default();
+    Ok(models)
 }
 
 fn check(name: &str, ok: bool, detail: &str) {
@@ -194,30 +329,3 @@ fn which_chromium() -> Option<String> {
     None
 }
 
-async fn check_ollama(host: &str) -> Option<String> {
-    let url = format!("{host}/api/tags");
-    match reqwest::Client::new()
-        .get(&url)
-        .timeout(std::time::Duration::from_secs(3))
-        .send()
-        .await
-    {
-        Ok(resp) => {
-            if resp.status().is_success() {
-                if let Ok(body) = resp.json::<serde_json::Value>().await {
-                    let model_count = body
-                        .get("models")
-                        .and_then(|m| m.as_array())
-                        .map(|a| a.len())
-                        .unwrap_or(0);
-                    Some(format!("running ({model_count} models available)"))
-                } else {
-                    Some("running".into())
-                }
-            } else {
-                None
-            }
-        }
-        Err(_) => None,
-    }
-}

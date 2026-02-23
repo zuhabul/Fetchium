@@ -85,7 +85,7 @@ pub fn select_fast_model(config: &AiConfig) -> &str {
 /// Preferred model names per tier (2026 top local LLMs, in priority order).
 const SMALL_PREFERRED: &[&str]  = &["gemma3:1b",      "qwen3:1.7b",   "phi3:mini",    "qwen2.5:1.5b"];
 const MEDIUM_PREFERRED: &[&str] = &["deepseek-r1:7b", "qwen3:8b",     "gemma3:9b",    "llama3.2:8b", "mistral:7b"];
-const LARGE_PREFERRED: &[&str]  = &["deepseek-r1:14b","qwen3:14b",    "llama4:scout", "llama3.2:70b","mixtral:8x7b"];
+const LARGE_PREFERRED: &[&str]  = &["qwen3:30b-a3b",  "deepseek-r1:32b", "deepseek-r1:14b", "qwen3:14b", "llama4:scout", "mixtral:8x7b"];
 
 /// Select the best available model for the desired tier.
 ///

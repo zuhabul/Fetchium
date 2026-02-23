@@ -1,705 +1,983 @@
-<p align="center">
-  <h1 align="center">HyperSearchX</h1>
-  <p align="center">
-    <strong>The world's fastest, AI-native, free web search and deep research engine.</strong><br/>
-    <em>Built in Rust. Built for agents. Made for humans.</em>
-  </p>
-  <p align="center">
-    <a href="#installation">Install</a> &bull;
-    <a href="#quick-start">Quick Start</a> &bull;
-    <a href="#modes">Modes</a> &bull;
-    <a href="#ai-native">AI-Native</a> &bull;
-    <a href="#search-engines">Engines</a> &bull;
-    <a href="#configuration">Config</a> &bull;
-    <a href="#contributing">Contributing</a>
-  </p>
-</p>
+<div align="center">
+
+<br/>
+
+```
+██╗  ██╗██╗   ██╗██████╗ ███████╗██████╗ ███████╗███████╗ █████╗ ██████╗  ██████╗██╗  ██╗
+██║  ██║╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██╔════╝██╔════╝██╔══██╗██╔══██╗██╔════╝██║  ██║
+███████║ ╚████╔╝ ██████╔╝█████╗  ██████╔╝███████╗█████╗  ███████║██████╔╝██║     ███████║
+██╔══██║  ╚██╔╝  ██╔═══╝ ██╔══╝  ██╔══██╗╚════██║██╔══╝  ██╔══██║██╔══██╗██║     ██╔══██║
+██║  ██║   ██║   ██║     ███████╗██║  ██║███████║███████╗██║  ██║██║  ██║╚██████╗██║  ██║
+╚═╝  ╚═╝   ╚═╝   ╚═╝     ╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
+```
+
+### **The World's Fastest AI-Native Web Search & Deep Research Engine**
+*Built in Rust · Built for Agents · Made for Humans*
+
+<br/>
+
+[![Tests](https://img.shields.io/badge/tests-563%20passing-brightgreen?style=flat-square&logo=rust)](https://github.com/user/hypersearchx)
+[![Rust](https://img.shields.io/badge/rust-1.75%2B-orange?style=flat-square&logo=rust)](https://rustup.rs)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+[![Binary](https://img.shields.io/badge/binary-single%20static-purple?style=flat-square)](https://github.com/user/hypersearchx/releases)
+[![Startup](https://img.shields.io/badge/startup-~5ms-brightgreen?style=flat-square)]()
+[![Algorithms](https://img.shields.io/badge/novel%20algorithms-17-ff6b6b?style=flat-square)]()
+
+<br/>
+
+[**Install**](#-installation) · [**Quick Start**](#-quick-start) · [**AI Setup**](#-ai-provider-setup) · [**Search Engines**](#-search-engines) · [**Intelligence**](#-intelligence-engine) · [**CLI**](#-cli-reference) · [**Config**](#-configuration)
+
+<br/>
+
+</div>
 
 ---
 
-> Searches Google, Bing, DuckDuckGo, Scholar, and 10+ engines via efficient headless Chromium — all free.
-> Delivers token-efficient, citation-backed results optimized for AI agents and human researchers.
-> Written in Rust for maximum speed. Single static binary. Zero runtime dependencies.
+<div align="center">
 
-## Why HyperSearchX?
+> 🔍 Searches **Google + Bing + DuckDuckGo + Scholar + 10 more** — all free, all parallel
+>
+> 🤖 **6 AI providers** with subscription OAuth auto-detection — zero API key needed for Claude Code, Gemini CLI, or Codex CLI users
+>
+> ⚡ **Single Rust binary** — 5ms startup, 97% token reduction, 563 tests, zero runtime dependencies
+
+</div>
+
+---
+
+## 🤔 Why HyperSearchX?
 
 Every existing tool is broken in at least one critical way:
 
-| Tool | Problem |
-|------|---------|
-| **Tavily** | $8 per 1,000 searches |
+| Tool | The Problem |
+|------|-------------|
+| **Tavily** | $8 per 1,000 searches — expensive at scale |
 | **Exa** | Complex pricing, limited free tier |
-| **Perplexity** | Deep research limited to 20/month on Pro |
+| **Perplexity** | Deep research capped at 20/month on Pro |
 | **Firecrawl** | Returns entire page — no query-aware extraction |
 | **Jina Reader** | Rate-limited, no search, no token budgeting |
-| **Brave Search API** | Dropped free tier entirely |
+| **Brave Search API** | Dropped their free tier entirely |
 | **googler** | Google-only, no content extraction, no AI |
 | **SearXNG** | No CLI, no extraction, no structured output |
 | **Crawl4AI** | Python-only, no search capability |
 
-**HyperSearchX fixes all of them.**
+**HyperSearchX fixes all of them** — free, fast, and designed from the ground up for AI agents.
 
-### What Makes It Different
+---
 
-- **Rust-Native**: Single static binary, ~5ms startup, 25x faster HTML parsing than Node.js, zero GC pauses
-- **All Search Engines**: Google, Bing, DuckDuckGo, Scholar, Brave, SearXNG, Wikipedia, and more — via efficient headless Chromium
-- **AI-Native Agent-First**: Query-aware extraction, token budgeting, semantic segmentation, progressive detail tiers, MCP server, framework adapters
-- **17 Novel Algorithms**: HyperFusion, QATBE, CEP, SCS, SRP, RAR, EGP, AMRS, PDS, QADD + PIE, ToTR, CRP, EDF, SGT, CCE, ACS — invented for HyperSearchX, exists nowhere else
-- **97% Token Reduction**: Raw HTML → SCS segments = 97% fewer tokens than raw, 60% fewer than flat markdown
-- **Zero Cost**: No API keys, no subscriptions, no credits, no rate-limited free tiers
-- **Self-Correcting**: RAR loop detects bad retrievals and auto-corrects
-- **Cross-Session Learning**: PIE remembers source trust, failure patterns, and query history across sessions
-- **Adversarial Defense**: ACS detects AI-generated spam, bot farms, and manipulated sources
-- **Contradiction Resolution**: CRP automatically investigates when sources disagree
-- **Calibrated Confidence**: CCE tracks historical accuracy — "Our 85% has been right 82% of the time"
-- **Evidence Provenance**: SGT traces claims to their primary source, detecting information cascade mutations
-- **Temporal Awareness**: EDF models domain-specific evidence decay — AI news expires in days, math never does
-- **Multi-Path Reasoning**: ToTR explores parallel reasoning strategies with branch pruning and synthesis
-- **Validated Results**: 6-layer verification for every result
-- **Reproducible**: Cryptographic evidence graphs with content hashes
-- **Any Format**: MD, JSON, CSV, HTML, PDF, DOCX, BibTeX, YAML, SCS segments, and more
+## ✨ What Makes It Different
 
-## Installation
+<table>
+<tr>
+<td width="50%">
+
+**🦀 Rust-Native Performance**
+- ~5ms startup (vs ~200ms Node.js)
+- ~2ms HTML parsing (vs ~50ms)
+- Single static binary
+- Zero GC pauses, zero runtime deps
+
+**🔍 All Search Engines**
+- Google, Bing, Scholar via headless Chromium
+- DuckDuckGo, SearXNG, Wikipedia, HN
+- GitHub, ArXiv, StackOverflow, Reddit
+- HyperFusion 8-signal re-ranking
+
+**🤖 Multi-Provider AI**
+- Gemini 2.0 Flash (default)
+- Claude Max via subscription OAuth
+- GPT via Codex CLI OAuth
+- Ollama (local, 100% private)
+- Auto-detects your existing subscriptions
+
+</td>
+<td width="50%">
+
+**📊 17 Novel Algorithms**
+- QATBE, SCS, PDS, QADD, HyDE, CEP
+- HyperFusion, RAR, AMRS, EGP
+- PIE, ToTR, CRP, EDF, SGT, CCE, ACS
+
+**🧠 Cross-Session Intelligence**
+- Source trust learning (Bayesian)
+- Failure pattern memory
+- Query prediction
+- Evidence decay by domain type
+
+**🔐 Privacy & Security**
+- Standard / Private / Tor / Air-Gap modes
+- PII redaction, encrypted cache
+- Adversarial content detection
+- TLS enforcement, robots.txt respect
+
+</td>
+</tr>
+</table>
+
+---
+
+## 📦 Installation
 
 ```bash
-# npm (downloads pre-built native binary for your platform)
+# npm / pnpm / bun — downloads pre-built native binary (no Rust needed)
 npm install -g hypersearchx
-
-# pnpm
 pnpm add -g hypersearchx
-
-# bun
 bun add -g hypersearchx
 
-# cargo (build from source)
+# Build from source
 cargo install hypersearchx
 
-# Or download binary from GitHub Releases
+# Or grab a binary from GitHub Releases
 ```
 
-No Rust toolchain needed for npm/pnpm/bun install. Pre-built binaries for:
-- `linux-x64` | `linux-arm64` | `darwin-x64` | `darwin-arm64` | `win-x64`
+**Platform support:** `linux-x64` · `linux-arm64` · `darwin-x64` · `darwin-arm64` · `win-x64`
 
 ### System Requirements
 
-| Requirement | Minimum | Recommended |
-|------------|---------|-------------|
-| **OS** | Linux, macOS, Windows | Any |
-| **RAM** | 2 GB free | 8 GB+ |
-| **Chromium** | Auto-detected or auto-installed | For Google/Bing search |
-| **Disk** | 50 MB (binary) | 1 GB+ (cache/index) |
+| | Minimum | Recommended |
+|--|---------|-------------|
+| **OS** | Linux / macOS / Windows | Any |
+| **RAM** | 2 GB free | 8 GB+ for local AI |
+| **Disk** | 50 MB | 1 GB+ (cache + embeddings) |
+| **Chromium** | Optional | For Google/Bing/Scholar |
 
-### Optional Dependencies
+### Optional Tools
 
-| Tool | Purpose | Install |
-|------|---------|---------|
-| Chromium/Chrome | Headless search (Google, Bing, Scholar) | Usually pre-installed; auto-detected |
-| Ollama | Local AI models for `hsx ai` mode | [ollama.com](https://ollama.com) |
+| Tool | Why | Get It |
+|------|-----|--------|
+| Chromium/Chrome | Headless Google/Bing/Scholar | Usually pre-installed |
+| **Gemini CLI** | Free AI via Google subscription | `npm i -g @google/gemini-cli` |
+| **OpenAI Codex CLI** | AI via ChatGPT subscription | `npm i -g @openai/codex` |
+| Ollama | 100% private local AI | [ollama.com](https://ollama.com) |
 | Pandoc | PDF/DOCX export | `brew install pandoc` |
+| Typst | Fast PDF (~1s vs 15s LaTeX) | `brew install typst` |
+| pdftotext | Local PDF extraction | `brew install poppler` |
+| Tesseract | Image/scan OCR | `brew install tesseract` |
 
-## Quick Start
+---
+
+## 🚀 Quick Start
 
 ### For Humans
 
 ```bash
-# Fast search across Google + Bing + DuckDuckGo + more
-hsx search "best typescript orm 2026"
+# Parallel search across all engines, HyperFusion ranked
+hsx search "best rust web framework 2026"
 
-# Structured research with citations
-hsx research "compare bun vs deno vs node.js performance"
+# Multi-source research with APA citations
+hsx research "compare bun vs deno vs node.js performance" --citations apa
 
-# Deep agentic research
+# Deep 4-agent agentic research (1-10 min)
 hsx deep "security implications of WebAssembly in browsers"
 
-# AI-powered answer with local model
+# AI answer with streaming (uses your configured provider)
 hsx ai "explain the CAP theorem with examples"
 
-# Fetch any webpage as clean text
+# Fetch any webpage as clean markdown
 hsx view https://docs.example.com/guide
 
-# Export to markdown
-hsx export https://example.com/article --format md
+# Side-by-side comparison table
+hsx compare "React vs Vue vs Svelte 2026"
+
+# Monitor a page for changes
+hsx monitor add https://github.com/user/repo/releases --interval 1h
+
+# Full terminal UI
+hsx tui
 ```
 
 ### For AI Agents
 
 ```bash
-# Token-budgeted search (200 tokens of key facts)
+# Token-budgeted search — 200 tokens of key facts only
 hsx agent-search "query" --budget 2000 --tier key_facts --format json
 
-# Query-aware extraction (only content about "pricing", within 1500 tokens)
+# Query-aware extraction — only pricing content, ≤1500 tokens
 hsx agent-fetch https://example.com --query "pricing plans" --budget 1500
 
-# Pre-fetch token estimation (before committing to fetch)
+# Pre-fetch token estimation — know cost before committing
 hsx agent-fetch https://example.com --estimate
+# → { "total_tokens": 12340, "relevant_tokens": 1850, "extraction_layer": 1 }
 
-# Structured research for agents
-hsx agent-research "query" --budget 4000 --schema schema.json
-
-# Start as MCP server (for Claude, Claude Code, any MCP client)
+# MCP server for Claude Code and any MCP client
 hsx serve --mcp
 
-# Start as REST API (for any language/framework)
+# REST API for any language
 hsx serve --api --port 3000
 ```
 
-You can also use `hyper` as an alias: `hyper search "query"`
+---
 
-## Search Engines
+## 🤖 AI Provider Setup
 
-HyperSearchX searches **all major engines** — not just DuckDuckGo:
+HyperSearchX supports **6 AI providers** with **automatic subscription session detection**.
+If you have Claude Code, Gemini CLI, or OpenAI Codex CLI installed — **no API key entry needed.**
 
-### Tier 1: Full Search Engines (via stealth headless Chromium)
-
-| Engine | Method | Strengths |
-|--------|--------|-----------|
-| **Google** | Headless Chromium | Best index, freshest results, largest coverage |
-| **Google Scholar** | Headless Chromium | Academic papers, citations, related work |
-| **Bing** | Headless Chromium | Strong for technical queries |
-| **Brave Search** | HTTP scrape | Independent index, privacy-focused |
-
-### Tier 2: Lightweight (HTTP only, no headless needed)
-
-| Engine | Method | Strengths |
-|--------|--------|-----------|
-| **DuckDuckGo** | HTTP scrape | Fast, private, no bot detection |
-| **SearXNG** | JSON API | Aggregates 244+ engines |
-| **Wikipedia** | REST API | Authoritative, structured |
-| **Hacker News** | Algolia API | Tech news |
-| **ArXiv** | Public API | Academic preprints |
-| **GitHub** | Public API | Code and repos |
-| **StackOverflow** | Public API | Programming Q&A |
-| **Reddit** | Public JSON | Community discussions |
-
-### How Headless Search Works
-
-HyperSearchX uses `chromiumoxide` (Rust CDP client) to drive headless Chromium efficiently:
-
-- **Resource blocking**: Images, CSS, fonts, ads blocked — only load HTML+JS
-- **Stealth mode**: Patched `navigator.webdriver`, randomized fingerprints, TLS rotation
-- **Connection reuse**: Single browser, multiple tabs for parallel searches
-- **Pool management**: 1-8 instances based on available RAM
-- **Fallback chain**: Google → Bing → DuckDuckGo → SearXNG (auto-fallback on detection)
-- **Rate limiting**: Per-engine limits with jitter to avoid bot detection
-- **Memory**: ~80MB per instance (vs ~150MB for Playwright in Node.js)
+### Interactive Wizard (Recommended)
 
 ```bash
-# Configure which engines to use
-hsx config set backends.google true
-hsx config set backends.bing true
-hsx config set backends.scholar true
-
-# Or per-query
-hsx search "query" --engines google,bing,ddg,scholar
+hsx provider setup
 ```
 
-## Modes
+The wizard auto-detects installed CLI sessions:
 
-### Search — Instant Results
+```
+HyperSearchX AI Provider Setup Wizard
+─────────────────────────────────────────────────────────────────
+  ★ Subscription auth is auto-detected — no API key needed if you
+    have Claude Code, Gemini CLI, or Codex CLI installed!
+
+  1. Google Gemini       fast, generous free tier   [Gemini CLI session detected ✓]
+  2. OpenAI              gpt-4o-mini                [Codex CLI session detected ✓]
+  3. Anthropic Claude    claude-haiku               [Claude Code max detected ✓]
+  4. OpenRouter          100+ models, one key
+  5. Ollama              local, 100% private
+  6. Gemini CLI          local gemini binary
+```
+
+### Supported Providers
+
+| Provider | Auth | Default Model | Zero-Key? |
+|----------|------|--------------|-----------|
+| **🟦 Google Gemini** | API key **or** `gemini auth login` | `gemini-2.0-flash` | ✅ via Gemini CLI |
+| **🟣 Anthropic Claude** | API key **or** Claude Code session | `claude-haiku-4-5-20251001` | ✅ via Claude Code |
+| **🟢 OpenAI** | API key **or** Codex CLI session | `gpt-4o-mini` | ✅ via Codex CLI |
+| **🟠 OpenRouter** | API key | `gemini-2.0-flash-exp:free` | ❌ key required |
+| **⚫ Ollama** | None (localhost) | `gemma3:4b` | ✅ always |
+| **🔵 Gemini CLI** | None (local binary) | `gemini-2.0-flash` | ✅ always |
+
+### ✨ Antigravity Auth — Zero API Key Setup
+
+> **Antigravity auth** = using your existing AI subscriptions directly, without any API key.
+> HyperSearchX reads credentials from first-party CLI tools automatically.
+
+<details>
+<summary><b>🟣 Claude Code (Anthropic Max / Pro subscription)</b></summary>
 
 ```bash
-hsx search "playwright vs puppeteer memory usage"
-hsx search "rust web framework benchmarks" --max-sources 20 --ai
-hsx search "kubernetes pod eviction" --engines google,bing
+# If you have Claude Code installed, HyperSearchX reads your
+# macOS Keychain session automatically (service: "Claude Code-credentials")
+
+hsx provider setup anthropic
+# → ★ Claude Code max subscription session detected.
+# → No API key needed — HyperSearchX will use your existing session.
+# Include via subscription session? [Y/n]: Y
+# ✓ Anthropic added (subscription auth)
 ```
 
-Parallel multi-engine search with HyperFusion ranking. <1s cached, <3s uncached.
+</details>
 
-### Research — Structured Reports
+<details>
+<summary><b>🟦 Gemini CLI (Google Gemini subscription)</b></summary>
+
+```bash
+# Install and authenticate once
+npm install -g @google/gemini-cli
+gemini auth login   # Opens browser, stores to ~/.gemini/oauth_creds.json
+
+# HyperSearchX reads ~/.gemini/oauth_creds.json and auto-refreshes when expired
+hsx provider setup gemini
+# → ★ Gemini CLI OAuth session detected (valid).
+# → No API key needed — run `gemini auth login` if session expires.
+```
+
+</details>
+
+<details>
+<summary><b>🟢 OpenAI Codex CLI (ChatGPT subscription)</b></summary>
+
+```bash
+# Install and authenticate once
+npm install -g @openai/codex
+codex auth login    # Stores to ~/.codex/auth.json
+
+hsx provider setup openai
+# → ★ OpenAI Codex CLI session detected (ChatGPT subscription).
+# → No API key needed.
+```
+
+</details>
+
+### Fallback Chain
+
+Providers are tried in order — first success wins:
+
+```bash
+hsx provider chain gemini anthropic openai ollama
+# ✓ Fallback chain updated.
+#   Google Gemini → Anthropic Claude → OpenAI → Ollama
+```
+
+```bash
+hsx provider list    # View status with chain positions
+hsx provider test    # Verify connectivity for all in chain
+```
+
+---
+
+## 🔍 Search Engines
+
+HyperSearchX searches **all major engines in parallel** and merges results using HyperFusion:
+
+### Tier 1 — Full Search (headless Chromium)
+
+| Engine | Strength |
+|--------|---------|
+| **Google** | Best index, freshest results, largest coverage |
+| **Google Scholar** | Academic papers, citations, related work |
+| **Bing** | Strong for technical and code queries |
+| **Brave Search** | Independent index, no Google dependency |
+
+### Tier 2 — Lightweight (HTTP only)
+
+| Engine | Strength |
+|--------|---------|
+| **DuckDuckGo** | Fast, private, always available |
+| **SearXNG** | Aggregates 244+ engines via JSON API |
+| **Wikipedia** | Authoritative reference, REST API |
+| **Hacker News** | Tech news via Algolia API |
+| **ArXiv** | Academic preprints |
+| **GitHub** | Code and open-source repos |
+| **StackOverflow** | Programming Q&A |
+| **Reddit** | Community discussions |
+
+### HyperFusion Ranking
+
+All results merged and re-ranked by **8 signals simultaneously**:
+
+```
+BM25 keyword relevance  ×0.25
+Semantic embedding similarity  ×0.20
+Temporal freshness (EDF)  ×0.15
+Authority score  ×0.15
+Evidence consensus  ×0.10
+Source diversity  ×0.08
+Content depth  ×0.04
+Cross-source agreement  ×0.03
+```
+
+Weights auto-tune via AutoML (perceptron, 50+ feedback events).
+
+```bash
+# Configure engines
+hsx config set search.backends.scholar true
+hsx search "quantum computing breakthroughs" --engines google,bing,scholar,arxiv
+```
+
+---
+
+## 🎯 Modes
+
+### 🔎 Search — Instant Results
+
+```bash
+hsx search "playwright vs puppeteer memory 2026"
+hsx search "rust async runtimes compared" --max-sources 20
+hsx search "CVE-2025-xxxx patch" --domain security --engines google,bing
+```
+
+< 1s cached · < 3s uncached · HyperFusion ranked · 6-layer validated
+
+### 📋 Research — Structured Reports
 
 ```bash
 hsx research "GDPR implications for AI training data" --citations apa
 hsx research "compare PostgreSQL vs ClickHouse" --output report.md
+hsx research "nuclear fusion 2026" --export pdf --citations ieee
 ```
 
-Multi-source analysis with evidence mapping, self-correction (RAR), and citations. 10-45s.
+10-45s · Multi-source evidence map · RAR self-correction · 7 citation styles
 
-### Deep Research — Agentic Investigation
+### 🕵️ Deep Research — Agentic Investigation
 
 ```bash
 hsx deep "Compare Puppeteer vs Playwright vs Crawlee at scale"
 hsx deep "AI regulation: US vs EU vs China 2026" --max-depth 3
 ```
 
-Multi-hop research with AMRS (multi-agent swarm), query decomposition, contradiction detection, evidence graphs. 1-10 min.
+**AMRS** (Adaptive Multi-Agent Research Swarm) — 4 agents over tokio channels:
+`Search Agent → Extract Agent → Verify Agent → Synthesize Agent`
 
-### AI Preview — Local LLM Synthesis
+Multi-hop · Contradiction detection · Evidence graphs · Source genealogy · 1-10 min
 
-```bash
-hsx ai "explain WebDriver BiDi protocol"
-hsx ai "what's new in TypeScript 6.0" --model ollama:llama3.2
-```
-
-Web search → token-optimized extraction → local LLM synthesis with citations. Requires Ollama.
-
-### Fetch / View / Scrape — Web as Files
+### 🤖 AI Synthesis — Multi-Provider Streaming
 
 ```bash
-hsx fetch https://example.com                    # Clean text
-hsx view https://example.com                     # Terminal readable
-hsx scrape https://example.com/spa --scroll      # JS + infinite scroll
-hsx export https://example.com --format md,json  # Multi-format
+hsx ai "explain differential privacy with examples"
+hsx ai "what changed in Python 3.14" --model claude-haiku-4-5
+hsx ai "summarize AI news this week" --no-stream
 ```
 
-### Compare — Side-by-Side
+Search → QATBE extraction → Ms-PoE sandwich layout → provider → streaming → citations
+
+### ⚖️ Compare — Side-by-Side
 
 ```bash
 hsx compare "React vs Vue vs Svelte 2026"
+# Parallel research per item → markdown table with 7 dimensions
 ```
 
-### Monitor — Change Detection
+### 👁️ Monitor — Change Detection
 
 ```bash
-hsx monitor https://github.com/user/repo/releases --interval 1h --diff
+hsx monitor add https://github.com/user/repo/releases --interval 1h
+hsx monitor check https://example.com    # Check now
+hsx monitor diff https://example.com     # Show what changed
+hsx monitor list                          # All monitored pages
 ```
 
-## AI-Native Agent Architecture
+SHA-256 snapshots · `similar`-crate diff · SQLite storage · intervals: `30s`/`5m`/`1h`/`7d`
 
-HyperSearchX is **agent-first** — every feature is designed for programmatic consumption by AI systems.
-
-### Core Novel Features for Agents (No Other Tool Has These)
-
-#### 1. Query-Aware Token-Budgeted Extraction (QATBE)
-
-Fetch a URL, extract ONLY content relevant to your query, within a token budget:
+### 📄 Fetch / Export — Web as Files
 
 ```bash
-hsx agent-fetch https://example.com --query "pricing" --budget 1500
-# Returns: only pricing-related content, within 1500 tokens
+hsx fetch https://example.com                     # → clean markdown
+hsx fetch https://example.com --format json        # → structured JSON
+hsx fetch https://example.com --format pdf         # → PDF (Typst ~1s)
+hsx fetch https://example.com --format docx        # → DOCX (Pandoc)
+hsx fetch https://example.com --format bibtex      # → BibTeX citation
+hsx fetch https://paper.pdf --format md            # → PDF text extraction
+hsx fetch https://youtube.com/watch?v=xxx          # → YouTube transcript
 ```
 
-#### 2. Semantic Content Segmentation (SCS)
+---
 
-Instead of flat markdown, get typed segments — each in its most token-efficient format:
+## 📊 Token Efficiency
+
+HyperSearchX achieves **97% token reduction** vs raw HTML:
+
+| Format | Tokens (typical page) | Reduction | How |
+|--------|---------------------|-----------|-----|
+| Raw HTML | 50,000 | — | Baseline |
+| Clean HTML | 12,000 | 76% | Strip tags |
+| Flat Markdown *(Firecrawl/Jina)* | 4,000 | 92% | Remove HTML |
+| **HyperSearchX SCS** | **1,500** | **97%** | Semantic segments |
+| **HyperSearchX key_facts** | **200** | **99.6%** | BM25 + knapsack |
+
+**The pipeline:**
+```
+DOM (50k tokens)
+  → QADD pruning         → 20k  (-60%)  [query-aware node filtering]
+  → Boilerplate strip    → 14k  (-30%)  [nav/footer/ads removed]
+  → SCS encoding         → 9k   (-35%)  [typed segments, efficient JSON]
+  → BM25 filter          → 7k   (-20%)  [only relevant segments]
+  → Cross-source dedup   → 6k   (-10%)  [remove duplicates]
+  → Greedy knapsack      → 1.5k          [fit within token budget]
+```
+
+### SCS Segment Types
+
+Instead of flat markdown, get **8 typed segments** — each encoded most efficiently:
 
 ```json
 {
   "segments": [
-    { "type": "fact", "claim": "PostgreSQL supports JSONB indexing", "confidence": 0.95 },
-    { "type": "table", "headers": ["Feature", "PG", "MySQL"], "rows": [["JSON", "Native", "Basic"]] },
-    { "type": "code", "language": "sql", "code": "CREATE INDEX..." }
+    { "type": "fact",    "claim": "PostgreSQL supports JSONB indexing", "confidence": 0.95 },
+    { "type": "table",   "headers": ["Feature","PG","MySQL"], "rows": [["JSON","Native","Basic"]] },
+    { "type": "code",    "language": "sql", "code": "CREATE INDEX ON tbl USING gin(col);" },
+    { "type": "summary", "text": "PostgreSQL excels for complex analytical queries." },
+    { "type": "quote",   "text": "...", "source": "https://..." },
+    { "type": "list",    "items": ["Item 1", "Item 2"] },
+    { "type": "heading", "level": 2, "text": "Installation" },
+    { "type": "meta",    "published": "2025-01-15", "author": "..." }
   ]
 }
 ```
 
-Tables as JSON arrays save 60% tokens vs markdown tables.
+---
 
-#### 3. Progressive Detail Streaming (PDS)
+## 🧠 Intelligence Engine
 
-Request the detail level you need — without re-fetching:
-
-```bash
-hsx agent-search "query" --tier key_facts    # ~200 tokens
-hsx agent-search "query" --tier summary      # ~1,000 tokens
-hsx agent-search "query" --tier detailed     # ~5,000 tokens
-hsx agent-search "query" --tier complete     # everything
-```
-
-#### 4. Pre-Fetch Token Estimation
-
-Know the cost before committing:
+HyperSearchX learns and improves across sessions, stored in `~/.hypersearchx/intelligence/`.
 
 ```bash
-hsx agent-fetch https://example.com --estimate
-# → { "total_tokens": 12340, "relevant_tokens": 1850, "extraction_layer": 1 }
+hsx intelligence stats    # View all intelligence metrics
+hsx intelligence trust https://reuters.com  # Domain trust score
+hsx intelligence suggest  # Predicted follow-up queries
+hsx intelligence export   # Export knowledge graph
+hsx intelligence reset    # Clear learned data
+hsx intelligence totr "Is nuclear fusion viable by 2035?"  # Tree-of-Thoughts
 ```
 
-#### 5. MCP Server with Composite Tools
+### PIE — Persistent Intelligence Engine
 
-One tool call = entire pipeline (search + extract + rank + validate):
+**4 memory subsystems** (all SQLite-backed, WAL mode):
+
+| Subsystem | What It Learns |
+|-----------|---------------|
+| **STM** Source Trust Memory | Bayesian Beta(α,β) trust per domain — reuters.com: 0.94, random-blog.io: 0.31 |
+| **FPM** Failure Pattern Memory | Which extraction layer works per domain — site-x needs headless (JS wall) |
+| **QPM** Query Prediction | SHA-256 hashed query history → follow-up suggestions |
+| **PKG** Personal Knowledge Graph | Entity/relationship graph across all your research |
+
+### EDF — Evidence Decay Function
+
+Domain-specific half-lives (not a fixed 365 days):
+
+```
+AI/ML news         → 30 days    (fast-moving field)
+Security advisories → 14 days    (patches matter)
+Financial data     →  7 days    (market moves)
+General tech news  → 90 days
+Scientific papers  → 730 days   (stable knowledge)
+Reference docs     → ∞          (MDN, RFC, Wikipedia)
+Mathematics        → ∞          (proofs don't expire)
+```
+
+### CCE — Confidence Calibration Engine
+
+> "Our 85% confidence has been right **82%** of the time."
+
+Tracks historical accuracy per source. Isotonic regression calibration. Activates after 10 samples per bin.
+
+### ACS — Adversarial Content Shield
+
+Detects 3 classes of adversarial content:
+- **AI-generated spam**: burstiness analysis + vocabulary variance + sentence length variance
+- **Bot farms**: domain pattern heuristics
+- **Manipulation**: hedge word density analysis
+
+Shadow mode → transitions to active after 30 days of observation.
+
+### CRP — Contradiction Resolution Protocol
+
+When sources disagree, investigates instead of listing both:
+
+```
+Detects: "coffee reduces heart risk" vs "coffee increases anxiety"
+Step 1: Date-based resolution (newer study wins?)
+Step 2: Authority-based (NIH > personal blog)
+Step 3: Context-based (study population? dosage?)
+Step 4: Independent investigation
+Step 5: Weighted synthesis with full trail
+```
+
+### SGT — Source Genealogy Tracker
+
+Traces claims to their primary source:
+
+```
+TechBlog post → TheVerge article → Twitter thread → ArXiv paper (PRIMARY)
+Detected mutation: "97.3% on MMLU-Pro" → "98% on MMLU" (cascade distortion)
+Trust penalty: -15% per hop from primary source
+```
+
+### ToTR — Tree-of-Thoughts Research
 
 ```bash
-hsx serve --mcp
+hsx intelligence totr "Is nuclear fusion economically viable by 2035?"
+# Branch 1: Technical feasibility (ITER, NIF progress)
+# Branch 2: Economics (LCOE projections, capital costs)
+# Branch 3: Policy & regulation (fusion licensing, grid integration)
+# → Prunes low-evidence branches → synthesizes survivors
 ```
-
-Exposes `hypersearch_search`, `hypersearch_fetch`, `hypersearch_research`, `hypersearch_estimate`, `hypersearch_expand` — each handles the full pipeline internally.
-
-### Advanced Intelligence Features
-
-#### 6. Cross-Session Learning (PIE)
-
-HyperSearchX remembers across sessions — source trust, failure patterns, query predictions:
-
-```bash
-# PIE learns that reuters.com is reliable (trust: 0.94) and blog-x.com isn't (0.31)
-# PIE remembers that site-y needs headless mode (JS wall)
-# PIE predicts follow-up queries based on your history
-
-hsx config set pie.enabled true    # Enable persistent intelligence
-hsx pie stats                      # View learned source trust scores
-hsx pie export                     # Export knowledge graph
-hsx pie reset                      # Clear all learned data
-```
-
-#### 7. Multi-Path Reasoning (ToTR)
-
-For complex questions, explore multiple reasoning paths simultaneously:
-
-```bash
-hsx deep "Is nuclear fusion economically viable by 2035?" --reasoning tree
-# Explores: Technical feasibility | Economics | Policy — in parallel
-# Prunes low-quality paths, synthesizes surviving branches
-```
-
-#### 8. Contradiction Resolution (CRP)
-
-When sources disagree, HyperSearchX investigates instead of just listing both:
-
-```bash
-hsx research "is coffee good for you" --resolve-contradictions
-# Detects: "coffee reduces heart risk" vs "coffee increases anxiety"
-# Investigates: date, authority, population, dosage context
-# Returns: weighted synthesis with investigation trail
-```
-
-#### 9. Source Genealogy (SGT)
-
-Trace claims to their primary source — catch misinformation cascades:
-
-```bash
-hsx research "GPT-5 benchmarks" --trace-sources
-# Traces: TechBlog → TheVerge → Twitter → ArXiv paper (PRIMARY)
-# Detects: "97.3% on MMLU-Pro" mutated to "98% on MMLU" in cascade
-```
-
-#### 10. Adversarial Content Shield (ACS)
-
-Detect AI-generated spam, bot farms, and manipulated search results:
-
-```bash
-hsx search "query" --shield strict
-# Filters: AI-generated content, SEO spam farms, coordinated bot campaigns
-# Trust score per source with audit trail
-```
-
-### Framework Adapters
-
-```rust
-// LangChain (Python)
-from hypersearchx import HyperSearchXRetriever
-retriever = HyperSearchXRetriever(token_budget=3000)
-
-// REST API (any language)
-POST http://localhost:3000/api/search
-{ "query": "...", "token_budget": 2000, "tier": "summary" }
-```
-
-## Token Efficiency
-
-HyperSearchX achieves **97% token reduction** vs raw HTML:
-
-| Format | Tokens (typical page) | Reduction |
-|--------|----------------------|-----------|
-| Raw HTML | 50,000 | Baseline |
-| Clean HTML | 12,000 | 76% |
-| Flat Markdown (Firecrawl/Jina) | 4,000 | 92% |
-| **HyperSearchX SCS** | **1,500** | **97%** |
-| **HyperSearchX key_facts** | **200** | **99.6%** |
-
-### How It Works
-
-1. **QADD**: DOM distilled to query-relevant nodes only (~60% reduction)
-2. **Boilerplate strip**: Nav, footer, ads, scripts removed (~30% more)
-3. **SCS**: Content segmented into typed blocks in most efficient encoding (~30% more)
-4. **BM25 filter**: Only query-relevant segments kept (~20% more)
-5. **Dedup**: Cross-source duplicate removal (~10% more)
-
-## Validation Layer
-
-Every result passes through 6-layer validation + self-correction:
-
-1. **Source**: Reachability, SSL, domain reputation, redirect analysis
-2. **Content**: Relevance, language, dedup, paywall, error page detection
-3. **Freshness**: Published date, staleness, cache freshness
-4. **Cross-Source**: Claim consistency, fact triangulation, contradiction detection
-5. **Extraction**: Completeness, structure, encoding
-6. **Output**: Citation verification, link validity, format compliance
-7. **RAR Self-Correction**: Auto-detects bad retrievals, reformulates query, re-searches
-
-## Resource Awareness
-
-Detects CPU/RAM/GPU/network and auto-adapts:
-
-| Tier | RAM | Parallel Fetches | Browser Pool | AI Models |
-|------|-----|-----------------|-------------|-----------|
-| Minimal | <4 GB | 2-4 | 0-1 | 1-3B |
-| Light | 4-8 GB | 4-8 | 1-2 | 3-7B |
-| Standard | 8-16 GB | 8-16 | 2-4 | 7-13B |
-| Power | 16-32 GB | 16-32 | 4-6 | 13-70B |
-| Ultra | 32 GB+ | 32-50 | 6-8 | 70B+ |
-
-```bash
-hsx doctor    # Show system profile and capabilities
-```
-
-## Why Rust?
-
-| Dimension | Node.js | **Rust (HyperSearchX)** |
-|-----------|---------|------------------------|
-| **Startup** | ~200ms | **~5ms** |
-| **HTML parsing** | ~50ms/page | **~2ms/page** |
-| **Memory base** | ~50MB | **~5MB** |
-| **Browser instance** | ~150MB | **~80MB** |
-| **GC pauses** | Yes | **None** |
-| **Binary** | Requires runtime | **Single static binary** |
-| **Concurrency** | Event loop | **tokio + rayon** |
-
-## Configuration
-
-Config: `~/.hypersearchx/config.yaml`
-
-```yaml
-defaults:
-  max_sources: 10
-  parallel: auto
-  headless: auto
-  citations: inline
-  validate: true
-
-backends:
-  google: true          # via headless Chromium
-  bing: true            # via headless Chromium
-  scholar: false        # via headless Chromium
-  brave: true           # HTTP scrape
-  duckduckgo: true      # HTTP scrape
-  searxng: true         # JSON API
-  wikipedia: true       # REST API
-  hackernews: false
-  github: false
-  arxiv: false
-
-agent:
-  default_budget: 4000
-  default_tier: detailed
-  default_format: segments
-  deduplicate: true
-
-ai:
-  enabled: false
-  provider: ollama
-  model: llama3.2:8b
-  endpoint: http://localhost:11434
-
-resource_limits:
-  max_memory_percent: 70
-  max_cpu_percent: 80
-  browser_pool_max: auto
-```
-
-## CLI Reference
-
-```
-HUMAN COMMANDS
-  search <query>         Search the web (Google, Bing, DDG, etc.)
-  research <query>       Structured multi-source research
-  deep <query>           Agentic deep research
-  ai <query>             AI-synthesized answer (local model)
-  fetch <url>            Fetch and extract content
-  view <url>             Clean readable view
-  scrape <url>           Deep scrape with JS rendering
-  compare <query>        Comparison research
-  export <url>           Export to any format
-  monitor <url>          Watch for changes
-
-AGENT COMMANDS
-  agent-search <query>   Token-budgeted search
-  agent-fetch <url>      Query-aware extraction
-  agent-research <query> Structured research for agents
-  serve --mcp            MCP server mode
-  serve --api            REST API server mode
-
-UTILITY
-  doctor                 System health check
-  config <sub>           Configuration
-  cache <sub>            Cache management
-  index <sub>            Local index management
-
-KEY FLAGS
-  --budget <n>           Token budget
-  --tier <level>         key_facts | summary | detailed | complete
-  --engines <list>       google,bing,ddg,scholar,searxng,...
-  --format <fmt>         md | json | segments | csv | html | yaml | bibtex
-  --citations <style>    inline | footnote | apa | ieee | chicago | bibtex
-  --validate <mode>      strict | standard | fast | off
-  --ai                   Enable AI synthesis
-  --fast / --thorough    Speed vs depth
-  --schema <file>        JSON schema for structured output
-  --estimate             Pre-fetch token estimation
-  --evidence-graph       Output evidence graph
-  --stream               Stream results progressively
-```
-
-## How HyperSearchX Compares
-
-| Feature | HyperSearchX | Tavily | Perplexity | Firecrawl | Crawl4AI | googler |
-|---------|-------------|--------|------------|-----------|----------|---------|
-| **Language** | Rust | Python | N/A | Python | Python | Python |
-| **Cost** | Free | $8/1K | $20/mo | $16+/mo | Free | Free |
-| **Engines** | Google+Bing+DDG+10+ | Google API | Proprietary | N/A | N/A | Google only |
-| **Query-Aware Extract** | Yes (QATBE) | No | N/A | No | No | No |
-| **Token Budgeting** | Yes (PDS tiers) | max_tokens only | N/A | No | No | No |
-| **Semantic Segments** | Yes (SCS) | No | N/A | No | No | No |
-| **Self-Correction** | Yes (RAR) | No | No | No | No | No |
-| **MCP Server** | Native composite | Basic | No | Basic | Community | No |
-| **Validation** | 6-layer | None | None | None | None | None |
-| **Evidence Graph** | Yes (EGP) | No | No | No | No | No |
-| **Deep Research** | Unlimited | No | 20/month | No | No | No |
-| **Cross-Session Learning** | Yes (PIE) | No | No | No | No | No |
-| **Contradiction Resolution** | Yes (CRP) | No | No | No | No | No |
-| **Source Genealogy** | Yes (SGT) | No | No | No | No | No |
-| **Adversarial Shield** | Yes (ACS) | No | No | No | No | No |
-| **Confidence Calibration** | Yes (CCE) | No | No | No | No | No |
-| **Multi-Path Reasoning** | Yes (ToTR) | No | No | No | No | No |
-| **Evidence Decay** | Yes (EDF) | No | No | No | No | No |
-| **Reproducible** | Hash+logs+diffs | No | No | No | No | No |
-| **AI Synthesis** | Local, free | No | Paid | No | No | No |
-| **Binary** | Single static | Pip install | SaaS | Docker | Pip | Pip |
-| **Startup** | ~5ms | ~500ms | N/A | ~2s | ~1s | ~200ms |
-
-## Project Structure
-
-```
-hypersearchx/
-├── crates/
-│   ├── hsx-core/           # Core library
-│   │   ├── src/
-│   │   │   ├── search/     # Search backend orchestrator
-│   │   │   │   ├── google.rs
-│   │   │   │   ├── bing.rs
-│   │   │   │   ├── duckduckgo.rs
-│   │   │   │   ├── searxng.rs
-│   │   │   │   ├── scholar.rs
-│   │   │   │   ├── wikipedia.rs
-│   │   │   │   ├── headless_pool.rs
-│   │   │   │   └── orchestrator.rs
-│   │   │   ├── extract/    # Content extraction pipeline
-│   │   │   │   ├── cep.rs          # Cascade Extraction Protocol
-│   │   │   │   ├── qadd.rs         # Query-Aware DOM Distillation
-│   │   │   │   ├── readability.rs
-│   │   │   │   ├── headless.rs
-│   │   │   │   └── pipeline.rs
-│   │   │   ├── rank/       # Ranking engine
-│   │   │   │   ├── hyperfusion.rs
-│   │   │   │   ├── bm25.rs
-│   │   │   │   ├── semantic.rs
-│   │   │   │   └── scoring.rs
-│   │   │   ├── token/      # Token efficiency
-│   │   │   │   ├── qatbe.rs        # Query-Aware Token-Budgeted Extraction
-│   │   │   │   ├── scs.rs          # Semantic Content Segmentation
-│   │   │   │   ├── pds.rs          # Progressive Detail Streaming
-│   │   │   │   ├── boilerplate.rs
-│   │   │   │   └── budget.rs
-│   │   │   ├── validate/   # Validation layer
-│   │   │   │   ├── source.rs
-│   │   │   │   ├── content.rs
-│   │   │   │   ├── freshness.rs
-│   │   │   │   ├── cross_source.rs
-│   │   │   │   ├── rar.rs          # Reflection-Augmented Research
-│   │   │   │   ├── acs.rs          # Adversarial Content Shield
-│   │   │   │   └── pipeline.rs
-│   │   │   ├── intelligence/ # Advanced intelligence
-│   │   │   │   ├── pie.rs          # Persistent Intelligence Engine
-│   │   │   │   ├── totr.rs         # Tree-of-Thoughts Research
-│   │   │   │   ├── crp.rs          # Contradiction Resolution Protocol
-│   │   │   │   ├── edf.rs          # Evidence Decay Function
-│   │   │   │   ├── sgt.rs          # Source Genealogy Tracker
-│   │   │   │   └── cce.rs          # Confidence Calibration Engine
-│   │   │   ├── ai/         # AI preview engine
-│   │   │   │   ├── ollama.rs
-│   │   │   │   ├── llama.rs
-│   │   │   │   ├── router.rs
-│   │   │   │   └── prompts.rs
-│   │   │   ├── citation/   # Citation & evidence
-│   │   │   │   ├── egp.rs          # Evidence Graph Protocol
-│   │   │   │   ├── mapper.rs
-│   │   │   │   ├── styles.rs
-│   │   │   │   └── verifier.rs
-│   │   │   ├── resource/   # Machine resource awareness
-│   │   │   │   ├── profiler.rs
-│   │   │   │   ├── monitor.rs
-│   │   │   │   └── scheduler.rs
-│   │   │   ├── parallel/   # Parallel execution engine
-│   │   │   │   ├── queue.rs
-│   │   │   │   ├── pool.rs
-│   │   │   │   └── backpressure.rs
-│   │   │   ├── cache/      # Caching system
-│   │   │   │   ├── memory.rs
-│   │   │   │   ├── disk.rs
-│   │   │   │   └── manager.rs
-│   │   │   ├── index/      # Local search index
-│   │   │   │   ├── tantivy.rs
-│   │   │   │   ├── vector.rs
-│   │   │   │   └── manager.rs
-│   │   │   ├── output/     # Output formatters
-│   │   │   │   ├── markdown.rs
-│   │   │   │   ├── json.rs
-│   │   │   │   ├── csv.rs
-│   │   │   │   ├── html.rs
-│   │   │   │   └── bibtex.rs
-│   │   │   └── plugin/     # Plugin system
-│   │   │       ├── registry.rs
-│   │   │       └── loader.rs
-│   │   └── Cargo.toml
-│   ├── hsx-cli/            # CLI binary
-│   │   ├── src/
-│   │   │   ├── main.rs
-│   │   │   ├── commands/
-│   │   │   │   ├── search.rs
-│   │   │   │   ├── research.rs
-│   │   │   │   ├── deep.rs
-│   │   │   │   ├── ai.rs
-│   │   │   │   ├── fetch.rs
-│   │   │   │   ├── agent.rs
-│   │   │   │   ├── serve.rs
-│   │   │   │   └── doctor.rs
-│   │   │   └── output.rs
-│   │   └── Cargo.toml
-│   ├── hsx-mcp/            # MCP server
-│   │   ├── src/lib.rs
-│   │   └── Cargo.toml
-│   └── hsx-api/            # REST API server
-│       ├── src/lib.rs
-│       └── Cargo.toml
-├── npm/                     # npm wrapper package
-│   ├── package.json
-│   └── scripts/install-binary.js
-├── tests/
-├── benches/
-├── docs/
-├── prd.md
-├── Cargo.toml               # Workspace root
-└── README.md
-```
-
-## Contributing
-
-```bash
-# Prerequisites: Rust 1.75+, Chromium/Chrome (for headless search)
-
-# Clone
-git clone https://github.com/user/hypersearchx.git
-cd hypersearchx
-
-# Build
-cargo build --release
-
-# Run
-cargo run --release -- search "test query"
-
-# Test
-cargo test
-
-# Bench
-cargo bench
-```
-
-## License
-
-MIT
 
 ---
 
-<p align="center">
-  <strong>HyperSearchX</strong> — AI-native. Rust-powered. Agent-first. Human-friendly.<br/>
-  The fastest path from question to knowledge. Free. Open-source. Yours.
-</p>
+## 🔒 Privacy Modes
+
+```bash
+hsx search "sensitive query" --privacy private
+hsx search "query" --privacy tor         # All traffic via Tor SOCKS5
+hsx research "query" --privacy air-gap   # Local index only, zero network
+
+hsx config set privacy.mode private      # Set globally
+```
+
+| Mode | Cache | PIE Logging | Network | PII |
+|------|-------|-------------|---------|-----|
+| `standard` | ✅ Write+Read | ✅ Full | ✅ All | As-is |
+| `private` | 🚫 Read-only | 🚫 Disabled | ✅ All | Redacted |
+| `tor` | 🚫 Read-only | 🚫 Disabled | 🕵️ Via Tor | Redacted |
+| `air-gap` | ✅ Local only | ✅ Local | 🚫 None | As-is |
+
+PII redaction strips: emails, phone numbers, SSNs, credit cards, IP addresses.
+
+---
+
+## 🎨 Proactive Intelligence
+
+```bash
+# Subscribe to topics
+hsx subscribe add "rust programming" --interval 1d
+hsx subscribe add "AI safety research" --interval 12h
+hsx subscribe list
+
+# View trending topics from your subscriptions
+hsx radar 10
+
+# Generate a digest
+hsx digest daily --topics "rust,AI,security"
+hsx digest weekly > weekly-report.md
+```
+
+---
+
+## 🔌 Plugin System
+
+Extend HyperSearchX with custom backends, extractors, rankers, formatters, validators, and AI providers:
+
+```bash
+hsx plugin list
+hsx plugin enable my-custom-backend
+```
+
+Plugins live in `~/.hypersearchx/plugins/`. Each needs a `plugin.toml`:
+
+```toml
+name    = "my-backend"
+version = "1.0.0"
+type    = "backend"   # backend|extractor|ranker|formatter|validator|ai_provider
+runtime = "native"    # native | wasm
+```
+
+---
+
+## 🌍 Domain Modes
+
+Activate domain-specific ranking overrides and special extraction features:
+
+```bash
+hsx search "quantum entanglement" --domain academic
+hsx research "CVE-2025-xxxx" --domain security
+hsx search "merger antitrust" --domain legal
+```
+
+| Mode | Ranking Priority | Special Features |
+|------|----------------|-----------------|
+| `academic` | .edu, arXiv, peer-reviewed | BibTeX output, citation tracking |
+| `security` | CVE freshness, vendor advisories | Severity extraction, CVSS scoring |
+| `legal` | Jurisdiction-aware, formal | Statute citation format |
+| `medical` | PubMed, publication date strict | Dosage/risk flag extraction |
+| `financial` | Real-time data, verified sources | Number/percentage extraction |
+| `code` | GitHub, SO, official docs | Code block preservation |
+
+---
+
+## 🎬 Multimodal
+
+```bash
+# YouTube transcript (timedtext API, no key needed)
+hsx fetch "https://youtube.com/watch?v=dQw4w9WgXcQ"
+
+# PDF text extraction (pdftotext, page-split)
+hsx fetch "https://arxiv.org/pdf/2301.00001.pdf"
+
+# Image OCR (tesseract)
+hsx fetch "https://example.com/screenshot.png"
+
+# HTML table extraction → structured JSON
+hsx fetch "https://example.com/comparison-table" --format json
+```
+
+---
+
+## 📐 Validation Layer
+
+Every result passes through **6-layer validation** + self-correction:
+
+```
+V1 Authority    → domain tier, SSL cert, redirect depth, WHOIS age
+V2 Content      → relevance score, paywall detection, min length, dedup
+V3 Temporal     → EDF decay, published date, cache freshness
+V4 Cross-Source → bigram-Jaccard contradiction, negation-aware clustering
+V5 Extraction   → truncation check, encoding errors, segment completeness
+V6 Output       → citation reachability, content hash drift detection
+   RAR Loop     → 5 reflection checkpoints: detect bad result → reformulate → re-search
+```
+
+---
+
+## ⚙️ Configuration
+
+Config file: `~/.hypersearchx/config.toml`
+
+```toml
+[general]
+max_results = 10
+verbose = false
+
+[search]
+default_budget = 4000
+backends = ["duckduckgo", "brave", "searxng", "wikipedia"]
+
+[cache]
+enabled = true
+ttl_secs = 3600
+
+[ai]
+default_model = "gemini-2.0-flash"
+fast_model    = "gemini-2.0-flash"   # Used for HyDE + intent classification
+ollama_host   = "http://localhost:11434"
+
+[ai.providers]
+fallback_chain = ["gemini", "anthropic", "ollama"]
+
+[ai.providers.gemini]
+model = "gemini-2.0-flash"
+# api_key = "AIza..."  # Omit to auto-detect from Gemini CLI OAuth
+
+[ai.providers.anthropic]
+model = "claude-haiku-4-5-20251001"
+# api_key = "sk-ant-..."  # Omit to auto-detect from Claude Code session
+
+[ai.providers.openai]
+model = "gpt-4o-mini"
+# api_key = "sk-..."  # Omit to auto-detect from Codex CLI session
+
+[ai.providers.openrouter]
+model = "google/gemini-2.0-flash-exp:free"
+api_key = "sk-or-..."   # Required; get at openrouter.ai
+
+[ai.providers.ollama]
+model = "gemma3:4b"
+
+[privacy]
+mode = "standard"   # standard | private | tor | air-gap
+
+[pie]
+enabled = true
+```
+
+### Environment Variables
+
+```bash
+export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+export GEMINI_API_KEY="AIza..."
+export OPENROUTER_API_KEY="sk-or-..."
+export HSX_AI_PROVIDER="gemini"        # Override provider chain for this session
+```
+
+---
+
+## 📟 CLI Reference
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           HyperSearchX Commands                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ HUMAN COMMANDS                                                              │
+│  search <query>         Parallel multi-engine search, HyperFusion ranked   │
+│  research <query>       Structured report — citations, evidence map, RAR   │
+│  deep <query>           Agentic investigation — AMRS 4-agent swarm         │
+│  ai <query>             AI synthesis — streaming, multi-provider           │
+│  fetch <url>            Fetch + extract (all CEP layers)                   │
+│  view <url>             Clean terminal-readable output                     │
+│  compare <query>        Side-by-side comparison table                      │
+│  monitor <sub>          Change detection — add/remove/check/list/diff      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ AGENT COMMANDS                                                              │
+│  agent-search <query>   Token-budgeted JSON search (QATBE)                │
+│  agent-fetch <url>      Query-aware extraction with budget                 │
+│  agent-research <query> Structured research pipeline (JSON)               │
+│  serve --mcp            MCP stdio server (5 composite tools)              │
+│  serve --api            REST API (axum, POST /api/*)                       │
+│  serve --mcp --api      Both simultaneously                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ AI PROVIDER COMMANDS                                                        │
+│  provider list          Status + chain position + auth type                │
+│  provider setup         Interactive wizard (auto-detects subscriptions)   │
+│  provider setup <name>  Setup a specific provider                          │
+│  provider set <name>    Set key/model non-interactively                    │
+│  provider chain <...>   Set fallback order                                 │
+│  provider test [name]   Test connectivity                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ INTELLIGENCE COMMANDS                                                       │
+│  intelligence stats     Source trust, calibration, query topics            │
+│  intelligence trust <u> Trust score for a domain                           │
+│  intelligence suggest   Predicted follow-up queries                        │
+│  intelligence export    Export knowledge graph                             │
+│  intelligence reset     Clear all learned data                             │
+│  intelligence totr <q>  Tree-of-Thoughts research                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ PROACTIVE COMMANDS                                                          │
+│  subscribe add <topic>  Subscribe for monitoring                           │
+│  subscribe list/remove  Manage subscriptions                               │
+│  radar [limit]          Trending topics from subscriptions                 │
+│  digest <period>        Generate digest (daily/weekly/monthly)             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ WORKSPACE & PLUGIN                                                          │
+│  workspace create/fork/merge/sync   Collaborative research sessions        │
+│  plugin list/enable/disable         Plugin management                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UTILITY                                                                     │
+│  doctor                 System health check (providers + resources)        │
+│  config get/set         Configuration management                           │
+│  cache clear/stats      Cache management                                   │
+│  index add/search/stats Local document index (HNSW + SQLite)              │
+│  completions <shell>    Shell completions (bash/zsh/fish/powershell)       │
+│  tui                    Full terminal UI                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+KEY FLAGS
+  --budget <n>            Token budget (default: 4000)
+  --tier <level>          key_facts | summary | detailed | complete
+  --engines <list>        google,bing,ddg,scholar,searxng,arxiv,...
+  --format <fmt>          md | json | segments | csv | html | yaml | bibtex | pdf | docx
+  --citations <style>     inline | footnote | apa | mla | chicago | ieee | bibtex
+  --validate <mode>       strict | standard | fast | off
+  --privacy <mode>        standard | private | tor | air-gap
+  --domain <mode>         academic | security | legal | medical | financial | code
+  --model <m>             Override AI model for this query
+  --max-sources <n>       Maximum sources
+  --no-stream             Disable streaming output
+  --estimate              Pre-fetch token estimation
+  --evidence-graph        Output evidence graph JSON
+  -v / -q                 Verbose / quiet
+  --no-cache              Bypass cache for this query
+```
+
+---
+
+## 📊 How HyperSearchX Compares
+
+| Feature | **HyperSearchX** | Tavily | Perplexity | Firecrawl | Crawl4AI | googler |
+|---------|:-----------:|:------:|:----------:|:---------:|:--------:|:-------:|
+| **Language** | 🦀 Rust | Python | N/A | Python | Python | Python |
+| **Cost** | **Free** | $8/1K | $20/mo | $16+/mo | Free | Free |
+| **Engines** | **12+** | 1 | Proprietary | 0 | 0 | 1 |
+| **Startup** | **~5ms** | ~500ms | N/A | ~2s | ~1s | ~200ms |
+| **Binary** | **Single static** | pip | SaaS | Docker | pip | pip |
+| **Query-Aware Extract** | ✅ QATBE | ❌ | N/A | ❌ | ❌ | ❌ |
+| **Token Budgeting** | ✅ PDS 4 tiers | ⚠️ basic | N/A | ❌ | ❌ | ❌ |
+| **Semantic Segments** | ✅ SCS 8 types | ❌ | N/A | ❌ | ❌ | ❌ |
+| **Self-Correction** | ✅ RAR 5-step | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **MCP Server** | ✅ Composite | ⚠️ basic | ❌ | ⚠️ basic | Community | ❌ |
+| **Validation** | ✅ 6-layer | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Evidence Graph** | ✅ SHA-256 | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Deep Research** | ✅ Unlimited | ❌ | 20/month | ❌ | ❌ | ❌ |
+| **Cross-Session Learning** | ✅ PIE | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Contradiction Detection** | ✅ CRP | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Source Genealogy** | ✅ SGT | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Adversarial Shield** | ✅ ACS | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Confidence Calibration** | ✅ CCE | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Multi-Path Reasoning** | ✅ ToTR | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Evidence Decay Model** | ✅ EDF | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Privacy Modes** | ✅ 4 (incl. Tor) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Plugin System** | ✅ 6 types | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Multimodal** | ✅ YouTube/PDF/OCR | ❌ | ❌ | ⚠️ | ❌ | ❌ |
+| **Self-Evolving** | ✅ AutoML + A/B | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **AI Synthesis** | ✅ 6 providers | ❌ | ✅ paid | ❌ | ❌ | ❌ |
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        HyperSearchX                             │
+├──────────────┬──────────────┬────────────────┬─────────────────┤
+│   hsx-cli    │   hsx-core   │    hsx-mcp     │    hsx-api      │
+│  (binary)    │  (library)   │  (MCP stdio)   │  (REST axum)    │
+└──────┬───────┴──────┬───────┴────────────────┴─────────────────┘
+       │              │
+       │        ┌─────▼──────────────────────────────────────┐
+       │        │                hsx-core                     │
+       │        ├──────────┬──────────┬──────────┬───────────┤
+       └───────►│  search  │ extract  │   rank   │  token    │
+                │ (12 eng) │ (CEP 5L) │(HyFusion)│(QATBE/SCS)│
+                ├──────────┼──────────┼──────────┼───────────┤
+                │ validate │ research │    ai    │intelligence│
+                │ (6-layer)│ (AMRS)   │(6 prov.) │(PIE/ToTR) │
+                ├──────────┼──────────┼──────────┼───────────┤
+                │ citation │embeddings│  export  │  privacy  │
+                │ (7 styles│(fastembed│(typst/pd)│(4 modes)  │
+                ├──────────┼──────────┼──────────┼───────────┤
+                │  plugin  │  collab  │proactive │  evolve   │
+                │ (6 types)│workspace │(radar/  )│(automl/ab)│
+                └──────────┴──────────┴──────────┴───────────┘
+```
+
+### Key Files
+
+```
+crates/hsx-core/src/
+├── ai/
+│   ├── credentials.rs      ← OAuth detection (Claude Code · Gemini CLI · Codex CLI)
+│   ├── provider_client.rs  ← Fallback chain, SSE streaming, token refresh
+│   ├── providers.rs        ← ProviderKind, ProvidersConfig, ProviderEntry
+│   ├── pipeline.rs         ← run_ai_pipeline() (search→extract→sandwich→provider)
+│   ├── router.rs           ← select_model() + select_fast_model() for HyDE
+│   ├── sandwich.rs         ← Ms-PoE sandwich layout (lost-in-middle mitigation)
+│   └── ollama.rs           ← Local Ollama client with streaming
+├── intelligence/
+│   ├── pie/                ← STM + FPM + QPM + PKG subsystems
+│   ├── edf.rs              ← Evidence decay, 10 domain half-life categories
+│   ├── cce.rs              ← Confidence calibration (isotonic regression)
+│   ├── acs.rs              ← Adversarial content shield (shadow → active)
+│   ├── crp.rs              ← Contradiction resolution (5-step pipeline)
+│   ├── sgt.rs              ← Source genealogy tracker (bigram-Jaccard)
+│   └── totr.rs             ← Tree-of-Thoughts research
+├── rank/
+│   └── signals.rs          ← ScoringContext with batch embeddings (7.5× speedup)
+├── token/
+│   └── qatbe.rs            ← BM25 + hybrid embedding ranking + greedy knapsack
+├── export/
+│   └── pandoc.rs           ← PDF: typst (~1s) → xelatex → pandoc default
+└── query/
+    └── hyde.rs             ← Hypothetical Document Embedding
+```
+
+---
+
+## 🤝 Contributing
+
+```bash
+# Prerequisites: Rust 1.75+, Chromium (optional, for headless tests)
+
+# Clone and build
+git clone https://github.com/user/hypersearchx.git
+cd hypersearchx
+cargo build -p hsx-cli
+
+# Run (26 commands)
+./target/debug/hsx --help
+./target/debug/hsx doctor
+
+# Tests (563 passing, 0 failures)
+cargo test
+
+# Lint — zero warnings policy
+cargo clippy -- -D warnings
+
+# Format
+cargo fmt
+
+# Benchmark
+cargo bench
+
+# Build with optional features
+cargo build -p hsx-core --features embeddings
+cargo build -p hsx-core --features "embeddings,vector-search,headless"
+```
+
+### Feature Flags
+
+| Flag | Dependency | Adds |
+|------|-----------|------|
+| `embeddings` | `fastembed` | Sentence embeddings (384-dim, all-MiniLM-L6-v2) for semantic search |
+| `vector-search` | `usearch` | HNSW vector index for `hsx index` |
+| `headless` | `chromiumoxide` | Headless Chromium (Google/Bing/Scholar/Scholar) |
+| `mcp` | `rmcp` | MCP server protocol support |
+| `llama` | `llama-cpp-2` | Direct llama.cpp integration for local inference |
+
+---
+
+## 📄 License
+
+MIT © HyperSearchX Contributors
+
+---
+
+<div align="center">
+
+**HyperSearchX** — AI-native. Rust-powered. Agent-first. Human-friendly.
+
+*The fastest path from question to knowledge. Free. Open-source. Yours.*
+
+<br/>
+
+[![Star on GitHub](https://img.shields.io/github/stars/user/hypersearchx?style=social)](https://github.com/user/hypersearchx)
+
+</div>

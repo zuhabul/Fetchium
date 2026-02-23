@@ -124,6 +124,12 @@ pub enum Commands {
         /// Shell to generate completions for
         shell: Shell,
     },
+
+    /// Manage AI provider authentication and fallback chain
+    Provider {
+        #[command(subcommand)]
+        action: ProviderAction,
+    },
 }
 
 // ─── Search ──────────────────────────────────────────────────────
@@ -529,6 +535,76 @@ pub struct DigestArgs {
     /// Write output to a file.
     #[arg(short, long)]
     pub output: Option<String>,
+}
+
+// ─── Provider ────────────────────────────────────────────────────
+
+#[derive(Debug, Subcommand)]
+pub enum ProviderAction {
+    /// Show all providers with connectivity status and configured model
+    List,
+
+    /// Interactive setup wizard for one or all providers
+    ///
+    /// Examples:
+    ///   hsx provider setup           # wizard for all providers
+    ///   hsx provider setup gemini    # configure Gemini only
+    Setup {
+        /// Provider slug: ollama, openai, anthropic, gemini, gemini_cli, openrouter
+        provider: Option<String>,
+    },
+
+    /// Set API key and model for a specific provider
+    ///
+    /// Examples:
+    ///   hsx provider set gemini --key AIza... --model gemini-2.0-flash
+    ///   hsx provider set openai --key sk-...
+    ///   hsx provider set openrouter --key sk-or-... --model google/gemini-2.0-flash-001
+    Set(ProviderSetArgs),
+
+    /// Configure the provider fallback chain (tried in order)
+    ///
+    /// Examples:
+    ///   hsx provider chain gemini openai ollama
+    ///   hsx provider chain anthropic openrouter
+    Chain {
+        /// Ordered list of provider slugs
+        #[arg(required = true)]
+        providers: Vec<String>,
+    },
+
+    /// Test provider connectivity and API key validity
+    ///
+    /// Examples:
+    ///   hsx provider test             # test all chain providers
+    ///   hsx provider test gemini      # test Gemini only
+    Test {
+        /// Provider slug to test (omit to test all in chain)
+        provider: Option<String>,
+    },
+}
+
+/// Arguments for `hsx provider set`.
+#[derive(Debug, Parser)]
+pub struct ProviderSetArgs {
+    /// Provider slug: ollama, openai, anthropic, gemini, gemini_cli, openrouter
+    pub provider: String,
+
+    /// API key to store in config (prefer env var for security)
+    #[arg(long)]
+    pub key: Option<String>,
+
+    /// Model name override (e.g. gpt-4o, claude-sonnet-4-6, gemini-2.0-flash)
+    #[arg(long)]
+    pub model: Option<String>,
+
+    /// Custom base URL (for proxies or self-hosted compatible APIs)
+    #[arg(long)]
+    pub base_url: Option<String>,
+
+    /// Enable or disable this provider in the fallback chain
+    #[arg(long)]
+    pub enable: Option<bool>,
 }
 
 // ─── Index ───────────────────────────────────────────────────────

@@ -1,9 +1,9 @@
-//! Full AI preview pipeline: search → extract → sandwich → Ollama → output (PRD §23 Mode D).
+//! Full AI preview pipeline: search → extract → sandwich → AI provider → output (PRD §23 Mode D).
 
-use crate::ai::ollama::OllamaClient;
 use crate::ai::prompt::{factual_system_prompt, synthesis_system_prompt};
-use crate::ai::router::{route_model, select_model};
+use crate::ai::provider_client::chat_with_fallback;
 use crate::ai::sandwich::{assemble_context, sandwich_layout};
+use crate::ai::setup::{DeviceSpec, format_setup_guide};
 use crate::ai::types::{AiConfig, AiPreviewResult, ChatMessage, RankedSource};
 use crate::config::HsxConfig;
 use crate::error::HsxError;
@@ -88,34 +88,7 @@ pub async fn run_ai_pipeline(
     let (context, _source_map) = assemble_context(&ordered, token_budget);
     let sources_used = ordered.len();
 
-    // Step 4: Check Ollama availability
-    let ollama = OllamaClient::new(ai_config);
-
-    if !ollama.is_available().await {
-        return Ok(AiPreviewResult {
-            answer: format_fallback(&ordered, query),
-            model_used: "none (Ollama not running)".into(),
-            sources_used,
-            streaming: false,
-            fallback: true,
-        });
-    }
-
-    // Step 5: Route to best model
-    let available_models = ollama
-        .list_models()
-        .await
-        .unwrap_or_default();
-
-    let tier = route_model(query, sources_used);
-    let model_name = select_model(&available_models, tier, model_override).ok_or_else(|| {
-        HsxError::AiUnavailable(
-            "No models installed in Ollama. Run `ollama pull deepseek-r1:7b` to install one."
-                .into(),
-        )
-    })?;
-
-    // Step 6: Build chat messages
+    // Step 4: Build chat messages
     let system_prompt = if sources_used > 3 {
         synthesis_system_prompt(query, sources_used)
     } else {
@@ -133,40 +106,53 @@ pub async fn run_ai_pipeline(
         },
     ];
 
-    // Step 7: Call Ollama
-    let answer = if streaming {
-        ollama
-            .chat_stream(
-                &model_name,
-                &messages,
-                ai_config.temperature,
-                |chunk| {
-                    print!("{chunk}");
-                    let _ = std::io::stdout().flush();
-                },
-            )
-            .await?
-    } else {
-        ollama
-            .chat(&model_name, &messages, ai_config.temperature)
-            .await?
+    // Step 5: Call the configured provider chain
+    let chain = ai_config.providers.resolved_chain();
+    let chain_empty = chain.is_empty();
+
+    let mut on_token = |chunk: &str| {
+        if streaming {
+            print!("{chunk}");
+            let _ = std::io::stdout().flush();
+        }
     };
 
-    Ok(AiPreviewResult {
-        answer,
-        model_used: model_name,
-        sources_used,
+    match chat_with_fallback(
+        &messages,
+        model_override,
+        ai_config,
+        &ai_config.providers,
         streaming,
-        fallback: false,
-    })
+        &mut on_token,
+    )
+    .await
+    {
+        Ok(result) => Ok(AiPreviewResult {
+            answer: result.content,
+            model_used: format!("{}/{}", result.provider.slug(), result.model_used),
+            sources_used,
+            streaming,
+            fallback: false,
+        }),
+        Err(_) if chain_empty || chain == vec![crate::ai::providers::ProviderKind::Ollama] => {
+            // Pure Ollama fallback — show setup guide
+            let spec = DeviceSpec::detect();
+            Ok(AiPreviewResult {
+                answer: format_fallback(&ordered, query, &spec),
+                model_used: "none (no provider available)".into(),
+                sources_used,
+                streaming: false,
+                fallback: true,
+            })
+        }
+        Err(e) => Err(e),
+    }
 }
 
 /// Format search results as a fallback when Ollama is not available.
-fn format_fallback(sources: &[RankedSource], query: &str) -> String {
+fn format_fallback(sources: &[RankedSource], query: &str, spec: &DeviceSpec) -> String {
     let mut out = format!(
-        "AI synthesis unavailable (Ollama not running).\n\
-         Install with: https://ollama.ai | Then run: ollama pull deepseek-r1:7b\n\n\
-         Search results for \"{}\":\n\n",
+        "Search results for \"{}\" (AI synthesis unavailable — Ollama not running)\n\n",
         query
     );
     for (i, s) in sources.iter().enumerate() {
@@ -180,6 +166,7 @@ fn format_fallback(sources: &[RankedSource], query: &str) -> String {
             snippet
         ));
     }
+    out.push_str(&format_setup_guide(spec));
     out
 }
 
@@ -196,9 +183,11 @@ mod tests {
             url: "https://example.com".into(),
             title: "Example".into(),
         }];
-        let result = format_fallback(&sources, "test query");
+        let spec = DeviceSpec { total_ram_gb: 16.0, cpu_cores: 8, is_apple_silicon: false, usable_ram_gb: 11.5 };
+        let result = format_fallback(&sources, "test query", &spec);
         assert!(result.contains("test query"));
         assert!(result.contains("Example"));
         assert!(result.contains("https://example.com"));
+        assert!(result.contains("ollama pull"));
     }
 }
