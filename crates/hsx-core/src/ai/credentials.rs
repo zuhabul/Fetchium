@@ -4,6 +4,9 @@
 //! - **Gemini**: reads `~/.gemini/oauth_creds.json` (populated by `gemini auth login`)
 //! - **Claude Code**: reads from macOS Keychain service `"Claude Code-credentials"`
 //! - **OpenAI Codex**: reads `~/.codex/auth.json` (populated by `codex auth login`)
+//! - **OpenCode Antigravity**: reads `~/.config/opencode/antigravity-accounts.json`
+//!   (populated by the `opencode-antigravity-auth` plugin; grants access to Gemini 3
+//!   and Claude Sonnet/Opus models via Google Cloud Code Assist for free)
 //!
 //! No browser flows are initiated here — this module only reads existing credentials.
 
@@ -262,6 +265,167 @@ pub fn read_openrouter_key() -> Option<String> {
         .map(|s| s.to_string())
 }
 
+// ─── OpenCode Antigravity OAuth credentials ───────────────────────────────────
+//
+// The `opencode-antigravity-auth` plugin stores Google OAuth credentials at
+// `~/.config/opencode/antigravity-accounts.json`. These credentials grant access
+// to Google Cloud Code Assist, which proxies requests to Gemini 3 and Claude models.
+//
+// OAuth application (public installed-app client — secret is not sensitive):
+//   Client ID:     1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com
+//   Client secret: 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
+//
+// API endpoints (primary → autopush → prod fallback order):
+//   https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:generateContent
+//   https://autopush-cloudcode-pa.sandbox.googleapis.com/v1internal:generateContent
+//   https://cloudcode-pa.googleapis.com/v1internal:generateContent
+
+/// OAuth client ID for the OpenCode Antigravity plugin (installed-app, public).
+pub const ANTIGRAVITY_CLIENT_ID: &str =
+    "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com";
+/// Public client secret for the Antigravity installed-app OAuth client.
+pub const ANTIGRAVITY_CLIENT_SECRET: &str = "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";
+
+/// Primary Cloud Code Assist API endpoint (daily sandbox, mirrors CLIProxy behaviour).
+pub const ANTIGRAVITY_ENDPOINT: &str = "https://daily-cloudcode-pa.sandbox.googleapis.com";
+/// Fallback autopush endpoint.
+pub const ANTIGRAVITY_ENDPOINT_AUTOPUSH: &str =
+    "https://autopush-cloudcode-pa.sandbox.googleapis.com";
+/// Fallback production endpoint.
+pub const ANTIGRAVITY_ENDPOINT_PROD: &str = "https://cloudcode-pa.googleapis.com";
+
+/// Ordered list of Cloud Code Assist endpoints to try (first success wins).
+pub const ANTIGRAVITY_ENDPOINTS: &[&str] = &[
+    ANTIGRAVITY_ENDPOINT,
+    ANTIGRAVITY_ENDPOINT_AUTOPUSH,
+    ANTIGRAVITY_ENDPOINT_PROD,
+];
+
+/// Default fallback project ID when the account has none.
+pub const ANTIGRAVITY_DEFAULT_PROJECT_ID: &str = "rising-fact-p41fc";
+
+/// Antigravity plugin version string (must stay in sync with the installed plugin).
+pub const ANTIGRAVITY_VERSION: &str = "1.15.8";
+
+/// A single account entry stored in `antigravity-accounts.json`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AntigravityAccount {
+    /// Google account email address.
+    pub email: String,
+    /// Google OAuth refresh token (long-lived).
+    pub refresh_token: String,
+    /// Google Cloud project ID for quota routing.
+    #[serde(default)]
+    pub project_id: Option<String>,
+    /// ISO 8601 timestamp when this account was added.
+    #[serde(default)]
+    pub added_at: Option<String>,
+    /// ISO 8601 timestamp when this account was last used.
+    #[serde(default)]
+    pub last_used: Option<String>,
+    /// Device fingerprint headers injected into requests.
+    #[serde(default)]
+    pub fingerprint: Option<serde_json::Value>,
+}
+
+impl AntigravityAccount {
+    /// Returns the effective Google Cloud project ID, falling back to the default.
+    pub fn effective_project_id(&self) -> &str {
+        self.project_id
+            .as_deref()
+            .filter(|s| !s.is_empty())
+            .unwrap_or(ANTIGRAVITY_DEFAULT_PROJECT_ID)
+    }
+}
+
+/// The root structure of `antigravity-accounts.json`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AntigravityAccountStore {
+    #[serde(default)]
+    pub version: u32,
+    #[serde(default)]
+    pub accounts: Vec<AntigravityAccount>,
+}
+
+/// Read OpenCode Antigravity accounts from `~/.config/opencode/antigravity-accounts.json`.
+///
+/// Returns `None` if the file is absent, unreadable, or malformed.
+pub fn read_antigravity_accounts() -> Option<AntigravityAccountStore> {
+    let path = dirs::home_dir()?
+        .join(".config")
+        .join("opencode")
+        .join("antigravity-accounts.json");
+    let content = std::fs::read_to_string(path).ok()?;
+    serde_json::from_str(&content).ok()
+}
+
+/// Return the first valid Antigravity account, or `None` if none exist.
+pub fn get_primary_antigravity_account() -> Option<AntigravityAccount> {
+    let store = read_antigravity_accounts()?;
+    store.accounts.into_iter().next()
+}
+
+/// Returns `true` if at least one Antigravity account is stored locally.
+pub fn antigravity_auth_available() -> bool {
+    read_antigravity_accounts()
+        .map(|s| !s.accounts.is_empty())
+        .unwrap_or(false)
+}
+
+/// Refresh an Antigravity Google OAuth access token using the stored refresh token.
+///
+/// Uses the Antigravity installed-app OAuth client (client ID/secret are public).
+/// Returns `(access_token, project_id)` on success, or `None` on failure.
+pub fn refresh_antigravity_token(account: &AntigravityAccount) -> Option<(String, String)> {
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+        .ok()?;
+
+    let params = [
+        ("client_id",     ANTIGRAVITY_CLIENT_ID),
+        ("client_secret", ANTIGRAVITY_CLIENT_SECRET),
+        ("refresh_token", account.refresh_token.as_str()),
+        ("grant_type",    "refresh_token"),
+    ];
+
+    let resp = client
+        .post(GOOGLE_TOKEN_ENDPOINT)
+        .form(&params)
+        .send()
+        .ok()?;
+
+    if !resp.status().is_success() {
+        tracing::warn!(
+            "Antigravity token refresh failed (HTTP {}): email={}",
+            resp.status(),
+            account.email
+        );
+        return None;
+    }
+
+    let json: serde_json::Value = resp.json().ok()?;
+    let access_token = json["access_token"].as_str()?.to_string();
+    let project_id = account.effective_project_id().to_string();
+
+    tracing::debug!(
+        email = %account.email,
+        project = %project_id,
+        "Antigravity OAuth token refreshed"
+    );
+    Some((access_token, project_id))
+}
+
+/// Get a usable Antigravity access token (always refreshes — access tokens are short-lived).
+///
+/// Returns `(access_token, project_id)` or `None` if no account is configured
+/// or the refresh request fails.
+pub fn get_antigravity_token() -> Option<(String, String)> {
+    let account = get_primary_antigravity_account()?;
+    refresh_antigravity_token(&account)
+}
+
 // ─── Combined detection ───────────────────────────────────────────────────────
 
 /// Describe which subscription auth methods are available on this machine.
@@ -308,6 +472,13 @@ pub fn detect_subscription_auth() -> Vec<SubscriptionAuth> {
         found.push(SubscriptionAuth::OpenRouterKey { masked });
     }
 
+    if let Some(account) = get_primary_antigravity_account() {
+        found.push(SubscriptionAuth::AntigravityOAuth {
+            email: account.email.clone(),
+            project_id: account.effective_project_id().to_string(),
+        });
+    }
+
     found
 }
 
@@ -333,6 +504,13 @@ pub enum SubscriptionAuth {
         /// Masked key (last 4 chars visible).
         masked: String,
     },
+    /// OpenCode Antigravity OAuth session (Gemini 3 + Claude via Cloud Code Assist).
+    AntigravityOAuth {
+        /// Google account email.
+        email: String,
+        /// Google Cloud project ID used for quota routing.
+        project_id: String,
+    },
 }
 
 impl SubscriptionAuth {
@@ -354,6 +532,9 @@ impl SubscriptionAuth {
             ),
             Self::OpenRouterKey { masked } => format!(
                 "OpenRouter API key ({masked}) — stored in ~/.openrouter/config.json"
+            ),
+            Self::AntigravityOAuth { email, project_id } => format!(
+                "OpenCode Antigravity OAuth ({email}, project: {project_id}) — Gemini 3 + Claude"
             ),
         }
     }

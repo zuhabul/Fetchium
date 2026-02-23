@@ -7,7 +7,9 @@
 //! - Ollama, GeminiCli: local, no key needed
 
 use crate::ai::credentials::{
-    get_claude_code_token, get_codex_token_if_valid, get_gemini_access_token_if_valid,
+    get_antigravity_token, get_claude_code_token, get_codex_token_if_valid,
+    get_gemini_access_token_if_valid, antigravity_auth_available,
+    ANTIGRAVITY_ENDPOINTS, ANTIGRAVITY_VERSION,
     GEMINI_OAUTH_CLIENT_ID, GEMINI_OAUTH_CLIENT_SECRET, GOOGLE_TOKEN_ENDPOINT,
 };
 use crate::ai::ollama::OllamaClient;
@@ -170,6 +172,19 @@ async fn call_provider(
                 ))?;
             let base = entry.base_url.clone().unwrap_or_else(|| "https://openrouter.ai/api".into());
             call_openai_compat(kind, &key, &base, &model, messages, ai_config, streaming, on_token).await
+        }
+
+        ProviderKind::Antigravity => {
+            // Refresh the antigravity Google OAuth access token on every call
+            // (short-lived tokens, no local caching needed)
+            let (access_token, project_id) = get_antigravity_token()
+                .ok_or_else(|| HsxError::AiUnavailable(
+                    "Antigravity: no OpenCode account found.\n  \
+                     Install OpenCode and add an account: https://opencode.ai\n  \
+                     Then install the plugin: npm i -g opencode-antigravity-auth\n  \
+                     Run `hsx provider setup antigravity` to verify.".into(),
+                ))?;
+            call_antigravity(&access_token, &project_id, &model, messages, ai_config, streaming, on_token).await
         }
     }
 }
@@ -508,6 +523,16 @@ async fn gemini_read_stream(
     model: &str,
     on_token: &mut dyn FnMut(&str),
 ) -> Result<ChatResult, HsxError> {
+    gemini_read_stream_with_provider(resp, model, ProviderKind::Gemini, on_token).await
+}
+
+/// Parse a Gemini SSE stream, tagging the result with the given provider.
+async fn gemini_read_stream_with_provider(
+    resp: reqwest::Response,
+    model: &str,
+    provider: ProviderKind,
+    on_token: &mut dyn FnMut(&str),
+) -> Result<ChatResult, HsxError> {
     let mut stream = resp.bytes_stream();
     let mut full = String::new();
     let mut buf = Vec::<u8>::new();
@@ -533,7 +558,7 @@ async fn gemini_read_stream(
             }
         }
     }
-    Ok(ChatResult { content: full, model_used: model.to_string(), provider: ProviderKind::Gemini })
+    Ok(ChatResult { content: full, model_used: model.to_string(), provider })
 }
 
 /// Call Gemini REST API with an **API key** (`?key=` query parameter).
@@ -706,6 +731,115 @@ async fn refresh_gemini_token_async(_ai_config: &AiConfig) -> Option<String> {
     Some(new_token)
 }
 
+// ─── OpenCode Antigravity (Google Cloud Code Assist) ─────────────────────────
+//
+// Antigravity routes Gemini-format requests to Google's internal Cloud Code Assist
+// API, which proxies them to Gemini 3 (Pro/Flash) and Claude (Sonnet/Opus) models
+// without requiring any API key — only a Google OAuth access token from the
+// `opencode-antigravity-auth` plugin.
+//
+// Request format: same as Gemini REST API (contents[] body)
+// Auth:           Authorization: Bearer {access_token}
+// Extra headers:  User-Agent, X-Goog-Api-Client, Client-Metadata (required for routing)
+// Endpoint:       {cloudcode-pa}/v1internal:generateContent[?alt=sse]
+
+/// Call the Google Cloud Code Assist API via Antigravity OAuth credentials.
+///
+/// The body format is identical to the Gemini REST API (`contents[]`).
+/// The endpoint routes automatically based on the model name prefix:
+/// - `antigravity-gemini-*`  → Gemini 3 models
+/// - `antigravity-claude-*`  → Claude models via Vertex AI
+#[allow(clippy::too_many_arguments)]
+async fn call_antigravity(
+    access_token: &str,
+    _project_id: &str,
+    model: &str,
+    messages: &[crate::ai::types::ChatMessage],
+    ai_config: &AiConfig,
+    streaming: bool,
+    on_token: &mut dyn FnMut(&str),
+) -> Result<ChatResult, HsxError> {
+    let contents = gemini_build_contents(messages);
+    let body = serde_json::json!({
+        "contents": contents,
+        "generationConfig": {
+            "maxOutputTokens": ai_config.max_context_tokens,
+            "temperature": ai_config.temperature,
+        },
+        "model": model,
+    });
+
+    let ua = format!(
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 \
+         (KHTML, like Gecko) Antigravity/{ANTIGRAVITY_VERSION} \
+         Chrome/138.0.7204.235 Electron/37.3.1 Safari/537.36"
+    );
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(ai_config.timeout_secs))
+        .user_agent(&ua)
+        .build()
+        .map_err(|e| HsxError::AiUnavailable(format!("HTTP client build error: {e}")))?;
+
+    let action = if streaming { "generateContent?alt=sse" } else { "generateContent" };
+
+    // Try each endpoint in order; first success wins
+    let mut last_err = String::new();
+    for &endpoint in ANTIGRAVITY_ENDPOINTS {
+        let url = format!("{endpoint}/v1internal:{action}");
+
+        let resp = client
+            .post(&url)
+            .header("Authorization", format!("Bearer {access_token}"))
+            .header("Content-Type", "application/json")
+            .header("X-Goog-Api-Client", "google-cloud-sdk vscode_cloudshelleditor/0.1")
+            .header("Client-Metadata", r#"{"ideType":"IDE_UNSPECIFIED","platform":"PLATFORM_UNSPECIFIED","pluginType":"GEMINI"}"#)
+            .json(&body)
+            .send()
+            .await;
+
+        let resp = match resp {
+            Ok(r) => r,
+            Err(e) => {
+                last_err = format!("Request to {endpoint} failed: {e}");
+                tracing::debug!("Antigravity endpoint {endpoint} failed: {e}");
+                continue;
+            }
+        };
+
+        let status = resp.status();
+        if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
+            return Err(HsxError::AiUnavailable(
+                "Antigravity: authentication failed — re-run OpenCode to refresh your session.\n  \
+                 Run `opencode` once, then retry.".into(),
+            ));
+        }
+        if !status.is_success() {
+            let body_text = resp.text().await.unwrap_or_default();
+            last_err = format!("Antigravity API error {status} at {endpoint}: {body_text}");
+            tracing::debug!("{last_err}");
+            continue;
+        }
+
+        return if streaming {
+            // Gemini SSE format
+            gemini_read_stream_with_provider(resp, model, ProviderKind::Antigravity, on_token).await
+        } else {
+            let parsed: GeminiResponse = resp.json().await
+                .map_err(|e| HsxError::AiUnavailable(format!("Invalid Antigravity response: {e}")))?;
+            let content = parsed.candidates.into_iter().next()
+                .map(|c| c.content.parts.into_iter().filter_map(|p| p.text).collect::<Vec<_>>().join(""))
+                .unwrap_or_default();
+            Ok(ChatResult { content, model_used: model.to_string(), provider: ProviderKind::Antigravity })
+        };
+    }
+
+    Err(HsxError::AiUnavailable(format!(
+        "Antigravity: all endpoints failed. Last error: {last_err}\n  \
+         Ensure your OpenCode session is active and the antigravity plugin is installed."
+    )))
+}
+
 // ─── Gemini CLI subprocess ────────────────────────────────────────────────────
 
 async fn call_gemini_cli(
@@ -842,6 +976,18 @@ pub async fn check_provider(
             } else {
                 ProviderStatus::Unavailable {
                     reason: "No API key (set OPENROUTER_API_KEY or run `hsx provider setup openrouter`)".into(),
+                }
+            }
+        }
+
+        ProviderKind::Antigravity => {
+            if antigravity_auth_available() {
+                ProviderStatus::Available { model_count: None }
+            } else {
+                ProviderStatus::Unavailable {
+                    reason: "No OpenCode Antigravity account found.\n    \
+                             Install: npm i -g opencode-antigravity-auth\n    \
+                             Then run `opencode` to authenticate.".into(),
                 }
             }
         }

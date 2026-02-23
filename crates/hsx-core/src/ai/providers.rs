@@ -1,12 +1,14 @@
 //! Multi-provider AI configuration and types.
 //!
 //! Supported providers:
-//! - `ollama`      — local models via Ollama HTTP API (no API key)
-//! - `openai`      — OpenAI chat completions API
-//! - `anthropic`   — Anthropic Messages API (Claude)
-//! - `gemini`      — Google Gemini REST API (default: gemini-2.0-flash)
-//! - `gemini_cli`  — Local `gemini` CLI subprocess
-//! - `openrouter`  — OpenRouter aggregator (OpenAI-compatible)
+//! - `ollama`        — local models via Ollama HTTP API (no API key)
+//! - `openai`        — OpenAI chat completions API (API key or Codex CLI OAuth)
+//! - `anthropic`     — Anthropic Messages API / Claude (API key or Claude Code OAuth)
+//! - `gemini`        — Google Gemini REST API (API key or Gemini CLI OAuth)
+//! - `gemini_cli`    — Local `gemini` CLI subprocess (Gemini subscription)
+//! - `openrouter`    — OpenRouter aggregator — 100+ models, one API key
+//! - `antigravity`   — OpenCode Antigravity (Google Cloud Code Assist proxy:
+//!   free Gemini 3 + Claude Sonnet/Opus via `opencode-antigravity-auth`)
 
 use serde::{Deserialize, Serialize};
 
@@ -16,52 +18,62 @@ use serde::{Deserialize, Serialize};
 pub enum ProviderKind {
     /// Ollama local models (no API key required).
     Ollama,
-    /// OpenAI chat completions API.
+    /// OpenAI chat completions API (API key or Codex CLI OAuth).
     OpenAi,
-    /// Anthropic Messages API (Claude models).
+    /// Anthropic Messages API — Claude models (API key or Claude Code OAuth).
     Anthropic,
-    /// Google Gemini REST API.
+    /// Google Gemini REST API (API key or Gemini CLI OAuth).
     Gemini,
-    /// Local `gemini` CLI subprocess (requires `gemini` in PATH).
+    /// Local `gemini` CLI subprocess (requires `gemini` in PATH + Gemini subscription).
     GeminiCli,
-    /// OpenRouter aggregator — access 100+ models with one key.
+    /// OpenRouter aggregator — access 100+ models with one API key.
     OpenRouter,
+    /// OpenCode Antigravity — Google Cloud Code Assist proxy.
+    ///
+    /// Provides free access to Gemini 3 (Pro, Flash) and Claude Sonnet/Opus models
+    /// using credentials from the `opencode-antigravity-auth` plugin.
+    /// Credentials are stored in `~/.config/opencode/antigravity-accounts.json`.
+    Antigravity,
 }
 
 impl ProviderKind {
     /// Human-readable display name.
     pub fn display_name(&self) -> &'static str {
         match self {
-            Self::Ollama     => "Ollama (local)",
-            Self::OpenAi     => "OpenAI",
-            Self::Anthropic  => "Anthropic / Claude",
-            Self::Gemini     => "Google Gemini",
-            Self::GeminiCli  => "Gemini CLI (local)",
-            Self::OpenRouter => "OpenRouter",
+            Self::Ollama       => "Ollama (local)",
+            Self::OpenAi       => "OpenAI",
+            Self::Anthropic    => "Anthropic / Claude",
+            Self::Gemini       => "Google Gemini",
+            Self::GeminiCli    => "Gemini CLI (local)",
+            Self::OpenRouter   => "OpenRouter",
+            Self::Antigravity  => "Antigravity (OpenCode)",
         }
     }
 
     /// Default model ID for this provider.
     pub fn default_model(&self) -> &'static str {
         match self {
-            Self::Ollama     => "qwen3:8b",
-            Self::OpenAi     => "gpt-4o-mini",
-            Self::Anthropic  => "claude-haiku-4-5-20251001",
-            Self::Gemini     => "gemini-2.0-flash",
-            Self::GeminiCli  => "gemini-2.0-flash",
-            Self::OpenRouter => "google/gemini-2.0-flash-001",
+            Self::Ollama       => "qwen3:8b",
+            Self::OpenAi       => "gpt-4o-mini",
+            Self::Anthropic    => "claude-haiku-4-5-20251001",
+            Self::Gemini       => "gemini-2.0-flash",
+            Self::GeminiCli    => "gemini-2.0-flash",
+            Self::OpenRouter   => "google/gemini-2.0-flash-001",
+            Self::Antigravity  => "antigravity-gemini-3-flash",
         }
     }
 
     /// Parse from a string slug (case-insensitive, accepts common aliases).
     pub fn from_slug(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
-            "ollama"                                   => Some(Self::Ollama),
-            "openai" | "open-ai" | "open_ai"          => Some(Self::OpenAi),
-            "anthropic" | "claude"                     => Some(Self::Anthropic),
-            "gemini" | "google" | "google-gemini"     => Some(Self::Gemini),
-            "gemini-cli" | "gemini_cli" | "geminicli" => Some(Self::GeminiCli),
-            "openrouter" | "open-router" | "open_router" => Some(Self::OpenRouter),
+            "ollama"                                        => Some(Self::Ollama),
+            "openai" | "open-ai" | "open_ai"               => Some(Self::OpenAi),
+            "anthropic" | "claude"                          => Some(Self::Anthropic),
+            "gemini" | "google" | "google-gemini"          => Some(Self::Gemini),
+            "gemini-cli" | "gemini_cli" | "geminicli"      => Some(Self::GeminiCli),
+            "openrouter" | "open-router" | "open_router"   => Some(Self::OpenRouter),
+            "antigravity" | "anti-gravity" | "anti_gravity"
+            | "opencode" | "open-code" | "open_code"       => Some(Self::Antigravity),
             _ => None,
         }
     }
@@ -69,19 +81,22 @@ impl ProviderKind {
     /// Canonical config key slug used in TOML and the CLI.
     pub fn slug(&self) -> &'static str {
         match self {
-            Self::Ollama     => "ollama",
-            Self::OpenAi     => "openai",
-            Self::Anthropic  => "anthropic",
-            Self::Gemini     => "gemini",
-            Self::GeminiCli  => "gemini_cli",
-            Self::OpenRouter => "openrouter",
+            Self::Ollama       => "ollama",
+            Self::OpenAi       => "openai",
+            Self::Anthropic    => "anthropic",
+            Self::Gemini       => "gemini",
+            Self::GeminiCli    => "gemini_cli",
+            Self::OpenRouter   => "openrouter",
+            Self::Antigravity  => "antigravity",
         }
     }
 
-    /// Environment variable name for the API key (`None` for local providers).
+    /// Environment variable name for the API key (`None` for no-key providers).
+    ///
+    /// Note: Antigravity uses OAuth rather than an API key, so this returns `None`.
     pub fn api_key_env(&self) -> Option<&'static str> {
         match self {
-            Self::Ollama | Self::GeminiCli => None,
+            Self::Ollama | Self::GeminiCli | Self::Antigravity => None,
             Self::OpenAi     => Some("OPENAI_API_KEY"),
             Self::Anthropic  => Some("ANTHROPIC_API_KEY"),
             Self::Gemini     => Some("GEMINI_API_KEY"),
@@ -89,17 +104,19 @@ impl ProviderKind {
         }
     }
 
-    /// Whether this provider requires an API key to operate.
+    /// Whether this provider requires an explicit API key to operate.
+    ///
+    /// Returns `false` for local providers and OAuth-only providers (Antigravity).
     pub fn requires_api_key(&self) -> bool {
         self.api_key_env().is_some()
     }
 
     /// All canonical provider slugs (for help text and tab completion).
     pub fn all_slugs() -> &'static [&'static str] {
-        &["ollama", "openai", "anthropic", "gemini", "gemini_cli", "openrouter"]
+        &["ollama", "openai", "anthropic", "gemini", "gemini_cli", "openrouter", "antigravity"]
     }
 
-    /// Link to the API key management page for this provider.
+    /// Link to the API key management page for this provider (`None` if no key needed).
     pub fn api_docs_url(&self) -> Option<&'static str> {
         match self {
             Self::OpenAi     => Some("https://platform.openai.com/api-keys"),
@@ -107,6 +124,19 @@ impl ProviderKind {
             Self::Gemini     => Some("https://aistudio.google.com/app/apikey"),
             Self::OpenRouter => Some("https://openrouter.ai/keys"),
             _ => None,
+        }
+    }
+
+    /// Short note about how this provider authenticates (for help text).
+    pub fn auth_note(&self) -> &'static str {
+        match self {
+            Self::Ollama      => "local binary, no key",
+            Self::OpenAi      => "API key or Codex CLI OAuth (ChatGPT subscription)",
+            Self::Anthropic   => "API key or Claude Code OAuth (Max/Pro subscription)",
+            Self::Gemini      => "API key or Gemini CLI OAuth (Gemini subscription)",
+            Self::GeminiCli   => "local binary + Gemini subscription",
+            Self::OpenRouter  => "API key (openrouter.ai)",
+            Self::Antigravity => "OAuth via opencode-antigravity-auth — no key needed",
         }
     }
 }
@@ -181,7 +211,7 @@ pub struct ProvidersConfig {
     /// If a provider fails (bad key, network error, etc.), the next one in
     /// the list is tried automatically.
     ///
-    /// Example: `["gemini", "openai", "ollama"]`
+    /// Example: `["antigravity", "gemini", "anthropic", "openai", "ollama"]`
     ///
     /// Defaults to `["ollama"]` for backward compatibility when empty.
     pub fallback_chain: Vec<String>,
@@ -198,30 +228,34 @@ pub struct ProvidersConfig {
     pub gemini_cli: ProviderEntry,
     /// OpenRouter API configuration.
     pub openrouter: ProviderEntry,
+    /// OpenCode Antigravity OAuth configuration (model override only — no API key needed).
+    pub antigravity: ProviderEntry,
 }
 
 impl ProvidersConfig {
     /// Immutable reference to the entry for a given provider kind.
     pub fn entry(&self, kind: ProviderKind) -> &ProviderEntry {
         match kind {
-            ProviderKind::Ollama     => &self.ollama,
-            ProviderKind::OpenAi     => &self.openai,
-            ProviderKind::Anthropic  => &self.anthropic,
-            ProviderKind::Gemini     => &self.gemini,
-            ProviderKind::GeminiCli  => &self.gemini_cli,
-            ProviderKind::OpenRouter => &self.openrouter,
+            ProviderKind::Ollama       => &self.ollama,
+            ProviderKind::OpenAi       => &self.openai,
+            ProviderKind::Anthropic    => &self.anthropic,
+            ProviderKind::Gemini       => &self.gemini,
+            ProviderKind::GeminiCli    => &self.gemini_cli,
+            ProviderKind::OpenRouter   => &self.openrouter,
+            ProviderKind::Antigravity  => &self.antigravity,
         }
     }
 
     /// Mutable reference to the entry for a given provider kind.
     pub fn entry_mut(&mut self, kind: ProviderKind) -> &mut ProviderEntry {
         match kind {
-            ProviderKind::Ollama     => &mut self.ollama,
-            ProviderKind::OpenAi     => &mut self.openai,
-            ProviderKind::Anthropic  => &mut self.anthropic,
-            ProviderKind::Gemini     => &mut self.gemini,
-            ProviderKind::GeminiCli  => &mut self.gemini_cli,
-            ProviderKind::OpenRouter => &mut self.openrouter,
+            ProviderKind::Ollama       => &mut self.ollama,
+            ProviderKind::OpenAi       => &mut self.openai,
+            ProviderKind::Anthropic    => &mut self.anthropic,
+            ProviderKind::Gemini       => &mut self.gemini,
+            ProviderKind::GeminiCli    => &mut self.gemini_cli,
+            ProviderKind::OpenRouter   => &mut self.openrouter,
+            ProviderKind::Antigravity  => &mut self.antigravity,
         }
     }
 
@@ -240,8 +274,12 @@ impl ProvidersConfig {
             .collect()
     }
 
-    /// Return all providers that appear to be usable (key set or local).
+    /// Return all providers that appear to be usable (key set or local/OAuth).
     pub fn configured_providers(&self) -> Vec<ProviderKind> {
+        use crate::ai::credentials::{
+            antigravity_auth_available, claude_code_auth_available,
+            codex_auth_available, get_gemini_access_token_if_valid, read_gemini_creds,
+        };
         const ALL: &[ProviderKind] = &[
             ProviderKind::Ollama,
             ProviderKind::OpenAi,
@@ -249,6 +287,7 @@ impl ProvidersConfig {
             ProviderKind::Gemini,
             ProviderKind::GeminiCli,
             ProviderKind::OpenRouter,
+            ProviderKind::Antigravity,
         ];
         ALL.iter()
             .copied()
@@ -257,9 +296,25 @@ impl ProvidersConfig {
                 if !entry.enabled {
                     return false;
                 }
-                match k.api_key_env() {
-                    None      => true, // local provider — no key needed
-                    Some(env) => entry.has_key(env),
+                match k {
+                    // OAuth-capable: API key OR subscription session
+                    ProviderKind::OpenAi => {
+                        entry.has_key("OPENAI_API_KEY") || codex_auth_available()
+                    }
+                    ProviderKind::Anthropic => {
+                        entry.has_key("ANTHROPIC_API_KEY") || claude_code_auth_available()
+                    }
+                    ProviderKind::Gemini => {
+                        entry.has_key("GEMINI_API_KEY")
+                            || get_gemini_access_token_if_valid().is_some()
+                            || read_gemini_creds().is_some()
+                    }
+                    // OAuth-only (no API key)
+                    ProviderKind::Antigravity => antigravity_auth_available(),
+                    // Local — always usable (availability checked at runtime)
+                    ProviderKind::Ollama | ProviderKind::GeminiCli => true,
+                    // API key only
+                    ProviderKind::OpenRouter => entry.has_key("OPENROUTER_API_KEY"),
                 }
             })
             .collect()
@@ -278,6 +333,8 @@ mod tests {
         assert_eq!(ProviderKind::from_slug("gemini_cli"), Some(ProviderKind::GeminiCli));
         assert_eq!(ProviderKind::from_slug("openrouter"), Some(ProviderKind::OpenRouter));
         assert_eq!(ProviderKind::from_slug("ollama"), Some(ProviderKind::Ollama));
+        assert_eq!(ProviderKind::from_slug("antigravity"), Some(ProviderKind::Antigravity));
+        assert_eq!(ProviderKind::from_slug("opencode"), Some(ProviderKind::Antigravity));
         assert_eq!(ProviderKind::from_slug("bogus"), None);
     }
 
@@ -310,7 +367,10 @@ mod tests {
     fn entry_ref_all_kinds() {
         let cfg = ProvidersConfig::default();
         for k in ProviderKind::all_slugs() {
-            let _ = cfg.entry(ProviderKind::from_slug(k).unwrap());
+            let kind = ProviderKind::from_slug(k).unwrap();
+            let _ = cfg.entry(kind);
+            // All slugs should round-trip correctly
+            assert_eq!(kind.slug(), *k);
         }
     }
 

@@ -10,8 +10,9 @@
 use crate::cli::{ProviderAction, ProviderSetArgs};
 use colored::Colorize;
 use hsx_core::ai::credentials::{
-    claude_code_auth_available, codex_auth_available, get_claude_code_token,
-    get_codex_token_if_valid, get_gemini_access_token_if_valid, read_gemini_creds,
+    antigravity_auth_available, claude_code_auth_available, codex_auth_available,
+    get_claude_code_token, get_codex_token_if_valid,
+    get_gemini_access_token_if_valid, read_gemini_creds,
 };
 use hsx_core::ai::providers::ProviderKind;
 use hsx_core::ai::{check_provider, AiConfig, ProviderStatus};
@@ -47,12 +48,13 @@ async fn list(config: &HsxConfig) -> anyhow::Result<()> {
     println!();
 
     const ALL: &[ProviderKind] = &[
-        ProviderKind::Ollama,
-        ProviderKind::OpenAi,
+        ProviderKind::Antigravity,
         ProviderKind::Anthropic,
         ProviderKind::Gemini,
-        ProviderKind::GeminiCli,
+        ProviderKind::OpenAi,
         ProviderKind::OpenRouter,
+        ProviderKind::GeminiCli,
+        ProviderKind::Ollama,
     ];
 
     for kind in ALL {
@@ -104,6 +106,17 @@ async fn list(config: &HsxConfig) -> anyhow::Result<()> {
 /// Return a human-readable auth method note for the `list` output.
 fn provider_auth_note(kind: ProviderKind, entry: &hsx_core::ai::providers::ProviderEntry) -> String {
     match kind {
+        ProviderKind::Antigravity => {
+            if antigravity_auth_available() {
+                // Try to get account email
+                let email = hsx_core::ai::credentials::get_primary_antigravity_account()
+                    .map(|a| a.email)
+                    .unwrap_or_else(|| "account".into());
+                format!("Antigravity OAuth ({email})")
+            } else {
+                "OAuth via opencode-antigravity-auth".into()
+            }
+        }
         ProviderKind::Anthropic => {
             if entry.api_key.is_some() || std::env::var("ANTHROPIC_API_KEY").is_ok() {
                 "API key".into()
@@ -113,7 +126,7 @@ fn provider_auth_note(kind: ProviderKind, entry: &hsx_core::ai::providers::Provi
                     .unwrap_or_else(|| "subscription".into());
                 format!("Claude Code {sub} (OAuth)")
             } else {
-                "API key".into()
+                "API key or Claude Code OAuth".into()
             }
         }
         ProviderKind::Gemini => {
@@ -124,7 +137,7 @@ fn provider_auth_note(kind: ProviderKind, entry: &hsx_core::ai::providers::Provi
             } else if read_gemini_creds().is_some() {
                 "Gemini CLI OAuth (needs refresh)".into()
             } else {
-                "API key".into()
+                "API key or Gemini CLI OAuth".into()
             }
         }
         ProviderKind::OpenAi => {
@@ -136,12 +149,12 @@ fn provider_auth_note(kind: ProviderKind, entry: &hsx_core::ai::providers::Provi
                     .unwrap_or("needs refresh");
                 format!("Codex CLI OAuth ({exp})")
             } else {
-                "API key".into()
+                "API key or Codex CLI OAuth".into()
             }
         }
-        ProviderKind::Ollama => "local (no key)".into(),
+        ProviderKind::Ollama    => "local (no key)".into(),
         ProviderKind::GeminiCli => "local binary (no key)".into(),
-        ProviderKind::OpenRouter => "API key".into(),
+        ProviderKind::OpenRouter => "API key (openrouter.ai)".into(),
     }
 }
 
@@ -159,48 +172,57 @@ async fn setup(config: &HsxConfig, provider_slug: Option<&str>) -> anyhow::Resul
 
 fn setup_wizard(config: &HsxConfig) -> anyhow::Result<()> {
     println!("{}", "HyperSearchX AI Provider Setup Wizard".bold().cyan());
-    println!("{}", "─".repeat(65));
+    println!("{}", "─".repeat(70));
     println!();
-    println!("Configures AI providers for `hsx ai`, `hsx research`, and other AI commands.");
-    println!("Keys are saved to: {}", HsxConfig::config_file_path().display().to_string().cyan());
+    println!("Configures AI providers for `hsx ai`, `hsx research`, and all AI commands.");
+    println!("Config saved to: {}", HsxConfig::config_file_path().display().to_string().cyan());
     println!();
-    println!("  {} Subscription auth is auto-detected (Claude Code, Gemini CLI, Codex CLI).", "★".yellow());
-    println!("    No API key needed if you already have a qualifying subscription!");
+    println!("  {} Subscription / OAuth auth is auto-detected — no API key needed if you", "★".yellow().bold());
+    println!("    have a qualifying subscription or an OpenCode Antigravity account!");
     println!();
 
-    // Detect which providers already have subscription sessions
+    // ── Detect active sessions ────────────────────────────────────────────────
+    let has_antigravity    = antigravity_auth_available();
     let has_claude_session = claude_code_auth_available();
     let has_gemini_session = get_gemini_access_token_if_valid().is_some()
         || read_gemini_creds().is_some();
-    let has_codex_session = codex_auth_available();
+    let has_codex_session  = codex_auth_available();
 
+    // (kind, description)
     let providers: &[(ProviderKind, &str)] = &[
-        (ProviderKind::Gemini,     "Google Gemini 2.0 Flash — fast, generous free tier"),
-        (ProviderKind::OpenAi,     "OpenAI — gpt-4o-mini (or ChatGPT subscription via Codex CLI)"),
-        (ProviderKind::Anthropic,  "Anthropic — claude-haiku (or Claude Max/Pro subscription)"),
-        (ProviderKind::OpenRouter, "OpenRouter — 100+ models, one API key (openrouter.ai)"),
-        (ProviderKind::Ollama,     "Ollama — local models, 100% private, no internet"),
-        (ProviderKind::GeminiCli,  "Gemini CLI — local `gemini` binary, Gemini subscription"),
+        (ProviderKind::Antigravity, "Gemini 3 + Claude Sonnet/Opus — FREE via OpenCode"),
+        (ProviderKind::Anthropic,   "Claude Haiku/Sonnet — API key OR Claude Max/Pro OAuth"),
+        (ProviderKind::Gemini,      "Gemini 2.0 Flash — API key OR Gemini CLI OAuth"),
+        (ProviderKind::OpenAi,      "GPT-4o-mini — API key OR ChatGPT (Codex CLI OAuth)"),
+        (ProviderKind::OpenRouter,  "100+ models, one API key (openrouter.ai)"),
+        (ProviderKind::GeminiCli,   "Local `gemini` binary — Gemini subscription required"),
+        (ProviderKind::Ollama,      "Local models — 100% private, no key, no internet"),
     ];
 
     println!("  Available providers:");
     for (i, (kind, desc)) in providers.iter().enumerate() {
-        let session_badge = match *kind {
+        let badge = match *kind {
+            ProviderKind::Antigravity if has_antigravity => {
+                let email = hsx_core::ai::credentials::get_primary_antigravity_account()
+                    .map(|a| a.email)
+                    .unwrap_or_else(|| "account".into());
+                format!(" {}", format!("[Antigravity session ✓ — {email}]").green())
+            }
             ProviderKind::Anthropic if has_claude_session => {
                 let sub = get_claude_code_token()
                     .map(|c| c.subscription_type)
                     .unwrap_or_else(|| "subscription".into());
-                format!(" {}", format!("[Claude Code {sub} detected ✓]").green())
+                format!(" {}", format!("[Claude Code {sub} ✓]").green())
             }
             ProviderKind::Gemini if has_gemini_session => {
-                format!(" {}", "[Gemini CLI session detected ✓]".green())
+                format!(" {}", "[Gemini CLI OAuth ✓]".green())
             }
             ProviderKind::OpenAi if has_codex_session => {
-                format!(" {}", "[Codex CLI session detected ✓]".green())
+                format!(" {}", "[Codex CLI OAuth ✓]".green())
             }
             _ => String::new(),
         };
-        println!("  {}. {:<20} {}{}", i + 1, kind.display_name().bold(), desc.dimmed(), session_badge);
+        println!("  {}. {:<24} {}{}", i + 1, kind.display_name().bold(), desc.dimmed(), badge);
     }
     println!();
 
@@ -208,29 +230,47 @@ fn setup_wizard(config: &HsxConfig) -> anyhow::Result<()> {
     let mut cfg = config.clone();
 
     for (kind, _) in providers {
-        // Auto-add if a session is already available
         let has_session = match kind {
-            ProviderKind::Anthropic => has_claude_session,
-            ProviderKind::Gemini    => has_gemini_session,
-            ProviderKind::OpenAi    => has_codex_session,
-            _                       => false,
+            ProviderKind::Antigravity => has_antigravity,
+            ProviderKind::Anthropic   => has_claude_session,
+            ProviderKind::Gemini      => has_gemini_session,
+            ProviderKind::OpenAi      => has_codex_session,
+            _                         => false,
         };
 
         if has_session {
             let ans = prompt(&format!(
-                "  Include {} via subscription session? [Y/n] ",
+                "  {} — include via OAuth/subscription? [Y/n] ",
                 kind.display_name().bold()
             ));
             if !ans.trim().to_lowercase().starts_with('n') {
                 chain_choice.push(kind.slug().to_string());
-                println!("  {} {} added (subscription auth)", "✓".green(), kind.display_name());
+                println!("  {} {} added (OAuth)", "✓".green(), kind.display_name());
+            }
+            // For key-capable providers, optionally also store an API key
+            if *kind != ProviderKind::Antigravity && kind.requires_api_key() {
+                let ans2 = prompt(&format!(
+                    "  {} — also add API key for higher rate limits? [y/N] ",
+                    kind.display_name().bold()
+                ));
+                if ans2.trim().to_lowercase().starts_with('y') {
+                    if let Some(url) = kind.api_docs_url() {
+                        println!("    Get key: {}", url.cyan());
+                    }
+                    let key = prompt("    API key: ").trim().to_string();
+                    if !key.is_empty() {
+                        cfg.ai.providers.entry_mut(*kind).api_key = Some(key);
+                        cfg.save().map_err(|e| anyhow::anyhow!("Failed to save config: {e}"))?;
+                        println!("  {} API key saved for {}", "✓".green(), kind.display_name());
+                    }
+                }
             }
             continue;
         }
 
         if !kind.requires_api_key() {
             let ans = prompt(&format!(
-                "  Include {} in fallback chain? [y/N] ",
+                "  {} — add to fallback chain? [y/N] ",
                 kind.display_name().bold()
             ));
             if ans.trim().to_lowercase().starts_with('y') {
@@ -247,6 +287,9 @@ fn setup_wizard(config: &HsxConfig) -> anyhow::Result<()> {
         } else {
             println!();
         }
+        if let Some(env) = kind.api_key_env() {
+            println!("    Or: export {env}=<key>  (env var, not stored in config)");
+        }
         let ans = prompt("  API key (Enter to skip): ");
         let key = ans.trim().to_string();
         if key.is_empty() {
@@ -254,16 +297,11 @@ fn setup_wizard(config: &HsxConfig) -> anyhow::Result<()> {
         }
 
         cfg.ai.providers.entry_mut(*kind).api_key = Some(key);
-
-        let model_ans = prompt(&format!(
-            "  Model [{}]: ",
-            kind.default_model()
-        ));
+        let model_ans = prompt(&format!("  Model [{}]: ", kind.default_model()));
         let model_str = model_ans.trim().to_string();
         if !model_str.is_empty() {
             cfg.ai.providers.entry_mut(*kind).model = Some(model_str);
         }
-
         cfg.save().map_err(|e| anyhow::anyhow!("Failed to save config: {e}"))?;
         chain_choice.push(kind.slug().to_string());
         println!("  {} {} saved", "✓".green(), kind.display_name());
@@ -273,9 +311,10 @@ fn setup_wizard(config: &HsxConfig) -> anyhow::Result<()> {
         println!();
         println!("{}", "No providers configured. Run `hsx provider setup <name>` to add one.".yellow());
         println!("  Examples:");
-        println!("    hsx provider setup gemini      # free API key");
-        println!("    hsx provider setup anthropic   # Claude Code subscription auto-detected");
-        println!("    hsx provider setup ollama      # local, no key needed");
+        println!("    hsx provider setup antigravity   # free via OpenCode");
+        println!("    hsx provider setup gemini        # free API key");
+        println!("    hsx provider setup anthropic     # Claude Code OAuth auto-detected");
+        println!("    hsx provider setup ollama        # local, no key needed");
         return Ok(());
     }
 
@@ -288,7 +327,7 @@ fn setup_wizard(config: &HsxConfig) -> anyhow::Result<()> {
     println!();
     println!("  Test now:  {}", "hsx provider test".cyan());
     println!("  Try it:    {}", "hsx ai \"What is quantum computing?\"".cyan());
-    println!("  Reorder:   {}", "hsx provider chain gemini openai ollama".dimmed());
+    println!("  Reorder:   {}", "hsx provider chain antigravity gemini anthropic openai ollama".dimmed());
 
     Ok(())
 }
@@ -296,6 +335,57 @@ fn setup_wizard(config: &HsxConfig) -> anyhow::Result<()> {
 fn setup_one(config: &HsxConfig, kind: ProviderKind) -> anyhow::Result<()> {
     println!("{} — Setup", kind.display_name().bold().cyan());
     println!("{}", "─".repeat(55));
+
+    // ── Antigravity: OAuth-only, no key needed ────────────────────────────────
+    if kind == ProviderKind::Antigravity {
+        if antigravity_auth_available() {
+            let email = hsx_core::ai::credentials::get_primary_antigravity_account()
+                .map(|a| a.email)
+                .unwrap_or_else(|| "your account".into());
+            println!(
+                "  {} Antigravity session detected for {}.",
+                "★".yellow().bold(), email.green().bold()
+            );
+            println!("    HyperSearchX will use this session to access Gemini 3 and Claude models.");
+            println!("    Models available: antigravity-gemini-3-flash, antigravity-gemini-3-pro,");
+            println!("                      antigravity-claude-sonnet-4-5, antigravity-claude-opus-4-5-thinking");
+            println!();
+            let ans = prompt("  Set a default model override? [y/N] ");
+            if ans.trim().to_lowercase().starts_with('y') {
+                let model_ans = prompt(&format!("  Model [{}]: ", kind.default_model()));
+                let model_str = model_ans.trim().to_string();
+                let mut cfg = config.clone();
+                if !model_str.is_empty() {
+                    cfg.ai.providers.entry_mut(kind).model = Some(model_str);
+                }
+                if !cfg.ai.providers.fallback_chain.iter().any(|s| ProviderKind::from_slug(s) == Some(kind)) {
+                    cfg.ai.providers.fallback_chain.insert(0, kind.slug().to_string());
+                }
+                cfg.save().map_err(|e| anyhow::anyhow!("Failed to save config: {e}"))?;
+            } else {
+                let mut cfg = config.clone();
+                if !cfg.ai.providers.fallback_chain.iter().any(|s| ProviderKind::from_slug(s) == Some(kind)) {
+                    cfg.ai.providers.fallback_chain.insert(0, kind.slug().to_string());
+                }
+                cfg.save().map_err(|e| anyhow::anyhow!("Failed to save config: {e}"))?;
+            }
+            println!();
+            println!("  {} Antigravity added to fallback chain.", "✓".green().bold());
+            println!("  Test: {}", "hsx provider test antigravity".cyan());
+            return Ok(());
+        } else {
+            println!("  {} No Antigravity account found.", "✗".red().bold());
+            println!();
+            println!("  To set up Antigravity:");
+            println!("    1. Install OpenCode:  {}", "curl -fsSL https://opencode.ai/install | bash".cyan());
+            println!("    2. Install plugin:    {}", "npm i -g opencode-antigravity-auth".cyan());
+            println!("    3. Authenticate:      {}", "opencode auth".cyan());
+            println!("    4. Re-run this setup: {}", "hsx provider setup antigravity".cyan());
+            println!();
+            println!("  This gives you FREE access to Gemini 3 Pro/Flash and Claude Sonnet/Opus.");
+            return Ok(());
+        }
+    }
 
     // Show subscription session info if available
     let session_active = match kind {

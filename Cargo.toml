@@ -20,7 +20,7 @@ description = "AI-native search engine for humans and agents"
 tokio = { version = "1", features = ["full"] }
 
 # HTTP
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip", "brotli", "cookies", "stream"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip", "brotli", "cookies", "stream", "blocking"] }
 
 # HTML parsing
 scraper = "0.21"

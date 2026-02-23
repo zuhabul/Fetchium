@@ -4,14 +4,15 @@
 //! `Search → QATBE Extract → Sandwich Layout → AI Provider → Citation Injection → Output`
 //!
 //! ## Supported Providers (2026)
-//! | Provider   | Models                                           |
-//! |------------|--------------------------------------------------|
-//! | Ollama     | gemma3:1b … qwen3:30b-a3b (local, no key)       |
-//! | OpenAI     | gpt-4o-mini, gpt-4o, o3-mini                     |
-//! | Anthropic  | claude-haiku-4-5, claude-sonnet-4-6              |
-//! | Gemini     | gemini-2.0-flash (default), gemini-1.5-pro       |
-//! | OpenRouter | 100+ models via one API key                      |
-//! | GeminiCli  | gemini-2.0-flash (local CLI, no key needed)      |
+//! | Provider      | Auth                        | Models                                          |
+//! |---------------|-----------------------------|-------------------------------------------------|
+//! | Antigravity   | OAuth (opencode-antgrav.)   | antigravity-gemini-3-*, antigravity-claude-*    |
+//! | Ollama        | local (no key)              | gemma3:1b … qwen3:30b-a3b                       |
+//! | OpenAI        | API key or Codex CLI OAuth  | gpt-4o-mini, gpt-4o, o3-mini                   |
+//! | Anthropic     | API key or Claude Code OAuth| claude-haiku-4-5, claude-sonnet-4-6             |
+//! | Gemini        | API key or Gemini CLI OAuth | gemini-2.0-flash (default), gemini-2.5-pro      |
+//! | OpenRouter    | API key                     | 100+ models via one API key                     |
+//! | GeminiCli     | local binary + subscription | gemini-2.0-flash                                |
 
 pub mod credentials;
 pub mod ollama;
