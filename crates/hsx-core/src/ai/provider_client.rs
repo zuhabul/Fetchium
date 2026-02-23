@@ -90,8 +90,10 @@ async fn call_provider(
         ProviderKind::Ollama => call_ollama(messages, &model, ai_config, streaming, on_token).await,
 
         ProviderKind::OpenAi => {
-            // Priority: 1) explicit API key / env var  2) OpenAI Codex CLI OAuth session
-            let key = if let Some(k) = entry.resolve_api_key("OPENAI_API_KEY") {
+            // Priority: 1) config/env API key  2) auth store API key  3) OpenAI Codex CLI OAuth session
+            let auth_store_key_openai = crate::ai::credentials::hsx_auth_get("openai")
+                .and_then(|a| a.api_key().map(|s| s.to_string()));
+            let key = if let Some(k) = entry.resolve_api_key("OPENAI_API_KEY").or(auth_store_key_openai) {
                 k
             } else if let Some(tok) = get_codex_token_if_valid() {
                 tracing::info!("Using OpenAI Codex CLI OAuth session (ChatGPT subscription)");
@@ -110,8 +112,10 @@ async fn call_provider(
         }
 
         ProviderKind::Anthropic => {
-            // Priority: 1) explicit API key / env var  2) Claude Code OAuth subscription
-            let (token, use_oauth) = if let Some(k) = entry.resolve_api_key("ANTHROPIC_API_KEY") {
+            // Priority: 1) config/env API key  2) auth store API key  3) Claude Code OAuth subscription
+            let auth_store_key_anthropic = crate::ai::credentials::hsx_auth_get("anthropic")
+                .and_then(|a| a.api_key().map(|s| s.to_string()));
+            let (token, use_oauth) = if let Some(k) = entry.resolve_api_key("ANTHROPIC_API_KEY").or(auth_store_key_anthropic) {
                 (k, false)
             } else if let Some(creds) = get_claude_code_token() {
                 tracing::info!(
@@ -132,8 +136,10 @@ async fn call_provider(
         }
 
         ProviderKind::Gemini => {
-            // Priority: 1) explicit API key / env var  2) Gemini CLI OAuth (antigravity auth)
-            if let Some(api_key) = entry.resolve_api_key("GEMINI_API_KEY") {
+            // Priority: 1) config/env API key  2) auth store API key  3) Gemini CLI OAuth  4) refresh
+            let auth_store_key = crate::ai::credentials::hsx_auth_get("gemini")
+                .and_then(|a| a.api_key().map(|s| s.to_string()));
+            if let Some(api_key) = entry.resolve_api_key("GEMINI_API_KEY").or(auth_store_key) {
                 call_gemini_api_key(&api_key, &model, messages, ai_config, streaming, on_token).await
             } else if let Some(access_token) = get_gemini_access_token_if_valid() {
                 tracing::info!("Using Gemini OAuth (antigravity / Gemini CLI subscription)");
@@ -659,6 +665,18 @@ async fn call_gemini_oauth(
     if !resp.status().is_success() {
         let status = resp.status();
         let body_text = resp.text().await.unwrap_or_default();
+        // 403 SCOPE_INSUFFICIENT means the Gemini CLI OAuth token was obtained with
+        // limited scopes — it cannot be used for the Generative Language REST API.
+        // Do NOT clear credentials (they're still valid for the `gemini` CLI subprocess).
+        if status == reqwest::StatusCode::FORBIDDEN && body_text.contains("ACCESS_TOKEN_SCOPE_INSUFFICIENT") {
+            return Err(HsxError::AiUnavailable(
+                "Gemini OAuth token has insufficient scopes for the REST API.
+                   Fix (choose one):
+                   • hsx provider auth gemini       (interactive setup — API key or OAuth)
+                   • export GEMINI_API_KEY=AIza...   (free key: aistudio.google.com/app/apikey)
+                   • hsx provider chain gemini_cli   (use the local `gemini` CLI instead)".into()
+            ));
+        }
         return Err(HsxError::AiUnavailable(format!("Gemini OAuth API error {status}: {body_text}")));
     }
 

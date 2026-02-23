@@ -25,7 +25,7 @@ pub mod sandwich;
 pub mod setup;
 pub mod types;
 
-pub use credentials::{detect_subscription_auth, SubscriptionAuth};
+pub use credentials::{detect_subscription_auth, hsx_auth_all, hsx_auth_get, hsx_auth_path, hsx_auth_remove, hsx_auth_set, invalidate_gemini_creds, HsxAuth, SubscriptionAuth};
 pub use ollama::OllamaClient;
 pub use pipeline::run_ai_pipeline;
 pub use provider_client::{chat_with_fallback, check_provider, ChatResult, ProviderStatus};

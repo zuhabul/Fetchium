@@ -565,6 +565,138 @@ impl SubscriptionAuth {
     }
 }
 
+
+// ─── Unified HyperSearchX auth store (~/.hypersearchx/auth.json) ─────────────
+//
+// Modelled after OpenCode's auth.json. Stores API keys and OAuth tokens for all
+// providers in a single JSON file with 0o600 permissions (owner read/write only).
+//
+// Format:
+// {
+//   "gemini":     { "type": "api", "key": "AIza..." }
+//   "anthropic":  { "type": "oauth", "access": "...", "refresh": "...", "expires": 1234567890000 }
+// }
+
+/// Credential stored in `~/.hypersearchx/auth.json`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum HsxAuth {
+    /// API key credential.
+    Api { key: String },
+    /// OAuth token credential (access + refresh).
+    Oauth {
+        access: String,
+        refresh: String,
+        /// Expiry as Unix timestamp in milliseconds.
+        expires: u64,
+    },
+}
+
+impl HsxAuth {
+    /// True if this is an API key credential.
+    pub fn is_api_key(&self) -> bool {
+        matches!(self, Self::Api { .. })
+    }
+
+    /// Return the API key if this is an `Api` credential.
+    pub fn api_key(&self) -> Option<&str> {
+        match self {
+            Self::Api { key } => Some(key.as_str()),
+            _ => None,
+        }
+    }
+
+    /// Return the access token if this is a valid, non-expired `Oauth` credential.
+    pub fn valid_access_token(&self) -> Option<&str> {
+        match self {
+            Self::Oauth { access, expires, .. } => {
+                let now_ms = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_millis() as u64)
+                    .unwrap_or(0);
+                if *expires > now_ms + 60_000 {
+                    Some(access.as_str())
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+}
+
+/// Path to the unified auth store file.
+pub fn hsx_auth_path() -> std::path::PathBuf {
+    dirs::home_dir()
+        .unwrap_or_default()
+        .join(".hypersearchx")
+        .join("auth.json")
+}
+
+/// Read all entries from the auth store.
+pub fn hsx_auth_all() -> std::collections::HashMap<String, HsxAuth> {
+    let path = hsx_auth_path();
+    let content = match std::fs::read_to_string(&path) {
+        Ok(c) => c,
+        Err(_) => return std::collections::HashMap::new(),
+    };
+    let raw: std::collections::HashMap<String, serde_json::Value> =
+        serde_json::from_str(&content).unwrap_or_default();
+    raw.into_iter()
+        .filter_map(|(k, v)| serde_json::from_value(v).ok().map(|auth| (k, auth)))
+        .collect()
+}
+
+/// Read one entry from the auth store.
+pub fn hsx_auth_get(provider: &str) -> Option<HsxAuth> {
+    hsx_auth_all().remove(provider)
+}
+
+/// Write one entry to the auth store (creates the file if absent, 0o600 permissions).
+pub fn hsx_auth_set(provider: &str, auth: HsxAuth) -> Result<(), Box<dyn std::error::Error>> {
+    let path = hsx_auth_path();
+    let mut map = hsx_auth_all();
+    map.insert(provider.to_string(), auth);
+
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    let content = serde_json::to_string_pretty(
+        &map.into_iter()
+            .map(|(k, v)| (k, serde_json::to_value(v).unwrap()))
+            .collect::<std::collections::HashMap<_, _>>(),
+    )?;
+
+    // Write with restrictive permissions (0o600 — owner only)
+    std::fs::write(&path, &content)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600))?;
+    }
+
+    Ok(())
+}
+
+/// Remove one entry from the auth store.
+pub fn hsx_auth_remove(provider: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let path = hsx_auth_path();
+    let mut map = hsx_auth_all();
+    map.remove(provider);
+
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let content = serde_json::to_string_pretty(
+        &map.into_iter()
+            .map(|(k, v)| (k, serde_json::to_value(v).unwrap()))
+            .collect::<std::collections::HashMap<_, _>>(),
+    )?;
+    std::fs::write(&path, content)?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

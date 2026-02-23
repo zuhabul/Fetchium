@@ -588,6 +588,17 @@ pub enum ProviderAction {
     /// Examples:
     ///   hsx provider keys             # show key storage guide
     Keys,
+
+    /// Interactive authentication wizard for one or all providers
+    ///
+    /// Examples:
+    ///   hsx provider auth              # wizard for all providers  
+    ///   hsx provider auth gemini       # Gemini only (API key or OAuth)
+    ///   hsx provider auth anthropic    # Anthropic API key
+    Auth {
+        /// Provider slug (omit for full wizard)
+        provider: Option<String>,
+    },
 }
 
 /// Arguments for `hsx provider set`.

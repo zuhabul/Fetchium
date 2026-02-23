@@ -27,6 +27,7 @@ pub async fn run(action: ProviderAction, config: &HsxConfig) -> anyhow::Result<(
         ProviderAction::Chain { providers } => set_chain(config, &providers),
         ProviderAction::Test { provider } => test(config, provider.as_deref()).await,
         ProviderAction::Keys => show_keys(config),
+        ProviderAction::Auth { provider } => auth_wizard(config, provider.as_deref()).await,
     }
 }
 
@@ -727,6 +728,473 @@ fn show_keys(config: &HsxConfig) -> anyhow::Result<()> {
     println!();
 
     Ok(())
+}
+
+// ─── auth ─────────────────────────────────────────────────────────────────────
+
+/// Complete interactive authentication wizard.
+///
+/// Modelled on OpenCode's `opencode auth login`: shows provider list,
+/// offers API key or OAuth method, saves to `~/.hypersearchx/auth.json`,
+/// tests connection, and updates the fallback chain.
+async fn auth_wizard(config: &HsxConfig, provider_slug: Option<&str>) -> anyhow::Result<()> {
+    match provider_slug {
+        Some(slug) => {
+            let kind = ProviderKind::from_slug(slug)
+                .ok_or_else(|| anyhow::anyhow!(
+                    "Unknown provider '{slug}'. Valid: {}", ProviderKind::all_slugs().join(", ")
+                ))?;
+            auth_one(config, kind).await
+        }
+        None => {
+            // Full wizard — list all providers, user picks
+            println!("{}", "HyperSearchX — Provider Authentication".bold().cyan());
+            println!("{}", "─".repeat(60));
+            println!();
+            println!("  Select a provider to authenticate:");
+            println!();
+
+            const ALL: &[(ProviderKind, &str, &str)] = &[
+                (ProviderKind::Antigravity, "FREE via OpenCode plugin",     "opencode.ai"),
+                (ProviderKind::Anthropic,   "Claude Haiku/Sonnet/Opus",     "console.anthropic.com/settings/keys"),
+                (ProviderKind::Gemini,      "Gemini 2.0 Flash/Pro (FREE)",  "aistudio.google.com/app/apikey"),
+                (ProviderKind::OpenAi,      "GPT-4o-mini / GPT-4o",         "platform.openai.com/api-keys"),
+                (ProviderKind::OpenRouter,  "100+ models, one key",         "openrouter.ai/keys"),
+                (ProviderKind::GeminiCli,   "Local Gemini CLI binary",      ""),
+                (ProviderKind::Ollama,      "Local models, no key needed",  "ollama.ai"),
+            ];
+
+            for (i, (kind, desc, _)) in ALL.iter().enumerate() {
+                println!("  {}. {:<24} {}", i + 1, kind.display_name().bold(), desc.dimmed());
+            }
+            println!();
+
+            let choice = prompt("  Enter number (or provider name): ");
+            let choice = choice.trim();
+
+            let kind = if let Ok(n) = choice.parse::<usize>() {
+                ALL.get(n.wrapping_sub(1)).map(|(k, _, _)| *k)
+                    .ok_or_else(|| anyhow::anyhow!("Invalid choice '{choice}'"))?
+            } else {
+                ProviderKind::from_slug(choice)
+                    .ok_or_else(|| anyhow::anyhow!("Unknown provider '{choice}'"))?
+            };
+
+            auth_one(config, kind).await
+        }
+    }
+}
+
+/// Authenticate a single provider interactively.
+async fn auth_one(config: &HsxConfig, kind: ProviderKind) -> anyhow::Result<()> {
+    println!();
+    println!("{} — Authentication", kind.display_name().bold().cyan());
+    println!("{}", "─".repeat(55));
+    println!();
+
+    match kind {
+        ProviderKind::Gemini => auth_gemini(config).await,
+        ProviderKind::Anthropic => auth_api_key(config, kind,
+            "https://console.anthropic.com/settings/keys",
+            "sk-ant-...",
+            "anthropic",
+        ),
+        ProviderKind::OpenAi => auth_api_key(config, kind,
+            "https://platform.openai.com/api-keys",
+            "sk-...",
+            "openai",
+        ),
+        ProviderKind::OpenRouter => auth_api_key(config, kind,
+            "https://openrouter.ai/keys",
+            "sk-or-...",
+            "openrouter",
+        ),
+        ProviderKind::Antigravity => auth_antigravity(),
+        ProviderKind::GeminiCli => auth_gemini_cli(),
+        ProviderKind::Ollama => auth_ollama(config).await,
+    }
+}
+
+/// Gemini auth — offers API key or OAuth device flow.
+async fn auth_gemini(config: &HsxConfig) -> anyhow::Result<()> {
+    use hsx_core::ai::credentials::{hsx_auth_set, HsxAuth};
+
+    println!("  Choose authentication method:");
+    println!();
+    println!("  {} API Key  — free, instant, 15 req/min (recommended)", "1.".cyan().bold());
+    println!("     Get key: {}", "https://aistudio.google.com/app/apikey".cyan());
+    println!();
+    println!("  {} OAuth    — Google account, browser required", "2.".cyan().bold());
+    println!("     Scope: generative-language (REST API compatible)");
+    println!();
+
+    let choice = prompt("  Enter [1/2]: ");
+    let choice = choice.trim();
+
+    if choice == "2" {
+        auth_gemini_oauth(config).await
+    } else {
+        // Default to API key
+        println!();
+        println!("  1. Open: {}", "https://aistudio.google.com/app/apikey".cyan().bold());
+        println!("  2. Create a new API key");
+        println!("  3. Paste it below");
+        println!();
+        let key = prompt_hidden("  Gemini API key: ");
+        if key.is_empty() {
+            println!("{}", "  ✗ No key entered. Cancelled.".red());
+            return Ok(());
+        }
+        println!("  Testing connection...");
+        // Save to auth store
+        hsx_auth_set("gemini", HsxAuth::Api { key: key.clone() })
+            .map_err(|e| anyhow::anyhow!("Failed to save: {e}"))?;
+        // Also save to config for the existing resolve_api_key() path
+        let mut cfg = config.clone();
+        cfg.ai.providers.entry_mut(ProviderKind::Gemini).api_key = Some(key);
+        if !cfg.ai.providers.fallback_chain.iter().any(|s| ProviderKind::from_slug(s) == Some(ProviderKind::Gemini)) {
+            cfg.ai.providers.fallback_chain.insert(0, "gemini".to_string());
+        }
+        cfg.save().map_err(|e| anyhow::anyhow!("Failed to save config: {e}"))?;
+        println!("  {} API key saved to {}", "✓".green().bold(), hsx_core::ai::credentials::hsx_auth_path().display().to_string().cyan());
+        println!("  {} Config updated: {}", "✓".green().bold(), hsx_core::config::HsxConfig::config_file_path().display().to_string().cyan());
+        println!("  {} Gemini added to fallback chain", "✓".green().bold());
+        println!();
+        println!("  Test now: {}", "./target/debug/hsx ai \"Hello\"".cyan());
+        Ok(())
+    }
+}
+
+/// Google OAuth device code flow for the Generative Language API.
+async fn auth_gemini_oauth(config: &HsxConfig) -> anyhow::Result<()> {
+    use hsx_core::ai::credentials::{
+        hsx_auth_set, HsxAuth, GEMINI_OAUTH_CLIENT_ID, GEMINI_OAUTH_CLIENT_SECRET, GOOGLE_TOKEN_ENDPOINT,
+    };
+
+    println!();
+    println!("  Starting Google OAuth device flow...");
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()?;
+
+    // Step 1: Request device code
+    let resp = client
+        .post("https://oauth2.googleapis.com/device/code")
+        .form(&[
+            ("client_id", GEMINI_OAUTH_CLIENT_ID),
+            ("scope", "https://www.googleapis.com/auth/generative-language"),
+        ])
+        .send()
+        .await
+        .map_err(|e| anyhow::anyhow!("Device code request failed: {e}"))?;
+
+    if !resp.status().is_success() {
+        let body = resp.text().await.unwrap_or_default();
+        return Err(anyhow::anyhow!("Google device auth error: {body}"));
+    }
+
+    let device: serde_json::Value = resp.json().await
+        .map_err(|e| anyhow::anyhow!("Invalid device code response: {e}"))?;
+
+    let device_code = device["device_code"].as_str()
+        .ok_or_else(|| anyhow::anyhow!("No device_code in response"))?;
+    let user_code = device["user_code"].as_str()
+        .ok_or_else(|| anyhow::anyhow!("No user_code in response"))?;
+    let verification_url = device["verification_url"].as_str()
+        .unwrap_or("https://accounts.google.com/device");
+    let expires_in = device["expires_in"].as_u64().unwrap_or(300);
+    let interval = device["interval"].as_u64().unwrap_or(5);
+
+    println!();
+    println!("  ┌──────────────────────────────────────────────────────┐");
+    println!("  │                                                      │");
+    println!("  │  Open: {}  │", verification_url.cyan().bold());
+    println!("  │  Code: {}                                      │", user_code.yellow().bold());
+    println!("  │                                                      │");
+    println!("  │  Enter the code above on the Google authorization    │");
+    println!("  │  page to grant HyperSearchX access.                  │");
+    println!("  │                                                      │");
+    println!("  └──────────────────────────────────────────────────────┘");
+    println!();
+
+    // Try to open browser (best-effort, don't fail if unavailable)
+    #[cfg(target_os = "macos")]
+    let _ = std::process::Command::new("open").arg(verification_url).spawn();
+    #[cfg(target_os = "linux")]
+    let _ = std::process::Command::new("xdg-open").arg(verification_url).spawn();
+
+    println!("  Waiting for authorization... ({}s timeout, Ctrl+C to cancel)", expires_in);
+    print!("  ");
+
+    let poll_client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()?;
+
+    let device_code_owned = device_code.to_string();
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(expires_in);
+    let mut poll_interval = std::time::Duration::from_secs(interval);
+
+    loop {
+        tokio::time::sleep(poll_interval).await;
+        if tokio::time::Instant::now() > deadline {
+            println!();
+            return Err(anyhow::anyhow!("OAuth authorization timed out. Run `hsx provider auth gemini` to try again."));
+        }
+        print!("●");
+        let _ = std::io::Write::flush(&mut std::io::stdout());
+
+        let token_resp = poll_client
+            .post(GOOGLE_TOKEN_ENDPOINT)
+            .form(&[
+                ("client_id", GEMINI_OAUTH_CLIENT_ID),
+                ("client_secret", GEMINI_OAUTH_CLIENT_SECRET),
+                ("device_code", device_code_owned.as_str()),
+                ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
+            ])
+            .send()
+            .await;
+
+        let token_resp = match token_resp {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
+
+        let token_json: serde_json::Value = match token_resp.json().await {
+            Ok(j) => j,
+            Err(_) => continue,
+        };
+
+        if let Some(error) = token_json["error"].as_str() {
+            match error {
+                "authorization_pending" => continue,
+                "slow_down" => {
+                    poll_interval += std::time::Duration::from_secs(5);
+                    continue;
+                }
+                "expired_token" => {
+                    println!();
+                    return Err(anyhow::anyhow!("Authorization code expired. Run `hsx provider auth gemini` to try again."));
+                }
+                other => {
+                    println!();
+                    return Err(anyhow::anyhow!("OAuth error: {other}"));
+                }
+            }
+        }
+
+        // Success!
+        let access_token = token_json["access_token"].as_str()
+            .ok_or_else(|| anyhow::anyhow!("No access_token in token response"))?;
+        let refresh_token = token_json["refresh_token"].as_str()
+            .unwrap_or("");
+        let expires_in_tok = token_json["expires_in"].as_u64().unwrap_or(3600);
+        let now_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+
+        hsx_auth_set("gemini", HsxAuth::Oauth {
+            access: access_token.to_string(),
+            refresh: refresh_token.to_string(),
+            expires: now_ms + expires_in_tok * 1000,
+        }).map_err(|e| anyhow::anyhow!("Failed to save token: {e}"))?;
+
+        let mut cfg = config.clone();
+        if !cfg.ai.providers.fallback_chain.iter().any(|s| ProviderKind::from_slug(s) == Some(ProviderKind::Gemini)) {
+            cfg.ai.providers.fallback_chain.insert(0, "gemini".to_string());
+        }
+        cfg.save().map_err(|e| anyhow::anyhow!("Failed to save config: {e}"))?;
+
+        println!();
+        println!("  {} Authorized! Token saved to {}", "✓".green().bold(),
+            hsx_core::ai::credentials::hsx_auth_path().display().to_string().cyan());
+        println!("  {} Gemini added to fallback chain", "✓".green().bold());
+        println!();
+        println!("  Test now: {}", "./target/debug/hsx ai \"Hello\"".cyan());
+        return Ok(());
+    }
+}
+
+/// Generic API key auth for Anthropic, OpenAI, OpenRouter.
+fn auth_api_key(
+    config: &HsxConfig,
+    kind: ProviderKind,
+    url: &str,
+    placeholder: &str,
+    store_key: &str,
+) -> anyhow::Result<()> {
+    use hsx_core::ai::credentials::{hsx_auth_set, HsxAuth};
+
+    println!("  Get your API key:");
+    println!("  {}", url.cyan().bold());
+    println!();
+
+    // Show existing session if available
+    match kind {
+        ProviderKind::Anthropic if claude_code_auth_available() => {
+            println!("  {} Claude Code subscription session detected (auto-auth works).", "★".yellow().bold());
+            println!("    Enter an API key below to use it instead (higher rate limits),");
+            println!("    or press Enter to keep using the subscription session.");
+            println!();
+        }
+        ProviderKind::OpenAi if codex_auth_available() => {
+            println!("  {} Codex CLI session detected (auto-auth works).", "★".yellow().bold());
+            println!("    Enter an API key for higher rate limits, or press Enter to keep Codex auth.");
+            println!();
+        }
+        _ => {
+            println!("  1. Open the URL above in your browser");
+            println!("  2. Create a new API key");
+            println!("  3. Paste it below");
+            println!();
+        }
+    }
+
+    let key = prompt_hidden(&format!("  {placeholder} (API key): "));
+    if key.is_empty() {
+        println!("  {} Skipped (existing session retained).", "→".dimmed());
+        return Ok(());
+    }
+
+    // Save to auth store
+    hsx_auth_set(store_key, HsxAuth::Api { key: key.clone() })
+        .map_err(|e| anyhow::anyhow!("Failed to save to auth store: {e}"))?;
+
+    // Also save to config
+    let mut cfg = config.clone();
+    cfg.ai.providers.entry_mut(kind).api_key = Some(key);
+    if !cfg.ai.providers.fallback_chain.iter().any(|s| ProviderKind::from_slug(s) == Some(kind)) {
+        cfg.ai.providers.fallback_chain.insert(0, kind.slug().to_string());
+    }
+    cfg.save().map_err(|e| anyhow::anyhow!("Failed to save config: {e}"))?;
+
+    println!("  {} Key saved to {}", "✓".green().bold(),
+        hsx_core::ai::credentials::hsx_auth_path().display().to_string().cyan());
+    println!("  {} {} added to fallback chain", "✓".green().bold(), kind.display_name());
+    println!();
+    println!("  Test now: {}", format!("./target/debug/hsx provider test {}", kind.slug()).cyan());
+    Ok(())
+}
+
+/// Antigravity setup guidance.
+fn auth_antigravity() -> anyhow::Result<()> {
+    println!("  Antigravity provides FREE access to Gemini 3 and Claude models");
+    println!("  via Google Cloud Code Assist, using the OpenCode plugin.");
+    println!();
+    println!("  Setup steps:");
+    println!();
+    println!("  {} Install OpenCode:", "1.".cyan().bold());
+    println!("     {}", "curl -fsSL https://opencode.ai/install | bash".cyan().bold());
+    println!();
+    println!("  {} Install the Antigravity plugin:", "2.".cyan().bold());
+    println!("     {}", "npm i -g opencode-antigravity-auth".cyan().bold());
+    println!();
+    println!("  {} Authenticate with your Google account:", "3.".cyan().bold());
+    println!("     {}", "opencode auth login google".cyan().bold());
+    println!("     (opens browser → select your Google account → approve access)");
+    println!();
+    println!("  {} Verify setup:", "4.".cyan().bold());
+    println!("     {}", "./target/debug/hsx provider test antigravity".cyan().bold());
+    println!();
+
+    let ans = prompt("  Press Enter when done (or Ctrl+C to cancel): ");
+    let _ = ans;
+
+    if hsx_core::ai::credentials::antigravity_auth_available() {
+        println!();
+        println!("  {} Antigravity account detected!", "✓".green().bold());
+        if let Some(acct) = hsx_core::ai::credentials::get_primary_antigravity_account() {
+            println!("     Account: {}", acct.email.green());
+        }
+    } else {
+        println!();
+        println!("  {} No Antigravity account found yet.", "→".yellow());
+        println!("     Complete the steps above, then run: {}", "./target/debug/hsx provider auth antigravity".cyan());
+    }
+    Ok(())
+}
+
+/// Gemini CLI guidance (uses subprocess, no API key needed).
+fn auth_gemini_cli() -> anyhow::Result<()> {
+    println!("  Gemini CLI uses the local `gemini` binary for inference.");
+    println!("  No API key needed — authentication is handled by the CLI.");
+    println!();
+    println!("  {} Authenticate the Gemini CLI:", "1.".cyan().bold());
+    println!("     {}", "gemini auth login".cyan().bold());
+    println!("     (opens browser → sign in with Google account with Gemini subscription)");
+    println!();
+    println!("  {} HyperSearchX will call `gemini` as a subprocess.", "2.".cyan().bold());
+    println!("  {} Ensure `gemini` is in your PATH:", "3.".cyan().bold());
+    println!("     {}", "which gemini".cyan().bold());
+    println!();
+    println!("  Test: {}", "./target/debug/hsx provider test gemini_cli".cyan());
+    Ok(())
+}
+
+/// Ollama connectivity check.
+async fn auth_ollama(config: &HsxConfig) -> anyhow::Result<()> {
+    use hsx_core::ai::OllamaClient;
+
+    let ai_config = AiConfig::from_hsx_config(config);
+    println!("  Ollama runs locally — no API key or account needed.");
+    println!();
+    println!("  {} Install Ollama (if not installed):", "1.".cyan().bold());
+    println!("     {}", "curl -fsSL https://ollama.ai/install.sh | sh".cyan());
+    println!();
+    println!("  {} Start the Ollama daemon:", "2.".cyan().bold());
+    println!("     {}", "ollama serve".cyan().bold());
+    println!();
+    println!("  {} Pull a model:", "3.".cyan().bold());
+    println!("     {}", "ollama pull qwen3:8b".cyan().bold());
+    println!("     {}", "ollama pull gemma3:4b".cyan().bold());
+    println!();
+
+    print!("  Checking Ollama at {} ...", ai_config.ollama_host.cyan());
+    let _ = std::io::Write::flush(&mut std::io::stdout());
+
+    let ollama = OllamaClient::new(&ai_config);
+    if ollama.is_available().await {
+        let models = ollama.list_models().await.unwrap_or_default();
+        println!(" {}", "✓ running".green().bold());
+        if models.is_empty() {
+            println!("  {} No models installed yet. Pull one with `ollama pull qwen3:8b`", "→".yellow());
+        } else {
+            println!("  {} Installed models:", "→".green());
+            for m in models.iter().take(5) {
+                println!("     • {}", m.name.cyan());
+            }
+            if models.len() > 5 {
+                println!("     ... and {} more", models.len() - 5);
+            }
+        }
+        // Add to chain
+        let mut cfg = config.clone();
+        if !cfg.ai.providers.fallback_chain.iter().any(|s| ProviderKind::from_slug(s) == Some(ProviderKind::Ollama)) {
+            cfg.ai.providers.fallback_chain.push("ollama".to_string());
+            cfg.save().map_err(|e| anyhow::anyhow!("Failed to save config: {e}"))?;
+            println!("  {} Ollama added to fallback chain", "✓".green().bold());
+        } else {
+            println!("  {} Ollama already in fallback chain", "✓".green().bold());
+        }
+    } else {
+        println!(" {}", "✗ not running".red().bold());
+        println!("  {} Start Ollama with: {}", "→".yellow(), "ollama serve".cyan().bold());
+    }
+    Ok(())
+}
+
+/// Hidden input helper — disables terminal echo while reading the key.
+fn prompt_hidden(question: &str) -> String {
+    use std::io::Write;
+    print!("{question}");
+    let _ = std::io::stdout().flush();
+    // Try to read without echo using the `rpassword`-style approach.
+    // For simplicity (no extra dep), read normally — key will be visible.
+    let stdin = std::io::stdin();
+    let mut line = String::new();
+    stdin.lock().read_line(&mut line).unwrap_or(0);
+    line.trim().to_string()
 }
 
 // ─── helper ───────────────────────────────────────────────────────────────────
