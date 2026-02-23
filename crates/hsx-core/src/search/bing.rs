@@ -116,7 +116,7 @@ impl SearchBackend for BingBackend {
 
         #[cfg(feature = "headless")]
         {
-            let pages = ((max_results as usize + 9) / 10).min(3);
+            let pages = (max_results as usize).div_ceil(10).min(3);
             let mut all_results = Vec::new();
 
             for page in 0..pages {

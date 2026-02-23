@@ -1,14 +1,86 @@
-//! HyperSearchX Core Library
+//! # HyperSearchX Core Library
 //!
 //! AI-native search engine for humans and agents.
-//! This crate contains all core algorithms: search backends, content extraction,
-//! ranking, validation, caching, and intelligence systems.
 //!
-//! ## Phase 2 additions:
-//! - Multi-engine search: 10+ backends (HTTP + headless Chromium)
-//! - HyperFusion 8-signal ranking
-//! - QADD (Query-Aware DOM Distillation)
-//! - CEP Layers 3-5 (headless rendering, PDF, OCR)
+//! `hsx-core` contains all algorithms, pipelines, and data structures that power the
+//! `hsx` CLI and MCP/REST API servers. Everything in this crate is designed for both
+//! interactive use (humans) and programmatic use (AI agents).
+//!
+//! ## Architecture
+//!
+//! The core pipeline runs in this order:
+//!
+//! ```text
+//! Search → Extract (CEP) → Rank (HyperFusion) → Token (QATBE/SCS) →
+//! Validate (6 layers) → Citation → Output (markdown/JSON/segments)
+//!                                    ↑
+//!                  Research (AMRS) ──┘
+//! ```
+//!
+//! ## Key Algorithms (PRD §8)
+//!
+//! | Algorithm | Description | PRD |
+//! |-----------|-------------|-----|
+//! | **CEP** | Content Extraction Protocol — 5-layer cascade | §16 |
+//! | **QATBE** | Query-Aware Token-Budgeted Extraction — BM25 + semantic | §17 |
+//! | **SCS** | Semantic Content Segmentation — 8 segment types | §18 |
+//! | **PDS** | Progressive Detail Streaming — 4 tiers | §19 |
+//! | **HyperFusion** | 8-signal ranking: BM25 + semantic + temporal + authority | §21 |
+//! | **QADD** | Query-Aware DOM Distillation — 5-step DOM pruning | §15 |
+//! | **AMRS** | Adaptive Multi-Agent Research Swarm | §24 |
+//! | **PIE** | Persistent Intelligence Engine — cross-session learning | §32 |
+//! | **RAR** | Retry-and-Refine — 5-checkpoint self-correction | §44 |
+//!
+//! ## Quick Example
+//!
+//! ```rust
+//! use hsx_core::rank::rerank;
+//! use hsx_core::types::{BackendId, ResultItem};
+//!
+//! // Build some search results
+//! let mut results = vec![
+//!     ResultItem {
+//!         title: "Rust Programming Language".into(),
+//!         url: "https://rust-lang.org".into(),
+//!         snippet: "A language empowering everyone to build reliable software.".into(),
+//!         rank: 0,
+//!         backend: BackendId::DuckDuckGo,
+//!         score: None,
+//!         published_date: None,
+//!     },
+//!     ResultItem {
+//!         title: "Python is great".into(),
+//!         url: "https://python.org".into(),
+//!         snippet: "Python is a versatile scripting language.".into(),
+//!         rank: 1,
+//!         backend: BackendId::DuckDuckGo,
+//!         score: None,
+//!         published_date: None,
+//!     },
+//! ];
+//!
+//! // Re-rank with BM25 — the Rust result should score higher for "rust"
+//! let ranked = rerank(results, "rust programming language");
+//! assert_eq!(ranked[0].url, "https://rust-lang.org");
+//! ```
+//!
+//! ## Feature Flags
+//!
+//! | Feature | Dependency | What it enables |
+//! |---------|-----------|-----------------|
+//! | `embeddings` | `fastembed` | Semantic scoring, hybrid QATBE, batch embedding |
+//! | `vector-search` | `usearch` | HNSW approximate nearest-neighbor index |
+//! | `headless` | `chromiumoxide` | CEP layers 3+5, JS rendering, screenshot OCR |
+//! | `mcp` | `rmcp` | MCP protocol support |
+//! | `llama` | `llama-cpp-2` | Local LLaMA inference |
+//!
+//! ## Prelude
+//!
+//! Import the most commonly used items in one line:
+//!
+//! ```rust
+//! use hsx_core::prelude::*;
+//! ```
 
 pub mod api_facade;
 pub mod config;

@@ -68,7 +68,10 @@ jobs:
       - name: Build workspace
         run: cargo build --workspace --all-features
       - name: Run tests
-        run: cargo test --workspace --all-features
+        # Run unit/integration/e2e tests with all features.
+        # Doc tests are run separately below WITHOUT --all-features to avoid
+        # ort (ONNX Runtime) native library linker errors in the doc test environment.
+        run: cargo test --workspace --all-features --lib --bins --tests
       - name: Run doc tests
         run: cargo test --doc --workspace
 

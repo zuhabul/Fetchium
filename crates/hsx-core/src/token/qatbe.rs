@@ -169,7 +169,7 @@ pub fn extract_with_budget(
 /// Embedding is chunked at 128 blocks per inference pass to cap peak
 /// memory on long documents (consistent with QADD's EMBED_BATCH_SIZE).
 #[cfg(feature = "embeddings")]
-fn hybrid_rank_blocks(blocks: &mut Vec<TextBlock>, query: &str) {
+fn hybrid_rank_blocks(blocks: &mut [TextBlock], query: &str) {
     let max_bm25 = blocks
         .iter()
         .map(|b| b.relevance)

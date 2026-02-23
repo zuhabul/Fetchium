@@ -27,6 +27,39 @@ use tracing::debug;
 ///
 /// # Returns
 /// The results sorted by BM25 score (best first), with `score` field populated.
+///
+/// # Examples
+///
+/// ```rust
+/// use hsx_core::rank::rerank;
+/// use hsx_core::types::{BackendId, ResultItem};
+///
+/// let results = vec![
+///     ResultItem {
+///         title: "Rust async programming".into(),
+///         url: "https://example.com/rust-async".into(),
+///         snippet: "Tokio and async/await in Rust".into(),
+///         rank: 0,
+///         backend: BackendId::DuckDuckGo,
+///         score: None,
+///         published_date: None,
+///     },
+///     ResultItem {
+///         title: "Python tutorial".into(),
+///         url: "https://example.com/python".into(),
+///         snippet: "Python basics and data structures".into(),
+///         rank: 1,
+///         backend: BackendId::DuckDuckGo,
+///         score: None,
+///         published_date: None,
+///     },
+/// ];
+///
+/// let ranked = rerank(results, "rust async");
+/// // The Rust result should rank first
+/// assert_eq!(ranked[0].url, "https://example.com/rust-async");
+/// assert!(ranked[0].score.unwrap_or(0.0) > ranked[1].score.unwrap_or(0.0));
+/// ```
 pub fn rerank(mut results: Vec<ResultItem>, query: &str) -> Vec<ResultItem> {
     if query.is_empty() || results.is_empty() {
         return results;

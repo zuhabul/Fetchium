@@ -28,7 +28,7 @@ mod headless_impl {
     use parking_lot::Mutex;
     use std::sync::Arc;
     use tokio::sync::Semaphore;
-    use tracing::{debug, info, warn};
+    use tracing::{debug, info};
 
     /// Resource tier controlling pool capacity.
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -100,7 +100,7 @@ mod headless_impl {
                 tokio::spawn(async move {
                     use tokio_stream::StreamExt;
                     let mut handler = handler;
-                    while let Some(_) = handler.next().await {}
+                    while handler.next().await.is_some() {}
                 });
 
                 self.browsers.lock().push(Arc::new(browser));

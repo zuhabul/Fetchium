@@ -88,7 +88,7 @@ impl VectorIndex {
         Ok(results
             .keys
             .into_iter()
-            .zip(results.distances.into_iter())
+            .zip(results.distances)
             .collect())
     }
 

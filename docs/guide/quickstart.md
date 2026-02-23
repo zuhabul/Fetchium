@@ -4,8 +4,22 @@ Get from zero to your first search in under 60 seconds.
 
 ## 1. Install
 
+**From crates.io** (recommended):
 ```bash
-npm install -g hypersearchx
+cargo install hsx-cli
+```
+
+**From source** (latest main branch):
+```bash
+git clone https://github.com/zuhabul/HyperSearchX
+cd HyperSearchX
+cargo build --release -p hsx-cli
+# Binary is at ./target/release/hsx
+```
+
+**macOS via Homebrew** (when formula is available):
+```bash
+brew install hypersearchx
 ```
 
 ## 2. Your First Search
