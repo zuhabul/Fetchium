@@ -1,145 +1,272 @@
 # Phase 8: Testing, Benchmarks & Production Readiness
 
-> **Duration:** Ongoing (parallel with all phases)
-> **Priority:** P0-P1
-> **Depends On:** Phase 0 (for CI), progressively builds alongside Phases 1-7
-> **PRD Sections:** 40, 41, 45, 46, 47, 48
+> **Phase:** 8 of 8 | **Priority:** P0-P1 | **Duration:** Ongoing (parallel with ALL phases)
+> **Depends on:** Runs in parallel -- each task applies to whatever code exists at the time
+> **PRD Reference:** `prd.md` v4.0.0 -- Sections 40 (Performance), 41 (Security), 44 (Error Handling), 45 (Testing Strategy), 46 (Milestones)
+> **Epics:** 3 | **Tasks:** 12
 
 ---
 
-## Overview
+## Phase 8 Summary
 
-Phase 8 runs continuously alongside development. It ensures every feature is tested, documented, benchmarked, and production-hardened. This phase is not "do testing at the end" -- it defines the test infrastructure, patterns, and standards that all other phases use from day one.
+Phase 8 is **not sequential** -- it runs in parallel with every other phase. Its job is to ensure that HyperSearchX ships as a production-grade tool with:
+
+1. **Comprehensive Test Suite** -- Unit tests with coverage gating, integration tests for pipelines, E2E CLI tests with `assert_cmd`, performance benchmarks with `criterion`, and fuzz testing with `cargo-fuzz` (PRD SS45)
+2. **Documentation** -- `rustdoc` API docs for every public item, a user guide, and architecture documentation (PRD SS46 V2.0)
+3. **Production Hardening** -- Security audit against PRD SS41, performance optimization against PRD SS40 latency targets, error handling audit against PRD SS44, and release automation with `cargo-dist` and cross-compilation (PRD SS46 milestones)
+
+**Key rule:** Every task in this phase should be revisited after each prior phase completes. The test suite grows alongside the codebase.
+
+---
+
+## Prerequisites
+
+Phase 8 has **no hard prerequisites** -- it runs from day one. However, individual tasks reference code from other phases:
+
+| Task | Minimum Dependency | What It Tests/Documents |
+|------|-------------------|------------------------|
+| P8-E1-T1 (Unit framework) | P0-E1 (workspace exists) | Any module with logic |
+| P8-E1-T2 (Integration) | P1-E1 (HTTP + extraction) | Pipeline flows |
+| P8-E1-T3 (E2E CLI) | P0-E3 (CLI skeleton) | CLI commands end-to-end |
+| P8-E1-T4 (Benchmarks) | P1-E1 (extraction exists) | Performance baselines |
+| P8-E1-T5 (Fuzz) | P1-E1-T2 (HTML parsing) | Parser robustness |
+| P8-E2-T1 (API docs) | P0-E1-T2 (types exist) | Public API surface |
+| P8-E2-T2 (User guide) | P1-E4 (agent commands) | End-user documentation |
+| P8-E2-T3 (Architecture) | P1 complete | System design docs |
+| P8-E3-T1 (Security) | P1-E1 (HTTP client) | Security posture |
+| P8-E3-T2 (Performance) | P2-E4 (HyperFusion) | Latency targets |
+| P8-E3-T3 (Error audit) | P1 complete | Error handling coverage |
+| P8-E3-T4 (Release) | P0-E2 (CI/CD skeleton) | Build + distribute |
 
 ---
 
 ## Epic 8.1: Test Suite
 
-### P8-E1-T1: Unit Tests with cargo test
+> **PRD Sections:** SS45 (Testing Strategy), SS40 (Performance Requirements)
+> **Priority:** P0 | **Tasks:** 5
 
-| Field | Value |
-|-------|-------|
-| **ID** | `P8-E1-T1` |
-| **Status** | `TODO` |
-| **Priority** | P0 |
-| **Description** | Establish unit test patterns and achieve comprehensive coverage across all core modules: ranker, chunker, QATBE, SCS, CEP, HyperFusion, PDS, embeddings, cache, and all intelligence algorithms. Every module should have a `tests` submodule with property-based tests where applicable. |
-| **PRD Ref** | 45 (Testing Strategy - Unit level) |
-| **Depends On** | `P0-E1` (project scaffolding) |
+### P8-E1-T1: Unit Test Framework & Coverage Gating
 
-#### Files to Create/Modify
+**ID:** `P8-E1-T1`
+**Status:** `TODO`
+**Priority:** P0
+**Estimated effort:** 3-4 days (initial), then ongoing
 
-| File | Action |
-|------|--------|
-| All `src/**/*.rs` files | Add `#[cfg(test)] mod tests { ... }` blocks |
-| `crates/hsx-core/tests/` | Integration-style unit tests |
-| `Cargo.toml` (workspace) | Add `proptest` as dev-dependency |
+**Description:**
+Establish the unit test infrastructure across the entire workspace. Configure `cargo-llvm-cov` for coverage measurement, set a coverage floor that ratchets upward over time, and integrate coverage checks into CI. Write foundational unit tests for core modules: types, config parsing, error construction, and any pure-function algorithm (ranker scoring, token estimation, complexity routing).
 
-#### Test Patterns for Each Module
+**PRD References:**
+- SS45 "Testing Strategy" -- `cargo test` for core: ranker, chunker, QATBE, SCS, CEP
+- SS40 "Reliability" -- "Never crash -- always degrade gracefully"
+- SS44 "Error Handling" -- Structured error taxonomy must be tested
 
-**Pattern 1: Pure Function Tests (BM25, Token Counter, SimHash)**
+**Files to create/modify:**
+```
+.github/workflows/ci.yml                         -- Add coverage job
+crates/hsx-core/src/types.rs                     -- Add #[cfg(test)] mod tests
+crates/hsx-core/src/config.rs                    -- Add #[cfg(test)] mod tests
+crates/hsx-core/src/error.rs                     -- Add #[cfg(test)] mod tests
+crates/hsx-core/src/rank/mod.rs                  -- Add #[cfg(test)] mod tests
+crates/hsx-core/src/token/mod.rs                 -- Add #[cfg(test)] mod tests
+crates/hsx-core/src/extract/mod.rs               -- Add #[cfg(test)] mod tests
+crates/hsx-core/src/test_utils.rs                -- Shared test helpers
+tests/fixtures/                                   -- HTML test fixtures
+```
+
+**Dependencies:**
+- P0-E1 (workspace + types + config) -- Must exist to test
+
+**Step-by-step implementation:**
+
+**Step 1: Add test/coverage dependencies to workspace `Cargo.toml`**
+
+```toml
+# In workspace [workspace.dependencies]
+pretty_assertions = "1"
+wiremock = "0.6"
+tempfile = "3"
+test-case = "3"
+proptest = "1"
+insta = { version = "1", features = ["yaml"] }
+```
+
+**Step 2: Create a test helper module (`crates/hsx-core/src/test_utils.rs`)**
 
 ```rust
-// crates/hsx-core/src/ranking/bm25.rs
+//! Shared test utilities available under #[cfg(test)] only.
+//! Re-exported from lib.rs behind `#[cfg(test)] pub mod test_utils;`
 
+use crate::types::{SearchResult, ContentSegment, SegmentType};
+
+/// Build a synthetic SearchResult for testing.
+pub fn make_search_result(title: &str, url: &str, snippet: &str) -> SearchResult {
+    SearchResult {
+        title: title.to_string(),
+        url: url.to_string(),
+        snippet: snippet.to_string(),
+        source: "test".to_string(),
+        rank: 0,
+        timestamp: chrono::Utc::now(),
+    }
+}
+
+/// Build a synthetic ContentSegment for testing.
+pub fn make_segment(text: &str, seg_type: SegmentType, relevance: f64) -> ContentSegment {
+    ContentSegment {
+        content: text.to_string(),
+        segment_type: seg_type,
+        relevance_score: relevance,
+        token_count: text.split_whitespace().count(),
+    }
+}
+
+/// Load a test HTML fixture from `tests/fixtures/`.
+pub fn load_fixture(name: &str) -> String {
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent().unwrap()
+        .parent().unwrap()
+        .join("tests").join("fixtures").join(name);
+    std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("Failed to load fixture {}: {e}", path.display()))
+}
+```
+
+**Step 3: Write core type unit tests (`crates/hsx-core/src/types.rs`)**
+
+```rust
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn bm25_exact_match_scores_highest() {
-        let query = "rust web framework";
-        let exact_match = "rust web framework comparison and benchmarks";
-        let partial_match = "web framework for python django";
-        let no_match = "cooking recipes for beginners";
-
-        let score_exact = bm25_score(exact_match, query);
-        let score_partial = bm25_score(partial_match, query);
-        let score_none = bm25_score(no_match, query);
-
-        assert!(score_exact > score_partial, "Exact match should score higher");
-        assert!(score_partial > score_none, "Partial match should score higher than no match");
-        assert!(score_none >= 0.0, "BM25 scores should be non-negative");
+    fn search_result_serialization_roundtrip() {
+        let result = SearchResult {
+            title: "Rust Programming".to_string(),
+            url: "https://rust-lang.org".to_string(),
+            snippet: "A systems language".to_string(),
+            source: "duckduckgo".to_string(),
+            rank: 1,
+            timestamp: chrono::Utc::now(),
+        };
+        let json = serde_json::to_string(&result).unwrap();
+        let deser: SearchResult = serde_json::from_str(&json).unwrap();
+        assert_eq!(result.title, deser.title);
+        assert_eq!(result.url, deser.url);
     }
 
     #[test]
-    fn bm25_empty_query_returns_zero() {
-        assert_eq!(bm25_score("some content", ""), 0.0);
+    fn segment_type_display() {
+        assert_eq!(SegmentType::Paragraph.as_str(), "paragraph");
+        assert_eq!(SegmentType::CodeBlock.as_str(), "code_block");
+        assert_eq!(SegmentType::Table.as_str(), "table");
     }
 
     #[test]
-    fn bm25_empty_content_returns_zero() {
-        assert_eq!(bm25_score("", "some query"), 0.0);
-    }
-
-    #[test]
-    fn bm25_handles_unicode() {
-        let score = bm25_score("Rust框架比较", "Rust框架");
-        assert!(score > 0.0, "BM25 should handle CJK characters");
+    fn content_segment_token_count_is_positive() {
+        let seg = ContentSegment {
+            content: "hello world".to_string(),
+            segment_type: SegmentType::Paragraph,
+            relevance_score: 0.9,
+            token_count: 2,
+        };
+        assert!(seg.token_count > 0);
     }
 }
 ```
 
-**Pattern 2: Async Tests (HTTP, Search, Extraction)**
+**Step 4: Write config loading tests (`crates/hsx-core/src/config.rs`)**
 
 ```rust
-// crates/hsx-core/src/extraction/cep.rs
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wiremock::{MockServer, Mock, ResponseTemplate};
-    use wiremock::matchers::method;
+    use tempfile::TempDir;
 
-    #[tokio::test]
-    async fn cep_layer1_extracts_static_html() {
-        // Set up mock server
-        let mock_server = MockServer::start().await;
-
-        Mock::given(method("GET"))
-            .respond_with(ResponseTemplate::new(200)
-                .set_body_string(r#"
-                    <html>
-                    <body>
-                        <h1>Test Page</h1>
-                        <p>This is a test paragraph with useful content.</p>
-                        <nav>Navigation should be removed</nav>
-                    </body>
-                    </html>
-                "#)
-                .insert_header("content-type", "text/html"))
-            .mount(&mock_server)
-            .await;
-
-        let result = extract(&mock_server.uri(), &CepConfig::default()).await.unwrap();
-
-        assert_eq!(result.extraction_layer, 1, "Static HTML should use Layer 1");
-        assert!(result.content.contains("test paragraph"), "Content should be extracted");
-        assert!(!result.content.contains("Navigation"), "Nav should be stripped");
+    #[test]
+    fn default_config_has_sane_values() {
+        let config = HsxConfig::default();
+        assert!(config.max_results > 0);
+        assert!(config.timeout_secs > 0);
+        assert!(config.max_concurrent_fetches > 0);
     }
 
-    #[tokio::test]
-    async fn cep_escalates_on_empty_content() {
-        let mock_server = MockServer::start().await;
+    #[test]
+    fn config_loads_from_toml_file() {
+        let dir = TempDir::new().unwrap();
+        let config_path = dir.path().join("config.toml");
+        std::fs::write(&config_path, r#"
+            max_results = 20
+            timeout_secs = 30
+            max_concurrent_fetches = 8
+        "#).unwrap();
+        let config = HsxConfig::from_file(&config_path).unwrap();
+        assert_eq!(config.max_results, 20);
+        assert_eq!(config.timeout_secs, 30);
+    }
 
-        Mock::given(method("GET"))
-            .respond_with(ResponseTemplate::new(200)
-                .set_body_string("<html><body><div id='root'></div><script src='app.js'></script></body></html>")
-                .insert_header("content-type", "text/html"))
-            .mount(&mock_server)
-            .await;
+    #[test]
+    fn config_env_override_takes_precedence() {
+        std::env::set_var("HSX_MAX_RESULTS", "42");
+        let config = HsxConfig::from_env().unwrap();
+        assert_eq!(config.max_results, 42);
+        std::env::remove_var("HSX_MAX_RESULTS");
+    }
 
-        let result = extract(&mock_server.uri(), &CepConfig::default()).await.unwrap();
-
-        assert!(result.extraction_layer >= 2, "Empty body should escalate beyond Layer 1");
+    #[test]
+    fn config_rejects_zero_timeout() {
+        let dir = TempDir::new().unwrap();
+        let config_path = dir.path().join("config.toml");
+        std::fs::write(&config_path, "timeout_secs = 0").unwrap();
+        assert!(HsxConfig::from_file(&config_path).is_err());
     }
 }
 ```
 
-**Pattern 3: Property-Based Tests (Ranking, Token Counting)**
+**Step 5: Write error type tests (`crates/hsx-core/src/error.rs`)**
 
 ```rust
-// crates/hsx-core/src/tokens/counter.rs
+#[cfg(test)]
+mod tests {
+    use super::*;
 
+    #[test]
+    fn error_is_retryable_for_network_timeout() {
+        let err = HsxError::NetworkTimeout {
+            url: "https://example.com".into(),
+            timeout_ms: 5000,
+        };
+        assert!(err.is_retryable());
+    }
+
+    #[test]
+    fn error_is_not_retryable_for_paywall() {
+        let err = HsxError::Paywall {
+            url: "https://wsj.com/article".into(),
+        };
+        assert!(!err.is_retryable());
+    }
+
+    #[test]
+    fn structured_error_serializes_to_json() {
+        let err = StructuredError {
+            error_type: ErrorType::Http429,
+            retryable: true,
+            message: "Rate limited".into(),
+            source_url: Some("https://api.example.com".into()),
+            suggested_action: "Wait and retry".into(),
+            alternatives: vec!["Use cache".into()],
+        };
+        let json = serde_json::to_string(&err).unwrap();
+        assert!(json.contains("Http429"));
+        assert!(json.contains("retryable"));
+    }
+}
+```
+
+**Step 6: Write property-based tests for ranking and tokens**
+
+```rust
+// crates/hsx-core/src/token/mod.rs
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -148,881 +275,1161 @@ mod tests {
     proptest! {
         #[test]
         fn token_count_never_negative(s in "\\PC{0,1000}") {
-            let count = count_tokens(&s);
+            let count = estimate_tokens(&s);
             prop_assert!(count >= 0);
         }
 
         #[test]
-        fn token_count_monotonic_with_length(
+        fn token_count_monotonic_with_concatenation(
             a in "\\PC{0,100}",
             b in "\\PC{0,100}",
         ) {
-            let combined = format!("{} {}", a, b);
-            let count_a = count_tokens(&a);
-            let count_b = count_tokens(&b);
-            let count_combined = count_tokens(&combined);
-
-            // Token count of "A B" should be <= count(A) + count(B) + 1
+            let combined = format!("{a} {b}");
+            let count_combined = estimate_tokens(&combined);
+            let count_a = estimate_tokens(&a);
+            let count_b = estimate_tokens(&b);
+            // combined <= a + b + 1 (for the space)
             prop_assert!(count_combined <= count_a + count_b + 1);
         }
-
-        #[test]
-        fn hyperfusion_scores_are_finite(
-            bm25 in 0.0f64..100.0,
-            semantic in 0.0f64..1.0,
-            temporal in 0.0f64..1.0,
-        ) {
-            let weights = HyperFusionWeights::default();
-            let score = weights.bm25 * bm25
-                + weights.semantic * semantic
-                + weights.temporal * temporal;
-
-            prop_assert!(score.is_finite());
-            prop_assert!(score >= 0.0);
-        }
     }
 }
 ```
 
-**Pattern 4: Data-Driven Tests (SCS Segmentation)**
+**Step 7: Create HTML test fixtures**
 
-```rust
-// crates/hsx-core/src/segmentation/scs.rs
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    struct TestCase {
-        html: &'static str,
-        expected_types: Vec<SegmentType>,
-        description: &'static str,
-    }
-
-    #[test]
-    fn scs_segments_content_types_correctly() {
-        let cases = vec![
-            TestCase {
-                html: "<p>Paris is the capital of France.</p>",
-                expected_types: vec![SegmentType::Paragraph],
-                description: "Simple paragraph",
-            },
-            TestCase {
-                html: "<table><tr><th>Name</th></tr><tr><td>Alice</td></tr></table>",
-                expected_types: vec![SegmentType::Table],
-                description: "HTML table",
-            },
-            TestCase {
-                html: "<pre><code class='language-rust'>fn main() {}</code></pre>",
-                expected_types: vec![SegmentType::Code],
-                description: "Code block",
-            },
-            TestCase {
-                html: "<ul><li>Item 1</li><li>Item 2</li></ul>",
-                expected_types: vec![SegmentType::List],
-                description: "Unordered list",
-            },
-            TestCase {
-                html: "<blockquote>Famous quote here</blockquote>",
-                expected_types: vec![SegmentType::Quote],
-                description: "Blockquote",
-            },
-        ];
-
-        for case in cases {
-            let segments = segment_html(case.html).unwrap();
-            let types: Vec<SegmentType> = segments.iter().map(|s| s.seg_type.clone()).collect();
-            assert_eq!(
-                types, case.expected_types,
-                "Failed for: {} (html: {})", case.description, case.html
-            );
-        }
-    }
-}
+`tests/fixtures/simple-article.html`:
+```html
+<!DOCTYPE html>
+<html><head><title>Test Article</title></head>
+<body>
+  <nav>Navigation links here</nav>
+  <article>
+    <h1>Understanding Rust Ownership</h1>
+    <p>Rust's ownership system is the foundation of its memory safety guarantees.</p>
+    <pre><code>fn main() {
+    let s = String::from("hello");
+    let s2 = s; // s is moved
+}</code></pre>
+    <p>After the move, s is no longer valid.</p>
+  </article>
+  <footer>Copyright 2025</footer>
+</body></html>
 ```
 
-**Pattern 5: QATBE Budget Compliance Tests**
-
-```rust
-// crates/hsx-core/src/extraction/qatbe.rs
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn qatbe_respects_token_budget() {
-        let segments = vec![
-            ContentSegment { text: "A ".repeat(500), tokens: 500, relevance: 0.9, .. },
-            ContentSegment { text: "B ".repeat(300), tokens: 300, relevance: 0.8, .. },
-            ContentSegment { text: "C ".repeat(400), tokens: 400, relevance: 0.7, .. },
-            ContentSegment { text: "D ".repeat(200), tokens: 200, relevance: 0.6, .. },
-        ];
-
-        let budget = 800;
-        let packed = budget_pack(&segments, budget);
-        let total_tokens: usize = packed.iter().map(|s| s.tokens).sum();
-
-        assert!(
-            total_tokens <= budget,
-            "Total tokens {} should not exceed budget {}",
-            total_tokens, budget
-        );
-    }
-
-    #[test]
-    fn qatbe_packs_highest_relevance_first() {
-        let segments = vec![
-            ContentSegment { tokens: 100, relevance: 0.5, .. },
-            ContentSegment { tokens: 100, relevance: 0.9, .. },
-            ContentSegment { tokens: 100, relevance: 0.7, .. },
-        ];
-
-        let packed = budget_pack(&segments, 200);
-
-        assert_eq!(packed.len(), 2);
-        assert!(packed[0].relevance >= packed[1].relevance, "Higher relevance should come first");
-    }
-
-    #[test]
-    fn qatbe_handles_zero_budget() {
-        let segments = vec![
-            ContentSegment { tokens: 100, relevance: 0.9, .. },
-        ];
-
-        let packed = budget_pack(&segments, 0);
-        assert!(packed.is_empty(), "Zero budget should return no segments");
-    }
-}
+`tests/fixtures/table-heavy.html`:
+```html
+<!DOCTYPE html>
+<html><head><title>Benchmark Results</title></head>
+<body><article>
+  <h1>Framework Comparison</h1>
+  <table>
+    <thead><tr><th>Framework</th><th>Requests/sec</th><th>Latency p99</th></tr></thead>
+    <tbody>
+      <tr><td>Actix</td><td>125,000</td><td>2.1ms</td></tr>
+      <tr><td>Axum</td><td>118,000</td><td>2.3ms</td></tr>
+      <tr><td>Warp</td><td>112,000</td><td>2.5ms</td></tr>
+    </tbody>
+  </table>
+</article></body></html>
 ```
 
-#### Acceptance Criteria
+`tests/fixtures/spa-shell.html`:
+```html
+<!DOCTYPE html>
+<html><head><title>SPA App</title></head>
+<body>
+  <div id="root"></div>
+  <script src="/bundle.js"></script>
+  <noscript>You need JavaScript enabled.</noscript>
+</body></html>
+```
 
-- [ ] Every public function has at least one unit test
-- [ ] Test coverage > 80% for `hsx-core` crate (measured by `cargo-tarpaulin`)
-- [ ] Property-based tests for: token counting, BM25 scoring, HyperFusion, SimHash
-- [ ] Data-driven tests for: SCS segmentation, CEP layer selection, QATBE budget packing
-- [ ] Async tests for: HTTP fetching, search backends, extraction pipeline
-- [ ] All tests pass with `cargo test --workspace`
-- [ ] No `#[ignore]` tests without a documented reason
-- [ ] Tests run in < 30 seconds (excluding network tests)
+**Step 8: Add coverage CI job (`.github/workflows/ci.yml` -- coverage section)**
 
-#### Pitfalls
+```yaml
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Generate coverage
+        run: cargo llvm-cov --workspace --lcov --output-path lcov.info
+      - name: Check coverage floor
+        run: |
+          COVERAGE=$(cargo llvm-cov --workspace --json | jq '.data[0].totals.lines.percent')
+          echo "Coverage: ${COVERAGE}%"
+          if (( $(echo "$COVERAGE < 60" | bc -l) )); then
+            echo "::error::Coverage ${COVERAGE}% is below minimum 60%"
+            exit 1
+          fi
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: lcov.info
+          fail_ci_if_error: false
+```
 
+**Acceptance criteria:**
+- [ ] `cargo test --workspace` passes with zero failures
+- [ ] `cargo llvm-cov --workspace` produces a coverage report
+- [ ] Coverage floor is enforced in CI at >= 60% (ratchets to 70% after Phase 2, 80% after Phase 4)
+- [ ] Test helpers `make_search_result()`, `make_segment()`, `load_fixture()` work correctly
+- [ ] At least 3 test fixtures exist under `tests/fixtures/`
+- [ ] Types roundtrip through serde serialization
+- [ ] Config rejects invalid values (zero timeout, negative results)
+- [ ] Error retryability is tested for every variant
+- [ ] Property-based tests exist for token counting and ranking scores
+- [ ] `cargo clippy --workspace -- -D warnings` produces zero warnings
+
+**Pitfalls:**
 - **Flaky tests**: Tests depending on external services are flaky. Always use `wiremock` or mock servers for HTTP tests.
 - **Test isolation**: Each test should be independent. Don't share mutable state between tests.
-- **Slow tests**: Property-based tests can be slow with many iterations. Use `proptest::test_runner::Config` to limit iterations in CI.
+- **Slow property tests**: Use `proptest::test_runner::Config` to limit iterations in CI.
 
 ---
 
 ### P8-E1-T2: Integration Tests
 
-| Field | Value |
-|-------|-------|
-| **ID** | `P8-E1-T2` |
-| **Status** | `TODO` |
-| **Priority** | P1 |
-| **Description** | Build integration tests that verify the full pipeline works end-to-end within the Rust codebase. Tests exercise: fetch -> extract -> rank -> output, and search -> fetch -> QATBE -> SCS -> PDS flows. |
-| **PRD Ref** | 45 (Testing Strategy - Integration level) |
-| **Depends On** | `P8-E1-T1`, Phase 1 modules |
+**ID:** `P8-E1-T2`
+**Status:** `TODO`
+**Priority:** P1
+**Estimated effort:** 4-5 days (initial), then ongoing
 
-#### Files to Create/Modify
+**Description:**
+Build integration tests that exercise full pipelines: fetch-then-extract, search-then-rank, and the complete research flow. Use `wiremock` to create mock HTTP servers that return controlled HTML, avoiding network dependencies. Use `tokio::test` for all async tests.
 
-| File | Action |
-|------|--------|
-| `crates/hsx-core/tests/integration_pipeline.rs` | Pipeline integration tests |
-| `crates/hsx-core/tests/integration_search.rs` | Search flow integration tests |
-| `crates/hsx-core/tests/fixtures/` | HTML fixtures for test pages |
+**PRD References:**
+- SS45 "Integration" -- `cargo test` + `tokio::test` for pipeline: fetch -> extract -> rank -> output
+- SS40 "Reliability" -- 99% fetch success on non-protected pages
+- SS44 "Automatic Fallback Chain" -- Test that fallback chains trigger correctly
 
-#### Step-by-Step Implementation Guide
+**Files to create/modify:**
+```
+tests/integration/mod.rs                         -- Integration test root
+tests/integration/fetch_extract.rs               -- Fetch -> Extract pipeline
+tests/integration/search_rank.rs                 -- Search -> Rank pipeline
+tests/integration/fallback_chain.rs              -- Fallback on failure
+```
+
+**Dependencies:**
+- P8-E1-T1 (test framework) -- Test helpers and fixtures
+- P1-E1 (HTTP client + extraction) -- Modules under test
+
+**Step-by-step implementation:**
+
+**Step 1: Fetch -> extract pipeline (`tests/integration/fetch_extract.rs`)**
 
 ```rust
-// crates/hsx-core/tests/integration_pipeline.rs
-
-use hsx_core::*;
+use hsx_core::{http::HttpClient, extract::{ExtractorConfig, extract_content}, types::SegmentType};
 use wiremock::{MockServer, Mock, ResponseTemplate};
 use wiremock::matchers::{method, path};
 
-/// Test the full pipeline: fetch -> extract -> segment -> rank -> output
 #[tokio::test]
-async fn full_extraction_pipeline() {
-    let mock = MockServer::start().await;
+async fn fetch_and_extract_article_page() {
+    let mock_server = MockServer::start().await;
+    let html = include_str!("../fixtures/simple-article.html");
 
-    let html = include_str!("fixtures/sample_article.html");
-    Mock::given(method("GET"))
-        .and(path("/article"))
-        .respond_with(ResponseTemplate::new(200)
-            .set_body_string(html)
-            .insert_header("content-type", "text/html"))
-        .mount(&mock)
-        .await;
+    Mock::given(method("GET")).and(path("/article"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(html))
+        .mount(&mock_server).await;
 
-    let url = format!("{}/article", mock.uri());
-    let query = "Rust performance benchmarks";
-    let budget = 1500;
+    let url = format!("{}/article", mock_server.uri());
+    let client = HttpClient::new_default();
+    let response = client.get(&url).await.unwrap();
+    let segments = extract_content(&response.body, &url, &ExtractorConfig::default()).unwrap();
 
-    // Step 1: Fetch and extract via CEP
-    let extracted = extraction::cep::extract(&url, &Default::default()).await.unwrap();
-    assert!(!extracted.content.is_empty());
-
-    // Step 2: Segment via SCS
-    let segments = segmentation::scs::segment(&extracted.content).unwrap();
     assert!(!segments.is_empty());
+    let all_text: String = segments.iter().map(|s| s.content.as_str()).collect::<Vec<_>>().join(" ");
+    assert!(all_text.contains("Rust's ownership system"));
+    assert!(!all_text.contains("Navigation links"));
+    assert!(!all_text.contains("Copyright"));
 
-    // Step 3: Rank via QATBE
-    let mut ranked = segments.clone();
-    extraction::qatbe::rank_segments(&mut ranked, query).unwrap();
-    assert!(ranked[0].relevance >= ranked.last().unwrap().relevance);
-
-    // Step 4: Budget pack
-    let packed = extraction::qatbe::budget_pack(&ranked, budget);
-    let total_tokens: usize = packed.iter().map(|s| s.tokens).sum();
-    assert!(total_tokens <= budget);
-
-    // Step 5: Generate PDS tiers
-    let tiers = pds::tiers::generate_all_tiers(&packed, query).unwrap();
-    assert!(tiers.key_facts.tokens <= 250);
-    assert!(tiers.summary.tokens <= 1200);
+    let code_segments: Vec<_> = segments.iter()
+        .filter(|s| s.segment_type == SegmentType::CodeBlock).collect();
+    assert!(!code_segments.is_empty());
+    assert!(code_segments[0].content.contains("fn main()"));
 }
 
-/// Test search -> rank -> output flow with mock backends.
 #[tokio::test]
-async fn full_search_flow() {
-    let mock = MockServer::start().await;
+async fn fetch_detects_spa_shell() {
+    let mock_server = MockServer::start().await;
+    let html = include_str!("../fixtures/spa-shell.html");
 
-    // Mock DDG-like response
-    Mock::given(method("GET"))
-        .and(path("/search"))
-        .respond_with(ResponseTemplate::new(200)
-            .set_body_string(include_str!("fixtures/mock_search_results.html")))
-        .mount(&mock)
-        .await;
+    Mock::given(method("GET")).and(path("/app"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(html))
+        .mount(&mock_server).await;
 
-    let config = search::SearchConfig {
-        query: "Rust web framework".into(),
-        max_sources: 5,
-        // Override backend URL to point to mock
-        ..Default::default()
-    };
+    let url = format!("{}/app", mock_server.uri());
+    let client = HttpClient::new_default();
+    let response = client.get(&url).await.unwrap();
+    let segments = extract_content(&response.body, &url, &ExtractorConfig::default()).unwrap();
 
-    let results = search::search(&config.query, &config).await.unwrap();
-    assert!(!results.is_empty(), "Search should return results");
-    assert!(results[0].fusion_score >= results.last().unwrap().fusion_score,
-        "Results should be sorted by score");
+    let text_len: usize = segments.iter().map(|s| s.content.len()).sum();
+    assert!(text_len < 100, "SPA shell should have minimal text content");
 }
 ```
 
-#### Acceptance Criteria
+**Step 2: Search -> rank pipeline (`tests/integration/search_rank.rs`)**
 
-- [ ] Full pipeline test (fetch -> extract -> segment -> rank -> output) passes
-- [ ] Full search test (search -> rank -> format) passes
-- [ ] Integration tests use `wiremock` mock servers, not live HTTP
-- [ ] HTML test fixtures stored in `tests/fixtures/` for reproducibility
-- [ ] Tests verify correct data flow between pipeline stages
-- [ ] At least 5 different page types tested (article, SPA shell, table-heavy, code-heavy, list-heavy)
+```rust
+use hsx_core::{search::SearchOrchestrator, rank::{rank_results, RankConfig}, types::SearchResult};
+use wiremock::{MockServer, Mock, ResponseTemplate};
+use wiremock::matchers::{method, path};
 
-#### Pitfalls
+#[tokio::test]
+async fn search_results_are_ranked_by_relevance() {
+    let mock_server = MockServer::start().await;
+    Mock::given(method("GET")).and(path("/html/"))
+        .respond_with(ResponseTemplate::new(200)
+            .set_body_string(include_str!("../fixtures/ddg-results.html")))
+        .mount(&mock_server).await;
 
-- **Fixture maintenance**: HTML fixtures can become outdated. Document what each fixture tests and when it was created.
-- **Port conflicts**: Mock servers should use random ports (wiremock default) to avoid conflicts in parallel test runs.
+    let config = hsx_core::search::SearchConfig {
+        ddg_base_url: mock_server.uri(),
+        max_results: 10,
+        ..Default::default()
+    };
+    let orchestrator = SearchOrchestrator::new(config);
+    let results = orchestrator.search("Rust ownership").await.unwrap();
+    let ranked = rank_results(&results, "Rust ownership", &RankConfig::default());
+
+    assert!(ranked.len() >= 2);
+    // Results must be sorted descending by score
+    for w in ranked.windows(2) {
+        assert!(w[0].fusion_score >= w[1].fusion_score);
+    }
+}
+
+#[tokio::test]
+async fn search_deduplicates_results() {
+    let results = vec![
+        SearchResult {
+            title: "Rust Ownership".into(),
+            url: "https://doc.rust-lang.org/book/ch04-01.html".into(),
+            snippet: "First".into(), source: "duckduckgo".into(),
+            rank: 0, timestamp: chrono::Utc::now(),
+        },
+        SearchResult {
+            title: "Rust Ownership".into(),
+            url: "https://doc.rust-lang.org/book/ch04-01.html?ref=hn".into(),
+            snippet: "Second".into(), source: "hackernews".into(),
+            rank: 1, timestamp: chrono::Utc::now(),
+        },
+    ];
+    let ranked = rank_results(&results, "Rust ownership", &RankConfig::default());
+    assert_eq!(ranked.len(), 1, "Duplicate URLs should be merged");
+}
+```
+
+**Step 3: Fallback chain test (`tests/integration/fallback_chain.rs`)**
+
+```rust
+use hsx_core::http::HttpClient;
+use wiremock::{MockServer, Mock, ResponseTemplate};
+use wiremock::matchers::{method, path};
+
+#[tokio::test]
+async fn fallback_on_http_403() {
+    let mock_server = MockServer::start().await;
+    Mock::given(method("GET")).and(path("/protected"))
+        .respond_with(ResponseTemplate::new(403))
+        .mount(&mock_server).await;
+
+    let url = format!("{}/protected", mock_server.uri());
+    let client = HttpClient::new_default();
+    let result = client.get(&url).await;
+    assert!(result.is_err());
+    assert!(!result.unwrap_err().is_retryable());
+}
+
+#[tokio::test]
+async fn retry_on_http_429() {
+    let mock_server = MockServer::start().await;
+    Mock::given(method("GET")).and(path("/rate-limited"))
+        .respond_with(ResponseTemplate::new(429).append_header("Retry-After", "1"))
+        .expect(3)
+        .mount(&mock_server).await;
+
+    let url = format!("{}/rate-limited", mock_server.uri());
+    let client = HttpClient::with_retries(3);
+    assert!(client.get(&url).await.is_err());
+}
+
+#[tokio::test]
+async fn timeout_triggers_graceful_error() {
+    let mock_server = MockServer::start().await;
+    Mock::given(method("GET")).and(path("/slow"))
+        .respond_with(ResponseTemplate::new(200)
+            .set_body_string("slow")
+            .set_delay(std::time::Duration::from_secs(10)))
+        .mount(&mock_server).await;
+
+    let url = format!("{}/slow", mock_server.uri());
+    let client = HttpClient::with_timeout(std::time::Duration::from_millis(100));
+    assert!(client.get(&url).await.is_err());
+}
+```
+
+**Acceptance criteria:**
+- [ ] `cargo test --test integration` passes with zero failures
+- [ ] Fetch -> extract pipeline strips boilerplate from article HTML
+- [ ] Code blocks tagged as `SegmentType::CodeBlock`, tables as `SegmentType::Table`
+- [ ] SPA shell detection produces minimal text content
+- [ ] Search results are ranked with scores in descending order
+- [ ] Duplicate URLs with query param differences are deduplicated
+- [ ] HTTP 403 produces a non-retryable error
+- [ ] HTTP 429 triggers retry logic (up to 3 attempts)
+- [ ] Timeout error fires within the configured duration
+- [ ] All tests use `wiremock` -- no real network calls
 
 ---
 
-### P8-E1-T3: E2E Tests with assert_cmd + predicates
+### P8-E1-T3: E2E CLI Tests with `assert_cmd`
 
-| Field | Value |
-|-------|-------|
-| **ID** | `P8-E1-T3` |
-| **Status** | `TODO` |
-| **Priority** | P1 |
-| **Description** | Build end-to-end tests that invoke the actual `hsx` binary and verify CLI behavior, exit codes, output format, and error handling using `assert_cmd` and `predicates` crates. |
-| **PRD Ref** | 45 (Testing Strategy - E2E level) |
-| **Depends On** | `P8-E1-T1`, `P0-E3` (CLI skeleton) |
+**ID:** `P8-E1-T3`
+**Status:** `TODO`
+**Priority:** P1
+**Estimated effort:** 3-4 days (initial), then ongoing
 
-#### Files to Create/Modify
+**Description:**
+Build end-to-end tests that invoke the compiled `hsx` binary as a subprocess and assert on stdout, stderr, and exit codes. Use `assert_cmd` + `predicates` for fluent assertions. Test all major commands: `search`, `fetch`, `agent-search`, `agent-fetch`, `doctor`, `--version`. Mock external services using environment variable overrides pointing to wiremock servers.
 
-| File | Action |
-|------|--------|
-| `crates/hsx-cli/tests/e2e_search.rs` | Search command E2E tests |
-| `crates/hsx-cli/tests/e2e_fetch.rs` | Fetch command E2E tests |
-| `crates/hsx-cli/tests/e2e_agent.rs` | Agent command E2E tests |
-| `crates/hsx-cli/tests/e2e_doctor.rs` | Doctor command E2E tests |
+**PRD References:**
+- SS45 "E2E" -- `assert_cmd` + `predicates` + mock servers for full CLI + agent commands
+- SS11 "CLI Interface Design" -- All command shapes and flags
+- SS44 "Structured Errors" -- CLI should output structured errors with `--json` flag
 
-#### Step-by-Step Implementation Guide
+**Files to create/modify:**
+```
+tests/e2e/cli_basic.rs                           -- Version, help, doctor
+tests/e2e/cli_search.rs                          -- Search command E2E
+tests/e2e/cli_fetch.rs                           -- Fetch command E2E
+tests/e2e/cli_agent.rs                           -- Agent commands E2E
+tests/e2e/cli_output_formats.rs                  -- JSON, markdown, CSV output
+```
+
+**Dependencies:**
+- P0-E3-T1 (CLI skeleton) -- Binary must compile
+- P8-E1-T1 (test framework) -- Fixtures and helpers
+
+**Step-by-step implementation:**
+
+**Step 1: Add E2E dependencies**
+
+In `hsx-cli/Cargo.toml` `[dev-dependencies]`:
+```toml
+assert_cmd = { workspace = true }
+predicates = { workspace = true }
+wiremock = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+```
+
+**Step 2: Basic CLI tests (`tests/e2e/cli_basic.rs`)**
 
 ```rust
-// crates/hsx-cli/tests/e2e_doctor.rs
 use assert_cmd::Command;
 use predicates::prelude::*;
 
 #[test]
-fn doctor_runs_successfully() {
-    Command::cargo_bin("hsx")
-        .unwrap()
-        .arg("doctor")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("CPU:"))
-        .stdout(predicate::str::contains("RAM:"))
-        .stdout(predicate::str::contains("Tier:"));
-}
-
-#[test]
-fn version_flag_works() {
-    Command::cargo_bin("hsx")
-        .unwrap()
+fn cli_version_prints_version_string() {
+    Command::cargo_bin("hsx").unwrap()
         .arg("--version")
         .assert()
         .success()
-        .stdout(predicate::str::contains("hypersearchx"));
+        .stdout(predicate::str::contains("hsx"))
+        .stdout(predicate::str::is_match(r"\d+\.\d+\.\d+").unwrap());
 }
 
 #[test]
-fn unknown_command_shows_help() {
-    Command::cargo_bin("hsx")
-        .unwrap()
+fn cli_help_shows_usage() {
+    Command::cargo_bin("hsx").unwrap()
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("search"))
+        .stdout(predicate::str::contains("fetch"))
+        .stdout(predicate::str::contains("doctor"));
+}
+
+#[test]
+fn cli_no_args_shows_help() {
+    Command::cargo_bin("hsx").unwrap()
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Usage"));
+}
+
+#[test]
+fn cli_doctor_runs_without_crash() {
+    Command::cargo_bin("hsx").unwrap()
+        .arg("doctor")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("CPU"))
+        .stdout(predicate::str::contains("RAM"));
+}
+
+#[test]
+fn cli_unknown_command_shows_error() {
+    Command::cargo_bin("hsx").unwrap()
         .arg("nonexistent-command")
         .assert()
         .failure()
         .stderr(predicate::str::contains("error"));
 }
+```
 
-// crates/hsx-cli/tests/e2e_agent.rs
+**Step 3: Search command E2E (`tests/e2e/cli_search.rs`)**
 
-#[test]
-fn agent_search_returns_valid_json() {
-    // This test requires a mock server or --offline mode
-    Command::cargo_bin("hsx")
-        .unwrap()
-        .args(["agent-search", "test query", "--format", "json", "--budget", "500"])
-        .env("HSX_TEST_MODE", "1") // Use test fixtures
-        .assert()
-        .success()
-        .stdout(predicate::str::is_match(r#"\{.*"tokens".*\}"#).unwrap());
+```rust
+use assert_cmd::Command;
+use predicates::prelude::*;
+use wiremock::{MockServer, Mock, ResponseTemplate};
+use wiremock::matchers::{method, path};
+
+#[tokio::test]
+async fn search_json_output_is_valid_json() {
+    let mock_server = MockServer::start().await;
+    Mock::given(method("GET")).and(path("/html/"))
+        .respond_with(ResponseTemplate::new(200)
+            .set_body_string(include_str!("../fixtures/ddg-results.html")))
+        .mount(&mock_server).await;
+
+    let output = Command::cargo_bin("hsx").unwrap()
+        .env("HSX_DDG_BASE_URL", mock_server.uri())
+        .args(["search", "rust programming", "--format", "json"])
+        .output().unwrap();
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let _: serde_json::Value = serde_json::from_str(&stdout)
+        .expect("Output should be valid JSON");
 }
 
+#[tokio::test]
+async fn search_with_max_results_flag() {
+    let mock_server = MockServer::start().await;
+    Mock::given(method("GET")).and(path("/html/"))
+        .respond_with(ResponseTemplate::new(200)
+            .set_body_string(include_str!("../fixtures/ddg-results.html")))
+        .mount(&mock_server).await;
+
+    let output = Command::cargo_bin("hsx").unwrap()
+        .env("HSX_DDG_BASE_URL", mock_server.uri())
+        .args(["search", "rust", "--max-results", "3", "--format", "json"])
+        .output().unwrap();
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let parsed: serde_json::Value = serde_json::from_str(&stdout).unwrap();
+    if let Some(results) = parsed.as_array()
+        .or_else(|| parsed.get("results").and_then(|r| r.as_array()))
+    {
+        assert!(results.len() <= 3);
+    }
+}
+```
+
+**Step 4: Agent command E2E (`tests/e2e/cli_agent.rs`)**
+
+```rust
+use assert_cmd::Command;
+use predicates::prelude::*;
+
 #[test]
-fn agent_search_respects_tier_flag() {
-    Command::cargo_bin("hsx")
-        .unwrap()
-        .args(["agent-search", "test", "--tier", "key_facts", "--format", "json"])
+fn agent_search_outputs_json_by_default() {
+    let output = Command::cargo_bin("hsx").unwrap()
         .env("HSX_TEST_MODE", "1")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("key_facts"));
+        .args(["agent-search", "test query"])
+        .output().unwrap();
+
+    // Agent commands always produce JSON
+    if output.status.success() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let _: serde_json::Value = serde_json::from_str(&stdout)
+            .expect("agent-search stdout must be valid JSON");
+    }
 }
 
 #[test]
 fn fetch_with_invalid_url_shows_error() {
-    Command::cargo_bin("hsx")
-        .unwrap()
+    Command::cargo_bin("hsx").unwrap()
         .args(["fetch", "not-a-valid-url"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("Invalid URL")
             .or(predicate::str::contains("error")));
 }
-
-#[test]
-fn search_quiet_mode_suppresses_output() {
-    Command::cargo_bin("hsx")
-        .unwrap()
-        .args(["search", "test", "--quiet", "--format", "json"])
-        .env("HSX_TEST_MODE", "1")
-        .assert()
-        .success();
-    // In quiet mode, only JSON output, no decorations
-}
 ```
 
-#### Acceptance Criteria
-
-- [ ] E2E tests cover: search, fetch, view, doctor, version, agent-search, agent-fetch
-- [ ] Tests verify exit codes (0 for success, non-zero for errors)
-- [ ] Tests verify output format compliance (JSON is valid, markdown has expected sections)
-- [ ] Error cases tested: invalid URL, invalid flags, network failure
-- [ ] Tests work in CI without network access (using `HSX_TEST_MODE` or mock servers)
-- [ ] E2E tests run in < 60 seconds total
-
-#### Pitfalls
-
-- **Binary availability**: `assert_cmd::Command::cargo_bin` requires the binary to be built. CI should build before testing.
-- **Network dependency**: E2E tests that hit real servers will fail in CI. Use environment variable to switch to test mode.
+**Acceptance criteria:**
+- [ ] `hsx --version` outputs a semver string
+- [ ] `hsx --help` lists all commands: search, fetch, agent-search, agent-fetch, doctor
+- [ ] `hsx` with no args produces an error with usage info
+- [ ] `hsx doctor` runs without crashing and prints system info
+- [ ] `hsx search ... --format json` produces valid JSON
+- [ ] `hsx search ... --max-results 3` returns at most 3 results
+- [ ] `hsx agent-search` always outputs JSON
+- [ ] `hsx fetch <invalid-url>` produces a clear error
+- [ ] Unknown commands produce a helpful error message
+- [ ] All E2E tests use mock servers where possible
 
 ---
 
-### P8-E1-T4: Benchmarks with criterion
+### P8-E1-T4: Benchmark Suite with Criterion
 
-| Field | Value |
-|-------|-------|
-| **ID** | `P8-E1-T4` |
-| **Status** | `TODO` |
-| **Priority** | P1 |
-| **Description** | Create a comprehensive benchmark suite using `criterion` that measures latency and throughput for all critical paths. Benchmarks run in CI to detect performance regressions. |
-| **PRD Ref** | 40 (Performance Requirements), 45 (Benchmark level), 47 (Success Metrics) |
-| **Depends On** | `P8-E1-T1`, core modules from Phase 1 |
+**ID:** `P8-E1-T4`
+**Status:** `TODO`
+**Priority:** P1
+**Estimated effort:** 3-4 days (initial), then ongoing
 
-#### Files to Create/Modify
+**Description:**
+Create a comprehensive benchmark suite using `criterion` to measure performance of critical hot paths: HTML extraction, content ranking, token estimation, QATBE budgeting, and deduplication. Establish baselines and add CI regression detection. These benchmarks validate PRD SS40 latency targets.
 
-| File | Action |
-|------|--------|
-| `crates/hsx-core/benches/ranking.rs` | HyperFusion + BM25 benchmarks |
-| `crates/hsx-core/benches/extraction.rs` | CEP + QATBE benchmarks |
-| `crates/hsx-core/benches/segmentation.rs` | SCS benchmarks |
-| `crates/hsx-core/benches/tokens.rs` | Token counting benchmarks |
-| `crates/hsx-core/benches/embedding.rs` | Embedding generation benchmarks |
-| `crates/hsx-core/benches/cache.rs` | Cache read/write benchmarks |
+**PRD References:**
+- SS40 "Latency Targets" -- `agent-fetch` cached <300ms, `search` cached <1s, token estimation <100ms
+- SS45 "Benchmark" -- `criterion` for latency, throughput, token efficiency
+- SS47 "Success Metrics" -- Token efficiency >97% reduction vs raw HTML
 
-#### Step-by-Step Implementation Guide
+**Files to create/modify:**
+```
+benches/extraction.rs                            -- HTML extraction benchmarks
+benches/ranking.rs                               -- BM25 + HyperFusion benchmarks
+benches/token.rs                                 -- Token estimation + QATBE benchmarks
+Cargo.toml                                       -- Add [[bench]] entries
+```
+
+**Dependencies:**
+- P1-E1-T2 (extraction), P1-E3-T1 (tokens), P1-E5-T1 (BM25)
+
+**Step-by-step implementation:**
+
+**Step 1: Add criterion to workspace**
+
+```toml
+# workspace Cargo.toml
+[workspace.dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+```
+
+In `hsx-core/Cargo.toml`:
+```toml
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "extraction"
+harness = false
+
+[[bench]]
+name = "ranking"
+harness = false
+
+[[bench]]
+name = "token"
+harness = false
+```
+
+**Step 2: Extraction benchmark (`benches/extraction.rs`)**
 
 ```rust
-// crates/hsx-core/benches/ranking.rs
 use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use hsx_core::extract::{extract_content, ExtractorConfig};
 
-fn bench_bm25_scoring(c: &mut Criterion) {
-    let query = "rust web framework performance benchmarks";
-    let documents: Vec<String> = (0..100)
-        .map(|i| format!("Document {} about Rust web frameworks and their performance in production systems", i))
-        .collect();
+fn load_fixture(name: &str) -> String {
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent().unwrap().join("tests").join("fixtures").join(name);
+    std::fs::read_to_string(path).unwrap()
+}
 
-    c.bench_function("bm25_score_100_docs", |b| {
-        b.iter(|| {
-            for doc in &documents {
-                black_box(hsx_core::ranking::bm25::bm25_score(doc, query));
-            }
-        })
+fn bench_extract_simple_article(c: &mut Criterion) {
+    let html = load_fixture("simple-article.html");
+    let config = ExtractorConfig::default();
+    c.bench_function("extract/simple_article", |b| {
+        b.iter(|| extract_content(black_box(&html), black_box("https://example.com"), black_box(&config)))
     });
 }
 
-fn bench_hyperfusion_ranking(c: &mut Criterion) {
-    let mut group = c.benchmark_group("hyperfusion");
+fn bench_extract_table_heavy(c: &mut Criterion) {
+    let html = load_fixture("table-heavy.html");
+    let config = ExtractorConfig::default();
+    c.bench_function("extract/table_heavy", |b| {
+        b.iter(|| extract_content(black_box(&html), black_box("https://example.com"), black_box(&config)))
+    });
+}
 
-    for size in [10, 50, 100, 500] {
-        let mut results: Vec<SearchResult> = (0..size)
-            .map(|i| SearchResult::mock(i))
-            .collect();
-
+fn bench_extract_scaling(c: &mut Criterion) {
+    let base_html = load_fixture("simple-article.html");
+    let mut group = c.benchmark_group("extract/scaling");
+    for multiplier in [1, 5, 10, 50] {
+        let large_html = base_html.repeat(multiplier);
         group.bench_with_input(
-            BenchmarkId::new("rank", size),
-            &size,
-            |b, _| {
-                b.iter(|| {
-                    hsx_core::ranking::hyperfusion::rank_results(
-                        "test query",
-                        black_box(&mut results.clone()),
-                        &QueryIntent::default(),
-                    ).unwrap()
-                })
-            },
+            BenchmarkId::new("html_size", large_html.len()),
+            &large_html,
+            |b, html| b.iter(|| extract_content(black_box(html), black_box("https://example.com"), black_box(&ExtractorConfig::default()))),
         );
     }
     group.finish();
 }
 
-fn bench_token_counting(c: &mut Criterion) {
-    let texts = vec![
-        ("short", "Hello world"),
-        ("medium", &"This is a medium length text. ".repeat(50)),
-        ("long", &"This is a longer document with many words. ".repeat(500)),
-    ];
-
-    let mut group = c.benchmark_group("token_counting");
-    for (name, text) in &texts {
-        group.bench_with_input(
-            BenchmarkId::new("count_tokens", name),
-            text,
-            |b, text| {
-                b.iter(|| hsx_core::tokens::count_tokens(black_box(text)))
-            },
-        );
-    }
-    group.finish();
-}
-
-// crates/hsx-core/benches/extraction.rs
-
-fn bench_qatbe_pipeline(c: &mut Criterion) {
-    let html = include_str!("../tests/fixtures/sample_article.html");
-    let query = "performance benchmarks";
-
-    c.bench_function("qatbe_full_pipeline", |b| {
-        b.iter(|| {
-            let segments = hsx_core::segmentation::scs::segment(black_box(html)).unwrap();
-            let mut ranked = segments;
-            hsx_core::extraction::qatbe::rank_segments(&mut ranked, query).unwrap();
-            hsx_core::extraction::qatbe::budget_pack(&ranked, 1500)
-        })
-    });
-}
-
-fn bench_scs_segmentation(c: &mut Criterion) {
-    let html = include_str!("../tests/fixtures/sample_article.html");
-
-    c.bench_function("scs_segment_article", |b| {
-        b.iter(|| {
-            hsx_core::segmentation::scs::segment(black_box(html)).unwrap()
-        })
-    });
-}
-
-criterion_group!(
-    benches,
-    bench_bm25_scoring,
-    bench_hyperfusion_ranking,
-    bench_token_counting,
-    bench_qatbe_pipeline,
-    bench_scs_segmentation,
-);
+criterion_group!(benches, bench_extract_simple_article, bench_extract_table_heavy, bench_extract_scaling);
 criterion_main!(benches);
 ```
 
-#### Performance Targets (from PRD 40)
+**Step 3: Token estimation benchmark (`benches/token.rs`)**
+
+```rust
+use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use hsx_core::token::estimate_tokens;
+
+fn bench_token_estimation(c: &mut Criterion) {
+    let mut group = c.benchmark_group("token/estimate");
+    let texts: Vec<(&str, String)> = vec![
+        ("short", "Hello world, this is a test.".into()),
+        ("medium", "The quick brown fox jumps over the lazy dog. ".repeat(100)),
+        ("long", "Rust is a multi-paradigm systems programming language. ".repeat(1000)),
+    ];
+    for (label, text) in &texts {
+        group.bench_with_input(BenchmarkId::new("text_size", label), text.as_str(),
+            |b, text| b.iter(|| estimate_tokens(black_box(text))));
+    }
+    group.finish();
+}
+
+fn bench_token_estimation_1mb(c: &mut Criterion) {
+    let large_text = "word ".repeat(200_000); // ~1MB
+    c.bench_function("token/estimate_1mb", |b| {
+        b.iter(|| estimate_tokens(black_box(&large_text)))
+    });
+}
+
+fn bench_qatbe_budget_allocation(c: &mut Criterion) {
+    let segments: Vec<String> = (0..50)
+        .map(|i| format!("Segment {i}: paragraph of moderate length about topic {i} with relevant content."))
+        .collect();
+    c.bench_function("token/qatbe_budget_50_segments", |b| {
+        b.iter(|| {
+            let mut remaining = 4096usize;
+            let mut allocated = Vec::new();
+            for seg in black_box(&segments) {
+                let tokens = estimate_tokens(seg);
+                if tokens <= remaining { allocated.push(seg.as_str()); remaining -= tokens; }
+                else { break; }
+            }
+            allocated
+        })
+    });
+}
+
+criterion_group!(benches, bench_token_estimation, bench_token_estimation_1mb, bench_qatbe_budget_allocation);
+criterion_main!(benches);
+```
+
+**Step 4: Ranking benchmark (`benches/ranking.rs`)**
+
+```rust
+use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use hsx_core::{rank::{rank_results, RankConfig}, types::SearchResult};
+
+fn make_results(count: usize) -> Vec<SearchResult> {
+    (0..count).map(|i| SearchResult {
+        title: format!("Result {i}: Understanding Rust Concepts"),
+        url: format!("https://example.com/page-{i}"),
+        snippet: format!("Result about Rust topic {i} with various details."),
+        source: if i % 2 == 0 { "duckduckgo" } else { "google" }.into(),
+        rank: i, timestamp: chrono::Utc::now(),
+    }).collect()
+}
+
+fn bench_ranking(c: &mut Criterion) {
+    let mut group = c.benchmark_group("rank/bm25");
+    for count in [10, 50, 100, 500] {
+        let results = make_results(count);
+        group.bench_with_input(BenchmarkId::new("result_count", count), &results,
+            |b, results| b.iter(|| rank_results(black_box(results), black_box("Rust ownership"), black_box(&RankConfig::default()))));
+    }
+    group.finish();
+}
+
+fn bench_dedup(c: &mut Criterion) {
+    let mut results = make_results(100);
+    for i in 0..20 {
+        results.push(SearchResult {
+            title: format!("Result {i}: Understanding Rust Concepts"),
+            url: format!("https://example.com/page-{i}?utm_source=twitter"),
+            snippet: format!("Duplicate of result {i}."),
+            source: "bing".into(), rank: 100 + i, timestamp: chrono::Utc::now(),
+        });
+    }
+    c.bench_function("rank/dedup_120_results", |b| {
+        b.iter(|| rank_results(black_box(&results), black_box("Rust"), black_box(&RankConfig::default())))
+    });
+}
+
+criterion_group!(benches, bench_ranking, bench_dedup);
+criterion_main!(benches);
+```
+
+**Step 5: Add benchmark CI job**
+
+```yaml
+  benchmarks:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            target
+          key: ${{ runner.os }}-bench-${{ hashFiles('**/Cargo.lock') }}
+      - name: Run benchmarks
+        run: cargo bench --workspace -- --output-format bencher | tee output.txt
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'cargo'
+          output-file-path: output.txt
+          alert-threshold: '120%'
+          comment-on-alert: true
+          fail-on-alert: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+```
+
+**Performance targets from PRD SS40:**
 
 | Benchmark | Target |
 |-----------|--------|
-| BM25 score 100 docs | < 1ms |
-| HyperFusion rank 50 results | < 10ms |
-| Token count 10KB text | < 1ms |
-| SCS segment full article | < 5ms |
-| QATBE full pipeline | < 50ms |
-| Cache read (SQLite) | < 5ms |
-| Embedding 1 text (cached) | < 1ms |
-| Embedding 1 text (uncached) | < 100ms |
+| Token estimation on 1MB text | <100ms |
+| BM25 rank 100 docs | <10ms |
+| QATBE budget pack 50 segments | <5ms |
+| Extraction simple article | <10ms |
+| Extraction 250KB HTML | <100ms |
 
-#### Acceptance Criteria
-
-- [ ] Benchmarks exist for all critical paths listed above
-- [ ] All benchmarks meet their performance targets
-- [ ] `cargo bench` produces HTML reports in `target/criterion/`
-- [ ] CI runs benchmarks and compares to previous run (criterion baseline comparison)
-- [ ] Performance regressions > 10% trigger CI warnings
-- [ ] Benchmarks use realistic data (not toy examples)
-
-#### Pitfalls
-
-- **Benchmark variance**: CPU throttling, background processes, and thermal throttling cause variance. Use `--warm-up-time 5` and `--measurement-time 10` for stable results.
-- **Criterion baselines**: Save baselines in CI artifacts for regression detection. Use `--save-baseline main` on the main branch.
+**Acceptance criteria:**
+- [ ] `cargo bench --workspace` runs all benchmarks without errors
+- [ ] Extraction benchmark covers simple article, table-heavy, and scaling tests
+- [ ] Token estimation on 1MB text completes in <100ms (PRD SS40)
+- [ ] Ranking benchmark tests 10, 50, 100, 500 result counts
+- [ ] Criterion generates HTML reports in `target/criterion/`
+- [ ] CI alerts on >20% regression
+- [ ] All benchmarks use `black_box()` to prevent dead code elimination
 
 ---
 
-### P8-E1-T5: Snapshot Tests with insta
+### P8-E1-T5: Fuzz Testing with `cargo-fuzz`
 
-| Field | Value |
-|-------|-------|
-| **ID** | `P8-E1-T5` |
-| **Status** | `TODO` |
-| **Priority** | P1 |
-| **Description** | Use `insta` for snapshot testing of extraction output, segmentation results, and CLI output formatting. Snapshots catch unintended output changes. |
-| **PRD Ref** | 45 (Extraction snapshot tests) |
-| **Depends On** | `P8-E1-T1`, `P1-E1` (extraction) |
+**ID:** `P8-E1-T5`
+**Status:** `TODO`
+**Priority:** P2
+**Estimated effort:** 2-3 days (initial), then ongoing
 
-#### Files to Create/Modify
+**Description:**
+Create fuzz targets for all untrusted-input parsers: HTML extraction, URL normalization, JSON deserialization, and config parsing. Use `cargo-fuzz` (libFuzzer) and maintain seed corpora in the repo.
 
-| File | Action |
-|------|--------|
-| `crates/hsx-core/src/extraction/mod.rs` | Snapshot tests for extraction |
-| `crates/hsx-core/src/segmentation/mod.rs` | Snapshot tests for SCS |
-| `crates/hsx-core/tests/snapshots/` | Snapshot files (auto-generated by insta) |
+**PRD References:**
+- SS45 "Fuzz" -- `cargo-fuzz` / `libfuzzer` for HTML parsing, URL handling, JSON deserialization
+- SS40 "Reliability" -- "Never crash -- always degrade gracefully"
+- SS41 "Sanitized output" -- HTML sanitized before display
 
-#### Step-by-Step Implementation Guide
-
-```rust
-// crates/hsx-core/src/extraction/mod.rs
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use insta::assert_json_snapshot;
-
-    #[test]
-    fn extraction_snapshot_simple_article() {
-        let html = include_str!("../../tests/fixtures/simple_article.html");
-        let result = extract_from_html(html, &ExtractConfig::default()).unwrap();
-
-        // Snapshot the extraction result
-        assert_json_snapshot!("simple_article_extraction", result, {
-            ".fetched_at" => "[timestamp]",
-            ".content_hash" => "[hash]",
-        });
-    }
-
-    #[test]
-    fn scs_snapshot_table_page() {
-        let html = include_str!("../../tests/fixtures/table_heavy_page.html");
-        let segments = scs::segment(html).unwrap();
-
-        assert_json_snapshot!("table_page_segments", segments, {
-            "[].tokens" => insta::rounded_redaction(1),
-        });
-    }
-
-    #[test]
-    fn pds_snapshot_key_facts() {
-        let segments = create_test_segments();
-        let tiers = pds::tiers::generate_all_tiers(&segments, "test query").unwrap();
-
-        assert_json_snapshot!("key_facts_tier", tiers.key_facts);
-    }
-}
+**Files to create/modify:**
+```
+fuzz/Cargo.toml                                  -- Fuzz crate manifest
+fuzz/fuzz_targets/fuzz_html_extract.rs           -- Fuzz HTML extraction
+fuzz/fuzz_targets/fuzz_url_normalize.rs          -- Fuzz URL normalization
+fuzz/fuzz_targets/fuzz_json_deser.rs             -- Fuzz JSON deserialization
+fuzz/fuzz_targets/fuzz_config_parse.rs           -- Fuzz config parsing
+fuzz/corpus/                                     -- Seed corpora
 ```
 
-#### Acceptance Criteria
+**Dependencies:**
+- P1-E1-T2 (extraction), P1-E5-T1 (URL normalization)
 
-- [ ] Snapshot tests exist for: CEP extraction output, SCS segments, PDS tiers, CLI formatted output
-- [ ] Snapshots are reviewed on every PR that changes them
-- [ ] `cargo insta review` used to accept or reject snapshot changes
-- [ ] Redactions applied for non-deterministic fields (timestamps, hashes, UUIDs)
-- [ ] At least 10 HTML fixtures with corresponding snapshots
+**Step-by-step implementation:**
 
-#### Pitfalls
+**Step 1: Create `fuzz/Cargo.toml`**
 
-- **Non-deterministic output**: Timestamps, UUIDs, and hashes differ between runs. Use `insta` redactions to mask them.
-- **Snapshot bloat**: Large snapshots are hard to review. Keep snapshot scope narrow (individual segment, not full page).
+```toml
+[package]
+name = "hsx-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
 
----
+[package.metadata]
+cargo-fuzz = true
 
-### P8-E1-T6: Fuzz Testing with cargo-fuzz
+[dependencies]
+libfuzzer-sys = "0.4"
+hsx-core = { path = "../crates/hsx-core" }
+serde_json = "1"
 
-| Field | Value |
-|-------|-------|
-| **ID** | `P8-E1-T6` |
-| **Status** | `TODO` |
-| **Priority** | P1 |
-| **Description** | Set up fuzz testing for security-sensitive parsers: HTML parsing, URL handling, JSON deserialization, and configuration parsing. Fuzz targets ensure no panics or undefined behavior on malformed input. |
-| **PRD Ref** | 45 (Fuzz level), 41 (Security & Compliance) |
-| **Depends On** | `P8-E1-T1`, `P1-E1` (HTML parsing) |
+[workspace]
+members = ["."]
 
-#### Files to Create/Modify
+[[bin]]
+name = "fuzz_html_extract"
+path = "fuzz_targets/fuzz_html_extract.rs"
+doc = false
 
-| File | Action |
-|------|--------|
-| `fuzz/Cargo.toml` | Fuzz harness project |
-| `fuzz/fuzz_targets/html_parse.rs` | HTML parser fuzz target |
-| `fuzz/fuzz_targets/url_handling.rs` | URL parser fuzz target |
-| `fuzz/fuzz_targets/json_deser.rs` | JSON deserialization fuzz target |
-| `fuzz/fuzz_targets/config_parse.rs` | Config file parser fuzz target |
+[[bin]]
+name = "fuzz_url_normalize"
+path = "fuzz_targets/fuzz_url_normalize.rs"
+doc = false
 
-#### Step-by-Step Implementation Guide
+[[bin]]
+name = "fuzz_json_deser"
+path = "fuzz_targets/fuzz_json_deser.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_config_parse"
+path = "fuzz_targets/fuzz_config_parse.rs"
+doc = false
+```
+
+**Step 2: HTML extraction fuzz target (`fuzz/fuzz_targets/fuzz_html_extract.rs`)**
 
 ```rust
-// fuzz/fuzz_targets/html_parse.rs
 #![no_main]
 use libfuzzer_sys::fuzz_target;
+use hsx_core::extract::{extract_content, ExtractorConfig};
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(html) = std::str::from_utf8(data) {
-        // These should NEVER panic, regardless of input
-        let _ = hsx_core::extraction::extract_from_html(html, &Default::default());
-        let _ = hsx_core::segmentation::scs::segment(html);
-        let _ = hsx_core::extraction::qadd::structural_pruning_from_html(html);
+        // Must NEVER panic regardless of input
+        let _ = extract_content(html, "https://fuzz.example.com/page", &ExtractorConfig::default());
     }
 });
+```
 
-// fuzz/fuzz_targets/url_handling.rs
+**Step 3: URL normalization fuzz target (`fuzz/fuzz_targets/fuzz_url_normalize.rs`)**
+
+```rust
 #![no_main]
 use libfuzzer_sys::fuzz_target;
+use hsx_core::search::normalize_url;
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(url_str) = std::str::from_utf8(data) {
-        let _ = hsx_core::util::normalize_url(url_str);
-        let _ = hsx_core::util::extract_domain(url_str);
-        let _ = hsx_core::extraction::cep_features::CepFeatures::from_url(url_str);
+        let _ = normalize_url(url_str);
     }
-});
-
-// fuzz/fuzz_targets/json_deser.rs
-#![no_main]
-use libfuzzer_sys::fuzz_target;
-
-fuzz_target!(|data: &[u8]| {
-    // Ensure deserialization of untrusted JSON never panics
-    let _ = serde_json::from_slice::<hsx_core::types::AgentSearchResult>(data);
-    let _ = serde_json::from_slice::<hsx_core::config::Config>(data);
-    let _ = serde_json::from_slice::<hsx_core::types::Segment>(data);
 });
 ```
 
-#### Acceptance Criteria
-
-- [ ] Fuzz targets exist for: HTML parsing, URL handling, JSON deserialization, YAML config parsing
-- [ ] Zero panics found after 1 hour of fuzzing per target
-- [ ] Fuzz corpus committed to repo for reproducibility
-- [ ] CI runs fuzz tests for 5 minutes per target on each PR
-- [ ] Any panic found by fuzzing is fixed and a regression test added
-
-#### Pitfalls
-
-- **Fuzzing time**: Fuzzing is open-ended. Set time limits in CI (5 minutes per target) and run longer sessions locally/nightly.
-- **libFuzzer vs AFL**: `cargo-fuzz` uses libFuzzer by default. Consider also running with AFL++ for different mutation strategies.
-
----
-
-### P8-E1-T7: Concurrency Testing with loom
-
-| Field | Value |
-|-------|-------|
-| **ID** | `P8-E1-T7` |
-| **Status** | `TODO` |
-| **Priority** | P1 |
-| **Description** | Use `loom` to verify correctness of concurrent data structures: embedding cache, PIE SQLite access, browser pool, and worker pool. Loom exhaustively explores thread interleavings to find data races and deadlocks. |
-| **PRD Ref** | 45 (Concurrency testing with loom) |
-| **Depends On** | `P8-E1-T1`, concurrent modules |
-
-#### Files to Create/Modify
-
-| File | Action |
-|------|--------|
-| `crates/hsx-core/src/cache/tests_loom.rs` | Loom tests for cache |
-| `crates/hsx-core/src/intelligence/tests_loom.rs` | Loom tests for PIE |
-
-#### Step-by-Step Implementation Guide
+**Step 4: JSON deserialization fuzz target (`fuzz/fuzz_targets/fuzz_json_deser.rs`)**
 
 ```rust
-// crates/hsx-core/src/cache/tests_loom.rs
+#![no_main]
+use libfuzzer_sys::fuzz_target;
+use hsx_core::types::SearchResult;
 
-#[cfg(loom)]
-mod loom_tests {
-    use loom::sync::Arc;
-    use loom::thread;
-
-    #[test]
-    fn concurrent_cache_read_write() {
-        loom::model(|| {
-            let cache = Arc::new(super::MemoryCache::new(100));
-
-            let cache_w = cache.clone();
-            let writer = thread::spawn(move || {
-                cache_w.put("key1", "value1");
-                cache_w.put("key2", "value2");
-            });
-
-            let cache_r = cache.clone();
-            let reader = thread::spawn(move || {
-                // Reader should see either None or a valid value, never partial
-                let val = cache_r.get("key1");
-                if let Some(v) = val {
-                    assert_eq!(v, "value1");
-                }
-            });
-
-            writer.join().unwrap();
-            reader.join().unwrap();
-        });
+fuzz_target!(|data: &[u8]| {
+    if let Ok(json_str) = std::str::from_utf8(data) {
+        let _ = serde_json::from_str::<SearchResult>(json_str);
+        let _ = serde_json::from_str::<Vec<SearchResult>>(json_str);
     }
-
-    #[test]
-    fn concurrent_pie_trust_updates() {
-        loom::model(|| {
-            let stm = Arc::new(super::SourceTrustMemory::new_in_memory().unwrap());
-
-            let stm1 = stm.clone();
-            let t1 = thread::spawn(move || {
-                stm1.update_trust("example.com", true, 0.9).unwrap();
-            });
-
-            let stm2 = stm.clone();
-            let t2 = thread::spawn(move || {
-                stm2.update_trust("example.com", false, 0.0).unwrap();
-            });
-
-            t1.join().unwrap();
-            t2.join().unwrap();
-
-            // Trust score should be valid (between 0 and 1)
-            let trust = stm.get_trust("example.com").unwrap();
-            assert!(trust >= 0.0 && trust <= 1.0);
-        });
-    }
-}
+});
 ```
 
-#### Acceptance Criteria
+**Step 5: Config parsing fuzz target (`fuzz/fuzz_targets/fuzz_config_parse.rs`)**
 
-- [ ] Loom tests cover: in-memory cache, SQLite cache, PIE trust memory, embedding cache
-- [ ] No deadlocks or data races found by loom
-- [ ] Loom tests run in CI (with `RUSTFLAGS="--cfg loom"`)
-- [ ] Any issues found are fixed with proper synchronization primitives
+```rust
+#![no_main]
+use libfuzzer_sys::fuzz_target;
+use hsx_core::config::HsxConfig;
 
-#### Pitfalls
+fuzz_target!(|data: &[u8]| {
+    if let Ok(toml_str) = std::str::from_utf8(data) {
+        let _ = toml::from_str::<HsxConfig>(toml_str);
+    }
+});
+```
 
-- **Loom state space**: Loom explores all interleavings, which can be exponentially large. Keep test scenarios small (2-3 threads, few operations).
-- **Loom compatibility**: Not all crates work with loom. Use loom's own `Arc`, `Mutex`, `thread` types within loom tests.
+**Step 6: Create seed corpus files**
+
+`fuzz/corpus/html/seed1.html`:
+```html
+<html><body><article><h1>Test</h1><p>Content here.</p></article></body></html>
+```
+
+`fuzz/corpus/url/seed1.txt`:
+```
+https://example.com/path?query=value&other=123#fragment
+```
+
+`fuzz/corpus/json/seed1.json`:
+```json
+{"title":"Test","url":"https://example.com","snippet":"A test","source":"ddg","rank":0}
+```
+
+**Step 7: Add weekly fuzz CI job**
+
+```yaml
+  fuzz:
+    name: Fuzz ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    strategy:
+      matrix:
+        target: [fuzz_html_extract, fuzz_url_normalize, fuzz_json_deser, fuzz_config_parse]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+      - name: Run fuzzer for 5 minutes
+        run: |
+          cd fuzz
+          cargo +nightly fuzz run ${{ matrix.target }} -- \
+            -max_total_time=300 \
+            -max_len=65536
+      - name: Upload crash artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-crash-${{ matrix.target }}
+          path: fuzz/artifacts/
+```
+
+**Acceptance criteria:**
+- [ ] `cargo +nightly fuzz list` shows all 4 fuzz targets
+- [ ] Each target runs for 60s without crashes locally
+- [ ] Seed corpus files exist for each target
+- [ ] No panics discovered -- any found panics are fixed and regression-tested
+- [ ] CI runs fuzz tests weekly for 5 minutes per target
+- [ ] Crash artifacts are uploaded on failure
 
 ---
 
 ## Epic 8.2: Documentation
 
-### P8-E2-T1: cargo doc, User Guide, MCP Setup Guide
+> **PRD Sections:** SS46 (Milestones -- "Documentation site"), SS11 (CLI Interface)
+> **Priority:** P2 | **Tasks:** 3
 
-| Field | Value |
-|-------|-------|
-| **ID** | `P8-E2-T1` |
-| **Status** | `TODO` |
-| **Priority** | P1 |
-| **Description** | Ensure all public APIs have `///` doc comments that render correctly with `cargo doc`. Write a user guide covering installation, configuration, and all commands. Write an MCP setup guide for Claude/Claude Code integration. |
-| **PRD Ref** | 46 (Documentation site), 30 (MCP server mode) |
-| **Depends On** | All core modules implemented |
+### P8-E2-T1: API Documentation with `rustdoc`
 
-#### Files to Create/Modify
+**ID:** `P8-E2-T1`
+**Status:** `TODO`
+**Priority:** P2
+**Estimated effort:** 2-3 days (initial), then ongoing
 
-| File | Action |
-|------|--------|
-| All `src/lib.rs` and `src/*/mod.rs` files | Crate-level and module-level `//!` docs |
-| All public structs/functions | `///` doc comments with examples |
-| `docs/user-guide.md` | User guide (only when explicitly requested) |
-| `docs/mcp-setup.md` | MCP setup guide |
+**Description:**
+Ensure every public type, function, trait, and module has `///` doc comments with examples. Configure `rustdoc` to deny missing docs. Add doc tests for key APIs. Set up CI to build docs and publish to GitHub Pages.
 
-#### Documentation Standards
+**PRD References:**
+- SS46 V2.0 -- "Documentation site"
+- SS43 "Data Model" -- All public types must be documented
+- SS44 "Error Handling" -- Error types must document when each variant occurs
+
+**Files to create/modify:**
+```
+crates/hsx-core/src/lib.rs                       -- Add #![deny(missing_docs)], crate-level docs
+crates/hsx-mcp/src/lib.rs                        -- Add #![deny(missing_docs)]
+crates/hsx-api/src/lib.rs                        -- Add #![deny(missing_docs)]
+.github/workflows/ci.yml                         -- Add docs build + deploy job
+```
+
+**Dependencies:**
+- P0-E1-T2 (types) -- Types to document
+
+**Step-by-step implementation:**
+
+**Step 1: Add `deny(missing_docs)` and crate-level docs to `crates/hsx-core/src/lib.rs`**
 
 ```rust
-/// Rank search results using the HyperFusion 8-signal algorithm.
+//! # HyperSearchX Core Library
+//!
+//! `hsx-core` is the core library powering HyperSearchX, an AI-native
+//! search, extraction, and research tool. It provides:
+//!
+//! - **Search backends** -- DuckDuckGo, Google, Bing, Scholar, SearXNG, and more
+//! - **Content extraction** -- Cascade Extraction Protocol (CEP) with 5 layers
+//! - **Ranking** -- HyperFusion 8-signal intent-adaptive ranking
+//! - **Token budgeting** -- QATBE, SCS, PDS for AI-efficient output
+//! - **Validation** -- 6-layer validation with RAR self-correction
+//! - **AI engine** -- Ollama integration with sandwich layout context assembly
+//!
+//! ## Quick Start
+//!
+//! ```rust,no_run
+//! use hsx_core::search::{SearchOrchestrator, SearchConfig};
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     let orchestrator = SearchOrchestrator::new(SearchConfig::default());
+//!     let results = orchestrator.search("Rust ownership").await.unwrap();
+//!     for r in &results {
+//!         println!("{}: {}", r.title, r.url);
+//!     }
+//! }
+//! ```
+
+#![deny(missing_docs)]
+#![deny(rustdoc::broken_intra_doc_links)]
+```
+
+**Step 2: Add doc examples to key public functions**
+
+```rust
+/// Extract structured content segments from raw HTML.
 ///
-/// HyperFusion combines BM25, semantic similarity, temporal decay, authority,
-/// evidence density, diversity, depth, and consensus signals with intent-adaptive
-/// weights (see PRD 8.1).
+/// This is the main entry point for the Cascade Extraction Protocol (CEP).
+/// It identifies the main content area, strips boilerplate (nav, footer,
+/// ads), and returns typed [`ContentSegment`]s with relevance scores.
 ///
 /// # Arguments
 ///
-/// * `query` - The search query string
-/// * `results` - Mutable slice of results to rank in-place
-/// * `intent` - Query intent classification for weight adaptation
+/// * `html` -- Raw HTML string to extract from
+/// * `url` -- The source URL (used for link resolution and domain heuristics)
+/// * `config` -- Extraction configuration (thresholds, enabled layers)
 ///
-/// # Errors
+/// # Returns
 ///
-/// Returns `Error::Embedding` if semantic signal computation fails and the
-/// `embeddings` feature is enabled.
+/// A `Vec<ContentSegment>` sorted by document order, or an error if
+/// extraction fails completely.
 ///
 /// # Examples
 ///
 /// ```rust
-/// use hsx_core::ranking::hyperfusion;
-/// use hsx_core::types::{SearchResult, QueryIntent};
+/// use hsx_core::extract::{extract_content, ExtractorConfig};
 ///
-/// let mut results = vec![SearchResult::default(); 10];
-/// let intent = QueryIntent::classify("best rust framework");
-/// hyperfusion::rank_results("best rust framework", &mut results, &intent)?;
-///
-/// // Results are now sorted by fusion score descending
-/// assert!(results[0].fusion_score >= results[9].fusion_score);
-/// # Ok::<(), hsx_core::Error>(())
+/// let html = r#"<article><h1>Title</h1><p>Body text.</p></article>"#;
+/// let segments = extract_content(html, "https://example.com", &ExtractorConfig::default()).unwrap();
+/// assert!(!segments.is_empty());
 /// ```
-pub fn rank_results(
-    query: &str,
-    results: &mut [SearchResult],
-    intent: &QueryIntent,
-) -> Result<(), crate::Error> { /* ... */ }
+pub fn extract_content(html: &str, url: &str, config: &ExtractorConfig) -> Result<Vec<ContentSegment>, HsxError> {
+    // ...
+}
 ```
 
-#### MCP Setup Guide Content
+**Step 3: Add docs CI job**
 
+```yaml
+  docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build docs (deny warnings)
+        run: RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --all-features
+      - name: Upload docs artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/doc
+
+  deploy-docs:
+    name: Deploy to GitHub Pages
+    needs: [docs]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+**Acceptance criteria:**
+- [ ] `cargo doc --workspace --no-deps` builds with zero warnings
+- [ ] `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps` passes
+- [ ] Every public type has a `///` doc comment
+- [ ] Every public function has `# Arguments`, `# Returns`, `# Examples`
+- [ ] Doc tests (`cargo test --doc`) pass
+- [ ] `#![deny(missing_docs)]` is set in all crate roots
+- [ ] CI deploys docs to GitHub Pages on merge to main
+
+---
+
+### P8-E2-T2: User Guide
+
+**ID:** `P8-E2-T2`
+**Status:** `TODO`
+**Priority:** P2
+**Estimated effort:** 3-4 days
+
+**Description:**
+Write a user guide covering installation, basic usage, all commands with examples, configuration, agent integration (MCP, LangChain, CrewAI), and troubleshooting.
+
+**PRD References:**
+- SS11 "CLI Interface Design" -- All commands and flags
+- SS9 "AI-Native Agent Architecture" -- All 6 integration modes
+- SS30 "MCP Server Mode" -- MCP setup and tools
+
+**Files to create/modify:**
+```
+docs/guide/installation.md                       -- Install via npm, cargo, binary
+docs/guide/quickstart.md                         -- First search in 60 seconds
+docs/guide/commands.md                           -- All CLI commands with examples
+docs/guide/configuration.md                      -- Config file, env vars, flags
+docs/guide/agent-integration.md                  -- MCP, LangChain, CrewAI, REST API
+docs/guide/troubleshooting.md                    -- Common issues and fixes
+```
+
+**Dependencies:**
+- P1-E4 (agent commands), P4-E4 (MCP server)
+
+**Step-by-step implementation:**
+
+Content for `docs/guide/commands.md` (excerpt):
 ```markdown
-# MCP Setup Guide for HyperSearchX
+# Command Reference
 
-## Claude Desktop Integration
+## hsx search
+Search the web using multiple engines with intelligent ranking.
 
+### Usage
+hsx search <query> [options]
+
+### Options
+| Flag | Default | Description |
+|------|---------|-------------|
+| --max-results, -n | 10 | Maximum results to return |
+| --format, -f | markdown | Output format: markdown, json, csv, yaml |
+| --engines | auto | Engines: ddg, google, bing, scholar, all |
+| --timeout | 10s | Per-engine timeout |
+
+### Examples
+hsx search "Rust async runtime comparison"
+hsx search "quantum computing 2025" --format json --max-results 5
+hsx search "site:arxiv.org transformer attention" --engines scholar
+
+## hsx agent-search
+Machine-optimized search returning JSON with key_facts and metadata.
+
+### Usage
+hsx agent-search <query> [options]
+
+### Examples
+hsx agent-search "latest Rust release features" --budget 2000
+```
+
+Content for `docs/guide/agent-integration.md` (MCP excerpt):
+```markdown
+# Agent Integration
+
+## MCP (Model Context Protocol)
+
+### Claude Desktop
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
-
-```json
 {
   "mcpServers": {
     "hypersearchx": {
@@ -1031,13 +1438,9 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
     }
   }
 }
-```
 
-## Claude Code Integration
-
-Add to your project's `.mcp.json`:
-
-```json
+### Claude Code
+Add to `.mcp.json` in your project root:
 {
   "servers": {
     "hypersearchx": {
@@ -1047,335 +1450,922 @@ Add to your project's `.mcp.json`:
     }
   }
 }
+
+### Available MCP Tools
+- `hypersearch_search` -- Token-budgeted web search
+- `hypersearch_fetch` -- Query-aware content extraction
+- `hypersearch_research` -- Multi-source research with citations
+- `hypersearch_estimate` -- Pre-fetch token estimation
+- `hypersearch_expand` -- Tier expansion without re-fetching
 ```
 
-## Available MCP Tools
+**Acceptance criteria:**
+- [ ] Installation guide covers npm, cargo, and binary download
+- [ ] Quickstart gets a user from zero to first search in <2 minutes
+- [ ] Every CLI command documented with syntax, flags, and at least 2 examples
+- [ ] Config guide covers file location, all settings, env var overrides
+- [ ] Agent integration guide covers MCP, LangChain, CrewAI with working examples
+- [ ] Troubleshooting covers: Ollama not found, Chromium not found, rate limiting, timeouts
 
-- `hypersearch_search` - Token-budgeted web search
-- `hypersearch_fetch` - Query-aware content extraction
-- `hypersearch_research` - Multi-source research with citations
-- `hypersearch_estimate` - Pre-fetch token estimation
-- `hypersearch_expand` - Tier expansion without re-fetching
+---
+
+### P8-E2-T3: Architecture Documentation
+
+**ID:** `P8-E2-T3`
+**Status:** `TODO`
+**Priority:** P3
+**Estimated effort:** 2-3 days
+
+**Description:**
+Write architecture docs explaining crate structure, data flow, algorithm summaries, and extension points. Target audience: contributors and advanced users.
+
+**PRD References:**
+- SS12 "System Architecture", SS8 "Novel Algorithms", SS29 "Plugin System"
+
+**Files to create/modify:**
+```
+docs/architecture/overview.md                    -- Crate structure and data flow
+docs/architecture/algorithms.md                  -- Algorithm summaries
+docs/architecture/extending.md                   -- How to add backends, plugins
 ```
 
-#### Acceptance Criteria
-
-- [ ] `cargo doc --workspace --no-deps` generates without warnings
-- [ ] Every public type, trait, function, and method has `///` documentation
-- [ ] All doc examples compile and pass (`cargo test --doc`)
-- [ ] Crate-level docs (`//!`) explain the crate's purpose and architecture
-- [ ] Module-level docs explain the module's role in the pipeline
-- [ ] MCP setup guide covers Claude Desktop, Claude Code, and custom MCP clients
-- [ ] User guide covers installation via npm/cargo, all CLI commands, and configuration
-
-#### Pitfalls
-
-- **Doc test failures**: Doc examples that use `?` need a function signature returning `Result`. Use `# Ok::<(), Error>(())` at the end.
-- **Broken links**: `cargo doc` will warn about broken intra-doc links. Fix all of them.
-- **Feature-gated docs**: Items behind feature flags need `#[cfg_attr(docsrs, doc(cfg(feature = "embeddings")))]` to show the feature requirement in docs.
+**Acceptance criteria:**
+- [ ] Architecture overview explains the 4-crate workspace (hsx-core, hsx-cli, hsx-mcp, hsx-api)
+- [ ] Data flow diagram: query -> search -> extract -> rank -> output
+- [ ] Each of the 17 novel algorithms has a 1-paragraph summary
+- [ ] Extension guide explains how to add a new search backend
+- [ ] Extension guide explains the plugin system interface
+- [ ] Diagrams in ASCII art or Mermaid (renderable in GitHub markdown)
 
 ---
 
 ## Epic 8.3: Production Hardening
 
-### P8-E3-T1: Security Audit, Performance Optimization, Error Handling, Release Automation
+> **PRD Sections:** SS40 (Performance), SS41 (Security), SS44 (Error Handling), SS46 (Milestones)
+> **Priority:** P1 | **Tasks:** 4
 
-| Field | Value |
-|-------|-------|
-| **ID** | `P8-E3-T1` |
-| **Status** | `TODO` |
-| **Priority** | P0 |
-| **Description** | Comprehensive production hardening: security audit per PRD 41, performance optimization to meet PRD 40 targets, graceful error handling audit, and release automation with cross-compilation and npm publish. |
-| **PRD Ref** | 40 (Performance), 41 (Security), 44 (Error Handling), 46 (CI/CD) |
-| **Depends On** | All phases, `P8-E1-*` (test suite), `P8-E2-T1` (docs) |
+### P8-E3-T1: Security Audit & Hardening
 
-#### Files to Create/Modify
+**ID:** `P8-E3-T1`
+**Status:** `TODO`
+**Priority:** P1
+**Estimated effort:** 3-4 days
 
-| File | Action |
-|------|--------|
-| `.github/workflows/release.yml` | Release automation workflow |
-| `.github/workflows/security.yml` | Security audit workflow |
-| `npm/` | npm wrapper package for publishing |
-| `npm/package.json` | npm package manifest |
-| `npm/scripts/install-binary.js` | Platform-specific binary installer |
-| `crates/hsx-core/src/error.rs` | Error handling audit |
+**Description:**
+Perform a security audit against every item in PRD SS41. Implement HTML sanitization, TLS enforcement, input validation, and `cargo-audit` in CI. Verify no credentials stored, no data exfiltration, robots.txt respected.
 
-#### Security Audit Checklist (per PRD 41)
+**PRD References:**
+- SS41 "Security & Compliance" -- All 10 security requirements
+- SS41 "Sanitized output", "TLS enforcement", "Rate limiting", "PII redaction"
+
+**Files to create/modify:**
+```
+crates/hsx-core/src/http/sanitize.rs             -- HTML sanitization
+crates/hsx-core/src/http/tls.rs                  -- TLS enforcement
+crates/hsx-core/src/http/robots.rs               -- robots.txt parser + cache
+crates/hsx-core/src/http/rate_limit.rs           -- Per-domain rate limiting
+crates/hsx-core/src/privacy/redact.rs            -- PII redaction
+.github/workflows/ci.yml                         -- Add cargo-audit job
+```
+
+**Dependencies:**
+- P1-E1-T1 (HTTP client) -- Client to harden
+
+**Step-by-step implementation:**
+
+**Step 1: Add security dependency**
+
+```toml
+# workspace Cargo.toml
+ammonia = "4"    # HTML sanitization (same lib used by crates.io)
+```
+
+**Step 2: HTML sanitization (`crates/hsx-core/src/http/sanitize.rs`)**
 
 ```rust
-// Security audit implementation patterns:
+//! HTML sanitization for safe terminal and file output.
+//! All extracted HTML must pass through this before display.
 
-// 1. No credential storage
-// VERIFY: grep for "password", "secret", "token", "key" in stored data
-// ENSURE: No third-party credentials written to disk
+use ammonia::Builder;
+use std::collections::HashSet;
 
-// 2. Sanitized output
+/// Sanitize HTML for safe display. Strips scripts, iframes, event handlers.
+/// Preserves semantic tags (p, h1-h6, a, code, pre, table, lists, blockquote).
 pub fn sanitize_html(html: &str) -> String {
-    ammonia::clean(html) // Use ammonia crate for HTML sanitization
+    Builder::default()
+        .tags(allowed_tags())
+        .clean(html)
+        .to_string()
 }
 
-// 3. TLS enforcement
-pub fn build_http_client() -> reqwest::Client {
-    reqwest::Client::builder()
-        .https_only(true)           // Enforce HTTPS
-        .min_tls_version(reqwest::tls::Version::TLS_1_2)
-        .danger_accept_invalid_certs(false) // Never skip cert validation
-        .build()
-        .unwrap()
+/// Strip ALL HTML tags, returning plain text only.
+pub fn sanitize_to_text(html: &str) -> String {
+    ammonia::clean_text(html)
 }
 
-// 4. Input validation for all user-provided URLs
-pub fn validate_url(url: &str) -> Result<url::Url, crate::Error> {
-    let parsed = url::Url::parse(url)?;
+fn allowed_tags() -> HashSet<&'static str> {
+    ["p","h1","h2","h3","h4","h5","h6","a","code","pre",
+     "table","thead","tbody","tr","th","td","ul","ol","li",
+     "blockquote","em","strong","br","span","div"].iter().copied().collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn strips_script_tags() {
+        let input = r#"<p>Hello</p><script>alert('xss')</script><p>World</p>"#;
+        let output = sanitize_html(input);
+        assert!(!output.contains("script"));
+        assert!(!output.contains("alert"));
+        assert!(output.contains("Hello"));
+    }
+
+    #[test]
+    fn strips_event_handlers() {
+        let input = r#"<p onclick="evil()">Click me</p>"#;
+        let output = sanitize_html(input);
+        assert!(!output.contains("onclick"));
+        assert!(output.contains("Click me"));
+    }
+
+    #[test]
+    fn strips_iframes() {
+        let input = r#"<p>Text</p><iframe src="https://evil.com"></iframe>"#;
+        let output = sanitize_html(input);
+        assert!(!output.contains("iframe"));
+    }
+
+    #[test]
+    fn preserves_code_blocks() {
+        let input = r#"<pre><code>fn main() {}</code></pre>"#;
+        let output = sanitize_html(input);
+        assert!(output.contains("fn main()"));
+        assert!(output.contains("<code>"));
+    }
+
+    #[test]
+    fn sanitize_to_text_strips_all() {
+        let input = r#"<p>Hello <strong>world</strong></p>"#;
+        let output = sanitize_to_text(input);
+        assert!(!output.contains('<'));
+        assert!(output.contains("Hello"));
+    }
+}
+```
+
+**Step 3: TLS enforcement (`crates/hsx-core/src/http/tls.rs`)**
+
+```rust
+//! TLS enforcement: require HTTPS, allow HTTP only for localhost.
+
+use url::Url;
+use crate::error::HsxError;
+
+/// Reject plain HTTP for remote hosts. Allow for localhost.
+pub fn enforce_tls(url: &str) -> Result<(), HsxError> {
+    let parsed = Url::parse(url)
+        .map_err(|e| HsxError::InvalidUrl(format!("{url}: {e}")))?;
     match parsed.scheme() {
-        "http" | "https" => Ok(parsed),
-        scheme => Err(crate::Error::Validation(
-            format!("Unsupported URL scheme: {}. Only http/https allowed.", scheme)
-        )),
+        "https" => Ok(()),
+        "http" if is_localhost(&parsed) => Ok(()),
+        "http" => Err(HsxError::InsecureConnection {
+            url: url.to_string(),
+            suggestion: format!("Use https://{} instead", parsed.host_str().unwrap_or("unknown")),
+        }),
+        scheme => Err(HsxError::InvalidUrl(format!("Unsupported scheme: {scheme}"))),
     }
 }
 
-// 5. Never bypass CAPTCHA or paywalls
-// VERIFY: No CAPTCHA solving code exists
-// VERIFY: No paywall detection bypass
-
-// 6. Rate limiting respected
-pub struct DomainRateLimiter {
-    limits: DashMap<String, Instant>,
-    delay: Duration,
+fn is_localhost(url: &Url) -> bool {
+    matches!(url.host_str(), Some("localhost") | Some("127.0.0.1") | Some("::1"))
 }
 
-impl DomainRateLimiter {
-    pub async fn wait(&self, domain: &str) {
-        if let Some(last) = self.limits.get(domain) {
-            let elapsed = last.elapsed();
-            if elapsed < self.delay {
-                tokio::time::sleep(self.delay - elapsed).await;
-            }
-        }
-        self.limits.insert(domain.to_string(), Instant::now());
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn https_allowed() { assert!(enforce_tls("https://example.com").is_ok()); }
+
+    #[test]
+    fn http_localhost_allowed() {
+        assert!(enforce_tls("http://localhost:11434").is_ok());
+        assert!(enforce_tls("http://127.0.0.1:8080").is_ok());
+    }
+
+    #[test]
+    fn http_remote_rejected() { assert!(enforce_tls("http://example.com").is_err()); }
+
+    #[test]
+    fn invalid_url_rejected() { assert!(enforce_tls("not a url").is_err()); }
+}
+```
+
+**Step 4: Add `cargo-audit` CI job**
+
+```yaml
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+      - name: Run audit
+        run: cargo audit --deny warnings
+```
+
+**Acceptance criteria:**
+- [ ] `sanitize_html()` strips all `<script>`, `<iframe>`, event handlers
+- [ ] `sanitize_html()` preserves `<p>`, `<code>`, `<pre>`, `<table>`, headings
+- [ ] `enforce_tls()` rejects `http://` for remote hosts, allows localhost
+- [ ] `cargo audit` runs in CI with zero known vulnerabilities
+- [ ] Per-domain rate limiting prevents >1 req/sec to any single domain by default
+- [ ] robots.txt is fetched, cached, and respected
+- [ ] `--redact-pii` flag strips emails, phone numbers from output
+- [ ] All security code has unit tests
+
+---
+
+### P8-E3-T2: Performance Optimization
+
+**ID:** `P8-E3-T2`
+**Status:** `TODO`
+**Priority:** P1
+**Estimated effort:** 4-5 days
+
+**Description:**
+Profile and optimize against PRD SS40 latency targets. Configure release profile, optimize hot paths identified by benchmarks, and verify all targets are met.
+
+**PRD References:**
+- SS40 "Latency Targets" -- All operation timing requirements
+- SS47 "Success Metrics" -- Token efficiency >97% reduction vs raw HTML
+
+**Files to create/modify:**
+```
+Cargo.toml                                       -- Release profile optimizations
+crates/hsx-core/src/extract/mod.rs               -- Hot-path optimizations
+crates/hsx-core/src/rank/mod.rs                  -- Hot-path optimizations
+```
+
+**Dependencies:**
+- P8-E1-T4 (benchmarks) -- Baseline performance numbers
+
+**Step-by-step implementation:**
+
+**Step 1: Configure release profile**
+
+```toml
+# workspace Cargo.toml
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.release-with-debug]
+inherits = "release"
+debug = true
+strip = false
+
+[profile.bench]
+inherits = "release"
+debug = true
+strip = false
+```
+
+**Step 2: Add performance regression guards in tests**
+
+```rust
+#[cfg(test)]
+mod perf_tests {
+    use super::*;
+    use std::time::Instant;
+
+    #[test]
+    fn extraction_meets_latency_target() {
+        let html = include_str!("../../../../tests/fixtures/simple-article.html");
+        let large_html = html.repeat(50); // ~250KB
+        let start = Instant::now();
+        let _ = extract_content(&large_html, "https://example.com", &ExtractorConfig::default());
+        let elapsed = start.elapsed();
+        assert!(elapsed.as_millis() < 100, "Extraction took {}ms, target <100ms", elapsed.as_millis());
+    }
+
+    #[test]
+    fn token_estimation_meets_latency_target() {
+        let text = "word ".repeat(200_000); // ~1MB
+        let start = Instant::now();
+        let _ = estimate_tokens(&text);
+        let elapsed = start.elapsed();
+        assert!(elapsed.as_millis() < 100, "Token est took {}ms, target <100ms", elapsed.as_millis());
     }
 }
 ```
 
-#### Performance Optimization Targets (PRD 40)
+**Acceptance criteria:**
+- [ ] Release binary uses `opt-level = 3`, `lto = "fat"`, `codegen-units = 1`
+- [ ] `hsx search` cached <1s, `agent-search` cached <500ms, `agent-fetch` cached <300ms (PRD SS40)
+- [ ] `hsx fetch` cached <200ms, token estimation <100ms (PRD SS40)
+- [ ] Extraction of 250KB HTML completes in <100ms
+- [ ] Benchmark suite shows no regressions vs baseline
+- [ ] Release binary size under 25MB (stripped)
 
-```rust
-// Performance optimization patterns:
+---
 
-// 1. Connection pooling
-let client = reqwest::Client::builder()
-    .pool_max_idle_per_host(10)
-    .pool_idle_timeout(Duration::from_secs(90))
-    .tcp_keepalive(Duration::from_secs(60))
-    .build()?;
+### P8-E3-T3: Error Handling Audit
 
-// 2. Streaming HTML parsing (zero-copy where possible)
-// Use lol_html for streaming rewriting instead of full DOM parsing
-use lol_html::{element, HtmlRewriter, Settings};
+**ID:** `P8-E3-T3`
+**Status:** `TODO`
+**Priority:** P1
+**Estimated effort:** 2-3 days
 
-// 3. SIMD-accelerated JSON parsing
-#[cfg(feature = "simd-json")]
-fn parse_json(bytes: &mut [u8]) -> Result<serde_json::Value, crate::Error> {
-    simd_json::from_slice(bytes).map_err(Into::into)
-}
+**Description:**
+Audit every error path against PRD SS44 principles: never crash, never hang, never lose data, always explain, always fallback. Replace every production `unwrap()` with proper error handling. Ensure all async ops have timeouts.
 
-// 4. Lazy initialization of expensive resources
-use std::sync::OnceLock;
-static ONNX_SESSION: OnceLock<Session> = OnceLock::new();
-static TANTIVY_INDEX: OnceLock<tantivy::Index> = OnceLock::new();
+**PRD References:**
+- SS44 "Error Handling & Fallback Chains" -- 5 principles
+- SS44 "Structured Error Taxonomy" -- ErrorType enum with retryable flag
+- SS44 "Automatic Fallback Chain" -- cache -> alt backend -> Wayback -> partial
 
-// 5. Memory-mapped file I/O for large indexes
-use memmap2::MmapOptions;
+**Files to create/modify:**
+```
+crates/hsx-core/src/error.rs                     -- Complete error taxonomy
+All files with .unwrap() in non-test code        -- Replace with error propagation
+All async functions                              -- Ensure timeout wrappers
 ```
 
-#### Error Handling Audit
+**Dependencies:**
+- P1 complete -- Most error paths exist
+
+**Step-by-step implementation:**
+
+**Step 1: Replace all production `unwrap()` calls**
 
 ```rust
-// Ensure ALL error paths follow the structured error taxonomy (PRD 44):
+// BEFORE (unsafe):
+let parsed = Url::parse(&url).unwrap();
 
-// crates/hsx-core/src/error.rs
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("Network timeout after {timeout_ms}ms for {url}")]
-    NetworkTimeout { url: String, timeout_ms: u64 },
+// AFTER (safe):
+let parsed = Url::parse(&url)
+    .map_err(|e| HsxError::InvalidUrl(format!("{url}: {e}")))?;
+```
 
-    #[error("DNS resolution failed for {domain}")]
-    DnsFailure { domain: String },
+**Step 2: Timeout wrapper for all async operations**
 
-    #[error("HTTP {status} from {url}")]
-    HttpError { status: u16, url: String },
+```rust
+use tokio::time::{timeout, Duration};
 
-    #[error("Anti-bot detection on {domain}: {details}")]
-    AntiBot { domain: String, details: String },
-
-    #[error("Paywall detected on {url}")]
-    Paywall { url: String },
-
-    #[error("Extraction failed for {url}: {reason}")]
-    ExtractionFailed { url: String, reason: String },
-
-    #[error("AI model unavailable: {reason}")]
-    AiUnavailable { reason: String },
-
-    #[error("Token budget exceeded: {used} > {budget}")]
-    BudgetExceeded { used: usize, budget: usize },
-
-    // ... etc for all error types
+/// Wrap any async operation with a timeout.
+/// PRD SS44: "Never hang -- every operation has a timeout."
+pub async fn with_timeout<F, T>(duration: Duration, op_name: &str, future: F) -> Result<T, HsxError>
+where F: std::future::Future<Output = Result<T, HsxError>>
+{
+    match timeout(duration, future).await {
+        Ok(result) => result,
+        Err(_) => Err(HsxError::OperationTimeout {
+            operation: op_name.to_string(),
+            timeout_ms: duration.as_millis() as u64,
+            suggestion: format!("{op_name} timed out after {}ms. Try --timeout to increase.", duration.as_millis()),
+        }),
+    }
 }
+```
 
-impl Error {
-    /// Is this error retryable?
-    pub fn retryable(&self) -> bool {
+**Step 3: Verify every error has structured fields**
+
+```rust
+impl HsxError {
+    pub fn is_retryable(&self) -> bool {
         matches!(self,
-            Error::NetworkTimeout { .. } |
-            Error::HttpError { status, .. } if *status >= 500 |
-            Error::DnsFailure { .. }
+            HsxError::NetworkTimeout { .. } |
+            HsxError::Http5xx { .. } |
+            HsxError::DnsFailure { .. }
         )
     }
 
-    /// Suggested action for the user/agent.
     pub fn suggested_action(&self) -> &str {
         match self {
-            Error::NetworkTimeout { .. } => "Retry with longer timeout or check network connection",
-            Error::AntiBot { .. } => "Try a different backend or wait before retrying",
-            Error::Paywall { .. } => "Content is behind a paywall. Try finding the same information on a free source",
-            Error::AiUnavailable { .. } => "Start Ollama with: ollama serve",
-            _ => "Check the error details and try again",
+            HsxError::NetworkTimeout { .. } => "Retry with longer timeout or check network",
+            HsxError::AntiBot { .. } => "Try a different backend or wait before retrying",
+            HsxError::Paywall { .. } => "Content is paywalled. Try a free alternative source",
+            HsxError::AiUnavailable { .. } => "Start Ollama with: ollama serve",
+            _ => "Check error details and try again",
         }
     }
 }
 ```
 
-#### Release Automation
+**Acceptance criteria:**
+- [ ] Zero `unwrap()` calls in non-test production code (verified by grep)
+- [ ] Every async operation wrapped with a timeout
+- [ ] Every HTTP request has per-request timeout (default 10s)
+- [ ] Every error has `is_retryable()`, `suggested_action()`
+- [ ] Fallback chain pattern used for fetch, search, cache reads
+- [ ] All errors serialize to JSON with `error_type`, `retryable`, `message`, `suggested_action`
+- [ ] Killing Ollama mid-request produces clean error, not panic
+- [ ] Disconnecting network mid-search produces partial results with explanation
+
+---
+
+### P8-E3-T4: Release Automation with `cargo-dist` and Cross-Compilation
+
+**ID:** `P8-E3-T4`
+**Status:** `TODO`
+**Priority:** P1
+**Estimated effort:** 3-4 days
+
+**Description:**
+Set up automated releases for 5 platforms (Linux x64/ARM64, macOS x64/ARM64, Windows x64) using GitHub Actions. On tag push, build binaries, create GitHub Release with checksums, publish npm wrapper and crates.io packages.
+
+**PRD References:**
+- SS46 "MVP" -- "CI/CD with cross-compilation (Linux x64/arm64, macOS x64/arm64, Windows x64)"
+- SS48 "npm Wrapper Package" -- Platform-specific pre-built binaries
+
+**Files to create/modify:**
+```
+dist-workspace.toml                              -- cargo-dist config
+.github/workflows/release.yml                    -- Full release pipeline
+.github/workflows/ci.yml                         -- Full CI pipeline
+Cross.toml                                       -- Cross-compilation config
+npm/package.json                                 -- npm wrapper
+npm/scripts/install-binary.js                    -- Binary installer
+```
+
+**Dependencies:**
+- P0-E2 (CI/CD skeleton) -- Base CI exists
+
+**Step-by-step implementation:**
+
+**Step 1: `dist-workspace.toml`**
+
+```toml
+[dist]
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
+    "x86_64-apple-darwin",
+    "aarch64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+]
+cargo-dist-version = "0.27"
+ci = "github"
+
+[dist.artifacts]
+archives = true
+checksum = "sha256"
+
+[dist.builds]
+cargo = [{ package = "hsx-cli" }]
+```
+
+**Step 2: Release workflow (`.github/workflows/release.yml`)**
 
 ```yaml
-# .github/workflows/release.yml
 name: Release
 
 on:
   push:
-    tags: ['v*']
+    tags: ['v[0-9]+.*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (skip publish)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
   build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
+            archive: tar.gz
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
+            archive: tar.gz
+            cross: true
           - target: x86_64-apple-darwin
-            os: macos-latest
+            os: macos-13
+            archive: tar.gz
           - target: aarch64-apple-darwin
-            os: macos-latest
+            os: macos-14
+            archive: tar.gz
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-
-    runs-on: ${{ matrix.os }}
+            archive: zip
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-      - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }}
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Install cross
+        if: matrix.cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
+      - name: Build
+        shell: bash
+        run: |
+          if [ "${{ matrix.cross }}" = "true" ]; then
+            cross build --release --target ${{ matrix.target }} --package hsx-cli
+          else
+            cargo build --release --target ${{ matrix.target }} --package hsx-cli
+          fi
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          ARCHIVE=hypersearchx-${{ matrix.target }}.${{ matrix.archive }}
+          chmod +x target/${{ matrix.target }}/release/hsx
+          tar czf "$ARCHIVE" -C target/${{ matrix.target }}/release hsx
+          shasum -a 256 "$ARCHIVE" > "$ARCHIVE.sha256"
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ARCHIVE = "hypersearchx-${{ matrix.target }}.${{ matrix.archive }}"
+          Compress-Archive -Path "target/${{ matrix.target }}/release/hsx.exe" -DestinationPath $ARCHIVE
+          (Get-FileHash $ARCHIVE -Algorithm SHA256).Hash | Out-File "$ARCHIVE.sha256"
+      - uses: actions/upload-artifact@v4
         with:
-          name: hsx-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/hsx*
+          name: binary-${{ matrix.target }}
+          path: |
+            hypersearchx-*.${{ matrix.archive }}
+            hypersearchx-*.${{ matrix.archive }}.sha256
 
-  publish-npm:
-    needs: build
+  release:
+    name: Create Release
+    needs: [build]
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-      - name: Publish to npm
+        with:
+          path: artifacts
+          pattern: binary-*
+          merge-multiple: true
+      - name: Release notes
+        id: notes
         run: |
-          cd npm
-          npm version ${{ github.ref_name }}
-          npm publish
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          if [ -f CHANGELOG.md ]; then
+            sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | head -n -1 > notes.md
+          else
+            echo "Release ${VERSION}" > notes.md
+          fi
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: HyperSearchX v${{ steps.notes.outputs.version }}
+          body_path: notes.md
+          draft: false
+          prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') }}
+          files: artifacts/*
+
+  publish-npm:
+    name: Publish npm
+    needs: [release]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-rc')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: binary-*
+          merge-multiple: true
+      - name: Prepare and publish
+        run: cd npm && npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-crates:
-    needs: build
+    name: Publish crates.io
+    needs: [release]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-rc')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo publish --package hsx-core
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+      - run: sleep 30
+      - run: cargo publish --package hsx-cli
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+```
+
+**Step 3: Full CI workflow (`.github/workflows/ci.yml`)**
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 4 * * 1'  # Weekly Monday 4am UTC for fuzz
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  fmt:
+    name: Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Publish to crates.io
-        run: cargo publish --workspace
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            target
+          key: ${{ runner.os }}-clippy-${{ hashFiles('**/Cargo.lock') }}
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+  build:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-14, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            target
+          key: ${{ runner.os }}-build-${{ hashFiles('**/Cargo.lock') }}
+      - run: cargo build --workspace --all-features
+      - run: cargo test --workspace --all-features
+      - run: cargo test --doc --workspace
+
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - run: cargo llvm-cov --workspace --lcov --output-path lcov.info
+      - name: Check floor
+        run: |
+          COV=$(cargo llvm-cov --workspace --json | jq '.data[0].totals.lines.percent')
+          echo "Coverage: ${COV}%"
+          if (( $(echo "$COV < 60" | bc -l) )); then
+            echo "::error::Coverage ${COV}% below 60%"; exit 1
+          fi
+      - uses: codecov/codecov-action@v4
+        with:
+          files: lcov.info
+          fail_ci_if_error: false
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo install cargo-audit
+      - run: cargo audit --deny warnings
+
+  docs:
+    name: Build Docs
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --all-features
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/doc
+
+  deploy-docs:
+    name: Deploy Docs
+    needs: [docs]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
+
+  benchmarks:
+    name: Benchmarks
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            target
+          key: ${{ runner.os }}-bench-${{ hashFiles('**/Cargo.lock') }}
+      - run: cargo bench --workspace -- --output-format bencher | tee output.txt
+      - uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'cargo'
+          output-file-path: output.txt
+          alert-threshold: '120%'
+          comment-on-alert: true
+          fail-on-alert: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+
+  fuzz:
+    name: Fuzz ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    strategy:
+      matrix:
+        target: [fuzz_html_extract, fuzz_url_normalize, fuzz_json_deser, fuzz_config_parse]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo install cargo-fuzz
+      - name: Fuzz 5 minutes
+        run: cd fuzz && cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=300 -max_len=65536
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-crash-${{ matrix.target }}
+          path: fuzz/artifacts/
 ```
 
-#### npm Wrapper Package
+**Step 4: npm binary installer (`npm/scripts/install-binary.js`)**
 
 ```javascript
-// npm/scripts/install-binary.js
-const os = require('os');
-const path = require('path');
-const fs = require('fs');
+#!/usr/bin/env node
+const { execSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
 
 const PLATFORM_MAP = {
-  'darwin-x64': '@hypersearchx/darwin-x64',
-  'darwin-arm64': '@hypersearchx/darwin-arm64',
-  'linux-x64': '@hypersearchx/linux-x64',
-  'linux-arm64': '@hypersearchx/linux-arm64',
-  'win32-x64': '@hypersearchx/win-x64',
+  "linux-x64": "x86_64-unknown-linux-gnu",
+  "linux-arm64": "aarch64-unknown-linux-gnu",
+  "darwin-x64": "x86_64-apple-darwin",
+  "darwin-arm64": "aarch64-apple-darwin",
+  "win32-x64": "x86_64-pc-windows-msvc",
 };
 
-const key = `${os.platform()}-${os.arch()}`;
-const pkg = PLATFORM_MAP[key];
-
-if (!pkg) {
-  console.error(`Unsupported platform: ${key}`);
-  console.error('Supported: ' + Object.keys(PLATFORM_MAP).join(', '));
+const platform = `${process.platform}-${process.arch}`;
+const target = PLATFORM_MAP[platform];
+if (!target) {
+  console.error(`Unsupported platform: ${platform}`);
   process.exit(1);
 }
 
-try {
-  const binaryPath = require.resolve(`${pkg}/bin/hsx`);
-  const targetDir = path.join(__dirname, '..', 'bin');
-  fs.mkdirSync(targetDir, { recursive: true });
-  fs.copyFileSync(binaryPath, path.join(targetDir, 'hsx'));
-  fs.chmodSync(path.join(targetDir, 'hsx'), 0o755);
-} catch (e) {
-  console.error(`Failed to install binary for ${key}: ${e.message}`);
-  console.error('You can also install via: cargo install hypersearchx');
-  process.exit(1);
+const pkg = require("../package.json");
+const version = pkg.version;
+const ext = process.platform === "win32" ? "zip" : "tar.gz";
+const url = `https://github.com/hypersearchx/hypersearchx/releases/download/v${version}/hypersearchx-${target}.${ext}`;
+
+const binDir = path.join(__dirname, "..", "bin");
+fs.mkdirSync(binDir, { recursive: true });
+
+console.log(`Downloading HyperSearchX ${version} for ${platform}...`);
+const binName = process.platform === "win32" ? "hsx.exe" : "hsx";
+if (ext === "tar.gz") {
+  execSync(`curl -fsSL "${url}" | tar xz -C "${binDir}"`, { stdio: "inherit" });
+} else {
+  const zipPath = path.join(binDir, "hsx.zip");
+  execSync(`curl -fsSL -o "${zipPath}" "${url}"`, { stdio: "inherit" });
+  execSync(`unzip -o "${zipPath}" -d "${binDir}"`, { stdio: "inherit" });
+  fs.unlinkSync(zipPath);
 }
+fs.chmodSync(path.join(binDir, binName), 0o755);
+console.log(`Installed HyperSearchX to ${path.join(binDir, binName)}`);
 ```
 
-#### Acceptance Criteria
+**Step 5: `Cross.toml`**
 
-- [ ] **Security**: `cargo audit` passes with zero known vulnerabilities
-- [ ] **Security**: No credential storage in any persistent data
-- [ ] **Security**: All HTTP output sanitized before display
-- [ ] **Security**: TLS 1.2+ enforced for all connections
-- [ ] **Security**: robots.txt respected by default
-- [ ] **Security**: No CAPTCHA bypass or paywall circumvention code
-- [ ] **Performance**: `hsx search` cached < 1s (benchmark verified)
-- [ ] **Performance**: `hsx search` uncached < 3s (benchmark verified)
-- [ ] **Performance**: `hsx agent-fetch` QATBE < 2s (benchmark verified)
-- [ ] **Performance**: Token efficiency > 97% vs raw HTML (benchmark verified)
-- [ ] **Error Handling**: Every error path produces a structured `Error` with `retryable()` and `suggested_action()`
-- [ ] **Error Handling**: No panics in release builds (verified by fuzz testing)
-- [ ] **Error Handling**: Graceful degradation: partial results > no results
-- [ ] **Release**: Cross-compilation produces binaries for linux-x64, linux-arm64, darwin-x64, darwin-arm64, win-x64
-- [ ] **Release**: `npm install -g hypersearchx` installs and works on all 5 platforms
-- [ ] **Release**: `cargo install hypersearchx` works
-- [ ] **Release**: GitHub Release includes pre-built binaries and checksums
-- [ ] **Release**: `cargo publish` publishes all workspace crates to crates.io
-- [ ] **Release**: Version numbers synchronized across Cargo.toml and package.json
+```toml
+[target.aarch64-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/aarch64-unknown-linux-gnu:main"
 
-#### Pitfalls
+[target.x86_64-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/x86_64-unknown-linux-gnu:main"
+```
 
-- **Cross-compilation**: `aarch64-unknown-linux-gnu` requires a cross-linker. Use `cross` tool or Docker-based cross-compilation.
-- **npm optional dependencies**: The platform-specific packages pattern (used by esbuild, turbo, SWC) requires publishing 5 packages per release. Automate this completely.
-- **Security audit false positives**: `cargo audit` may flag transitive dependencies. If a fix is not available upstream, document the risk assessment.
-- **Windows path handling**: Windows uses `\` in paths. Test all path operations on Windows CI.
-- **Binary size**: Rust release binaries can be large (50MB+). Use `strip`, LTO, and `opt-level = "z"` for size-optimized builds. Target < 20MB.
+**Acceptance criteria:**
+- [ ] Pushing a `v*` tag triggers the release workflow
+- [ ] GitHub Release created with archives + SHA256 checksums for all 5 platforms
+- [ ] npm package installs correct binary for current platform
+- [ ] `npm install -g hypersearchx && hsx --version` works
+- [ ] `cargo publish --dry-run --package hsx-core` succeeds
+- [ ] Windows binary packaged as `.zip`, Unix as `.tar.gz`
+- [ ] Pre-release tags (`-rc`, `-beta`) create prerelease GitHub Releases
+- [ ] CI runs: fmt, clippy, build (3 OS), test, coverage, audit, docs on every PR
+- [ ] CI passes on Ubuntu, macOS ARM64, and Windows
+- [ ] Weekly fuzz testing runs automatically
+
+---
+
+## CI/CD Pipeline Summary
+
+| Workflow | Trigger | Jobs |
+|----------|---------|------|
+| `ci.yml` | Push main, PRs, weekly schedule | fmt, clippy, build (3 OS), coverage, audit, docs, deploy-docs, benchmarks (main), fuzz (weekly) |
+| `release.yml` | Tag push `v*` | build (5 targets), release, publish-npm, publish-crates |
+
+**Per-PR jobs:** 8 (fmt + clippy + 3 OS builds + coverage + audit + docs)
+**Per-release jobs:** 8 (5 builds + release + npm + crates.io)
+
+---
+
+## Task Dependency Graph (Phase 8 Internal)
+
+```
+P8-E1-T1 (Unit Framework)
++-- P8-E1-T2 (Integration)       <- needs test helpers from T1
++-- P8-E1-T3 (E2E CLI)           <- needs fixtures from T1
++-- P8-E1-T4 (Benchmarks)        <- independent, can start with T1
++-- P8-E1-T5 (Fuzz)              <- independent, can start with T1
+
+P8-E2-T1 (API Docs)              <- independent, start anytime
+P8-E2-T2 (User Guide)            <- needs commands to exist
+P8-E2-T3 (Architecture Docs)     <- needs Phase 1 complete
+
+P8-E3-T1 (Security Audit)        <- needs HTTP client
+P8-E3-T2 (Perf Optimization)     <- needs P8-E1-T4 benchmarks for baselines
+P8-E3-T3 (Error Audit)           <- needs Phase 1 complete
+P8-E3-T4 (Release Automation)    <- independent, start with P0-E2
+```
+
+---
+
+## Revision Schedule
+
+Phase 8 tasks should be revisited at these checkpoints:
+
+| Checkpoint | What to Add |
+|-----------|-------------|
+| After Phase 0 | Unit tests for types, config, error. CI pipeline. Release automation skeleton. |
+| After Phase 1 | Integration tests for fetch/extract/search. E2E for all MVP commands. First benchmarks. First fuzz targets. |
+| After Phase 2 | Integration tests for multi-engine search. Benchmarks for HyperFusion ranking. Fuzz targets for headless HTML. |
+| After Phase 3 | Integration tests for validation pipeline. Benchmarks for citation generation. |
+| After Phase 4 | Integration tests for AI pipeline. E2E for MCP tools. Benchmarks for AMRS. |
+| After Phase 5 | Integration tests for semantic search. Benchmarks for ONNX embeddings. |
+| After Phase 6 | Integration tests for intelligence algorithms (PIE, ToTR, CRP, EDF, SGT, CCE, ACS). |
+| After Phase 7 | E2E for TUI. Plugin system tests. Final performance audit against all PRD SS40 targets. |
+
+---
+
+*For the master task index, see [`TASKS.md`](../TASKS.md).*
+*For PRD performance targets, see `prd.md` SS40.*
+*For PRD security requirements, see `prd.md` SS41.*
+*For PRD error handling principles, see `prd.md` SS44.*
+*For PRD testing strategy, see `prd.md` SS45.*
+*For PRD milestones, see `prd.md` SS46.*

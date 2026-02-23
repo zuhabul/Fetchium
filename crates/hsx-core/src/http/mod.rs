@@ -2,4 +2,4 @@
 
 pub mod client;
 
-pub use client::HttpClient;
+pub use client::{FetchResult, HttpClient};

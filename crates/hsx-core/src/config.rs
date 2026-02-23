@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 /// Top-level configuration.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsxConfig {
     pub general: GeneralConfig,
@@ -101,18 +101,7 @@ pub struct OutputConfig {
 
 // ─── Defaults ────────────────────────────────────────────────────
 
-impl Default for HsxConfig {
-    fn default() -> Self {
-        Self {
-            general: GeneralConfig::default(),
-            search: SearchConfig::default(),
-            fetch: FetchConfig::default(),
-            cache: CacheConfig::default(),
-            ai: AiConfig::default(),
-            output: OutputConfig::default(),
-        }
-    }
-}
+// Manual default removed, used #[derive(Default)] on the struct instead.
 
 impl Default for GeneralConfig {
     fn default() -> Self {
@@ -141,7 +130,10 @@ impl Default for SearchConfig {
 impl Default for FetchConfig {
     fn default() -> Self {
         Self {
-            user_agent: format!("HyperSearchX/{} (https://github.com/hypersearchx/hypersearchx)", env!("CARGO_PKG_VERSION")),
+            user_agent: format!(
+                "HyperSearchX/{} (https://github.com/hypersearchx/hypersearchx)",
+                env!("CARGO_PKG_VERSION")
+            ),
             respect_robots: true,
             max_page_size: 10 * 1024 * 1024, // 10 MB
             timeout_secs: 30,
@@ -186,14 +178,11 @@ impl Default for OutputConfig {
 impl HsxConfig {
     /// Get the data directory, creating it if it doesn't exist.
     pub fn data_dir(&self) -> PathBuf {
-        self.general
-            .data_dir
-            .clone()
-            .unwrap_or_else(|| {
-                dirs::home_dir()
-                    .unwrap_or_else(|| PathBuf::from("."))
-                    .join(".hypersearchx")
-            })
+        self.general.data_dir.clone().unwrap_or_else(|| {
+            dirs::home_dir()
+                .unwrap_or_else(|| PathBuf::from("."))
+                .join(".hypersearchx")
+        })
     }
 
     /// Load config from the default location.
@@ -210,21 +199,28 @@ impl HsxConfig {
                 .join("config.toml")
         });
 
-        if config_path.exists() {
+        let mut config = if config_path.exists() {
             match std::fs::read_to_string(&config_path) {
                 Ok(contents) => match toml::from_str(&contents) {
-                    Ok(config) => return config,
+                    Ok(config) => config,
                     Err(e) => {
                         tracing::warn!("Failed to parse config at {}: {e}", config_path.display());
+                        Self::default()
                     }
                 },
                 Err(e) => {
                     tracing::warn!("Failed to read config at {}: {e}", config_path.display());
+                    Self::default()
                 }
             }
-        }
+        } else {
+            Self::default()
+        };
 
-        Self::default()
+        // Layer 3: environment variable overrides
+        config.apply_env_overrides();
+
+        config
     }
 
     /// Detect the resource tier based on system capabilities.
@@ -240,6 +236,83 @@ impl HsxConfig {
             _ => ResourceTier::Minimal,
         }
     }
+
+    /// Apply environment variable overrides.
+    /// Convention: `HSX_SECTION_KEY` (uppercase, underscore-separated).
+    /// Examples: HSX_SEARCH_DEFAULT_BUDGET=8000, HSX_CACHE_ENABLED=false
+    pub fn apply_env_overrides(&mut self) {
+        if let Ok(val) = std::env::var("HSX_SEARCH_DEFAULT_BUDGET") {
+            if let Ok(budget) = val.parse::<u32>() {
+                self.search.default_budget = budget;
+            }
+        }
+        if let Ok(val) = std::env::var("HSX_SEARCH_MAX_CONCURRENT") {
+            if let Ok(n) = val.parse::<u32>() {
+                self.search.max_concurrent = n;
+            }
+        }
+        if let Ok(val) = std::env::var("HSX_SEARCH_TIMEOUT_SECS") {
+            if let Ok(n) = val.parse::<u64>() {
+                self.search.timeout_secs = n;
+            }
+        }
+        if let Ok(val) = std::env::var("HSX_CACHE_ENABLED") {
+            if let Ok(b) = val.parse::<bool>() {
+                self.cache.enabled = b;
+            }
+        }
+        if let Ok(val) = std::env::var("HSX_CACHE_TTL_SECS") {
+            if let Ok(n) = val.parse::<u64>() {
+                self.cache.ttl_secs = n;
+            }
+        }
+        if let Ok(val) = std::env::var("HSX_AI_OLLAMA_HOST") {
+            self.ai.ollama_host = val;
+        }
+        if let Ok(val) = std::env::var("HSX_AI_DEFAULT_MODEL") {
+            self.ai.default_model = val;
+        }
+        if let Ok(val) = std::env::var("HSX_GENERAL_VERBOSE") {
+            if let Ok(b) = val.parse::<bool>() {
+                self.general.verbose = b;
+            }
+        }
+        if let Ok(val) = std::env::var("HSX_FETCH_USER_AGENT") {
+            self.fetch.user_agent = val;
+        }
+        if let Ok(val) = std::env::var("HSX_FETCH_RESPECT_ROBOTS") {
+            if let Ok(b) = val.parse::<bool>() {
+                self.fetch.respect_robots = b;
+            }
+        }
+    }
+
+    /// Ensure the data directory exists, creating it if necessary.
+    pub fn ensure_data_dir(&self) -> std::io::Result<PathBuf> {
+        let dir = self.data_dir();
+        if !dir.exists() {
+            std::fs::create_dir_all(&dir)?;
+        }
+        Ok(dir)
+    }
+
+    /// Get the path to the config file.
+    pub fn config_file_path() -> PathBuf {
+        dirs::home_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join(".hypersearchx")
+            .join("config.toml")
+    }
+
+    /// Write the current config to the config file (for `hsx config set`).
+    pub fn save(&self) -> std::io::Result<()> {
+        let path = Self::config_file_path();
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let toml_str = toml::to_string_pretty(self).map_err(std::io::Error::other)?;
+        std::fs::write(&path, toml_str)
+    }
 }
 
 #[cfg(test)]
@@ -250,8 +323,8 @@ mod tests {
     fn default_config_is_valid() {
         let config = HsxConfig::default();
         assert_eq!(config.search.default_budget, 4000);
-        assert_eq!(config.fetch.respect_robots, true);
-        assert_eq!(config.cache.enabled, true);
+        assert!(config.fetch.respect_robots);
+        assert!(config.cache.enabled);
     }
 
     #[test]
@@ -267,5 +340,47 @@ mod tests {
         let config = HsxConfig::default();
         let dir = config.data_dir();
         assert!(dir.to_string_lossy().contains(".hypersearchx"));
+    }
+
+    #[test]
+    fn env_override_budget() {
+        std::env::set_var("HSX_SEARCH_DEFAULT_BUDGET", "8000");
+        let mut config = HsxConfig::default();
+        config.apply_env_overrides();
+        assert_eq!(config.search.default_budget, 8000);
+        std::env::remove_var("HSX_SEARCH_DEFAULT_BUDGET");
+    }
+
+    #[test]
+    fn env_override_cache_disabled() {
+        std::env::set_var("HSX_CACHE_ENABLED", "false");
+        let mut config = HsxConfig::default();
+        config.apply_env_overrides();
+        assert!(!config.cache.enabled);
+        std::env::remove_var("HSX_CACHE_ENABLED");
+    }
+
+    #[test]
+    fn save_and_reload() {
+        let dir = tempfile::tempdir().unwrap();
+        let config_path = dir.path().join("config.toml");
+
+        let mut config = HsxConfig::default();
+        config.search.default_budget = 9999;
+
+        // Save
+        let toml_str = toml::to_string_pretty(&config).unwrap();
+        std::fs::write(&config_path, &toml_str).unwrap();
+
+        // Reload
+        let loaded = HsxConfig::load_from(Some(&config_path));
+        assert_eq!(loaded.search.default_budget, 9999);
+    }
+
+    #[test]
+    fn config_file_path_contains_hypersearchx() {
+        let path = HsxConfig::config_file_path();
+        assert!(path.to_string_lossy().contains(".hypersearchx"));
+        assert!(path.to_string_lossy().ends_with("config.toml"));
     }
 }

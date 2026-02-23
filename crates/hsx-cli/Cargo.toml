@@ -30,6 +30,9 @@ toml.workspace = true
 # HTTP (for doctor command)
 reqwest.workspace = true
 
+# System info (for doctor command)
+sysinfo.workspace = true
+
 # Logging
 tracing.workspace = true
 tracing-subscriber.workspace = true

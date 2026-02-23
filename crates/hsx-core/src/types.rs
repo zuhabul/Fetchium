@@ -392,4 +392,59 @@ mod tests {
         assert!(CepLayer::Layer1 < CepLayer::Layer3);
         assert!(CepLayer::Layer5 > CepLayer::Layer2);
     }
+
+    #[test]
+    fn agent_search_result_roundtrip() {
+        let result = AgentSearchResult {
+            meta: SearchMeta {
+                query: "test query".into(),
+                mode: SearchMode::Search,
+                tier: PdsTier::Summary,
+                tokens_used: 500,
+                tokens_budget: 4000,
+                sources_fetched: 3,
+                sources_validated: 3,
+                validation_pass_rate: 1.0,
+                duration_ms: 2100,
+                resource_tier: ResourceTier::Standard,
+                timestamp: "2026-02-23T12:00:00Z".into(),
+                result_id: "r-001".into(),
+                content_hashes: HashMap::new(),
+            },
+            segments: vec![],
+            findings: vec![],
+            evidence: vec![],
+            contradictions: vec![],
+            sources: vec![],
+            evidence_graph: None,
+            audit_trail: vec![],
+        };
+        let json = serde_json::to_string_pretty(&result).unwrap();
+        let back: AgentSearchResult = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.meta.query, "test query");
+        assert_eq!(back.meta.tokens_budget, 4000);
+    }
+
+    #[test]
+    fn evidence_type_all_variants() {
+        for variant in [
+            EvidenceType::Supports,
+            EvidenceType::Contradicts,
+            EvidenceType::PartiallySupports,
+        ] {
+            let json = serde_json::to_string(&variant).unwrap();
+            let back: EvidenceType = serde_json::from_str(&json).unwrap();
+            assert_eq!(back, variant);
+        }
+    }
+
+    #[test]
+    fn output_format_default_is_markdown() {
+        assert_eq!(OutputFormat::default(), OutputFormat::Markdown);
+    }
+
+    #[test]
+    fn pds_tier_default_is_summary() {
+        assert_eq!(PdsTier::default(), PdsTier::Summary);
+    }
 }

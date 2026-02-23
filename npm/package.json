@@ -1,0 +1,45 @@
+{
+  "name": "hypersearchx",
+  "version": "0.1.0",
+  "description": "AI-native search engine for humans and agents — blazing fast, free, zero API keys",
+  "keywords": [
+    "search",
+    "ai",
+    "research",
+    "web-search",
+    "mcp",
+    "agent",
+    "rust",
+    "cli"
+  ],
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hypersearchx/hypersearchx"
+  },
+  "homepage": "https://github.com/hypersearchx/hypersearchx",
+  "bin": {
+    "hsx": "bin/hsx.js",
+    "hyper": "bin/hyper.js"
+  },
+  "scripts": {
+    "postinstall": "node scripts/install-binary.js"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "README.md"
+  ]
+}

@@ -18,6 +18,14 @@ pub struct Cli {
     #[arg(short, long, global = true)]
     pub verbose: bool,
 
+    /// Quiet mode (suppress non-essential output)
+    #[arg(short, long, global = true)]
+    pub quiet: bool,
+
+    /// Bypass cache for this request
+    #[arg(long, global = true)]
+    pub no_cache: bool,
+
     /// Config file path
     #[arg(long, global = true)]
     pub config: Option<String>,
@@ -79,6 +87,10 @@ pub struct SearchArgs {
     /// Search backends to use
     #[arg(short, long)]
     pub backends: Vec<String>,
+
+    /// Write output to a file
+    #[arg(short, long)]
+    pub output: Option<String>,
 }
 
 // ─── Fetch ───────────────────────────────────────────────────────
@@ -99,6 +111,10 @@ pub struct FetchArgs {
     /// Extract with query context (QATBE)
     #[arg(short, long)]
     pub query: Option<String>,
+
+    /// Write output to a file
+    #[arg(short, long)]
+    pub output: Option<String>,
 }
 
 // ─── Research ────────────────────────────────────────────────────

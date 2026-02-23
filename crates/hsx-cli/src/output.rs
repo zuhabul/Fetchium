@@ -1,5 +1,6 @@
 //! Terminal output formatting helpers.
 
+#![allow(dead_code)]
 use colored::Colorize;
 
 /// Print a styled header.
