@@ -1,0 +1,87 @@
+[package]
+name = "hsx-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "HyperSearchX core library — search, extract, rank, validate, cache"
+
+[features]
+default = ["http-backends"]
+http-backends = []
+headless = ["dep:chromiumoxide"]
+embeddings = ["dep:ort"]
+vector-search = ["dep:usearch"]
+mcp = ["dep:rmcp"]
+llama = ["dep:llama-cpp-2"]
+
+[dependencies]
+# Async
+tokio.workspace = true
+futures.workspace = true
+async-trait.workspace = true
+tokio-stream.workspace = true
+
+# HTTP
+reqwest.workspace = true
+
+# HTML
+scraper.workspace = true
+lol_html.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+
+# Database & search
+rusqlite.workspace = true
+tantivy.workspace = true
+
+# Config
+config.workspace = true
+dirs.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Logging
+tracing.workspace = true
+
+# System
+sysinfo.workspace = true
+
+# Utilities
+url.workspace = true
+sha2.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+regex.workspace = true
+once_cell.workspace = true
+dashmap.workspace = true
+parking_lot.workspace = true
+
+# Cache
+moka.workspace = true
+
+# Optional: Headless browser
+chromiumoxide = { version = "0.7", optional = true, default-features = false, features = ["tokio-runtime"] }
+
+# Optional: Embeddings
+ort = { version = "2.0.0-rc.11", optional = true }
+
+# Optional: Vector search
+usearch = { version = "2", optional = true }
+
+# Optional: MCP server
+rmcp = { version = "0.1", optional = true, features = ["server"] }
+
+# Optional: Local LLM
+llama-cpp-2 = { version = "0.1", optional = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+tempfile.workspace = true
+insta.workspace = true
+wiremock.workspace = true

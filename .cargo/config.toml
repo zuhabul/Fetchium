@@ -1,0 +1,8 @@
+# Fix macOS SDK selection when Xcode defaults to iPhoneOS SDK.
+# If builds fail with "architecture not supported", run:
+#   sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+# Or set SDKROOT manually:
+#   export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
+
+[env]
+SDKROOT = { value = "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk", force = true }

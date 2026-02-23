@@ -1,0 +1,43 @@
+[package]
+name = "hsx-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "HyperSearchX CLI — AI-native search for humans and agents"
+
+[[bin]]
+name = "hsx"
+path = "src/main.rs"
+
+[dependencies]
+hsx-core.workspace = true
+
+# CLI
+clap.workspace = true
+indicatif.workspace = true
+console.workspace = true
+colored.workspace = true
+
+# Async
+tokio.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+
+# HTTP (for doctor command)
+reqwest.workspace = true
+
+# Logging
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# Error handling
+anyhow.workspace = true
+
+[dev-dependencies]
+assert_cmd.workspace = true
+predicates.workspace = true
+tempfile.workspace = true
