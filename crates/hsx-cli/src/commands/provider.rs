@@ -26,6 +26,7 @@ pub async fn run(action: ProviderAction, config: &HsxConfig) -> anyhow::Result<(
         ProviderAction::Set(args) => set_provider(config, &args),
         ProviderAction::Chain { providers } => set_chain(config, &providers),
         ProviderAction::Test { provider } => test(config, provider.as_deref()).await,
+        ProviderAction::Keys => show_keys(config),
     }
 }
 
@@ -604,6 +605,127 @@ async fn test(config: &HsxConfig, provider_slug: Option<&str>) -> anyhow::Result
     }
 
     println!();
+    Ok(())
+}
+
+// ─── keys ─────────────────────────────────────────────────────────────────────
+
+/// Show all API key sources, their storage locations, and how to set them.
+///
+/// This is the single canonical reference for where HyperSearchX reads credentials.
+fn show_keys(config: &HsxConfig) -> anyhow::Result<()> {
+    let home = dirs::home_dir().unwrap_or_default();
+    let cfg_path = HsxConfig::config_file_path();
+
+    println!("{}", "HyperSearchX — API Key Reference".bold().cyan());
+    println!("{}", "─".repeat(70));
+    println!();
+
+    // ── Canonical config file ──────────────────────────────────────────────
+    println!("  {} Canonical config file:", "★".yellow().bold());
+    println!("    {}", cfg_path.display().to_string().cyan().bold());
+    println!("    Edit directly  OR  use: {}", "hsx provider set <name> --key <KEY>".cyan());
+    println!();
+
+    // ── Per-provider status ────────────────────────────────────────────────
+    println!("  {}", "Provider     Source           Status".bold());
+    println!("  {}", "─".repeat(60).dimmed());
+
+    // (kind, credential_storage_path, env_var_name_or_none, how_to_get_key, key_gen_url)
+    let providers: &[(ProviderKind, &str, &str, &str, &str)] = &[
+        (ProviderKind::Antigravity, "~/.config/opencode/antigravity-accounts.json", "(none)",             "FREE — opencode + plugin (no key needed)", "https://opencode.ai"),
+        (ProviderKind::Anthropic,   "~/.hypersearchx/config.toml  or  Keychain",   "ANTHROPIC_API_KEY",  "claude auth / API key",                    "https://console.anthropic.com/settings/keys"),
+        (ProviderKind::Gemini,      "~/.hypersearchx/config.toml  or  ~/.gemini/", "GEMINI_API_KEY",     "gemini auth login / API key",               "https://aistudio.google.com/app/apikey"),
+        (ProviderKind::OpenAi,      "~/.hypersearchx/config.toml  or  ~/.codex/",  "OPENAI_API_KEY",     "codex auth login / API key",                "https://platform.openai.com/api-keys"),
+        (ProviderKind::OpenRouter,  "~/.hypersearchx/config.toml",                 "OPENROUTER_API_KEY", "API key only (access 100+ models)",         "https://openrouter.ai/keys"),
+        (ProviderKind::GeminiCli,   "~/.gemini/ (managed by `gemini` binary)",     "(none)",             "gemini auth login (Gemini subscription)",   ""),
+        (ProviderKind::Ollama,      "local daemon — no key needed",                "(none)",             "ollama serve (runs locally, 100% free)",    "https://ollama.ai"),
+    ];
+
+    for (kind, storage, env_var, how, url) in providers {
+        let entry = config.ai.providers.entry(*kind);
+        let has_key = entry.api_key.as_ref().is_some_and(|k| !k.is_empty());
+        let has_env = *env_var != "(none)" && std::env::var(env_var).is_ok();
+
+        let key_status = if has_key {
+            "config ✓".green().to_string()
+        } else if has_env {
+            "env ✓".green().to_string()
+        } else {
+            match kind {
+                ProviderKind::Antigravity => {
+                    if antigravity_auth_available() { "OAuth ✓".green().to_string() }
+                    else { "not set".red().to_string() }
+                }
+                ProviderKind::Anthropic => {
+                    if claude_code_auth_available() { "OAuth ✓".green().to_string() }
+                    else { "not set".red().to_string() }
+                }
+                ProviderKind::Gemini => {
+                    if get_gemini_access_token_if_valid().is_some() {
+                        "OAuth ✓".green().to_string()
+                    } else if read_gemini_creds().map(|c| c.is_refreshable()).unwrap_or(false) {
+                        "OAuth (stale)".yellow().to_string()
+                    } else {
+                        "not set".red().to_string()
+                    }
+                }
+                ProviderKind::OpenAi => {
+                    if codex_auth_available() { "OAuth ✓".green().to_string() }
+                    else { "not set".red().to_string() }
+                }
+                ProviderKind::Ollama | ProviderKind::GeminiCli => "local".dimmed().to_string(),
+                _ => "not set".red().to_string(),
+            }
+        };
+
+        println!(
+            "  {:<22} {:<18}  {}",
+            kind.display_name().bold(),
+            key_status,
+            how.dimmed(),
+        );
+        println!("    Storage: {}", storage.dimmed());
+        if *env_var != "(none)" {
+            println!("    Env var: {}", format!("export {env_var}=<key>").dimmed());
+        }
+        if !url.is_empty() {
+            println!("    Get key: {}", url.cyan());
+        }
+        println!();
+    }
+
+    // ── How to set a key permanently ──────────────────────────────────────
+    println!("{}", "─".repeat(70));
+    println!("  {} Set a key permanently (saved to config):", "★".yellow().bold());
+    println!();
+
+    let key_guide: &[(&str, &str, &str, &str)] = &[
+        ("Gemini",      "aistudio.google.com/app/apikey",   "FREE, 15 req/min",          "hsx provider set gemini --key AIza..."),
+        ("Anthropic",   "console.anthropic.com/settings/keys", "$5 credit on signup",    "hsx provider set anthropic --key sk-ant-..."),
+        ("OpenRouter",  "openrouter.ai/keys",               "100+ models, pay-per-use",  "hsx provider set openrouter --key sk-or-..."),
+        ("OpenAI",      "platform.openai.com/api-keys",     "pay-per-use",               "hsx provider set openai --key sk-..."),
+        ("OpenCode",    "opencode.ai",                      "FREE via antigravity plugin","opencode + npm i -g opencode-antigravity-auth"),
+        ("Ollama",      "ollama.ai",                        "FREE, runs locally",        "curl -fsSL https://ollama.ai/install.sh | sh"),
+    ];
+
+    for (name, url, note, cmd) in key_guide {
+        println!("    {} {} — {}", "•".cyan(), name.bold(), note.dimmed());
+        println!("      {} Get key: {}", "↗".dimmed(), url.cyan());
+        println!("      {} Run:     {}", "→".dimmed(), cmd.cyan().bold());
+        println!();
+    }
+
+    println!("  {} After setting, configure the fallback order:", "→".dimmed());
+    println!("    {}", "hsx provider chain gemini anthropic openrouter ollama".cyan());
+    println!();
+    println!("  {} Session tokens (auto-detected, no key needed):", "→".dimmed());
+    let gemini_home = home.join(".gemini");
+    println!("    {} Gemini CLI: {}  (gemini auth login)", "•".cyan(), gemini_home.display().to_string().dimmed());
+    println!("    {} Claude:     macOS Keychain (claude auth)  →  run `claude` once to log in", "•".cyan());
+    println!("    {} Codex CLI:  ~/.codex/auth.json            →  run `codex auth login`", "•".cyan());
+    println!();
+
     Ok(())
 }
 

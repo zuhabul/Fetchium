@@ -280,6 +280,9 @@ impl ProvidersConfig {
             antigravity_auth_available, claude_code_auth_available,
             codex_auth_available, get_gemini_access_token_if_valid, read_gemini_creds,
         };
+        // Note: `read_gemini_creds().is_some()` is intentionally NOT used as a signal —
+        // a creds file can exist with an empty refresh_token after `invalidate_gemini_creds()`.
+        // Use `is_refreshable()` to distinguish a live session from a dead one.
         const ALL: &[ProviderKind] = &[
             ProviderKind::Ollama,
             ProviderKind::OpenAi,
@@ -307,7 +310,7 @@ impl ProvidersConfig {
                     ProviderKind::Gemini => {
                         entry.has_key("GEMINI_API_KEY")
                             || get_gemini_access_token_if_valid().is_some()
-                            || read_gemini_creds().is_some()
+                            || read_gemini_creds().map(|c| c.is_refreshable()).unwrap_or(false)
                     }
                     // OAuth-only (no API key)
                     ProviderKind::Antigravity => antigravity_auth_available(),

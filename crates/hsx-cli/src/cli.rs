@@ -582,6 +582,12 @@ pub enum ProviderAction {
         /// Provider slug to test (omit to test all in chain)
         provider: Option<String>,
     },
+
+    /// Show all API key sources, config paths, and how to set keys permanently
+    ///
+    /// Examples:
+    ///   hsx provider keys             # show key storage guide
+    Keys,
 }
 
 /// Arguments for `hsx provider set`.

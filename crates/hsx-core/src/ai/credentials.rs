@@ -37,6 +37,31 @@ impl GeminiOAuthCreds {
         // Allow 60-second grace period
         self.expiry_date > now_ms + 60_000
     }
+
+    /// True if a non-empty refresh token is present (can attempt a token refresh).
+    ///
+    /// Returns `false` after [`invalidate_gemini_creds`] has been called, indicating
+    /// the session is permanently dead and the user must re-authenticate.
+    pub fn is_refreshable(&self) -> bool {
+        !self.refresh_token.is_empty()
+    }
+}
+
+/// Zero-out the Gemini OAuth credentials in `~/.gemini/oauth_creds.json`.
+///
+/// Called when a token-refresh attempt returns HTTP 401 (refresh token revoked).
+/// After this, [`read_gemini_creds`] returns a struct where `is_refreshable()` is
+/// `false`, so `check_provider` correctly reports Gemini as unavailable.
+pub fn invalidate_gemini_creds() {
+    if let Some(path) = dirs::home_dir().map(|h| h.join(".gemini").join("oauth_creds.json")) {
+        let cleared = serde_json::json!({
+            "access_token":  "",
+            "refresh_token": "",
+            "expiry_date":   0u64,
+            "token_type":    "Bearer",
+        });
+        let _ = std::fs::write(&path, serde_json::to_string_pretty(&cleared).unwrap_or_default());
+    }
 }
 
 /// Read Gemini CLI OAuth credentials from `~/.gemini/oauth_creds.json`.

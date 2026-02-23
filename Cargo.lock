@@ -2321,6 +2321,7 @@ dependencies = [
  "colored",
  "console",
  "crossterm",
+ "dirs 5.0.1",
  "hsx-api",
  "hsx-core",
  "hsx-mcp",

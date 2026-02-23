@@ -8,7 +8,7 @@
 
 use crate::ai::credentials::{
     get_antigravity_token, get_claude_code_token, get_codex_token_if_valid,
-    get_gemini_access_token_if_valid, antigravity_auth_available,
+    get_gemini_access_token_if_valid, antigravity_auth_available, invalidate_gemini_creds,
     ANTIGRAVITY_ENDPOINTS, ANTIGRAVITY_VERSION,
     GEMINI_OAUTH_CLIENT_ID, GEMINI_OAUTH_CLIENT_SECRET, GOOGLE_TOKEN_ENDPOINT,
 };
@@ -147,11 +147,12 @@ async fn call_provider(
                     }
                     None if entry_clone.resolve_api_key("GEMINI_API_KEY").is_none() => {
                         Err(HsxError::AiUnavailable(
-                            "Gemini: no API key or valid OAuth session found.\n  \
-                             Options:\n  \
-                             • Set GEMINI_API_KEY env var (get key: https://aistudio.google.com/app/apikey)\n  \
-                             • Log in via Gemini CLI: gemini auth login\n  \
-                             • Run `hsx provider setup gemini`".into(),
+                            "Gemini: OAuth session expired and refresh token is no longer valid.\n  \
+                             Fix (choose one):\n  \
+                             • gemini auth login                          (re-authenticate, free)\n  \
+                             • hsx provider set gemini --key AIza...      (persist API key in config)\n  \
+                             • export GEMINI_API_KEY=AIza...              (env var, not stored)\n  \
+                             Get a free Gemini API key: https://aistudio.google.com/app/apikey".into(),
                         ))
                     }
                     None => Err(HsxError::AiUnavailable("Gemini token refresh failed.".into())),
@@ -703,7 +704,18 @@ async fn refresh_gemini_token_async(_ai_config: &AiConfig) -> Option<String> {
         .ok()?;
 
     if !resp.status().is_success() {
-        tracing::warn!("Gemini token refresh failed: HTTP {}", resp.status());
+        let status = resp.status();
+        if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::BAD_REQUEST {
+            // Refresh token is revoked or invalid — clear stale creds so future
+            // check_provider calls correctly report Gemini as unavailable.
+            invalidate_gemini_creds();
+            tracing::warn!(
+                "Gemini refresh token revoked (HTTP {status}) — credentials cleared.\n  \
+                 Fix: run `gemini auth login` to get a new session, then retry."
+            );
+        } else {
+            tracing::warn!("Gemini token refresh failed: HTTP {status}");
+        }
         return None;
     }
 
@@ -956,14 +968,21 @@ pub async fn check_provider(
         }
 
         ProviderKind::Gemini => {
+            // Creds file "existing" is not enough — the refresh token must be non-empty.
+            // invalidate_gemini_creds() sets refresh_token="" when a 401 is received,
+            // so a dead session is correctly reported as unavailable on the next check.
             if entry.resolve_api_key("GEMINI_API_KEY").is_some()
                 || crate::ai::credentials::get_gemini_access_token_if_valid().is_some()
-                || crate::ai::credentials::read_gemini_creds().is_some()
+                || crate::ai::credentials::read_gemini_creds()
+                    .map(|c| c.is_refreshable())
+                    .unwrap_or(false)
             {
                 ProviderStatus::Available { model_count: None }
             } else {
                 ProviderStatus::Unavailable {
-                    reason: "No API key or Gemini OAuth session (run `gemini auth login` or set GEMINI_API_KEY)".into(),
+                    reason: "No API key or valid OAuth session.\n    \
+                             Fix: run `gemini auth login`  OR  \
+                             `hsx provider set gemini --key AIza...`".into(),
                 }
             }
         }
