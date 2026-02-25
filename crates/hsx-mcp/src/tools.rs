@@ -75,6 +75,72 @@ pub fn tool_definitions() -> Vec<Value> {
                 "required": ["result_id", "tier"]
             }
         }),
+        json!({
+            "name": "youtube_search",
+            "description": "Search YouTube videos with VideoFusion ranking. Returns ranked videos with relevance, freshness, authority, engagement, and educational scores.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": { "type": "string", "description": "The search query" },
+                    "max_results": { "type": "integer", "description": "Maximum videos to return (default: 5)" },
+                    "fact_check": { "type": "boolean", "description": "Enable cross-video fact checking (default: false)" }
+                },
+                "required": ["query"]
+            }
+        }),
+        json!({
+            "name": "youtube_analyze",
+            "description": "Analyze a single YouTube video: metadata, transcript, comments, credibility, clickbait detection, and educational scoring.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "url": { "type": "string", "description": "The YouTube video URL" },
+                    "transcript": { "type": "boolean", "description": "Fetch transcript (default: true)" },
+                    "comments": { "type": "boolean", "description": "Fetch comments (default: true)" },
+                    "teaching": { "type": "boolean", "description": "Generate teaching content (default: false)" }
+                },
+                "required": ["url"]
+            }
+        }),
+        json!({
+            "name": "social_research",
+            "description": "Unified cross-platform social media research: Twitter/X, Reddit, TikTok, HackerNews, YouTube simultaneously. Returns trends, viral content, and content ideas.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": { "type": "string", "description": "The research query or topic" },
+                    "platforms": { "type": "array", "items": { "type": "string", "enum": ["twitter", "reddit", "tiktok", "hackernews", "youtube"] }, "description": "Platforms to include (default: all)" },
+                    "max_per_platform": { "type": "integer", "description": "Max posts per platform (default: 20)" },
+                    "generate_ideas": { "type": "boolean", "description": "Generate content ideas (default: true)" }
+                },
+                "required": ["query"]
+            }
+        }),
+        json!({
+            "name": "reddit_search",
+            "description": "Search Reddit posts with sentiment analysis, subreddit clustering, and viral detection. Uses the free public JSON API.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": { "type": "string", "description": "Search query" },
+                    "subreddits": { "type": "array", "items": { "type": "string" }, "description": "Specific subreddits to search (optional)" },
+                    "max_posts": { "type": "integer", "description": "Maximum posts (default: 25)" }
+                },
+                "required": ["query"]
+            }
+        }),
+        json!({
+            "name": "hackernews_search",
+            "description": "Search Hacker News stories via Algolia + Firebase APIs. Free, no rate limits, returns ranked stories with engagement metrics.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": { "type": "string", "description": "Search query" },
+                    "max_results": { "type": "integer", "description": "Maximum stories (default: 20)" }
+                },
+                "required": ["query"]
+            }
+        }),
     ]
 }
 
@@ -115,4 +181,40 @@ pub struct EstimateInput {
 pub struct ExpandInput {
     pub result_id: String,
     pub tier: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct YouTubeSearchInput {
+    pub query: String,
+    pub max_results: Option<usize>,
+    pub fact_check: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct YouTubeAnalyzeInput {
+    pub url: String,
+    pub transcript: Option<bool>,
+    pub comments: Option<bool>,
+    pub teaching: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SocialResearchInput {
+    pub query: String,
+    pub platforms: Option<Vec<String>>,
+    pub max_per_platform: Option<usize>,
+    pub generate_ideas: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RedditSearchInput {
+    pub query: String,
+    pub subreddits: Option<Vec<String>>,
+    pub max_posts: Option<usize>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct HackerNewsSearchInput {
+    pub query: String,
+    pub max_results: Option<usize>,
 }

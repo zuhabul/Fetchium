@@ -82,10 +82,7 @@ pub(crate) fn sha256_hex(input: &str) -> String {
     use sha2::Digest;
     let mut h = sha2::Sha256::new();
     h.update(input.as_bytes());
-    h.finalize()
-        .iter()
-        .map(|b| format!("{b:02x}"))
-        .collect()
+    h.finalize().iter().map(|b| format!("{b:02x}")).collect()
 }
 
 /// Simple normalised string similarity (Jaccard on character bigrams).

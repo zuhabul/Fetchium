@@ -17,19 +17,20 @@ use crate::intelligence::enable_wal;
 
 /// Default half-lives for each content domain category.
 static DEFAULT_HALF_LIVES: &[(&str, f64)] = &[
-    ("ai_ml_benchmarks", 90.0),   // 3 months — model scores change rapidly
-    ("tech_news", 14.0),          // 2 weeks
-    ("medical_trials", 730.0),    // 2 years
-    ("legal_precedent", 3650.0),  // 10 years
-    ("mathematics", 36500.0),     // 100 years — proofs are eternal
-    ("stock_prices", 1.0),        // 1 day
-    ("software_docs", 180.0),     // 6 months
-    ("historical_facts", 18250.0),// 50 years
-    ("security_advisories", 30.0),// 1 month
-    ("social_media", 7.0),        // 1 week
-    ("academic_papers", 1825.0),  // 5 years
-    ("news", 7.0),                // 1 week
-    ("wikipedia", 365.0),         // 1 year
+    ("ai_ml_benchmarks", 90.0),    // 3 months — model scores change rapidly
+    ("tech_news", 14.0),           // 2 weeks
+    ("medical_trials", 730.0),     // 2 years
+    ("legal_precedent", 3650.0),   // 10 years
+    ("mathematics", 36500.0),      // 100 years — proofs are eternal
+    ("stock_prices", 1.0),         // 1 day
+    ("software_docs", 180.0),      // 6 months
+    ("historical_facts", 18250.0), // 50 years
+    ("security_advisories", 30.0), // 1 month
+    ("social_media", 7.0),         // 1 week
+    ("youtube_video", 180.0),      // 6 months
+    ("academic_papers", 1825.0),   // 5 years
+    ("news", 7.0),                 // 1 week
+    ("wikipedia", 365.0),          // 1 year
 ];
 
 // ─── URL → domain category classifier ────────────────────────────────────────
@@ -59,25 +60,36 @@ pub fn classify_url_domain(url: &str) -> &'static str {
     if lower.contains("cve.mitre") || lower.contains("nvd.nist") || lower.contains("security") {
         return "security_advisories";
     }
-    if lower.contains("nih.gov") || lower.contains("pubmed") || lower.contains("nejm")
+    if lower.contains("nih.gov")
+        || lower.contains("pubmed")
+        || lower.contains("nejm")
         || lower.contains("lancet")
     {
         return "medical_trials";
     }
-    if lower.contains("law.") || lower.contains("court") || lower.contains("supremecourt")
+    if lower.contains("law.")
+        || lower.contains("court")
+        || lower.contains("supremecourt")
         || lower.contains("justice.gov")
     {
         return "legal_precedent";
     }
-    if lower.contains("reddit.com") || lower.contains("twitter.com") || lower.contains("x.com")
-        || lower.contains("mastodon") || lower.contains("bluesky")
+    if lower.contains("reddit.com")
+        || lower.contains("twitter.com")
+        || lower.contains("x.com")
+        || lower.contains("mastodon")
+        || lower.contains("bluesky")
     {
         return "social_media";
     }
     if lower.contains("wikipedia.org") {
         return "wikipedia";
     }
-    if lower.contains("huggingface") || lower.contains("paperswithcode")
+    if lower.contains("youtube.com") || lower.contains("youtu.be") {
+        return "youtube_video";
+    }
+    if lower.contains("huggingface")
+        || lower.contains("paperswithcode")
         || lower.contains("benchmarks")
     {
         return "ai_ml_benchmarks";
@@ -154,8 +166,8 @@ impl EvidenceDecayFunction {
 
         // Load any persisted half-life overrides.
         {
-            let mut stmt = conn
-                .prepare("SELECT domain_category, half_life_days FROM half_life_overrides")?;
+            let mut stmt =
+                conn.prepare("SELECT domain_category, half_life_days FROM half_life_overrides")?;
             let overrides: Vec<(String, f64)> = stmt
                 .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
                 .filter_map(|r| r.ok())
@@ -172,15 +184,11 @@ impl EvidenceDecayFunction {
     /// Calculate decayed confidence for a claim of `age_days` old in `domain_category`.
     ///
     /// Clamps the result to [0.01, base_confidence] to prevent underflow or inflation.
-    pub fn decay(
-        &self,
-        base_confidence: f64,
-        domain_category: &str,
-        age_days: f64,
-    ) -> DecayResult {
+    pub fn decay(&self, base_confidence: f64, domain_category: &str, age_days: f64) -> DecayResult {
         let half_life = self.get_half_life(domain_category);
         let lambda = std::f64::consts::LN_2 / half_life;
-        let decayed = (base_confidence * (-lambda * age_days).exp()).clamp(0.01_f64.min(base_confidence), base_confidence);
+        let decayed = (base_confidence * (-lambda * age_days).exp())
+            .clamp(0.01_f64.min(base_confidence), base_confidence);
 
         let staleness = if decayed < 0.3 {
             Staleness::Stale
@@ -325,11 +333,17 @@ mod tests {
 
     #[test]
     fn classify_url_domain_arxiv() {
-        assert_eq!(classify_url_domain("https://arxiv.org/abs/2301.12345"), "academic_papers");
+        assert_eq!(
+            classify_url_domain("https://arxiv.org/abs/2301.12345"),
+            "academic_papers"
+        );
     }
 
     #[test]
     fn classify_url_domain_github() {
-        assert_eq!(classify_url_domain("https://github.com/rust-lang/rust"), "software_docs");
+        assert_eq!(
+            classify_url_domain("https://github.com/rust-lang/rust"),
+            "software_docs"
+        );
     }
 }

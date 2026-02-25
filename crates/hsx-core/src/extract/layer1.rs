@@ -42,8 +42,7 @@ pub fn extract(html: &str, url: &str) -> ExtractedContent {
 /// Check if Layer 1 extraction produced sufficient content.
 pub fn is_sufficient(content: &ExtractedContent, html: &str) -> bool {
     let ratio = boilerplate::text_ratio(html, &content.text);
-    content.text.len() >= boilerplate::MIN_CONTENT_LENGTH
-        && ratio >= boilerplate::MIN_TEXT_RATIO
+    content.text.len() >= boilerplate::MIN_CONTENT_LENGTH && ratio >= boilerplate::MIN_TEXT_RATIO
 }
 
 fn extract_title(doc: &Html) -> String {
@@ -149,10 +148,7 @@ fn extract_main_content(doc: &Html) -> String {
     doc.root_element().text().collect::<String>()
 }
 
-fn collect_text_excluding_boilerplate(
-    element: scraper::ElementRef<'_>,
-    output: &mut String,
-) {
+fn collect_text_excluding_boilerplate(element: scraper::ElementRef<'_>, output: &mut String) {
     let tag = element.value().name();
 
     if matches!(
@@ -170,7 +166,16 @@ fn collect_text_excluding_boilerplate(
 
     let is_block = matches!(
         tag,
-        "div" | "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "li" | "tr"
+        "div"
+            | "p"
+            | "h1"
+            | "h2"
+            | "h3"
+            | "h4"
+            | "h5"
+            | "h6"
+            | "li"
+            | "tr"
             | "blockquote"
             | "pre"
             | "section"

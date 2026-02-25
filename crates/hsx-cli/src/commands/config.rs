@@ -59,7 +59,7 @@ fn lookup_key<'a>(val: &'a toml::Value, key: &str) -> Option<&'a toml::Value> {
 fn set_key(val: &mut toml::Value, key: &str, new_value: &str) -> anyhow::Result<()> {
     let mut current = val;
     let parts: Vec<&str> = key.split('.').collect();
-    
+
     for (i, part) in parts.iter().enumerate() {
         if i == parts.len() - 1 {
             // Leaf node: parse the new_value and set it

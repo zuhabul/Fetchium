@@ -25,9 +25,9 @@ impl VectorIndex {
             dimensions: dimension,
             metric: MetricKind::Cos,
             quantization: ScalarKind::F32,
-            connectivity: 16,      // M — graph edges per node
-            expansion_add: 128,    // ef_construction
-            expansion_search: 64,  // ef_search
+            connectivity: 16,     // M — graph edges per node
+            expansion_add: 128,   // ef_construction
+            expansion_search: 64, // ef_search
             multi: false,
         };
         let index = Index::new(&options)
@@ -39,7 +39,9 @@ impl VectorIndex {
     pub fn load_or_new(path: &Path, dimension: usize) -> Result<Self, HsxError> {
         let idx = Self::new(dimension)?;
         if path.exists() {
-            let path_str = path.to_str().ok_or_else(|| HsxError::Internal("Invalid path string".into()))?;
+            let path_str = path
+                .to_str()
+                .ok_or_else(|| HsxError::Internal("Invalid path string".into()))?;
             idx.index
                 .load(path_str)
                 .map_err(|e| HsxError::Internal(format!("Failed to load HNSW index: {e}")))?;
@@ -52,7 +54,9 @@ impl VectorIndex {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
-        let path_str = path.to_str().ok_or_else(|| HsxError::Internal("Invalid path string".into()))?;
+        let path_str = path
+            .to_str()
+            .ok_or_else(|| HsxError::Internal("Invalid path string".into()))?;
         self.index
             .save(path_str)
             .map_err(|e| HsxError::Internal(format!("Failed to save HNSW index: {e}")))
@@ -85,11 +89,7 @@ impl VectorIndex {
             .index
             .search(query_vector, k)
             .map_err(|e| HsxError::Internal(format!("HNSW search failed: {e}")))?;
-        Ok(results
-            .keys
-            .into_iter()
-            .zip(results.distances)
-            .collect())
+        Ok(results.keys.into_iter().zip(results.distances).collect())
     }
 
     /// Number of vectors currently stored.

@@ -8,13 +8,13 @@
 //! 5. Emits `Update` chunks for confirmations, `Correction` for contradictions
 //! 6. Emits `Final` chunk when all sources are processed
 
-use std::time::Instant;
-use tokio::sync::mpsc;
 use crate::config::HsxConfig;
 use crate::extract::pipeline::extract;
 use crate::http::client::HttpClient;
 use crate::research::srp_types::{SrpChunk, SrpConfig, SrpEvent};
 use crate::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
+use std::time::Instant;
+use tokio::sync::mpsc;
 
 /// Launch the SRP pipeline and return a channel receiver for streaming chunks.
 ///
@@ -34,7 +34,10 @@ pub fn run_srp_pipeline(
         let orchestrator = SearchOrchestrator::new(http_client.clone(), orch_config);
 
         // Search
-        let results = orchestrator.search(&query, Some(10)).await.unwrap_or_default();
+        let results = orchestrator
+            .search(&query, Some(10))
+            .await
+            .unwrap_or_default();
 
         let mut processed_content: Vec<String> = Vec::new();
         let mut initial_emitted = false;
@@ -62,14 +65,18 @@ pub fn run_srp_pipeline(
                     if !text.trim().is_empty() {
                         let elapsed = start.elapsed().as_millis() as u64;
                         if initial_emitted {
-                            if let Some(contradiction) = find_contradiction(&query, &processed_content, &text) {
-                                let _ = tx.send(SrpChunk {
-                                    event: SrpEvent::Correction,
-                                    content: format!("[CORRECTION] {}", contradiction),
-                                    sources: vec![processed_content.len()],
-                                    confidence: 0.85,
-                                    timestamp_ms: elapsed,
-                                }).await;
+                            if let Some(contradiction) =
+                                find_contradiction(&query, &processed_content, &text)
+                            {
+                                let _ = tx
+                                    .send(SrpChunk {
+                                        event: SrpEvent::Correction,
+                                        content: format!("[CORRECTION] {}", contradiction),
+                                        sources: vec![processed_content.len()],
+                                        confidence: 0.85,
+                                        timestamp_ms: elapsed,
+                                    })
+                                    .await;
                             }
                         }
                         processed_content.push(text);
@@ -85,7 +92,11 @@ pub fn run_srp_pipeline(
                 let _ = tx
                     .send(SrpChunk {
                         event: SrpEvent::Initial,
-                        content: format!("[INITIAL] Based on {} sources: {}", processed_content.len(), summary),
+                        content: format!(
+                            "[INITIAL] Based on {} sources: {}",
+                            processed_content.len(),
+                            summary
+                        ),
                         sources: (0..processed_content.len()).collect(),
                         confidence: 0.65,
                         timestamp_ms: elapsed,
@@ -135,19 +146,32 @@ fn find_contradiction(query: &str, _processed: &[String], new_text: &str) -> Opt
     let lower_text = new_text.to_lowercase();
     let lower_query = query.to_lowercase();
     let query_words: Vec<&str> = lower_query.split_whitespace().collect();
-    
+
     // Heuristic 1: Negation words indicating a refutation of the concept
     let negations = [
-        "not true", "incorrect", "false", "disproved",
-        "contradicts", "however", "unlike", "instead", "misconception",
+        "not true",
+        "incorrect",
+        "false",
+        "disproved",
+        "contradicts",
+        "however",
+        "unlike",
+        "instead",
+        "misconception",
     ];
-    
+
     for sentence in lower_text.split(". ") {
-        let has_concept = query_words.iter().filter(|&&w| w.len() > 3).any(|&w| sentence.contains(w));
+        let has_concept = query_words
+            .iter()
+            .filter(|&&w| w.len() > 3)
+            .any(|&w| sentence.contains(w));
         if has_concept {
             for neg in &negations {
                 if sentence.contains(neg) {
-                    return Some(format!("Found potential contradiction: \"{}...\"", &sentence.trim().chars().take(100).collect::<String>()));
+                    return Some(format!(
+                        "Found potential contradiction: \"{}...\"",
+                        &sentence.trim().chars().take(100).collect::<String>()
+                    ));
                 }
             }
         }

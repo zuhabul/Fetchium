@@ -37,7 +37,10 @@ pub fn extract(html: &str, url: &str) -> ExtractedContent {
     // Fast path: L1 succeeds for ~85% of well-structured pages.
     let l1_result = layer1::extract(html, url);
     if layer1::is_sufficient(&l1_result, html) {
-        info!("CEP: L1 sufficient for {} ({} tokens)", url, l1_result.tokens);
+        info!(
+            "CEP: L1 sufficient for {} ({} tokens)",
+            url, l1_result.tokens
+        );
         return l1_result;
     }
 
@@ -83,11 +86,17 @@ pub async fn extract_with_l3(
 
     // Only escalate if static extraction was insufficient
     if static_result.tokens >= L3_ESCALATION_TOKEN_THRESHOLD {
-        info!("CEP: L1/L2 sufficient ({} tokens), skipping L3", static_result.tokens);
+        info!(
+            "CEP: L1/L2 sufficient ({} tokens), skipping L3",
+            static_result.tokens
+        );
         return static_result;
     }
 
-    info!("CEP: escalating to L3 for {} ({} tokens from static)", url, static_result.tokens);
+    info!(
+        "CEP: escalating to L3 for {} ({} tokens from static)",
+        url, static_result.tokens
+    );
 
     let extractor = crate::extract::layer3::Layer3Extractor::new(std::sync::Arc::clone(pool));
     match extractor.extract(url).await {
@@ -117,9 +126,15 @@ pub fn likely_needs_headless(url: &str) -> bool {
     let url_lower = url.to_lowercase();
     // Known SPA/JS-heavy domains
     const JS_HEAVY_DOMAINS: &[&str] = &[
-        "twitter.com", "x.com", "instagram.com", "facebook.com",
-        "linkedin.com", "notion.so", "app.netlify.com",
-        "vercel.app", "figma.com",
+        "twitter.com",
+        "x.com",
+        "instagram.com",
+        "facebook.com",
+        "linkedin.com",
+        "notion.so",
+        "app.netlify.com",
+        "vercel.app",
+        "figma.com",
     ];
     JS_HEAVY_DOMAINS.iter().any(|d| url_lower.contains(d))
 }
@@ -162,20 +177,21 @@ mod tests {
     fn pipeline_escalates_for_poor_content() {
         let html = "<html><body><p>x</p></body></html>";
         let result = extract(html, "https://example.com/poor");
-        assert!(
-            result.layer_used == CepLayer::Layer1
-                || result.layer_used == CepLayer::Layer2
-        );
+        assert!(result.layer_used == CepLayer::Layer1 || result.layer_used == CepLayer::Layer2);
     }
 
     #[test]
     fn likely_needs_headless_twitter() {
-        assert!(likely_needs_headless("https://twitter.com/rust_lang/status/123"));
+        assert!(likely_needs_headless(
+            "https://twitter.com/rust_lang/status/123"
+        ));
         assert!(likely_needs_headless("https://x.com/user/post"));
     }
 
     #[test]
     fn likely_needs_headless_regular_site() {
-        assert!(!likely_needs_headless("https://blog.rust-lang.org/2024/01/01/post.html"));
+        assert!(!likely_needs_headless(
+            "https://blog.rust-lang.org/2024/01/01/post.html"
+        ));
     }
 }

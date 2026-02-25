@@ -7,18 +7,34 @@ use tracing::trace;
 
 /// Tags to remove entirely in structural pruning.
 const STRUCTURAL_PRUNE_TAGS: &[&str] = &[
-    "nav", "footer", "aside", "script", "style", "noscript",
-    "iframe", "svg", "form", "header", "button", "input",
-    "select", "textarea", "picture", "canvas",
+    "nav", "footer", "aside", "script", "style", "noscript", "iframe", "svg", "form", "header",
+    "button", "input", "select", "textarea", "picture", "canvas",
 ];
 
 /// Class/id substrings that indicate boilerplate content.
 const BOILERPLATE_PATTERNS: &[&str] = &[
-    "sidebar", "advertisement", " ad ", "advert", "cookie",
-    "popup", "modal", "banner", "newsletter", "subscribe",
-    "social-share", "share-buttons", "comments", "comment-section",
-    "related-posts", "recommended", "footer", "breadcrumb",
-    "pagination", "navigation", "skip-to", "print-only",
+    "sidebar",
+    "advertisement",
+    " ad ",
+    "advert",
+    "cookie",
+    "popup",
+    "modal",
+    "banner",
+    "newsletter",
+    "subscribe",
+    "social-share",
+    "share-buttons",
+    "comments",
+    "comment-section",
+    "related-posts",
+    "recommended",
+    "footer",
+    "breadcrumb",
+    "pagination",
+    "navigation",
+    "skip-to",
+    "print-only",
 ];
 
 /// A text node extracted from the DOM after structural pruning.
@@ -39,19 +55,32 @@ pub struct TextNode {
 impl TextNode {
     pub fn new(text: String, tag_context: String, depth: usize) -> Self {
         let estimated_tokens = estimate_tokens(&text);
-        Self { text, tag_context, depth, estimated_tokens, relevance_score: 0.0 }
+        Self {
+            text,
+            tag_context,
+            depth,
+            estimated_tokens,
+            relevance_score: 0.0,
+        }
     }
 
     /// Returns true if this node is a heading (h1-h6).
     pub fn is_heading(&self) -> bool {
-        matches!(self.tag_context.as_str(), "h1" | "h2" | "h3" | "h4" | "h5" | "h6")
+        matches!(
+            self.tag_context.as_str(),
+            "h1" | "h2" | "h3" | "h4" | "h5" | "h6"
+        )
     }
 
     /// Heading level (1-6 for h1-h6, 0 for non-headings).
     pub fn heading_level(&self) -> u8 {
         match self.tag_context.as_str() {
-            "h1" => 1, "h2" => 2, "h3" => 3,
-            "h4" => 4, "h5" => 5, "h6" => 6,
+            "h1" => 1,
+            "h2" => 2,
+            "h3" => 3,
+            "h4" => 4,
+            "h5" => 5,
+            "h6" => 6,
             _ => 0,
         }
     }
@@ -86,7 +115,8 @@ pub fn structural_prune(html: &str) -> Vec<TextNode> {
             // Flush accumulated text
             if !text_buf.trim().is_empty() && skip_depth.is_none() {
                 let trimmed = text_buf.trim().to_string();
-                if trimmed.len() >= 10 { // Skip very short nodes
+                if trimmed.len() >= 10 {
+                    // Skip very short nodes
                     nodes.push(TextNode::new(trimmed, current_tag.clone(), depth));
                 }
             }
@@ -99,9 +129,8 @@ pub fn structural_prune(html: &str) -> Vec<TextNode> {
             let tag_name = tag_name_from_buf(&tag_buf);
             // HTML declarations (<!DOCTYPE>, <!--...-->) and void elements are self-closing.
             // Treating them as opening tags would shift depth for the entire document.
-            let is_self_closing = tag_buf.ends_with('/')
-                || is_void_element(&tag_name)
-                || tag_name.starts_with('!');
+            let is_self_closing =
+                tag_buf.ends_with('/') || is_void_element(&tag_name) || tag_name.starts_with('!');
 
             if is_closing {
                 // Exiting a skip zone: depth was incremented when the pruned element opened,
@@ -113,7 +142,9 @@ pub fn structural_prune(html: &str) -> Vec<TextNode> {
                     }
                 }
                 depth = depth.saturating_sub(1);
-                if depth == 0 { current_tag.clear(); }
+                if depth == 0 {
+                    current_tag.clear();
+                }
             } else if !is_self_closing {
                 // Check if we should skip this element
                 if skip_depth.is_none() && should_prune_tag(&tag_name, &tag_buf) {
@@ -137,7 +168,9 @@ pub fn structural_prune(html: &str) -> Vec<TextNode> {
                 let mut entity = String::from("&");
                 for (_, ec) in char_iter.by_ref() {
                     entity.push(ec);
-                    if ec == ';' || entity.len() > 8 { break; }
+                    if ec == ';' || entity.len() > 8 {
+                        break;
+                    }
                 }
                 text_buf.push_str(&decode_entity(&entity));
             } else {
@@ -154,7 +187,11 @@ pub fn structural_prune(html: &str) -> Vec<TextNode> {
         }
     }
 
-    trace!("QADD structural_prune: {} text nodes extracted from {} chars", nodes.len(), html.len());
+    trace!(
+        "QADD structural_prune: {} text nodes extracted from {} chars",
+        nodes.len(),
+        html.len()
+    );
     nodes
 }
 
@@ -180,8 +217,23 @@ fn should_prune_tag(tag: &str, attrs: &str) -> bool {
 }
 
 fn is_void_element(tag: &str) -> bool {
-    matches!(tag, "area" | "base" | "br" | "col" | "embed" | "hr" | "img"
-        | "input" | "link" | "meta" | "param" | "source" | "track" | "wbr")
+    matches!(
+        tag,
+        "area"
+            | "base"
+            | "br"
+            | "col"
+            | "embed"
+            | "hr"
+            | "img"
+            | "input"
+            | "link"
+            | "meta"
+            | "param"
+            | "source"
+            | "track"
+            | "wbr"
+    )
 }
 
 fn decode_entity(entity: &str) -> String {
@@ -204,8 +256,14 @@ mod tests {
     fn prune_removes_nav() {
         let html = r#"<div><nav>Skip navigation</nav><p>Real content here for testing purposes.</p></div>"#;
         let nodes = structural_prune(html);
-        assert!(!nodes.iter().any(|n| n.text.contains("Skip navigation")), "nav should be pruned");
-        assert!(nodes.iter().any(|n| n.text.contains("Real content")), "p content should survive");
+        assert!(
+            !nodes.iter().any(|n| n.text.contains("Skip navigation")),
+            "nav should be pruned"
+        );
+        assert!(
+            nodes.iter().any(|n| n.text.contains("Real content")),
+            "p content should survive"
+        );
     }
 
     #[test]

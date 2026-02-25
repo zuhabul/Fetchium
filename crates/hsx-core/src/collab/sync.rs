@@ -8,10 +8,7 @@ use std::path::Path;
 ///
 /// For `Local` sync: copies changed files to the shared directory.
 /// For `Git` sync: calls `git add -A && git commit && git push`.
-pub fn sync_workspace(
-    workspace_path: &Path,
-    method: &SyncMethod,
-) -> Result<SyncReport, HsxError> {
+pub fn sync_workspace(workspace_path: &Path, method: &SyncMethod) -> Result<SyncReport, HsxError> {
     match method {
         SyncMethod::Local { shared_dir } => sync_local(workspace_path, shared_dir),
         SyncMethod::Git { remote_url } => sync_git(workspace_path, remote_url),
@@ -42,16 +39,10 @@ fn sync_git(workspace_path: &Path, remote_url: &str) -> Result<SyncReport, HsxEr
         run_git(workspace_path, &["remote", "add", "origin", remote_url])?;
     }
     run_git(workspace_path, &["add", "-A"])?;
-    let timestamp = chrono::Utc::now()
-        .format("%Y-%m-%d %H:%M:%S")
-        .to_string();
+    let timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
     run_git(
         workspace_path,
-        &[
-            "commit",
-            "-m",
-            &format!("hsx workspace sync {timestamp}"),
-        ],
+        &["commit", "-m", &format!("hsx workspace sync {timestamp}")],
     )?;
     run_git(workspace_path, &["push", "-u", "origin", "HEAD"])?;
     Ok(SyncReport {
@@ -67,10 +58,7 @@ fn run_git(dir: &Path, args: &[&str]) -> Result<(), HsxError> {
         .current_dir(dir)
         .status()?;
     if !status.success() {
-        return Err(HsxError::Config(format!(
-            "git {} failed",
-            args.join(" ")
-        )));
+        return Err(HsxError::Config(format!("git {} failed", args.join(" "))));
     }
     Ok(())
 }

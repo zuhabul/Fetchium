@@ -17,11 +17,11 @@ pub mod middleware;
 pub mod routes;
 pub mod types;
 
+use crate::middleware::AppState;
+use crate::routes::build_router;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
-use crate::middleware::AppState;
-use crate::routes::build_router;
 
 /// Configuration for the REST API server.
 #[derive(Debug, Clone)]

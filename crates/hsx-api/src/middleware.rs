@@ -1,12 +1,12 @@
 //! REST API middleware — rate limiting, CORS, request logging.
 
+use hsx_core::cache::MemoryCache;
+use hsx_core::config::HsxConfig;
+use hsx_core::http::client::HttpClient;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::Mutex;
-use hsx_core::config::HsxConfig;
-use hsx_core::http::client::HttpClient;
-use hsx_core::cache::MemoryCache;
 
 /// Shared application state injected into all axum handlers.
 #[derive(Clone)]

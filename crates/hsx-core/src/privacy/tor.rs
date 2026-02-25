@@ -11,11 +11,7 @@ pub const TOR_SOCKS5: &str = "socks5://127.0.0.1:9050";
 pub fn is_tor_available() -> bool {
     use std::net::TcpStream;
     use std::time::Duration;
-    TcpStream::connect_timeout(
-        &"127.0.0.1:9050".parse().unwrap(),
-        Duration::from_secs(2),
-    )
-    .is_ok()
+    TcpStream::connect_timeout(&"127.0.0.1:9050".parse().unwrap(), Duration::from_secs(2)).is_ok()
 }
 
 /// Returns a Tor-spoofed user-agent string (Tor Browser).

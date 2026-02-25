@@ -45,10 +45,9 @@ impl OllamaClient {
             .await
             .map_err(|e| HsxError::AiUnavailable(format!("Ollama unreachable: {e}")))?;
 
-        let tags: TagsResponse = resp
-            .json()
-            .await
-            .map_err(|e| HsxError::AiUnavailable(format!("Invalid Ollama /api/tags response: {e}")))?;
+        let tags: TagsResponse = resp.json().await.map_err(|e| {
+            HsxError::AiUnavailable(format!("Invalid Ollama /api/tags response: {e}"))
+        })?;
 
         Ok(tags.models)
     }

@@ -45,10 +45,7 @@ impl EvidenceTracker {
         sources: &[SourceMeta],
         strict: bool,
     ) -> EvidenceAnalysis {
-        let sentences: Vec<&str> = text
-            .split(". ")
-            .flat_map(|s| s.split(".\n"))
-            .collect();
+        let sentences: Vec<&str> = text.split(". ").flat_map(|s| s.split(".\n")).collect();
 
         let mut cited = Vec::new();
         let mut unverified = Vec::new();
@@ -60,8 +57,7 @@ impl EvidenceTracker {
                 continue;
             }
 
-            if let Some((node, source_idx)) =
-                self.find_supporting_evidence(trimmed, graph, sources)
+            if let Some((node, source_idx)) = self.find_supporting_evidence(trimmed, graph, sources)
             {
                 let citation = self.formatter.format(&sources[source_idx], source_idx + 1);
                 annotated_parts.push(format!("{trimmed} {}", citation.inline_marker));
@@ -116,15 +112,30 @@ impl EvidenceTracker {
         let wb: std::collections::HashSet<&str> = b.split_whitespace().collect();
         let inter = wa.intersection(&wb).count();
         let union = wa.union(&wb).count();
-        if union == 0 { 0.0 } else { inter as f64 / union as f64 }
+        if union == 0 {
+            0.0
+        } else {
+            inter as f64 / union as f64
+        }
     }
 
     fn is_factual_claim(text: &str) -> bool {
-        if text.len() < 20 { return false; }
-        if text.ends_with('?') { return false; }
+        if text.len() < 20 {
+            return false;
+        }
+        if text.ends_with('?') {
+            return false;
+        }
         let lower = text.to_lowercase();
-        let transitions = ["however", "therefore", "in conclusion", "overall",
-            "additionally", "furthermore", "in summary"];
+        let transitions = [
+            "however",
+            "therefore",
+            "in conclusion",
+            "overall",
+            "additionally",
+            "furthermore",
+            "in summary",
+        ];
         !transitions.iter().any(|t| lower.starts_with(t))
     }
 }
@@ -161,7 +172,12 @@ mod tests {
     #[test]
     fn cited_claim_gets_marker() {
         let mut b = EvidenceGraphBuilder::new("root");
-        let s = b.add_source("https://rust-lang.org", "Rust Lang", "Rust is fast and safe", 0.9);
+        let s = b.add_source(
+            "https://rust-lang.org",
+            "Rust Lang",
+            "Rust is fast and safe",
+            0.9,
+        );
         b.add_fact_from_source(&s, "Rust is fast and safe", "Rust is fast and safe", 0.9);
         let graph = b.build();
         let sources = vec![SourceMeta {

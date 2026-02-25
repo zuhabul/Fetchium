@@ -7,10 +7,10 @@
 //! - Ollama, GeminiCli: local, no key needed
 
 use crate::ai::credentials::{
-    get_antigravity_token, get_claude_code_token, get_codex_token_if_valid,
-    get_gemini_access_token_if_valid, antigravity_auth_available, invalidate_gemini_creds,
-    ANTIGRAVITY_ENDPOINTS, ANTIGRAVITY_VERSION,
-    GEMINI_OAUTH_CLIENT_ID, GEMINI_OAUTH_CLIENT_SECRET, GOOGLE_TOKEN_ENDPOINT,
+    antigravity_auth_available, get_antigravity_token, get_claude_code_token,
+    get_codex_token_if_valid, get_gemini_access_token_if_valid, invalidate_gemini_creds,
+    ANTIGRAVITY_ENDPOINTS, ANTIGRAVITY_VERSION, GEMINI_OAUTH_CLIENT_ID, GEMINI_OAUTH_CLIENT_SECRET,
+    GOOGLE_TOKEN_ENDPOINT,
 };
 use crate::ai::ollama::OllamaClient;
 use crate::ai::providers::{ProviderKind, ProvidersConfig};
@@ -57,7 +57,17 @@ pub async fn chat_with_fallback(
     let mut last_error: Option<HsxError> = None;
 
     for kind in &chain {
-        match call_provider(*kind, messages, model_override, ai_config, providers, streaming, on_token).await {
+        match call_provider(
+            *kind,
+            messages,
+            model_override,
+            ai_config,
+            providers,
+            streaming,
+            on_token,
+        )
+        .await
+        {
             Ok(result) => return Ok(result),
             Err(e) => {
                 tracing::warn!("Provider {} failed: {}", kind.slug(), e);
@@ -66,9 +76,8 @@ pub async fn chat_with_fallback(
         }
     }
 
-    Err(last_error.unwrap_or_else(|| {
-        HsxError::AiUnavailable("All configured AI providers failed.".into())
-    }))
+    Err(last_error
+        .unwrap_or_else(|| HsxError::AiUnavailable("All configured AI providers failed.".into())))
 }
 
 /// Attempt a single provider and return its `ChatResult` on success.
@@ -93,7 +102,10 @@ async fn call_provider(
             // Priority: 1) config/env API key  2) auth store API key  3) OpenAI Codex CLI OAuth session
             let auth_store_key_openai = crate::ai::credentials::hsx_auth_get("openai")
                 .and_then(|a| a.api_key().map(|s| s.to_string()));
-            let key = if let Some(k) = entry.resolve_api_key("OPENAI_API_KEY").or(auth_store_key_openai) {
+            let key = if let Some(k) = entry
+                .resolve_api_key("OPENAI_API_KEY")
+                .or(auth_store_key_openai)
+            {
                 k
             } else if let Some(tok) = get_codex_token_if_valid() {
                 tracing::info!("Using OpenAI Codex CLI OAuth session (ChatGPT subscription)");
@@ -104,18 +116,28 @@ async fn call_provider(
                      Options:\n  \
                      • Set OPENAI_API_KEY env var\n  \
                      • Log in via Codex CLI: codex auth login\n  \
-                     • Run `hsx provider setup openai`".into(),
+                     • Run `hsx provider setup openai`"
+                        .into(),
                 ));
             };
-            let base = entry.base_url.clone().unwrap_or_else(|| "https://api.openai.com".into());
-            call_openai_compat(kind, &key, &base, &model, messages, ai_config, streaming, on_token).await
+            let base = entry
+                .base_url
+                .clone()
+                .unwrap_or_else(|| "https://api.openai.com".into());
+            call_openai_compat(
+                kind, &key, &base, &model, messages, ai_config, streaming, on_token,
+            )
+            .await
         }
 
         ProviderKind::Anthropic => {
             // Priority: 1) config/env API key  2) auth store API key  3) Claude Code OAuth subscription
             let auth_store_key_anthropic = crate::ai::credentials::hsx_auth_get("anthropic")
                 .and_then(|a| a.api_key().map(|s| s.to_string()));
-            let (token, use_oauth) = if let Some(k) = entry.resolve_api_key("ANTHROPIC_API_KEY").or(auth_store_key_anthropic) {
+            let (token, use_oauth) = if let Some(k) = entry
+                .resolve_api_key("ANTHROPIC_API_KEY")
+                .or(auth_store_key_anthropic)
+            {
                 (k, false)
             } else if let Some(creds) = get_claude_code_token() {
                 tracing::info!(
@@ -129,10 +151,14 @@ async fn call_provider(
                      Options:\n  \
                      • Set ANTHROPIC_API_KEY env var\n  \
                      • Run `claude` once to log in (uses your Claude Max/Pro subscription)\n  \
-                     • Run `hsx provider setup anthropic`".into(),
+                     • Run `hsx provider setup anthropic`"
+                        .into(),
                 ));
             };
-            call_anthropic(&token, use_oauth, &model, messages, ai_config, streaming, on_token).await
+            call_anthropic(
+                &token, use_oauth, &model, messages, ai_config, streaming, on_token,
+            )
+            .await
         }
 
         ProviderKind::Gemini => {
@@ -140,10 +166,19 @@ async fn call_provider(
             let auth_store_key = crate::ai::credentials::hsx_auth_get("gemini")
                 .and_then(|a| a.api_key().map(|s| s.to_string()));
             if let Some(api_key) = entry.resolve_api_key("GEMINI_API_KEY").or(auth_store_key) {
-                call_gemini_api_key(&api_key, &model, messages, ai_config, streaming, on_token).await
+                call_gemini_api_key(&api_key, &model, messages, ai_config, streaming, on_token)
+                    .await
             } else if let Some(access_token) = get_gemini_access_token_if_valid() {
                 tracing::info!("Using Gemini OAuth (antigravity / Gemini CLI subscription)");
-                call_gemini_oauth(&access_token, &model, messages, ai_config, streaming, on_token).await
+                call_gemini_oauth(
+                    &access_token,
+                    &model,
+                    messages,
+                    ai_config,
+                    streaming,
+                    on_token,
+                )
+                .await
             } else {
                 // Try to refresh the expired token
                 let entry_clone = entry.clone();
@@ -166,9 +201,7 @@ async fn call_provider(
             }
         }
 
-        ProviderKind::GeminiCli => {
-            call_gemini_cli(&model, messages, on_token).await
-        }
+        ProviderKind::GeminiCli => call_gemini_cli(&model, messages, on_token).await,
 
         ProviderKind::OpenRouter => {
             // Priority: 1) config/env  2) ~/.openrouter/config.json
@@ -177,21 +210,38 @@ async fn call_provider(
                 .ok_or_else(|| HsxError::AiUnavailable(
                     "OpenRouter API key not set. Set OPENROUTER_API_KEY or run `hsx provider setup openrouter`.".into(),
                 ))?;
-            let base = entry.base_url.clone().unwrap_or_else(|| "https://openrouter.ai/api".into());
-            call_openai_compat(kind, &key, &base, &model, messages, ai_config, streaming, on_token).await
+            let base = entry
+                .base_url
+                .clone()
+                .unwrap_or_else(|| "https://openrouter.ai/api".into());
+            call_openai_compat(
+                kind, &key, &base, &model, messages, ai_config, streaming, on_token,
+            )
+            .await
         }
 
         ProviderKind::Antigravity => {
             // Refresh the antigravity Google OAuth access token on every call
             // (short-lived tokens, no local caching needed)
-            let (access_token, project_id) = get_antigravity_token()
-                .ok_or_else(|| HsxError::AiUnavailable(
+            let (access_token, project_id) = get_antigravity_token().ok_or_else(|| {
+                HsxError::AiUnavailable(
                     "Antigravity: no OpenCode account found.\n  \
                      Install OpenCode and add an account: https://opencode.ai\n  \
                      Then install the plugin: npm i -g opencode-antigravity-auth\n  \
-                     Run `hsx provider setup antigravity` to verify.".into(),
-                ))?;
-            call_antigravity(&access_token, &project_id, &model, messages, ai_config, streaming, on_token).await
+                     Run `hsx provider setup antigravity` to verify."
+                        .into(),
+                )
+            })?;
+            call_antigravity(
+                &access_token,
+                &project_id,
+                &model,
+                messages,
+                ai_config,
+                streaming,
+                on_token,
+            )
+            .await
         }
     }
 }
@@ -214,10 +264,16 @@ async fn call_ollama(
     }
 
     let available = ollama.list_models().await.unwrap_or_default();
-    let model_name = if available.iter().any(|m| m.name == model || m.name.starts_with(model)) {
+    let model_name = if available
+        .iter()
+        .any(|m| m.name == model || m.name.starts_with(model))
+    {
         model.to_string()
     } else if let Some(first) = available.first() {
-        tracing::warn!("Requested model '{model}' not found; using '{}'", first.name);
+        tracing::warn!(
+            "Requested model '{model}' not found; using '{}'",
+            first.name
+        );
         first.name.clone()
     } else {
         return Err(HsxError::AiUnavailable(format!(
@@ -226,9 +282,13 @@ async fn call_ollama(
     };
 
     let content = if streaming {
-        ollama.chat_stream(&model_name, messages, ai_config.temperature, on_token).await?
+        ollama
+            .chat_stream(&model_name, messages, ai_config.temperature, on_token)
+            .await?
     } else {
-        ollama.chat(&model_name, messages, ai_config.temperature).await?
+        ollama
+            .chat(&model_name, messages, ai_config.temperature)
+            .await?
     };
 
     Ok(ChatResult {
@@ -304,18 +364,23 @@ async fn call_openai_compat(
     // OpenRouter requires these headers for proper attribution
     if kind == ProviderKind::OpenRouter {
         req = req
-            .header("HTTP-Referer", "https://github.com/hypersearchx/hypersearchx")
+            .header(
+                "HTTP-Referer",
+                "https://github.com/hypersearchx/hypersearchx",
+            )
             .header("X-Title", "HyperSearchX");
     }
 
-    let resp = req.json(&body).send().await
-        .map_err(|e| HsxError::AiUnavailable(format!("Request to {} failed: {e}", kind.display_name())))?;
+    let resp = req.json(&body).send().await.map_err(|e| {
+        HsxError::AiUnavailable(format!("Request to {} failed: {e}", kind.display_name()))
+    })?;
 
     if !resp.status().is_success() {
         let status = resp.status();
         let body_text = resp.text().await.unwrap_or_default();
         return Err(HsxError::AiUnavailable(format!(
-            "{} API error {status}: {body_text}", kind.display_name()
+            "{} API error {status}: {body_text}",
+            kind.display_name()
         )));
     }
 
@@ -333,7 +398,11 @@ async fn call_openai_compat(
                 let s = std::str::from_utf8(&line).unwrap_or("").trim();
                 if let Some(data) = s.strip_prefix("data: ") {
                     if data == "[DONE]" {
-                        return Ok(ChatResult { content: full, model_used: model.to_string(), provider: kind });
+                        return Ok(ChatResult {
+                            content: full,
+                            model_used: model.to_string(),
+                            provider: kind,
+                        });
                     }
                     if let Ok(chunk) = serde_json::from_str::<OaiStreamChunk>(data) {
                         for choice in &chunk.choices {
@@ -346,15 +415,28 @@ async fn call_openai_compat(
                 }
             }
         }
-        Ok(ChatResult { content: full, model_used: model.to_string(), provider: kind })
+        Ok(ChatResult {
+            content: full,
+            model_used: model.to_string(),
+            provider: kind,
+        })
     } else {
-        let parsed: OaiResponse = resp.json().await
+        let parsed: OaiResponse = resp
+            .json()
+            .await
             .map_err(|e| HsxError::AiUnavailable(format!("Invalid response: {e}")))?;
-        let content = parsed.choices.into_iter().next()
+        let content = parsed
+            .choices
+            .into_iter()
+            .next()
             .map(|c| c.message.content)
             .unwrap_or_default();
         let model_used = parsed.model.unwrap_or_else(|| model.to_string());
-        Ok(ChatResult { content, model_used, provider: kind })
+        Ok(ChatResult {
+            content,
+            model_used,
+            provider: kind,
+        })
     }
 }
 
@@ -374,7 +456,7 @@ struct AnthropicBlock {
 
 async fn call_anthropic(
     token: &str,
-    use_oauth: bool,   // true = Claude Code subscription (Bearer), false = API key (x-api-key)
+    use_oauth: bool, // true = Claude Code subscription (Bearer), false = API key (x-api-key)
     model: &str,
     messages: &[crate::ai::types::ChatMessage],
     ai_config: &AiConfig,
@@ -433,7 +515,9 @@ async fn call_anthropic(
     if !resp.status().is_success() {
         let status = resp.status();
         let body_text = resp.text().await.unwrap_or_default();
-        return Err(HsxError::AiUnavailable(format!("Anthropic API error {status}: {body_text}")));
+        return Err(HsxError::AiUnavailable(format!(
+            "Anthropic API error {status}: {body_text}"
+        )));
     }
 
     if streaming {
@@ -460,16 +544,28 @@ async fn call_anthropic(
                 }
             }
         }
-        Ok(ChatResult { content: full, model_used: model.to_string(), provider: ProviderKind::Anthropic })
+        Ok(ChatResult {
+            content: full,
+            model_used: model.to_string(),
+            provider: ProviderKind::Anthropic,
+        })
     } else {
-        let parsed: AnthropicResponse = resp.json().await
+        let parsed: AnthropicResponse = resp
+            .json()
+            .await
             .map_err(|e| HsxError::AiUnavailable(format!("Invalid Anthropic response: {e}")))?;
-        let content = parsed.content.into_iter()
+        let content = parsed
+            .content
+            .into_iter()
             .filter(|b| b.kind == "text")
             .filter_map(|b| b.text)
             .collect::<Vec<_>>()
             .join("");
-        Ok(ChatResult { content, model_used: parsed.model, provider: ProviderKind::Anthropic })
+        Ok(ChatResult {
+            content,
+            model_used: parsed.model,
+            provider: ProviderKind::Anthropic,
+        })
     }
 }
 
@@ -501,7 +597,11 @@ fn gemini_build_contents(messages: &[crate::ai::types::ChatMessage]) -> Vec<serd
         if m.role == "system" {
             system_text = m.content.clone();
         } else {
-            let role = if m.role == "assistant" { "model" } else { "user" };
+            let role = if m.role == "assistant" {
+                "model"
+            } else {
+                "user"
+            };
             contents.push(serde_json::json!({
                 "role": role,
                 "parts": [{"text": m.content}],
@@ -565,7 +665,11 @@ async fn gemini_read_stream_with_provider(
             }
         }
     }
-    Ok(ChatResult { content: full, model_used: model.to_string(), provider })
+    Ok(ChatResult {
+        content: full,
+        model_used: model.to_string(),
+        provider,
+    })
 }
 
 /// Call Gemini REST API with an **API key** (`?key=` query parameter).
@@ -586,7 +690,11 @@ async fn call_gemini_api_key(
         },
     });
 
-    let endpoint = if streaming { "streamGenerateContent?alt=sse" } else { "generateContent" };
+    let endpoint = if streaming {
+        "streamGenerateContent?alt=sse"
+    } else {
+        "generateContent"
+    };
     let url = format!(
         "https://generativelanguage.googleapis.com/v1beta/models/{model}:{endpoint}&key={api_key}"
     );
@@ -607,18 +715,36 @@ async fn call_gemini_api_key(
     if !resp.status().is_success() {
         let status = resp.status();
         let body_text = resp.text().await.unwrap_or_default();
-        return Err(HsxError::AiUnavailable(format!("Gemini API error {status}: {body_text}")));
+        return Err(HsxError::AiUnavailable(format!(
+            "Gemini API error {status}: {body_text}"
+        )));
     }
 
     if streaming {
         gemini_read_stream(resp, model, on_token).await
     } else {
-        let parsed: GeminiResponse = resp.json().await
+        let parsed: GeminiResponse = resp
+            .json()
+            .await
             .map_err(|e| HsxError::AiUnavailable(format!("Invalid Gemini response: {e}")))?;
-        let content = parsed.candidates.into_iter().next()
-            .map(|c| c.content.parts.into_iter().filter_map(|p| p.text).collect::<Vec<_>>().join(""))
+        let content = parsed
+            .candidates
+            .into_iter()
+            .next()
+            .map(|c| {
+                c.content
+                    .parts
+                    .into_iter()
+                    .filter_map(|p| p.text)
+                    .collect::<Vec<_>>()
+                    .join("")
+            })
             .unwrap_or_default();
-        Ok(ChatResult { content, model_used: model.to_string(), provider: ProviderKind::Gemini })
+        Ok(ChatResult {
+            content,
+            model_used: model.to_string(),
+            provider: ProviderKind::Gemini,
+        })
     }
 }
 
@@ -643,10 +769,12 @@ async fn call_gemini_oauth(
     });
 
     // OAuth endpoint: no `?key=` parameter
-    let endpoint = if streaming { "streamGenerateContent?alt=sse" } else { "generateContent" };
-    let url = format!(
-        "https://generativelanguage.googleapis.com/v1beta/models/{model}:{endpoint}"
-    );
+    let endpoint = if streaming {
+        "streamGenerateContent?alt=sse"
+    } else {
+        "generateContent"
+    };
+    let url = format!("https://generativelanguage.googleapis.com/v1beta/models/{model}:{endpoint}");
 
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(ai_config.timeout_secs))
@@ -668,27 +796,48 @@ async fn call_gemini_oauth(
         // 403 SCOPE_INSUFFICIENT means the Gemini CLI OAuth token was obtained with
         // limited scopes — it cannot be used for the Generative Language REST API.
         // Do NOT clear credentials (they're still valid for the `gemini` CLI subprocess).
-        if status == reqwest::StatusCode::FORBIDDEN && body_text.contains("ACCESS_TOKEN_SCOPE_INSUFFICIENT") {
+        if status == reqwest::StatusCode::FORBIDDEN
+            && body_text.contains("ACCESS_TOKEN_SCOPE_INSUFFICIENT")
+        {
             return Err(HsxError::AiUnavailable(
                 "Gemini OAuth token has insufficient scopes for the REST API.
                    Fix (choose one):
                    • hsx provider auth gemini       (interactive setup — API key or OAuth)
                    • export GEMINI_API_KEY=AIza...   (free key: aistudio.google.com/app/apikey)
-                   • hsx provider chain gemini_cli   (use the local `gemini` CLI instead)".into()
+                   • hsx provider chain gemini_cli   (use the local `gemini` CLI instead)"
+                    .into(),
             ));
         }
-        return Err(HsxError::AiUnavailable(format!("Gemini OAuth API error {status}: {body_text}")));
+        return Err(HsxError::AiUnavailable(format!(
+            "Gemini OAuth API error {status}: {body_text}"
+        )));
     }
 
     if streaming {
         gemini_read_stream(resp, model, on_token).await
     } else {
-        let parsed: GeminiResponse = resp.json().await
+        let parsed: GeminiResponse = resp
+            .json()
+            .await
             .map_err(|e| HsxError::AiUnavailable(format!("Invalid Gemini OAuth response: {e}")))?;
-        let content = parsed.candidates.into_iter().next()
-            .map(|c| c.content.parts.into_iter().filter_map(|p| p.text).collect::<Vec<_>>().join(""))
+        let content = parsed
+            .candidates
+            .into_iter()
+            .next()
+            .map(|c| {
+                c.content
+                    .parts
+                    .into_iter()
+                    .filter_map(|p| p.text)
+                    .collect::<Vec<_>>()
+                    .join("")
+            })
             .unwrap_or_default();
-        Ok(ChatResult { content, model_used: model.to_string(), provider: ProviderKind::Gemini })
+        Ok(ChatResult {
+            content,
+            model_used: model.to_string(),
+            provider: ProviderKind::Gemini,
+        })
     }
 }
 
@@ -708,10 +857,10 @@ async fn refresh_gemini_token_async(_ai_config: &AiConfig) -> Option<String> {
         .ok()?;
 
     let params = [
-        ("client_id",     GEMINI_OAUTH_CLIENT_ID),
+        ("client_id", GEMINI_OAUTH_CLIENT_ID),
         ("client_secret", GEMINI_OAUTH_CLIENT_SECRET),
         ("refresh_token", refresh_token.as_str()),
-        ("grant_type",    "refresh_token"),
+        ("grant_type", "refresh_token"),
     ];
 
     let resp = client
@@ -723,7 +872,8 @@ async fn refresh_gemini_token_async(_ai_config: &AiConfig) -> Option<String> {
 
     if !resp.status().is_success() {
         let status = resp.status();
-        if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::BAD_REQUEST {
+        if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::BAD_REQUEST
+        {
             // Refresh token is revoked or invalid — clear stale creds so future
             // check_provider calls correctly report Gemini as unavailable.
             invalidate_gemini_creds();
@@ -754,7 +904,10 @@ async fn refresh_gemini_token_async(_ai_config: &AiConfig) -> Option<String> {
             "expiry_date":   now_ms + expires_in * 1000,
             "token_type":    "Bearer",
         });
-        let _ = std::fs::write(&path, serde_json::to_string_pretty(&updated).unwrap_or_default());
+        let _ = std::fs::write(
+            &path,
+            serde_json::to_string_pretty(&updated).unwrap_or_default(),
+        );
         tracing::debug!("Gemini OAuth token refreshed and saved to {:?}", path);
     }
 
@@ -811,7 +964,11 @@ async fn call_antigravity(
         .build()
         .map_err(|e| HsxError::AiUnavailable(format!("HTTP client build error: {e}")))?;
 
-    let action = if streaming { "generateContent?alt=sse" } else { "generateContent" };
+    let action = if streaming {
+        "generateContent?alt=sse"
+    } else {
+        "generateContent"
+    };
 
     // Try each endpoint in order; first success wins
     let mut last_err = String::new();
@@ -841,7 +998,8 @@ async fn call_antigravity(
         if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
             return Err(HsxError::AiUnavailable(
                 "Antigravity: authentication failed — re-run OpenCode to refresh your session.\n  \
-                 Run `opencode` once, then retry.".into(),
+                 Run `opencode` once, then retry."
+                    .into(),
             ));
         }
         if !status.is_success() {
@@ -855,12 +1013,27 @@ async fn call_antigravity(
             // Gemini SSE format
             gemini_read_stream_with_provider(resp, model, ProviderKind::Antigravity, on_token).await
         } else {
-            let parsed: GeminiResponse = resp.json().await
-                .map_err(|e| HsxError::AiUnavailable(format!("Invalid Antigravity response: {e}")))?;
-            let content = parsed.candidates.into_iter().next()
-                .map(|c| c.content.parts.into_iter().filter_map(|p| p.text).collect::<Vec<_>>().join(""))
+            let parsed: GeminiResponse = resp.json().await.map_err(|e| {
+                HsxError::AiUnavailable(format!("Invalid Antigravity response: {e}"))
+            })?;
+            let content = parsed
+                .candidates
+                .into_iter()
+                .next()
+                .map(|c| {
+                    c.content
+                        .parts
+                        .into_iter()
+                        .filter_map(|p| p.text)
+                        .collect::<Vec<_>>()
+                        .join("")
+                })
                 .unwrap_or_default();
-            Ok(ChatResult { content, model_used: model.to_string(), provider: ProviderKind::Antigravity })
+            Ok(ChatResult {
+                content,
+                model_used: model.to_string(),
+                provider: ProviderKind::Antigravity,
+            })
         };
     }
 
@@ -889,27 +1062,67 @@ async fn call_gemini_cli(
         .collect::<Vec<_>>()
         .join("\n\n");
 
-    let output = tokio::process::Command::new("gemini")
-        .args(["--model", model, "--prompt", &prompt])
-        .output()
-        .await
-        .map_err(|e| HsxError::ExternalTool(format!(
-            "Gemini CLI not found: {e}\nInstall: npm install -g @google/generative-ai-cli"
-        )))?;
+    // Gemini CLI v0.30+ sends `thinking_config.include_thoughts` on every request.
+    // Only models that support thinking (gemini-2.5-flash, gemini-3-flash-preview, etc.) work.
+    // Always pass `--model` so the CLI uses the explicitly selected model.
+    //
+    // Capacity fallback: if `model` is capacity-exhausted (429 MODEL_CAPACITY_EXHAUSTED)
+    // we automatically retry once with `gemini-2.5-flash` before giving up.
+    const CAPACITY_FALLBACK: &str = "gemini-2.5-flash";
+    let models_to_try: Vec<String> = if model == CAPACITY_FALLBACK {
+        vec![model.to_string()]
+    } else {
+        vec![model.to_string(), CAPACITY_FALLBACK.to_string()]
+    };
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(HsxError::ExternalTool(format!("Gemini CLI error: {stderr}")));
+    let mut last_err: Option<HsxError> = None;
+
+    for try_model in &models_to_try {
+        let args = vec![
+            "--model".to_string(),
+            try_model.clone(),
+            "--prompt".to_string(),
+            prompt.clone(),
+        ];
+
+        let output = tokio::process::Command::new("gemini")
+            .args(&args)
+            .output()
+            .await
+            .map_err(|e| {
+                HsxError::ExternalTool(format!(
+                    "Gemini CLI not found: {e}\nInstall: npm install -g @google/gemini-cli"
+                ))
+            })?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+            let is_not_last = try_model != models_to_try.last().unwrap();
+            let is_capacity = stderr.contains("MODEL_CAPACITY_EXHAUSTED")
+                || stderr.contains("No capacity available")
+                || stderr.contains("RESOURCE_EXHAUSTED");
+            if is_capacity && is_not_last {
+                tracing::warn!(
+                    "GeminiCli: '{try_model}' capacity exhausted, retrying with '{CAPACITY_FALLBACK}'"
+                );
+                last_err = Some(HsxError::ExternalTool(format!("Gemini CLI error: {stderr}")));
+                continue;
+            }
+            return Err(HsxError::ExternalTool(format!("Gemini CLI error: {stderr}")));
+        }
+
+        let content = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        // Gemini CLI doesn't stream — emit the full response as one token.
+        on_token(&content);
+        return Ok(ChatResult {
+            content,
+            model_used: format!("gemini-cli/{try_model}"),
+            provider: ProviderKind::GeminiCli,
+        });
     }
 
-    let content = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    // Gemini CLI doesn't stream — emit the full response as one token
-    on_token(&content);
-    Ok(ChatResult {
-        content,
-        model_used: format!("gemini-cli/{model}"),
-        provider: ProviderKind::GeminiCli,
-    })
+    Err(last_err
+        .unwrap_or_else(|| HsxError::ExternalTool("GeminiCli: all models capacity-exhausted".into())))
 }
 
 // ─── Provider availability check ─────────────────────────────────────────────
@@ -942,9 +1155,13 @@ pub async fn check_provider(
             let ollama = OllamaClient::new(ai_config);
             if ollama.is_available().await {
                 let models = ollama.list_models().await.unwrap_or_default();
-                ProviderStatus::Available { model_count: Some(models.len()) }
+                ProviderStatus::Available {
+                    model_count: Some(models.len()),
+                }
             } else {
-                ProviderStatus::Unavailable { reason: "Ollama not running (start: ollama serve)".into() }
+                ProviderStatus::Unavailable {
+                    reason: "Ollama not running (start: ollama serve)".into(),
+                }
             }
         }
 
@@ -957,7 +1174,10 @@ pub async fn check_provider(
             if found {
                 ProviderStatus::Available { model_count: None }
             } else {
-                ProviderStatus::Unavailable { reason: "`gemini` not in PATH (npm install -g @google/generative-ai-cli)".into() }
+                ProviderStatus::Unavailable {
+                    reason: "`gemini` not in PATH (npm install -g @google/generative-ai-cli)"
+                        .into(),
+                }
             }
         }
 
@@ -980,7 +1200,8 @@ pub async fn check_provider(
                 ProviderStatus::Available { model_count: None }
             } else {
                 ProviderStatus::Unavailable {
-                    reason: "No API key or Claude Code session (run `claude` once to log in)".into(),
+                    reason: "No API key or Claude Code session (run `claude` once to log in)"
+                        .into(),
                 }
             }
         }
@@ -1000,7 +1221,8 @@ pub async fn check_provider(
                 ProviderStatus::Unavailable {
                     reason: "No API key or valid OAuth session.\n    \
                              Fix: run `gemini auth login`  OR  \
-                             `hsx provider set gemini --key AIza...`".into(),
+                             `hsx provider set gemini --key AIza...`"
+                        .into(),
                 }
             }
         }
@@ -1012,7 +1234,9 @@ pub async fn check_provider(
                 ProviderStatus::Available { model_count: None }
             } else {
                 ProviderStatus::Unavailable {
-                    reason: "No API key (set OPENROUTER_API_KEY or run `hsx provider setup openrouter`)".into(),
+                    reason:
+                        "No API key (set OPENROUTER_API_KEY or run `hsx provider setup openrouter`)"
+                            .into(),
                 }
             }
         }
@@ -1024,7 +1248,8 @@ pub async fn check_provider(
                 ProviderStatus::Unavailable {
                     reason: "No OpenCode Antigravity account found.\n    \
                              Install: npm i -g opencode-antigravity-auth\n    \
-                             Then run `opencode` to authenticate.".into(),
+                             Then run `opencode` to authenticate."
+                        .into(),
                 }
             }
         }
@@ -1053,7 +1278,8 @@ mod tests {
         providers.fallback_chain = vec!["nonexistent_provider_xyz".into()];
         let msgs = vec![];
         let mut noop = |_: &str| {};
-        let result = chat_with_fallback(&msgs, None, &ai_config, &providers, false, &mut noop).await;
+        let result =
+            chat_with_fallback(&msgs, None, &ai_config, &providers, false, &mut noop).await;
         // Resolved chain will be empty (unknown slug filtered out) → error
         assert!(result.is_err());
     }

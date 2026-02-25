@@ -1,7 +1,7 @@
 //! Channel message types for inter-agent communication (PRD §8.8).
 
-use tokio::sync::mpsc;
 use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc;
 
 /// Agent type identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -15,9 +15,9 @@ pub enum AgentType {
 impl std::fmt::Display for AgentType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            AgentType::Search    => write!(f, "Search"),
-            AgentType::Extract   => write!(f, "Extract"),
-            AgentType::Verify    => write!(f, "Verify"),
+            AgentType::Search => write!(f, "Search"),
+            AgentType::Extract => write!(f, "Extract"),
+            AgentType::Verify => write!(f, "Verify"),
             AgentType::Synthesize => write!(f, "Synthesize"),
         }
     }
@@ -111,5 +111,5 @@ pub enum AgentMessage {
     },
 }
 
-pub type AgentSender   = mpsc::Sender<AgentMessage>;
+pub type AgentSender = mpsc::Sender<AgentMessage>;
 pub type AgentReceiver = mpsc::Receiver<AgentMessage>;

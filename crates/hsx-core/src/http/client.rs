@@ -10,7 +10,7 @@ use reqwest::{Client, StatusCode};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
-use tracing::{debug, warn};
+use tracing::debug;
 use url::Url;
 
 /// Maximum retry attempts for transient errors.
@@ -167,7 +167,7 @@ impl HttpClient {
 
                     if !status.is_success() {
                         if Self::is_retryable_status(status) && attempt < MAX_RETRIES {
-                            warn!("Retryable status {status} for {url}");
+                            debug!("Retryable status {status} for {url} (attempt {attempt}/{MAX_RETRIES})");
                             last_err = Some(HsxError::Structured(StructuredError {
                                 kind: Self::status_to_error_kind(status),
                                 retryable: true,
@@ -199,7 +199,9 @@ impl HttpClient {
                             return Err(HsxError::Structured(StructuredError {
                                 kind: ErrorKind::ExtractionFailed,
                                 retryable: false,
-                                message: format!("Response too large: {len} bytes (max {max_size})"),
+                                message: format!(
+                                    "Response too large: {len} bytes (max {max_size})"
+                                ),
                                 source_url: Some(url.to_string()),
                                 suggested_action: "Increase max_page_size in config".into(),
                                 alternatives: vec![],
@@ -241,7 +243,7 @@ impl HttpClient {
                 }
                 Err(e) => {
                     if (e.is_timeout() || e.is_connect()) && attempt < MAX_RETRIES {
-                        warn!("Transient error for {url}: {e}");
+                        debug!("Transient error for {url}: {e}");
                         last_err = Some(HsxError::Network(e));
                         continue;
                     }
@@ -266,6 +268,61 @@ impl HttpClient {
     pub async fn fetch_text(&self, url: &str) -> HsxResult<String> {
         let result = self.fetch(url).await?;
         Ok(result.body)
+    }
+
+    /// Single-shot fetch — no retries, no rate limiting.
+    ///
+    /// Use this for sources where connection errors are *expected* (e.g. third-party
+    /// Piped/Invidious instances that may be down). A single fast attempt is better
+    /// than burning 3.5s on retry sleeps when we're racing many sources in parallel.
+    pub async fn fetch_text_once(&self, url: &str) -> HsxResult<String> {
+        let resp = self
+            .inner
+            .get(url)
+            .send()
+            .await
+            .map_err(HsxError::Network)?;
+
+        if !resp.status().is_success() {
+            return Err(HsxError::Structured(crate::error::StructuredError {
+                kind: Self::status_to_error_kind(resp.status()),
+                retryable: false,
+                message: format!("HTTP {} from {url}", resp.status()),
+                source_url: Some(url.to_string()),
+                suggested_action: "Source unavailable".into(),
+                alternatives: vec![],
+            }));
+        }
+
+        resp.text().await.map_err(HsxError::Network)
+    }
+
+    /// Single-shot POST — no retries, no rate limiting.
+    ///
+    /// Like `fetch_text_once` but sends a JSON POST body. Used for YouTube Innertube
+    /// API calls where each call is time-sensitive and retries are not desired.
+    pub async fn post_json_once(&self, url: &str, body: String) -> HsxResult<String> {
+        let resp = self
+            .inner
+            .post(url)
+            .header("Content-Type", "application/json")
+            .body(body)
+            .send()
+            .await
+            .map_err(HsxError::Network)?;
+
+        if !resp.status().is_success() {
+            return Err(HsxError::Structured(crate::error::StructuredError {
+                kind: Self::status_to_error_kind(resp.status()),
+                retryable: false,
+                message: format!("HTTP {} from {url}", resp.status()),
+                source_url: Some(url.to_string()),
+                suggested_action: "Source unavailable".into(),
+                alternatives: vec![],
+            }));
+        }
+
+        resp.text().await.map_err(HsxError::Network)
     }
 }
 
@@ -305,9 +362,13 @@ mod tests {
 
     #[test]
     fn retryable_status_codes() {
-        assert!(HttpClient::is_retryable_status(StatusCode::TOO_MANY_REQUESTS));
+        assert!(HttpClient::is_retryable_status(
+            StatusCode::TOO_MANY_REQUESTS
+        ));
         assert!(HttpClient::is_retryable_status(StatusCode::BAD_GATEWAY));
-        assert!(HttpClient::is_retryable_status(StatusCode::SERVICE_UNAVAILABLE));
+        assert!(HttpClient::is_retryable_status(
+            StatusCode::SERVICE_UNAVAILABLE
+        ));
         assert!(!HttpClient::is_retryable_status(StatusCode::NOT_FOUND));
         assert!(!HttpClient::is_retryable_status(StatusCode::FORBIDDEN));
     }

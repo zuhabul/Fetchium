@@ -60,7 +60,10 @@ pub fn invalidate_gemini_creds() {
             "expiry_date":   0u64,
             "token_type":    "Bearer",
         });
-        let _ = std::fs::write(&path, serde_json::to_string_pretty(&cleared).unwrap_or_default());
+        let _ = std::fs::write(
+            &path,
+            serde_json::to_string_pretty(&cleared).unwrap_or_default(),
+        );
     }
 }
 
@@ -131,7 +134,12 @@ pub fn read_claude_code_creds() -> Option<ClaudeOAuthCreds> {
     {
         // Use the macOS `security` CLI to read from Keychain without extra deps.
         let output = std::process::Command::new("security")
-            .args(["find-generic-password", "-s", "Claude Code-credentials", "-w"])
+            .args([
+                "find-generic-password",
+                "-s",
+                "Claude Code-credentials",
+                "-w",
+            ])
             .output()
             .ok()?;
 
@@ -143,10 +151,11 @@ pub fn read_claude_code_creds() -> Option<ClaudeOAuthCreds> {
         let json: serde_json::Value = serde_json::from_str(raw.trim()).ok()?;
         let oauth = json.get("claudeAiOauth")?;
 
-        let access_token  = oauth.get("accessToken")?.as_str()?.to_string();
+        let access_token = oauth.get("accessToken")?.as_str()?.to_string();
         let refresh_token = oauth.get("refreshToken")?.as_str()?.to_string();
-        let expires_at    = oauth.get("expiresAt")?.as_u64().unwrap_or(0);
-        let subscription  = oauth.get("subscriptionType")
+        let expires_at = oauth.get("expiresAt")?.as_u64().unwrap_or(0);
+        let subscription = oauth
+            .get("subscriptionType")
             .and_then(|s| s.as_str())
             .unwrap_or("unknown")
             .to_string();
@@ -167,10 +176,11 @@ pub fn read_claude_code_creds() -> Option<ClaudeOAuthCreds> {
         let json: serde_json::Value = serde_json::from_str(&content).ok()?;
         let oauth = json.get("claudeAiOauth")?;
 
-        let access_token  = oauth.get("accessToken")?.as_str()?.to_string();
+        let access_token = oauth.get("accessToken")?.as_str()?.to_string();
         let refresh_token = oauth.get("refreshToken")?.as_str()?.to_string();
-        let expires_at    = oauth.get("expiresAt")?.as_u64().unwrap_or(0);
-        let subscription  = oauth.get("subscriptionType")
+        let expires_at = oauth.get("expiresAt")?.as_u64().unwrap_or(0);
+        let subscription = oauth
+            .get("subscriptionType")
             .and_then(|s| s.as_str())
             .unwrap_or("unknown")
             .to_string();
@@ -409,10 +419,10 @@ pub fn refresh_antigravity_token(account: &AntigravityAccount) -> Option<(String
         .ok()?;
 
     let params = [
-        ("client_id",     ANTIGRAVITY_CLIENT_ID),
+        ("client_id", ANTIGRAVITY_CLIENT_ID),
         ("client_secret", ANTIGRAVITY_CLIENT_SECRET),
         ("refresh_token", account.refresh_token.as_str()),
-        ("grant_type",    "refresh_token"),
+        ("grant_type", "refresh_token"),
     ];
 
     let resp = client
@@ -485,7 +495,9 @@ pub fn detect_subscription_auth() -> Vec<SubscriptionAuth> {
     }
 
     if let Some(creds) = read_codex_creds() {
-        found.push(SubscriptionAuth::CodexOAuth { valid: creds.is_valid() });
+        found.push(SubscriptionAuth::CodexOAuth {
+            valid: creds.is_valid(),
+        });
     }
 
     if let Some(key) = read_openrouter_key() {
@@ -521,9 +533,7 @@ pub enum SubscriptionAuth {
         valid: bool,
     },
     /// OpenAI Codex CLI OAuth session (ChatGPT subscription).
-    CodexOAuth {
-        valid: bool,
-    },
+    CodexOAuth { valid: bool },
     /// OpenRouter API key stored in `~/.openrouter/config.json`.
     OpenRouterKey {
         /// Masked key (last 4 chars visible).
@@ -542,29 +552,39 @@ impl SubscriptionAuth {
     /// Human-readable description.
     pub fn description(&self) -> String {
         match self {
-            Self::ClaudeCode { subscription_type, valid } => format!(
+            Self::ClaudeCode {
+                subscription_type,
+                valid,
+            } => format!(
                 "Claude Code session ({subscription_type}) — {}",
                 if *valid { "valid" } else { "expired" }
             ),
             Self::GeminiOAuth { account, valid } => format!(
                 "Gemini OAuth ({}) — {}",
                 account.as_deref().unwrap_or("unknown account"),
-                if *valid { "valid" } else { "expired (needs refresh)" }
+                if *valid {
+                    "valid"
+                } else {
+                    "expired (needs refresh)"
+                }
             ),
             Self::CodexOAuth { valid } => format!(
                 "OpenAI Codex CLI session — {}",
-                if *valid { "valid" } else { "expired (run `codex auth login`)" }
+                if *valid {
+                    "valid"
+                } else {
+                    "expired (run `codex auth login`)"
+                }
             ),
-            Self::OpenRouterKey { masked } => format!(
-                "OpenRouter API key ({masked}) — stored in ~/.openrouter/config.json"
-            ),
+            Self::OpenRouterKey { masked } => {
+                format!("OpenRouter API key ({masked}) — stored in ~/.openrouter/config.json")
+            }
             Self::AntigravityOAuth { email, project_id } => format!(
                 "OpenCode Antigravity OAuth ({email}, project: {project_id}) — Gemini 3 + Claude"
             ),
         }
     }
 }
-
 
 // ─── Unified HyperSearchX auth store (~/.hypersearchx/auth.json) ─────────────
 //
@@ -609,7 +629,9 @@ impl HsxAuth {
     /// Return the access token if this is a valid, non-expired `Oauth` credential.
     pub fn valid_access_token(&self) -> Option<&str> {
         match self {
-            Self::Oauth { access, expires, .. } => {
+            Self::Oauth {
+                access, expires, ..
+            } => {
                 let now_ms = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .map(|d| d.as_millis() as u64)

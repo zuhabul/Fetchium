@@ -42,8 +42,8 @@ pub fn build_radar(
         let best = top_topics
             .iter()
             .map(|(topic, freq)| {
-                let sim = topic_similarity(&item.title, topic)
-                    + topic_similarity(&item.snippet, topic);
+                let sim =
+                    topic_similarity(&item.title, topic) + topic_similarity(&item.snippet, topic);
                 (topic.clone(), freq * sim)
             })
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
@@ -62,7 +62,11 @@ pub fn build_radar(
         }
     }
 
-    items.sort_by(|a, b| b.relevance.partial_cmp(&a.relevance).unwrap_or(std::cmp::Ordering::Equal));
+    items.sort_by(|a, b| {
+        b.relevance
+            .partial_cmp(&a.relevance)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     items.truncate(limit);
     Ok(items)
 }
@@ -74,10 +78,8 @@ fn topic_similarity(text: &str, topic: &str) -> f64 {
         .map(|w| w.trim_matches(|c: char| !c.is_alphanumeric()))
         .filter(|w| w.len() > 3)
         .collect();
-    let topic_words: std::collections::HashSet<&str> = topic
-        .split_whitespace()
-        .filter(|w| w.len() > 3)
-        .collect();
+    let topic_words: std::collections::HashSet<&str> =
+        topic.split_whitespace().filter(|w| w.len() > 3).collect();
     if topic_words.is_empty() {
         return 0.0;
     }

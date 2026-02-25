@@ -80,10 +80,7 @@ pub struct Resolution {
 ///
 /// The `stm_trust_fn` callback retrieves the PIE trust score for a domain.
 /// Pass `|_| 0.5` when PIE is unavailable.
-pub fn resolve<F>(
-    contradiction: &CrpContradiction,
-    stm_trust_fn: F,
-) -> Result<Resolution, HsxError>
+pub fn resolve<F>(contradiction: &CrpContradiction, stm_trust_fn: F) -> Result<Resolution, HsxError>
 where
     F: Fn(&str) -> f64,
 {
@@ -94,7 +91,11 @@ where
     let conclusive = date_step.conclusive;
     steps.push(date_step);
     if conclusive {
-        return Ok(finalize(contradiction, steps, ResolutionType::TemporalPrecedence));
+        return Ok(finalize(
+            contradiction,
+            steps,
+            ResolutionType::TemporalPrecedence,
+        ));
     }
 
     // Step 2: Authority check (uses PIE STM trust score)
@@ -102,7 +103,11 @@ where
     let conclusive = auth_step.conclusive;
     steps.push(auth_step);
     if conclusive {
-        return Ok(finalize(contradiction, steps, ResolutionType::AuthorityPrecedence));
+        return Ok(finalize(
+            contradiction,
+            steps,
+            ResolutionType::AuthorityPrecedence,
+        ));
     }
 
     // Step 3: Context check
@@ -110,7 +115,11 @@ where
     let conclusive = ctx_step.conclusive;
     steps.push(ctx_step);
     if conclusive {
-        return Ok(finalize(contradiction, steps, ResolutionType::ScopeDependent));
+        return Ok(finalize(
+            contradiction,
+            steps,
+            ResolutionType::ScopeDependent,
+        ));
     }
 
     // Step 4: Investigation (keyword-based additional queries)
@@ -137,7 +146,10 @@ fn finalize(
     steps: Vec<ResolutionStep>,
     resolution_type: ResolutionType,
 ) -> Resolution {
-    let synthesis = steps.last().map(|s| s.conclusion.clone()).unwrap_or_default();
+    let synthesis = steps
+        .last()
+        .map(|s| s.conclusion.clone())
+        .unwrap_or_default();
     let confidence = if steps.is_empty() {
         0.5
     } else {
@@ -185,7 +197,8 @@ fn step_date_check(c: &CrpContradiction) -> ResolutionStep {
         }
         _ => ResolutionStep {
             name: "Date Check".into(),
-            conclusion: "Publication dates unavailable; cannot determine temporal precedence.".into(),
+            conclusion: "Publication dates unavailable; cannot determine temporal precedence."
+                .into(),
             confidence: 0.2,
             conclusive: false,
         },
@@ -196,12 +209,8 @@ fn step_authority_check<F>(c: &CrpContradiction, trust_fn: &F) -> ResolutionStep
 where
     F: Fn(&str) -> f64,
 {
-    let trust_a = c
-        .source_a_trust
-        .max(trust_fn(&c.source_a_domain));
-    let trust_b = c
-        .source_b_trust
-        .max(trust_fn(&c.source_b_domain));
+    let trust_a = c.source_a_trust.max(trust_fn(&c.source_a_domain));
+    let trust_b = c.source_b_trust.max(trust_fn(&c.source_b_domain));
 
     let diff = (trust_a - trust_b).abs();
     if diff < 0.2 {
@@ -287,10 +296,7 @@ fn step_investigation(c: &CrpContradiction) -> ResolutionStep {
     }
 }
 
-fn step_weighted_synthesis(
-    c: &CrpContradiction,
-    prior_steps: &[ResolutionStep],
-) -> ResolutionStep {
+fn step_weighted_synthesis(c: &CrpContradiction, prior_steps: &[ResolutionStep]) -> ResolutionStep {
     let avg_conf: f64 = if prior_steps.is_empty() {
         0.5
     } else {
@@ -321,21 +327,30 @@ fn step_weighted_synthesis(
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 fn shared_word_ratio(a: &str, b: &str) -> f64 {
-    let stop_words: std::collections::HashSet<&str> =
-        ["the", "a", "an", "is", "was", "are", "were", "of", "in", "to", "and", "or"]
-            .iter()
-            .cloned()
-            .collect();
+    let stop_words: std::collections::HashSet<&str> = [
+        "the", "a", "an", "is", "was", "are", "were", "of", "in", "to", "and", "or",
+    ]
+    .iter()
+    .cloned()
+    .collect();
 
     let words_a: std::collections::HashSet<String> = a
         .split_whitespace()
-        .map(|w| w.to_lowercase().trim_matches(|c: char| !c.is_alphabetic()).to_string())
+        .map(|w| {
+            w.to_lowercase()
+                .trim_matches(|c: char| !c.is_alphabetic())
+                .to_string()
+        })
         .filter(|w| w.len() >= 3 && !stop_words.contains(w.as_str()))
         .collect();
 
     let words_b: std::collections::HashSet<String> = b
         .split_whitespace()
-        .map(|w| w.to_lowercase().trim_matches(|c: char| !c.is_alphabetic()).to_string())
+        .map(|w| {
+            w.to_lowercase()
+                .trim_matches(|c: char| !c.is_alphabetic())
+                .to_string()
+        })
         .filter(|w| w.len() >= 3 && !stop_words.contains(w.as_str()))
         .collect();
 
@@ -384,8 +399,14 @@ mod tests {
 
     #[test]
     fn newer_date_wins() {
-        let c = make_contradiction("X is true", "X is false",
-                                   Some("2023-01-01"), Some("2024-06-01"), 0.5, 0.5);
+        let c = make_contradiction(
+            "X is true",
+            "X is false",
+            Some("2023-01-01"),
+            Some("2024-06-01"),
+            0.5,
+            0.5,
+        );
         let res = resolve(&c, |_| 0.5).unwrap();
         assert_eq!(res.resolution_type, ResolutionType::TemporalPrecedence);
     }

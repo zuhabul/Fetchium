@@ -8,7 +8,10 @@ pub async fn run(args: CacheArgs, config: &HsxConfig) -> anyhow::Result<()> {
         CacheAction::Stats => {
             println!("Cache statistics:");
             println!("  Memory Cache Enabled: {}", config.cache.enabled);
-            println!("  Memory Cache Max Entries: {}", config.cache.memory_max_entries);
+            println!(
+                "  Memory Cache Max Entries: {}",
+                config.cache.memory_max_entries
+            );
             println!("  Memory Cache TTL: {}s", config.cache.ttl_secs);
             println!("  Disk caching is not yet implemented (SQLite pending).");
         }

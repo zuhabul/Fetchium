@@ -29,19 +29,34 @@ impl Default for AuthorityScorer {
         let mut tiers = HashMap::new();
         // Tier 1: Authoritative
         for d in &[
-            "github.com", "docs.rs", "rust-lang.org", "wikipedia.org", "arxiv.org",
-            "nature.com", "science.org", "ieee.org", "acm.org", "nih.gov", "cdc.gov",
+            "github.com",
+            "docs.rs",
+            "rust-lang.org",
+            "wikipedia.org",
+            "arxiv.org",
+            "nature.com",
+            "science.org",
+            "ieee.org",
+            "acm.org",
+            "nih.gov",
+            "cdc.gov",
         ] {
             tiers.insert(d.to_string(), DomainTier::Authoritative);
         }
         // Tier 2: Reliable
         for d in &[
-            "stackoverflow.com", "developer.mozilla.org", "medium.com",
-            "dev.to", "hacker-news.firebaseio.com", "reddit.com",
+            "stackoverflow.com",
+            "developer.mozilla.org",
+            "medium.com",
+            "dev.to",
+            "hacker-news.firebaseio.com",
+            "reddit.com",
         ] {
             tiers.insert(d.to_string(), DomainTier::Reliable);
         }
-        Self { domain_tiers: tiers }
+        Self {
+            domain_tiers: tiers,
+        }
     }
 }
 
@@ -67,9 +82,15 @@ impl AuthorityScorer {
             DomainTier::Blocked => 0.05,
         };
 
-        if !has_ssl { score *= 0.7; }
-        if redirect_count > 2 { score *= 0.9; }
-        if redirect_count > 5 { score *= 0.8; }
+        if !has_ssl {
+            score *= 0.7;
+        }
+        if redirect_count > 2 {
+            score *= 0.9;
+        }
+        if redirect_count > 5 {
+            score *= 0.8;
+        }
 
         (score.clamp(0.0, 1.0), tier)
     }

@@ -229,8 +229,14 @@ mod tests {
 
     #[test]
     fn cache_key_builders() {
-        assert_eq!(fetch_key("https://example.com"), "fetch:https://example.com");
+        assert_eq!(
+            fetch_key("https://example.com"),
+            "fetch:https://example.com"
+        );
         assert_eq!(search_key("rust", "ddg", 10), "search:rust:ddg:10");
-        assert_eq!(qatbe_key("https://example.com", "rust", 4000), "qatbe:https://example.com:rust:4000");
+        assert_eq!(
+            qatbe_key("https://example.com", "rust", 4000),
+            "qatbe:https://example.com:rust:4000"
+        );
     }
 }

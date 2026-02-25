@@ -35,7 +35,9 @@ fn cli_no_args_shows_error_or_help() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert!(
-        combined.contains("Usage") || combined.contains("USAGE") || combined.contains("hsx")
+        combined.contains("Usage")
+            || combined.contains("USAGE")
+            || combined.contains("hsx")
             || combined.contains("search"),
         "No-args invocation should show usage or help"
     );

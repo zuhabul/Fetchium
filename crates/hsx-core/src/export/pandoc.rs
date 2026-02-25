@@ -36,7 +36,11 @@ pub fn check_typst() -> Result<String, HsxError> {
         .map_err(|_| HsxError::ExternalTool(format!("Typst not found. {TYPST_INSTALL_HELP}")))?;
 
     let version = String::from_utf8_lossy(&output.stdout);
-    let first_line = version.lines().next().unwrap_or("unknown version").to_string();
+    let first_line = version
+        .lines()
+        .next()
+        .unwrap_or("unknown version")
+        .to_string();
     Ok(first_line)
 }
 
@@ -48,7 +52,11 @@ pub fn check_pandoc() -> Result<String, HsxError> {
         .map_err(|_| HsxError::ExternalTool(format!("Pandoc not found. {PANDOC_INSTALL_HELP}")))?;
 
     let version = String::from_utf8_lossy(&output.stdout);
-    let first_line = version.lines().next().unwrap_or("unknown version").to_string();
+    let first_line = version
+        .lines()
+        .next()
+        .unwrap_or("unknown version")
+        .to_string();
     Ok(first_line)
 }
 
@@ -56,11 +64,7 @@ pub fn check_pandoc() -> Result<String, HsxError> {
 ///
 /// Engine priority: **typst** (~1s) → **xelatex** (Unicode) → pandoc default engine.
 /// Install typst with `brew install typst` for the fastest export experience.
-pub fn export_pdf(
-    markdown: &str,
-    output_path: &Path,
-    title: Option<&str>,
-) -> Result<(), HsxError> {
+pub fn export_pdf(markdown: &str, output_path: &Path, title: Option<&str>) -> Result<(), HsxError> {
     check_pandoc()?;
 
     let tmp_path = std::env::temp_dir().join(format!("hsx-export-{}.md", uuid_v4()));

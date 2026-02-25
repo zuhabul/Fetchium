@@ -79,11 +79,9 @@ impl PersonalKnowledgeGraph {
                 last_seen  = datetime('now')",
             rusqlite::params![name, entity_type, source_url],
         )?;
-        let id: i64 = conn.query_row(
-            "SELECT id FROM entities WHERE name = ?1",
-            [name],
-            |row| row.get(0),
-        )?;
+        let id: i64 = conn.query_row("SELECT id FROM entities WHERE name = ?1", [name], |row| {
+            row.get(0)
+        })?;
         Ok(id as u64)
     }
 
@@ -162,16 +160,14 @@ impl PersonalKnowledgeGraph {
     /// Total entity count.
     pub fn entity_count(&self) -> Result<u64, HsxError> {
         let conn = self.conn.lock().unwrap();
-        let n: i64 =
-            conn.query_row("SELECT COUNT(*) FROM entities", [], |row| row.get(0))?;
+        let n: i64 = conn.query_row("SELECT COUNT(*) FROM entities", [], |row| row.get(0))?;
         Ok(n as u64)
     }
 
     /// Total relationship count.
     pub fn relationship_count(&self) -> Result<u64, HsxError> {
         let conn = self.conn.lock().unwrap();
-        let n: i64 =
-            conn.query_row("SELECT COUNT(*) FROM relationships", [], |row| row.get(0))?;
+        let n: i64 = conn.query_row("SELECT COUNT(*) FROM relationships", [], |row| row.get(0))?;
         Ok(n as u64)
     }
 
@@ -196,8 +192,10 @@ mod tests {
     fn entity_frequency_increments_on_repeat() {
         let tmp = NamedTempFile::new().unwrap();
         let pkg = PersonalKnowledgeGraph::new(tmp.path()).unwrap();
-        pkg.add_entity("Rust", "language", "https://rust-lang.org").unwrap();
-        pkg.add_entity("Rust", "language", "https://doc.rust-lang.org").unwrap();
+        pkg.add_entity("Rust", "language", "https://rust-lang.org")
+            .unwrap();
+        pkg.add_entity("Rust", "language", "https://doc.rust-lang.org")
+            .unwrap();
         let entities = pkg.top_entities(5).unwrap();
         assert_eq!(entities[0].name, "Rust");
         assert_eq!(entities[0].frequency, 2);
@@ -207,7 +205,8 @@ mod tests {
     fn relationships_are_bidirectional_queryable() {
         let tmp = NamedTempFile::new().unwrap();
         let pkg = PersonalKnowledgeGraph::new(tmp.path()).unwrap();
-        pkg.add_relationship("Rust", "WebAssembly", "compiles_to", 0.8).unwrap();
+        pkg.add_relationship("Rust", "WebAssembly", "compiles_to", 0.8)
+            .unwrap();
         let related = pkg.related_entities("WebAssembly", 10).unwrap();
         assert!(related.iter().any(|(e, _, _)| e == "Rust"));
     }

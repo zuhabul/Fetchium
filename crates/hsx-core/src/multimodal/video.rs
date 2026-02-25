@@ -1,7 +1,7 @@
 //! Video transcript extraction — YouTube timedtext API (no API key required).
 
-use crate::error::{HsxError, HsxResult};
 use super::{ContentType, MultimodalContent, MultimodalSegment};
+use crate::error::{HsxError, HsxResult};
 
 /// Extract YouTube video transcript via the timedtext API.
 ///
@@ -12,9 +12,7 @@ pub async fn extract_youtube_transcript(
     http: &crate::http::client::HttpClient,
 ) -> HsxResult<MultimodalContent> {
     let video_id = extract_video_id(url)?;
-    let api_url = format!(
-        "https://video.google.com/timedtext?lang=en&v={video_id}"
-    );
+    let api_url = format!("https://video.google.com/timedtext?lang=en&v={video_id}");
 
     let resp = http.fetch_text(&api_url).await?;
     if resp.is_empty() {
@@ -49,7 +47,10 @@ pub fn extract_video_id(url: &str) -> HsxResult<String> {
     // Standard: https://www.youtube.com/watch?v=VIDEO_ID
     if let Some(pos) = url.find("v=") {
         let rest = &url[pos + 2..];
-        let id: String = rest.chars().take_while(|c| c.is_alphanumeric() || *c == '-' || *c == '_').collect();
+        let id: String = rest
+            .chars()
+            .take_while(|c| c.is_alphanumeric() || *c == '-' || *c == '_')
+            .collect();
         if id.len() >= 8 {
             return Ok(id);
         }
@@ -57,12 +58,17 @@ pub fn extract_video_id(url: &str) -> HsxResult<String> {
     // Short: https://youtu.be/VIDEO_ID
     if let Some(pos) = url.find("youtu.be/") {
         let rest = &url[pos + 9..];
-        let id: String = rest.chars().take_while(|c| c.is_alphanumeric() || *c == '-' || *c == '_').collect();
+        let id: String = rest
+            .chars()
+            .take_while(|c| c.is_alphanumeric() || *c == '-' || *c == '_')
+            .collect();
         if id.len() >= 8 {
             return Ok(id);
         }
     }
-    Err(HsxError::Extraction("Could not extract YouTube video ID from URL".into()))
+    Err(HsxError::Extraction(
+        "Could not extract YouTube video ID from URL".into(),
+    ))
 }
 
 /// Parse YouTube timedtext XML into segments.

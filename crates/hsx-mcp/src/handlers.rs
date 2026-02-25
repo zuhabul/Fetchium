@@ -1,49 +1,76 @@
 //! MCP request handlers — one per composite tool (PRD §30).
 
-use serde_json::{json, Value};
+use crate::tools::{EstimateInput, ExpandInput, FetchInput, ResearchInput, SearchInput};
+use hsx_core::cache::MemoryCache;
+use hsx_core::citation::types::CitationStyle;
 use hsx_core::config::HsxConfig;
 use hsx_core::http::client::HttpClient;
 use hsx_core::research::pipeline::ResearchPipeline;
 use hsx_core::research::ResearchConfig;
-use hsx_core::citation::types::CitationStyle;
 use hsx_core::validate::types::ValidationMode;
-use hsx_core::cache::MemoryCache;
-use crate::tools::{EstimateInput, ExpandInput, FetchInput, ResearchInput, SearchInput};
+use serde_json::{json, Value};
 
-pub async fn handle_search(input: SearchInput, config: &HsxConfig, http: &HttpClient, cache: Option<&MemoryCache>) -> Value {
+pub async fn handle_search(
+    input: SearchInput,
+    config: &HsxConfig,
+    http: &HttpClient,
+    cache: Option<&MemoryCache>,
+) -> Value {
     let max_sources = input.max_sources.unwrap_or(10) as u32;
     let tier = input.tier.as_deref().unwrap_or("summary");
     let token_budget = input.token_budget.unwrap_or(2000);
 
-    match hsx_core::api_facade::search(&input.query, max_sources, tier, token_budget, config, http, cache).await {
+    match hsx_core::api_facade::search(
+        &input.query,
+        max_sources,
+        tier,
+        token_budget,
+        config,
+        http,
+        cache,
+    )
+    .await
+    {
         Ok(v) => v,
         Err(e) => json!({ "error": e.to_string() }),
     }
 }
 
-pub async fn handle_fetch(input: FetchInput, _config: &HsxConfig, http: &HttpClient, cache: Option<&MemoryCache>) -> Value {
+pub async fn handle_fetch(
+    input: FetchInput,
+    _config: &HsxConfig,
+    http: &HttpClient,
+    cache: Option<&MemoryCache>,
+) -> Value {
     let budget = input.token_budget.unwrap_or(3000);
     let format = input.format.as_deref().unwrap_or("markdown");
-    
+
     match hsx_core::api_facade::fetch(&input.url, budget, format, http, cache).await {
         Ok(v) => v,
         Err(e) => json!({ "error": e.to_string() }),
     }
 }
 
-pub async fn handle_research(input: ResearchInput, config: &HsxConfig, http: &HttpClient, _cache: Option<&MemoryCache>) -> Value {
+pub async fn handle_research(
+    input: ResearchInput,
+    config: &HsxConfig,
+    http: &HttpClient,
+    _cache: Option<&MemoryCache>,
+) -> Value {
     let citation_style = match input.citation_style.as_deref() {
-        Some("apa")     => CitationStyle::Apa,
-        Some("ieee")    => CitationStyle::Ieee,
-        Some("mla")     => CitationStyle::Mla,
+        Some("apa") => CitationStyle::Apa,
+        Some("ieee") => CitationStyle::Ieee,
+        Some("mla") => CitationStyle::Mla,
         Some("chicago") => CitationStyle::Chicago,
-        Some("bibtex")  => CitationStyle::Bibtex,
-        _               => CitationStyle::Inline,
+        Some("bibtex") => CitationStyle::Bibtex,
+        _ => CitationStyle::Inline,
     };
 
     let rc = ResearchConfig {
         query: input.query.clone(),
-        max_sources: input.max_sources.unwrap_or(config.general.max_results as usize),
+        max_sources: input
+            .max_sources
+            .unwrap_or(config.general.max_results as usize),
         token_budget: input.token_budget,
         citation_style,
         validation_mode: ValidationMode::Standard,
@@ -86,7 +113,12 @@ pub async fn handle_research(input: ResearchInput, config: &HsxConfig, http: &Ht
     }
 }
 
-pub async fn handle_estimate(input: EstimateInput, _config: &HsxConfig, http: &HttpClient, _cache: Option<&MemoryCache>) -> Value {
+pub async fn handle_estimate(
+    input: EstimateInput,
+    _config: &HsxConfig,
+    http: &HttpClient,
+    _cache: Option<&MemoryCache>,
+) -> Value {
     // Use HEAD request to check content-length, fall back to heuristic
     let estimated_tokens = match http.fetch_text(&input.url).await {
         Ok(html) => {
@@ -107,7 +139,12 @@ pub async fn handle_estimate(input: EstimateInput, _config: &HsxConfig, http: &H
     })
 }
 
-pub async fn handle_expand(input: ExpandInput, _config: &HsxConfig, _http: &HttpClient, cache: Option<&MemoryCache>) -> Value {
+pub async fn handle_expand(
+    input: ExpandInput,
+    _config: &HsxConfig,
+    _http: &HttpClient,
+    cache: Option<&MemoryCache>,
+) -> Value {
     match hsx_core::api_facade::expand(&input.result_id, &input.tier, cache).await {
         Ok(v) => v,
         Err(e) => json!({ "error": e.to_string() }),

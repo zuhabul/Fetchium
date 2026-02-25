@@ -10,13 +10,13 @@
 
 use clap::Subcommand;
 use colored::Colorize;
+use hsx_core::config::HsxConfig;
 use hsx_core::intelligence::{
     cce::ConfidenceCalibrationEngine,
     intelligence_data_dir,
     pie::PersistentIntelligenceEngine,
-    totr::{TotrConfig, run_totr_sync},
+    totr::{run_totr_sync, TotrConfig},
 };
-use hsx_core::config::HsxConfig;
 
 // ─── Clap sub-commands ────────────────────────────────────────────────────────
 
@@ -202,7 +202,11 @@ fn cmd_suggest(topic: &str, limit: usize) -> Result<(), Box<dyn std::error::Erro
             topic
         );
     } else {
-        println!("{} for topic '{}'\n", "Suggested follow-up queries".bold().cyan(), topic);
+        println!(
+            "{} for topic '{}'\n",
+            "Suggested follow-up queries".bold().cyan(),
+            topic
+        );
         for (i, s) in suggestions.iter().enumerate() {
             println!("  {}. {}", i + 1, s);
         }

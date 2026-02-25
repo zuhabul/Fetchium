@@ -9,10 +9,12 @@ use crate::http::HttpClient;
 use crate::rank;
 use crate::rank::fusion::{detect_intent, hyperfusion_rank};
 use crate::search::arxiv::ArxivBackend;
+use crate::search::bing::BingBackend;
 use crate::search::brave::BraveBackend;
 use crate::search::dedup::deduplicate;
 use crate::search::duckduckgo::DuckDuckGoBackend;
 use crate::search::github::GithubBackend;
+use crate::search::google::GoogleBackend;
 use crate::search::hackernews::HackerNewsBackend;
 use crate::search::reddit::RedditBackend;
 use crate::search::searxng::SearxngBackend;
@@ -45,13 +47,36 @@ pub struct OrchestratorConfig {
     pub use_hyperfusion: bool,
 }
 
+/// Reliable API-based backends that never require scraping or CAPTCHAs.
+/// These are always included as fallbacks when scraper backends fail.
+const RELIABLE_API_BACKENDS: &[BackendId] = &[
+    BackendId::Wikipedia,
+    BackendId::HackerNews,
+    BackendId::Reddit,
+    BackendId::StackOverflow,
+    BackendId::Arxiv,
+];
+
+/// All recommended default backends (scrapers + APIs).
+const ALL_DEFAULT_BACKENDS: &[BackendId] = &[
+    BackendId::Wikipedia,
+    BackendId::HackerNews,
+    BackendId::Reddit,
+    BackendId::StackOverflow,
+    BackendId::DuckDuckGo,
+    BackendId::Google,
+    BackendId::Bing,
+    BackendId::Arxiv,
+    BackendId::Github,
+];
+
 impl Default for OrchestratorConfig {
     fn default() -> Self {
         Self {
             max_results_per_backend: 15,
             max_total_results: 10,
             backend_timeout: Duration::from_secs(15),
-            enabled_backends: vec![BackendId::DuckDuckGo],
+            enabled_backends: ALL_DEFAULT_BACKENDS.to_vec(),
             simhash_threshold: 6,
             freshness_need: 0.5,
             use_hyperfusion: true,
@@ -61,19 +86,28 @@ impl Default for OrchestratorConfig {
 
 impl OrchestratorConfig {
     /// Create config from HsxConfig settings.
+    ///
+    /// Always ensures reliable API-based backends (Wikipedia, HN, Reddit, SO,
+    /// Arxiv) are included even when the user's config only lists scrapers.
+    /// This prevents total search failure when scrapers are CAPTCHA-blocked.
     pub fn from_hsx_config(hsx: &crate::config::HsxConfig, max_results: u32) -> Self {
-        let enabled_backends = hsx
+        let mut enabled_backends = hsx
             .search
             .backends
             .iter()
             .filter_map(|s| parse_backend_id(s))
             .collect::<Vec<_>>();
 
-        let enabled_backends = if enabled_backends.is_empty() {
-            vec![BackendId::DuckDuckGo]
+        if enabled_backends.is_empty() {
+            enabled_backends = ALL_DEFAULT_BACKENDS.to_vec();
         } else {
-            enabled_backends
-        };
+            // Always ensure reliable API backends are present as fallbacks
+            for backend in RELIABLE_API_BACKENDS {
+                if !enabled_backends.contains(backend) {
+                    enabled_backends.push(backend.clone());
+                }
+            }
+        }
 
         Self {
             max_results_per_backend: max_results + 5,
@@ -137,9 +171,28 @@ impl SearchOrchestrator {
                 BackendId::StackOverflow => {
                     backends.push(Arc::new(StackOverflowBackend::new(http_client.clone())));
                 }
-                // Headless backends — warn and skip if feature not enabled
-                BackendId::Google | BackendId::Bing | BackendId::GoogleScholar => {
-                    warn!("Backend {:?} requires --features headless (Phase 2), skipping", id);
+                // Google: HTTP scraper by default; headless via BrowserPool when feature enabled.
+                BackendId::Google => {
+                    #[cfg(not(feature = "headless"))]
+                    backends.push(Arc::new(GoogleBackend::new_http(http_client.clone())));
+                    #[cfg(feature = "headless")]
+                    warn!(
+                        "Google headless backend requires BrowserPool — \
+                         use SearchOrchestrator::with_pool(); falling back to HTTP"
+                    );
+                }
+                // Bing: HTTP scraper by default; headless via BrowserPool when feature enabled.
+                BackendId::Bing => {
+                    #[cfg(not(feature = "headless"))]
+                    backends.push(Arc::new(BingBackend::new_http(http_client.clone())));
+                    #[cfg(feature = "headless")]
+                    warn!(
+                        "Bing headless backend requires BrowserPool — \
+                         use SearchOrchestrator::with_pool(); falling back to HTTP"
+                    );
+                }
+                BackendId::GoogleScholar => {
+                    warn!("GoogleScholar backend not yet implemented — skipping");
                 }
                 other => {
                     warn!("Unknown backend {:?}, skipping", other);
@@ -274,6 +327,7 @@ pub fn parse_backend_id(s: &str) -> Option<BackendId> {
         "github" | "gh" => Some(BackendId::Github),
         "reddit" => Some(BackendId::Reddit),
         "stackoverflow" | "so" => Some(BackendId::StackOverflow),
+        "youtube" | "yt" => Some(BackendId::YouTube),
         _ => None,
     }
 }
@@ -304,6 +358,11 @@ mod tests {
     fn orchestrator_config_defaults() {
         let cfg = OrchestratorConfig::default();
         assert_eq!(cfg.max_total_results, 10);
+        // API-based backends are always included
+        assert!(cfg.enabled_backends.contains(&BackendId::Wikipedia));
+        assert!(cfg.enabled_backends.contains(&BackendId::HackerNews));
+        assert!(cfg.enabled_backends.contains(&BackendId::Reddit));
+        assert!(cfg.enabled_backends.contains(&BackendId::StackOverflow));
         assert!(cfg.enabled_backends.contains(&BackendId::DuckDuckGo));
         assert_eq!(cfg.simhash_threshold, 6);
         assert!(cfg.use_hyperfusion);
@@ -319,7 +378,13 @@ mod tests {
         assert_eq!(cfg.max_total_results, 20);
         assert_eq!(cfg.simhash_threshold, 8);
         assert!((cfg.freshness_need - 0.8).abs() < 1e-9);
+        // Explicit + always-included reliable backends
         assert!(cfg.enabled_backends.contains(&BackendId::DuckDuckGo));
         assert!(cfg.enabled_backends.contains(&BackendId::Wikipedia));
+        // Reliable backends auto-injected even when not in config
+        assert!(cfg.enabled_backends.contains(&BackendId::HackerNews));
+        assert!(cfg.enabled_backends.contains(&BackendId::Reddit));
+        assert!(cfg.enabled_backends.contains(&BackendId::StackOverflow));
+        assert!(cfg.enabled_backends.contains(&BackendId::Arxiv));
     }
 }

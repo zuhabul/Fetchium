@@ -27,7 +27,11 @@ pub fn generate_bibtex(sources: &[Source]) -> String {
 
         if let Some(ref date) = source.published_date {
             // Extract 4-digit year from any date format
-            let year: String = date.chars().filter(|c| c.is_ascii_digit()).take(4).collect();
+            let year: String = date
+                .chars()
+                .filter(|c| c.is_ascii_digit())
+                .take(4)
+                .collect();
             if year.len() == 4 {
                 bib.push_str(&format!("  year   = {{{year}}},\n"));
             }
@@ -89,7 +93,11 @@ mod tests {
 
     #[test]
     fn bibtex_contains_title_and_url() {
-        let sources = vec![make_source("Rust Programming", "https://rust-lang.org", None)];
+        let sources = vec![make_source(
+            "Rust Programming",
+            "https://rust-lang.org",
+            None,
+        )];
         let bib = generate_bibtex(&sources);
         assert!(bib.contains("Rust Programming"));
         assert!(bib.contains("https://rust-lang.org"));
@@ -109,7 +117,11 @@ mod tests {
 
     #[test]
     fn non_arxiv_uses_misc_type() {
-        let sources = vec![make_source("Blog Post", "https://blog.example.com/post", None)];
+        let sources = vec![make_source(
+            "Blog Post",
+            "https://blog.example.com/post",
+            None,
+        )];
         let bib = generate_bibtex(&sources);
         assert!(bib.contains("@misc{"));
     }

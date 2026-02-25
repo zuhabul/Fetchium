@@ -95,7 +95,11 @@ impl QaddPipeline {
         }
         let before_step2 = nodes.len();
         nodes.retain(|n| n.is_heading() || n.relevance_score >= self.config.bm25_threshold);
-        trace!("QADD step2 (BM25): {} → {} nodes", before_step2, nodes.len());
+        trace!(
+            "QADD step2 (BM25): {} → {} nodes",
+            before_step2,
+            nodes.len()
+        );
 
         // Step 3: Semantic similarity — embedding cosine (feature) or word-overlap fallback
         let before_step3 = nodes.len();
@@ -131,22 +135,22 @@ impl QaddPipeline {
 
             if let (Some(node_embs), Ok(q_emb)) = (all_node_embs, embed(&query_text)) {
                 let threshold = self.config.semantic_threshold as f32;
-                let scores: Vec<f32> =
-                    node_embs.iter().map(|e| cosine_similarity(&q_emb, e)).collect();
+                let scores: Vec<f32> = node_embs
+                    .iter()
+                    .map(|e| cosine_similarity(&q_emb, e))
+                    .collect();
                 nodes = nodes
                     .into_iter()
                     .enumerate()
                     .filter(|(i, n)| {
-                        n.is_heading()
-                            || scores.get(*i).copied().unwrap_or(0.0) >= threshold
+                        n.is_heading() || scores.get(*i).copied().unwrap_or(0.0) >= threshold
                     })
                     .map(|(_, n)| n)
                     .collect();
             } else {
                 nodes.retain(|n| {
                     n.is_heading()
-                        || semantic_overlap(&n.text, &query_terms)
-                            >= self.config.semantic_threshold
+                        || semantic_overlap(&n.text, &query_terms) >= self.config.semantic_threshold
                 });
             }
         }
@@ -155,7 +159,11 @@ impl QaddPipeline {
             n.is_heading()
                 || semantic_overlap(&n.text, &query_terms) >= self.config.semantic_threshold
         });
-        trace!("QADD step3 (semantic): {} → {} nodes", before_step3, nodes.len());
+        trace!(
+            "QADD step3 (semantic): {} → {} nodes",
+            before_step3,
+            nodes.len()
+        );
 
         // Step 4: Heading context preservation
         let nodes_with_context = add_heading_context(nodes);
@@ -263,10 +271,7 @@ fn bm25_node_score(text: &str, query_terms: &[String]) -> f64 {
             score += num / den;
         } else {
             // Partial match (substring)
-            let partial = words
-                .iter()
-                .filter(|w| w.contains(term.as_str()))
-                .count() as f64;
+            let partial = words.iter().filter(|w| w.contains(term.as_str())).count() as f64;
             if partial > 0.0 {
                 score += 0.3;
             }

@@ -72,7 +72,14 @@ pub fn get_mode(name: &str) -> Result<DomainMode, HsxError> {
 
 /// All available domain mode names.
 pub fn available_modes() -> &'static [&'static str] {
-    &["academic", "code", "legal", "financial", "medical", "security"]
+    &[
+        "academic",
+        "code",
+        "legal",
+        "financial",
+        "medical",
+        "security",
+    ]
 }
 
 #[cfg(test)]

@@ -1,7 +1,7 @@
 //! PDF text extraction via pdftotext subprocess (poppler-utils).
 
-use crate::error::{HsxError, HsxResult};
 use super::{ContentType, MultimodalContent, MultimodalSegment};
+use crate::error::{HsxError, HsxResult};
 use std::process::Command;
 
 /// Extract text from a local PDF file using `pdftotext`.
@@ -19,9 +19,7 @@ pub fn extract_pdf_file(path: &std::path::Path) -> HsxResult<MultimodalContent> 
         })?;
 
     if !output.status.success() {
-        return Err(HsxError::Extraction(
-            "pdftotext returned an error".into(),
-        ));
+        return Err(HsxError::Extraction("pdftotext returned an error".into()));
     }
 
     let full_text = String::from_utf8_lossy(&output.stdout).to_string();

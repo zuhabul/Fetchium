@@ -76,7 +76,11 @@ pub fn generate_candidates(query: &str, result_titles: &[String]) -> HsxResult<V
 
     // Top result title as a follow-up query
     if let Some(title) = result_titles.first() {
-        let short: String = title.split_whitespace().take(5).collect::<Vec<_>>().join(" ");
+        let short: String = title
+            .split_whitespace()
+            .take(5)
+            .collect::<Vec<_>>()
+            .join(" ");
         if !short.is_empty() && short.len() > 5 {
             candidates.push((short, 0.4));
         }

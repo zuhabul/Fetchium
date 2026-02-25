@@ -19,6 +19,8 @@ pub struct HsxConfig {
     pub ai: AiConfig,
     pub output: OutputConfig,
     pub ranking: RankingConfig,
+    pub youtube: YouTubeConfig,
+    pub social: SocialConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -109,6 +111,68 @@ pub struct OutputConfig {
     pub include_confidence: bool,
 }
 
+/// YouTube Intelligence System configuration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct YouTubeConfig {
+    /// Preferred Invidious instance URLs (tried in order).
+    pub invidious_instances: Vec<String>,
+    /// Preferred Piped API instance URLs (tried in order).
+    pub piped_instances: Vec<String>,
+    /// Maximum videos to analyze in a pipeline run.
+    pub max_videos: usize,
+    /// Per-instance request timeout in seconds.
+    pub timeout_secs: u64,
+    /// Whether to fetch comments by default.
+    pub fetch_comments: bool,
+}
+
+impl Default for YouTubeConfig {
+    fn default() -> Self {
+        Self {
+            invidious_instances: vec![
+                "https://invidious.nerdvpn.de".into(), // verified Feb 2026
+                "https://yewtu.be".into(),              // verified Feb 2026
+            ],
+            // Limit to 2 most reliable Piped instances. Fewer instances =
+            // fewer orphaned retry tasks per video when they're unreachable.
+            // Innertube + oEmbed already guarantee metadata; Piped is bonus.
+            piped_instances: vec![
+                "https://pipedapi.kavin.rocks".into(), // official, most reliable
+                "https://api.piped.yt".into(),         // Germany fallback
+            ],
+            max_videos: 5,
+            timeout_secs: 4, // tight per-source timeout; sources are raced in parallel
+            fetch_comments: false, // comments disabled by default (expensive)
+        }
+    }
+}
+
+/// Social Media Intelligence configuration.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct SocialConfig {
+    /// Meta Graph API token for Facebook (`APP_ID|APP_SECRET`).
+    ///
+    /// Get one for free at <https://developers.facebook.com>:
+    /// 1. Create an app (type: "Consumer" or "Business")
+    /// 2. Go to Settings → Basic → copy App ID + App Secret
+    /// 3. Set token as `APP_ID|APP_SECRET`
+    ///
+    /// Without a token, Facebook uses DDG + Open Graph (free, limited data).
+    pub facebook_graph_token: Option<String>,
+}
+
+impl HsxConfig {
+    /// Returns the Facebook Graph API token from config or env var.
+    pub fn facebook_graph_token(&self) -> Option<String> {
+        self.social
+            .facebook_graph_token
+            .clone()
+            .or_else(|| std::env::var("HSX_FACEBOOK_TOKEN").ok())
+    }
+}
+
 /// Ranking configuration for HyperFusion signal weights and thresholds.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -126,8 +190,12 @@ pub struct RankingConfig {
 }
 
 impl RankingConfig {
-    fn default_freshness() -> f64 { 0.5 }
-    fn default_simhash_threshold() -> u32 { 6 }
+    fn default_freshness() -> f64 {
+        0.5
+    }
+    fn default_simhash_threshold() -> u32 {
+        6
+    }
 }
 
 impl Default for RankingConfig {
@@ -158,10 +226,23 @@ impl Default for GeneralConfig {
 impl Default for SearchConfig {
     fn default() -> Self {
         Self {
-            backends: vec!["duckduckgo".into()],
+            // Multi-backend default: API-first for reliability, scrapers as bonus.
+            // Wikipedia/HN/Reddit/SO/Arxiv use stable JSON APIs (no CAPTCHAs).
+            // DDG/Google/Bing are scrapers — may get CAPTCHA-blocked.
+            backends: vec![
+                "wikipedia".into(),
+                "hackernews".into(),
+                "reddit".into(),
+                "stackoverflow".into(),
+                "duckduckgo".into(),
+                "google".into(),
+                "bing".into(),
+                "arxiv".into(),
+                "github".into(),
+            ],
             default_budget: 4000,
             default_tier: PdsTier::Summary,
-            max_concurrent: 8,
+            max_concurrent: 10,
             timeout_secs: 30,
             searxng_url: None,
         }

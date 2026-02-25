@@ -80,7 +80,8 @@ impl PersistentIntelligenceEngine {
     ) -> Result<(), HsxError> {
         let _ = url; // stored implicitly via domain
         self.stm.update_trust(domain, success, relevance)?;
-        self.fpm.record_attempt(domain, layer, success, error, duration_ms)?;
+        self.fpm
+            .record_attempt(domain, layer, success, error, duration_ms)?;
         Ok(())
     }
 
@@ -124,8 +125,10 @@ impl PersistentIntelligenceEngine {
 
 /// Extract a coarse topic from a query string (lowercased first non-trivial word cluster).
 pub fn extract_topic(query: &str) -> String {
-    let stop_words = ["the", "a", "an", "is", "are", "was", "were", "what", "how",
-                      "why", "who", "when", "where", "which", "of", "in", "to", "for"];
+    let stop_words = [
+        "the", "a", "an", "is", "are", "was", "were", "what", "how", "why", "who", "when", "where",
+        "which", "of", "in", "to", "for",
+    ];
     let words: Vec<&str> = query
         .split_whitespace()
         .filter(|w| {
@@ -148,7 +151,9 @@ mod tests {
     #[test]
     fn extract_topic_removes_stop_words() {
         let topic = extract_topic("What is the best Rust framework for web");
-        assert!(topic.contains("best") || topic.contains("rust") || topic.contains("framework"),
-                "topic={topic}");
+        assert!(
+            topic.contains("best") || topic.contains("rust") || topic.contains("framework"),
+            "topic={topic}"
+        );
     }
 }

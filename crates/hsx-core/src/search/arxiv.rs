@@ -212,7 +212,8 @@ mod tests {
         assert_eq!(results[0].title, "Attention Is All You Need");
         assert!(
             results[0].snippet.contains("Transformer"),
-            "Snippet: {:?}", results[0].snippet
+            "Snippet: {:?}",
+            results[0].snippet
         );
         assert_eq!(results[0].rank, 1);
         assert_eq!(results[0].backend, BackendId::Arxiv);
@@ -230,7 +231,10 @@ mod tests {
         assert_eq!(results.len(), 2);
         assert_eq!(results[0].rank, 1);
         assert_eq!(results[1].rank, 2);
-        assert_eq!(results[1].title, "BERT: Pre-training of Deep Bidirectional Transformers");
+        assert_eq!(
+            results[1].title,
+            "BERT: Pre-training of Deep Bidirectional Transformers"
+        );
     }
 
     #[test]

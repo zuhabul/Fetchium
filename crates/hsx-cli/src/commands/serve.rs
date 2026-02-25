@@ -20,9 +20,7 @@ pub async fn run(args: ServeArgs, config: &HsxConfig) -> anyhow::Result<()> {
                 "Starting HyperSearchX REST API on http://0.0.0.0:{}...",
                 args.port
             );
-            let state = std::sync::Arc::new(
-                hsx_api::middleware::AppState::new(config.clone())?
-            );
+            let state = std::sync::Arc::new(hsx_api::middleware::AppState::new(config.clone())?);
             let server_config = hsx_api::ApiServerConfig {
                 host: "0.0.0.0".into(),
                 port: args.port,
@@ -38,9 +36,7 @@ pub async fn run(args: ServeArgs, config: &HsxConfig) -> anyhow::Result<()> {
             // Run REST API in background, MCP on stdio
             let config_clone = config.clone();
             let port = args.port;
-            let state = std::sync::Arc::new(
-                hsx_api::middleware::AppState::new(config.clone())?
-            );
+            let state = std::sync::Arc::new(hsx_api::middleware::AppState::new(config.clone())?);
             tokio::spawn(async move {
                 let server_config = hsx_api::ApiServerConfig {
                     host: "0.0.0.0".into(),

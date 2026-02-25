@@ -33,7 +33,9 @@ pub async fn run_tesseract_ocr(png_bytes: &[u8]) -> anyhow::Result<String> {
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::null())
         .spawn()
-        .map_err(|e| anyhow::anyhow!("Failed to spawn tesseract: {e}. Install with: brew install tesseract"))?;
+        .map_err(|e| {
+            anyhow::anyhow!("Failed to spawn tesseract: {e}. Install with: brew install tesseract")
+        })?;
 
     // Write PNG to stdin
     if let Some(mut stdin) = child.stdin.take() {

@@ -66,7 +66,10 @@ pub fn decompose_query(query: &str, max_depth: usize) -> Vec<QueryNode> {
         }
     }
     // Pattern: multi-faceted ("implications of", "pros and cons")
-    else if lower.contains("implications") || lower.contains("pros and cons") || lower.contains("advantages and disadvantages") {
+    else if lower.contains("implications")
+        || lower.contains("pros and cons")
+        || lower.contains("advantages and disadvantages")
+    {
         let aspects = extract_aspects(query);
         for aspect in aspects {
             let child_idx = nodes.len();
@@ -91,7 +94,10 @@ fn split_comparison(query: &str) -> Vec<String> {
         return query.split(" vs ").map(|s| s.trim().to_string()).collect();
     }
     if lower.contains(" versus ") {
-        return query.split(" versus ").map(|s| s.trim().to_string()).collect();
+        return query
+            .split(" versus ")
+            .map(|s| s.trim().to_string())
+            .collect();
     }
     // "compare X and Y" → ["X", "Y"]
     if lower.starts_with("compare ") || lower.starts_with("comparing ") {

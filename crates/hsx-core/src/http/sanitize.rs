@@ -40,10 +40,37 @@ pub fn sanitize_to_text(html: &str) -> String {
 
 fn allowed_tags() -> HashSet<&'static str> {
     [
-        "p", "h1", "h2", "h3", "h4", "h5", "h6", "a", "code", "pre",
-        "table", "thead", "tbody", "tr", "th", "td", "ul", "ol", "li",
-        "blockquote", "em", "strong", "br", "span", "div", "section",
-        "article", "header", "footer", "aside", "nav",
+        "p",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "a",
+        "code",
+        "pre",
+        "table",
+        "thead",
+        "tbody",
+        "tr",
+        "th",
+        "td",
+        "ul",
+        "ol",
+        "li",
+        "blockquote",
+        "em",
+        "strong",
+        "br",
+        "span",
+        "div",
+        "section",
+        "article",
+        "header",
+        "footer",
+        "aside",
+        "nav",
     ]
     .iter()
     .copied()
@@ -59,7 +86,10 @@ mod tests {
         let input = r#"<p>Hello</p><script>alert('xss')</script><p>World</p>"#;
         let output = sanitize_html(input);
         assert!(!output.contains("script"), "script tag should be stripped");
-        assert!(!output.contains("alert"), "script content should be stripped");
+        assert!(
+            !output.contains("alert"),
+            "script content should be stripped"
+        );
         assert!(output.contains("Hello"));
         assert!(output.contains("World"));
     }
@@ -68,7 +98,10 @@ mod tests {
     fn strips_event_handlers() {
         let input = r#"<p onclick="evil()">Click me</p>"#;
         let output = sanitize_html(input);
-        assert!(!output.contains("onclick"), "event handler should be stripped");
+        assert!(
+            !output.contains("onclick"),
+            "event handler should be stripped"
+        );
         assert!(output.contains("Click me"));
     }
 

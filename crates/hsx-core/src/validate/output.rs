@@ -28,10 +28,7 @@ impl OutputValidator {
                 issues.push(ValidationIssue {
                     severity: IssueSeverity::Warning,
                     code: "V6_BROKEN_CITATION".into(),
-                    message: format!(
-                        "Citation [{}] URL unreachable: {}",
-                        c.citation_id, c.url
-                    ),
+                    message: format!("Citation [{}] URL unreachable: {}", c.citation_id, c.url),
                     source_url: Some(c.url.clone()),
                 });
             }
@@ -39,10 +36,7 @@ impl OutputValidator {
                 issues.push(ValidationIssue {
                     severity: IssueSeverity::Warning,
                     code: "V6_CONTENT_CHANGED".into(),
-                    message: format!(
-                        "Citation [{}] content changed since fetch",
-                        c.citation_id
-                    ),
+                    message: format!("Citation [{}] content changed since fetch", c.citation_id),
                     source_url: Some(c.url.clone()),
                 });
             }

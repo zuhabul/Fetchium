@@ -98,8 +98,7 @@ impl Bm25Scorer {
             .map_err(|e| crate::error::HsxError::Extraction(e.to_string()))?;
         let searcher = reader.searcher();
 
-        let query_parser =
-            QueryParser::for_index(&index, vec![self.title_field, self.body_field]);
+        let query_parser = QueryParser::for_index(&index, vec![self.title_field, self.body_field]);
 
         // Sanitise query: tantivy rejects queries with special characters
         let sanitised = sanitise_query(query);

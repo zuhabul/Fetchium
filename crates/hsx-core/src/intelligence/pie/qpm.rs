@@ -97,10 +97,9 @@ impl QueryPredictionModel {
              LIMIT ?2",
         )?;
         let results = stmt
-            .query_map(
-                rusqlite::params![current_topic, limit as i64],
-                |row| row.get::<_, String>(0),
-            )?
+            .query_map(rusqlite::params![current_topic, limit as i64], |row| {
+                row.get::<_, String>(0)
+            })?
             .filter_map(|r| r.ok())
             .collect();
         Ok(results)
@@ -126,11 +125,7 @@ impl QueryPredictionModel {
     /// Total queries recorded.
     pub fn query_count(&self) -> Result<u64, HsxError> {
         let conn = self.conn.lock().unwrap();
-        let n: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM query_history",
-            [],
-            |row| row.get(0),
-        )?;
+        let n: i64 = conn.query_row("SELECT COUNT(*) FROM query_history", [], |row| row.get(0))?;
         Ok(n as u64)
     }
 
@@ -159,12 +154,17 @@ mod tests {
 
         // Record "Rust memory model" 3× after "Rust ownership"
         for _ in 0..3 {
-            qpm.record_query("Rust memory model", "Rust", Some("Rust")).unwrap();
+            qpm.record_query("Rust memory model", "Rust", Some("Rust"))
+                .unwrap();
         }
-        qpm.record_query("Rust async", "Rust", Some("Rust")).unwrap();
+        qpm.record_query("Rust async", "Rust", Some("Rust"))
+            .unwrap();
 
         let suggestions = qpm.predict_follow_ups("Rust", 5).unwrap();
-        assert!(!suggestions.is_empty(), "should predict at least one follow-up");
+        assert!(
+            !suggestions.is_empty(),
+            "should predict at least one follow-up"
+        );
         assert_eq!(suggestions[0], "Rust memory model");
     }
 
@@ -173,7 +173,8 @@ mod tests {
         let tmp = NamedTempFile::new().unwrap();
         let qpm = QueryPredictionModel::new(tmp.path()).unwrap();
         for i in 0..5u32 {
-            qpm.record_query(&format!("query {i}"), "topic", None).unwrap();
+            qpm.record_query(&format!("query {i}"), "topic", None)
+                .unwrap();
         }
         assert_eq!(qpm.query_count().unwrap(), 5);
     }

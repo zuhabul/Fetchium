@@ -81,7 +81,10 @@ mod tests {
 
     #[test]
     fn long_query_no_hyde() {
-        assert!(!should_use_hyde("What is the difference between Rust and Go for systems programming", 0.4));
+        assert!(!should_use_hyde(
+            "What is the difference between Rust and Go for systems programming",
+            0.4
+        ));
     }
 
     #[test]

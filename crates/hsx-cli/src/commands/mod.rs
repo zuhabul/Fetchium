@@ -21,5 +21,7 @@ pub mod radar;
 pub mod research;
 pub mod search;
 pub mod serve;
+pub mod social;
 pub mod subscribe;
 pub mod workspace;
+pub mod youtube;

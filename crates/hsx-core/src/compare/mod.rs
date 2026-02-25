@@ -76,10 +76,7 @@ pub fn build_comparison(
     item_data: &[(String, String, Vec<String>)], // (item, summary, sources)
 ) -> ComparisonResult {
     let items: Vec<String> = query.items.clone();
-    let dimensions: Vec<String> = STANDARD_DIMENSIONS
-        .iter()
-        .map(|s| s.to_string())
-        .collect();
+    let dimensions: Vec<String> = STANDARD_DIMENSIONS.iter().map(|s| s.to_string()).collect();
 
     let mut cells = Vec::new();
 
@@ -114,9 +111,30 @@ fn extract_dimension_value(summary: &str, dimension: &str) -> String {
 
     // Find sentences containing keywords related to the dimension
     let keywords: &[&str] = match dim_lower.as_str() {
-        "performance" => &["fast", "slow", "speed", "benchmark", "performance", "throughput"],
-        "learning curve" => &["easy", "difficult", "complex", "beginner", "learn", "learning"],
-        "ecosystem" => &["libraries", "packages", "npm", "crate", "ecosystem", "plugins"],
+        "performance" => &[
+            "fast",
+            "slow",
+            "speed",
+            "benchmark",
+            "performance",
+            "throughput",
+        ],
+        "learning curve" => &[
+            "easy",
+            "difficult",
+            "complex",
+            "beginner",
+            "learn",
+            "learning",
+        ],
+        "ecosystem" => &[
+            "libraries",
+            "packages",
+            "npm",
+            "crate",
+            "ecosystem",
+            "plugins",
+        ],
         "community" => &["community", "users", "popular", "adoption", "developers"],
         "production readiness" => &["stable", "production", "enterprise", "mature", "ready"],
         "license" => &["mit", "apache", "gpl", "bsd", "license", "open source"],
@@ -212,7 +230,8 @@ mod tests {
         let item_data = vec![
             (
                 "rust".to_string(),
-                "Rust is fast and has great performance. It has a steep learning curve.".to_string(),
+                "Rust is fast and has great performance. It has a steep learning curve."
+                    .to_string(),
                 vec!["https://rust-lang.org".to_string()],
             ),
             (
@@ -241,7 +260,8 @@ mod tests {
 
     #[test]
     fn extract_dimension_value_finds_relevant_sentence() {
-        let summary = "Rust is blazingly fast. Learning Rust has a steep learning curve for beginners.";
+        let summary =
+            "Rust is blazingly fast. Learning Rust has a steep learning curve for beginners.";
         let val = extract_dimension_value(summary, "Learning Curve");
         assert!(!val.is_empty());
         assert_ne!(val, "N/A");

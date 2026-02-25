@@ -65,9 +65,15 @@ fn compute_complexity_score(signals: &ComplexitySignals) -> f64 {
         _ => 0.6,
     };
 
-    if signals.has_comparison { score += 0.2; }
-    if signals.has_synthesis  { score += 0.2; }
-    if signals.has_multi_hop  { score += 0.15; }
+    if signals.has_comparison {
+        score += 0.2;
+    }
+    if signals.has_synthesis {
+        score += 0.2;
+    }
+    if signals.has_multi_hop {
+        score += 0.15;
+    }
     score += (signals.question_depth as f64) * 0.1;
     score += (signals.source_count as f64) * 0.02;
 
@@ -83,9 +89,22 @@ pub fn select_fast_model(config: &AiConfig) -> &str {
 }
 
 /// Preferred model names per tier (2026 top local LLMs, in priority order).
-const SMALL_PREFERRED: &[&str]  = &["gemma3:1b",      "qwen3:1.7b",   "phi3:mini",    "qwen2.5:1.5b"];
-const MEDIUM_PREFERRED: &[&str] = &["deepseek-r1:7b", "qwen3:8b",     "gemma3:9b",    "llama3.2:8b", "mistral:7b"];
-const LARGE_PREFERRED: &[&str]  = &["qwen3:30b-a3b",  "deepseek-r1:32b", "deepseek-r1:14b", "qwen3:14b", "llama4:scout", "mixtral:8x7b"];
+const SMALL_PREFERRED: &[&str] = &["gemma3:1b", "qwen3:1.7b", "phi3:mini", "qwen2.5:1.5b"];
+const MEDIUM_PREFERRED: &[&str] = &[
+    "deepseek-r1:7b",
+    "qwen3:8b",
+    "gemma3:9b",
+    "llama3.2:8b",
+    "mistral:7b",
+];
+const LARGE_PREFERRED: &[&str] = &[
+    "qwen3:30b-a3b",
+    "deepseek-r1:32b",
+    "deepseek-r1:14b",
+    "qwen3:14b",
+    "llama4:scout",
+    "mixtral:8x7b",
+];
 
 /// Select the best available model for the desired tier.
 ///
@@ -98,29 +117,34 @@ pub fn select_model(
 ) -> Option<String> {
     // User-specified override takes absolute priority.
     if let Some(name) = override_model {
-        if available.iter().any(|m| m.name == name || m.name.starts_with(name)) {
+        if available
+            .iter()
+            .any(|m| m.name == name || m.name.starts_with(name))
+        {
             return Some(name.to_string());
         }
     }
 
     // Classify installed models by parameter count.
-    let mut small: Vec<&OllamaModel>  = Vec::new();
+    let mut small: Vec<&OllamaModel> = Vec::new();
     let mut medium: Vec<&OllamaModel> = Vec::new();
-    let mut large: Vec<&OllamaModel>  = Vec::new();
+    let mut large: Vec<&OllamaModel> = Vec::new();
 
     for model in available {
         let pb = estimate_param_billions(model);
         match pb {
-            b if b <= 3.5  => small.push(model),
+            b if b <= 3.5 => small.push(model),
             b if b <= 11.0 => medium.push(model),
-            _              => large.push(model),
+            _ => large.push(model),
         }
     }
 
     // Sort each tier by the preferred list order.
     let pick_preferred = |bucket: &Vec<&OllamaModel>, preferred: &[&str]| -> Option<String> {
         for pref in preferred {
-            if let Some(m) = bucket.iter().find(|m| m.name.contains(*pref) || m.name.starts_with(pref.split(':').next().unwrap_or(pref))) {
+            if let Some(m) = bucket.iter().find(|m| {
+                m.name.contains(*pref) || m.name.starts_with(pref.split(':').next().unwrap_or(pref))
+            }) {
                 return Some(m.name.clone());
             }
         }
@@ -129,9 +153,21 @@ pub fn select_model(
     };
 
     let candidates: [(&Vec<&OllamaModel>, &[&str]); 3] = match tier {
-        ModelTier::Small  => [(&small, SMALL_PREFERRED),  (&medium, MEDIUM_PREFERRED), (&large, LARGE_PREFERRED)],
-        ModelTier::Medium => [(&medium, MEDIUM_PREFERRED), (&small, SMALL_PREFERRED),  (&large, LARGE_PREFERRED)],
-        ModelTier::Large  => [(&large, LARGE_PREFERRED),  (&medium, MEDIUM_PREFERRED), (&small, SMALL_PREFERRED)],
+        ModelTier::Small => [
+            (&small, SMALL_PREFERRED),
+            (&medium, MEDIUM_PREFERRED),
+            (&large, LARGE_PREFERRED),
+        ],
+        ModelTier::Medium => [
+            (&medium, MEDIUM_PREFERRED),
+            (&small, SMALL_PREFERRED),
+            (&large, LARGE_PREFERRED),
+        ],
+        ModelTier::Large => [
+            (&large, LARGE_PREFERRED),
+            (&medium, MEDIUM_PREFERRED),
+            (&small, SMALL_PREFERRED),
+        ],
     };
 
     for (bucket, preferred) in candidates {

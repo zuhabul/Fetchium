@@ -4,14 +4,13 @@
 //! Phase 2: HyperFusion 8-signal ranking.
 //! Phase 5: Semantic/embedding-based ranking.
 
-
 pub mod bm25;
 pub mod fusion;
 pub mod signals;
 
+use crate::types::ResultItem;
 pub use bm25::{Bm25Scorer, ScoredResult, ScoringDocument};
 pub use fusion::{detect_intent, hyperfusion_rank, IntentWeights, QueryIntent};
-use crate::types::ResultItem;
 use std::collections::HashMap;
 use tracing::debug;
 
@@ -195,9 +194,20 @@ pub fn canonical_url(url: &str) -> String {
 
             // Filter out tracking query params
             const TRACKING: &[&str] = &[
-                "utm_source", "utm_medium", "utm_campaign", "utm_term",
-                "utm_content", "utm_id", "fbclid", "gclid", "msclkid",
-                "ref", "source", "_ga", "mc_cid", "mc_eid",
+                "utm_source",
+                "utm_medium",
+                "utm_campaign",
+                "utm_term",
+                "utm_content",
+                "utm_id",
+                "fbclid",
+                "gclid",
+                "msclkid",
+                "ref",
+                "source",
+                "_ga",
+                "mc_cid",
+                "mc_eid",
             ];
 
             let filtered: Vec<(String, String)> = parsed
@@ -250,9 +260,15 @@ mod tests {
 
     #[test]
     fn bm25_scores_relevant_higher() {
-        let relevant = bm25_score("Rust programming language safety systems", "Rust programming");
+        let relevant = bm25_score(
+            "Rust programming language safety systems",
+            "Rust programming",
+        );
         let irrelevant = bm25_score("Python web framework django flask", "Rust programming");
-        assert!(relevant > irrelevant, "relevant={relevant}, irrelevant={irrelevant}");
+        assert!(
+            relevant > irrelevant,
+            "relevant={relevant}, irrelevant={irrelevant}"
+        );
     }
 
     #[test]
@@ -264,16 +280,34 @@ mod tests {
 
     #[test]
     fn bm25_score_range() {
-        let score = bm25_score("Rust is a great systems programming language", "Rust systems");
+        let score = bm25_score(
+            "Rust is a great systems programming language",
+            "Rust systems",
+        );
         assert!((0.0..=1.0).contains(&score), "score out of range: {score}");
     }
 
     #[test]
     fn rerank_sorts_by_relevance() {
         let items = vec![
-            make_item("Python Tutorial", "https://python.org", "Learn Python programming", 1),
-            make_item("Rust Book", "https://doc.rust-lang.org/book", "The Rust programming language", 2),
-            make_item("Go Tour", "https://go.dev/tour", "A tour of the Go language", 3),
+            make_item(
+                "Python Tutorial",
+                "https://python.org",
+                "Learn Python programming",
+                1,
+            ),
+            make_item(
+                "Rust Book",
+                "https://doc.rust-lang.org/book",
+                "The Rust programming language",
+                2,
+            ),
+            make_item(
+                "Go Tour",
+                "https://go.dev/tour",
+                "A tour of the Go language",
+                3,
+            ),
         ];
         let reranked = rerank(items, "Rust programming language");
         assert_eq!(reranked[0].title, "Rust Book");
@@ -296,7 +330,12 @@ mod tests {
     fn deduplicate_removes_tracking_params() {
         let mut items = vec![
             make_item("Page A", "https://example.com/page", "content", 1),
-            make_item("Page A Dup", "https://example.com/page?utm_source=google", "content", 2),
+            make_item(
+                "Page A Dup",
+                "https://example.com/page?utm_source=google",
+                "content",
+                2,
+            ),
             make_item("Page B", "https://other.com/page", "different", 3),
         ];
         items[0].score = Some(0.5);

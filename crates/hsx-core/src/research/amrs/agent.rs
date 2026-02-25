@@ -1,8 +1,8 @@
 //! Agent trait for AMRS agents (PRD §8.8).
 
-use async_trait::async_trait;
 use crate::error::HsxError;
 use crate::research::amrs::channel::{AgentReceiver, AgentSender, AgentType};
+use async_trait::async_trait;
 
 /// Trait that all AMRS agents implement.
 #[async_trait]
@@ -14,9 +14,5 @@ pub trait Agent: Send + Sync {
     ///
     /// Receives instructions via `rx`, sends results back via `tx`.
     /// Should exit cleanly when `AgentMessage::Shutdown` is received or `rx` closes.
-    async fn run(
-        &self,
-        rx: AgentReceiver,
-        tx: AgentSender,
-    ) -> Result<(), HsxError>;
+    async fn run(&self, rx: AgentReceiver, tx: AgentSender) -> Result<(), HsxError>;
 }

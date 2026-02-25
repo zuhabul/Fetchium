@@ -5,7 +5,7 @@
 //! the HNSW index is a search accelerator built on top.
 
 use crate::error::HsxError;
-use crate::index::document::{IndexedDocument, IndexStats};
+use crate::index::document::{IndexStats, IndexedDocument};
 use chrono::Utc;
 use rusqlite::{Connection, OptionalExtension};
 use sha2::{Digest, Sha256};
@@ -92,7 +92,10 @@ impl DocumentStore {
                 r.get(0)
             })?;
 
-        debug!("Document upserted: id={id}, url={}, changed={changed}", doc.url);
+        debug!(
+            "Document upserted: id={id}, url={}, changed={changed}",
+            doc.url
+        );
         Ok((id as u64, changed))
     }
 
@@ -118,20 +121,18 @@ impl DocumentStore {
             )
             .optional()?;
 
-        Ok(result.map(|(id, url, title, content, domain, fetched_at, content_hash)| {
-            IndexedDocument {
+        Ok(result.map(
+            |(id, url, title, content, domain, fetched_at, content_hash)| IndexedDocument {
                 id: id as u64,
                 url,
                 title,
                 content,
                 domain,
-                fetched_at: fetched_at
-                    .parse()
-                    .unwrap_or_else(|_| Utc::now()),
+                fetched_at: fetched_at.parse().unwrap_or_else(|_| Utc::now()),
                 content_hash,
                 embedding: None,
-            }
-        }))
+            },
+        ))
     }
 
     /// Load multiple documents by their IDs.
@@ -187,18 +188,14 @@ impl DocumentStore {
     /// Mark a document as having an embedding.
     pub fn mark_embedded(&self, id: u64) -> Result<(), HsxError> {
         let conn = self.conn.lock().unwrap();
-        conn.execute(
-            "UPDATE documents SET has_embedding = 1 WHERE id = ?1",
-            [id],
-        )?;
+        conn.execute("UPDATE documents SET has_embedding = 1 WHERE id = ?1", [id])?;
         Ok(())
     }
 
     /// Return index statistics.
     pub fn stats(&self) -> Result<IndexStats, HsxError> {
         let conn = self.conn.lock().unwrap();
-        let doc_count: i64 =
-            conn.query_row("SELECT COUNT(*) FROM documents", [], |r| r.get(0))?;
+        let doc_count: i64 = conn.query_row("SELECT COUNT(*) FROM documents", [], |r| r.get(0))?;
         let embedded_count: i64 = conn.query_row(
             "SELECT COUNT(*) FROM documents WHERE has_embedding = 1",
             [],

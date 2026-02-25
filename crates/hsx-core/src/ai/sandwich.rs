@@ -141,7 +141,7 @@ mod tests {
             .map(|i| make_source(i, 0.8, &"x".repeat(400)))
             .collect();
         let (ctx, map) = assemble_context(&sources, 200); // very tight budget
-        // Context should be shorter than a full dump
+                                                          // Context should be shorter than a full dump
         assert!(ctx.len() < 5 * 400);
         assert!(!map.is_empty());
     }

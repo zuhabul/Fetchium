@@ -112,11 +112,9 @@ impl FailurePatternMemory {
     /// Total number of distinct failure patterns recorded.
     pub fn pattern_count(&self) -> Result<u64, HsxError> {
         let conn = self.conn.lock().unwrap();
-        let n: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM extraction_failures",
-            [],
-            |row| row.get(0),
-        )?;
+        let n: i64 = conn.query_row("SELECT COUNT(*) FROM extraction_failures", [], |row| {
+            row.get(0)
+        })?;
         Ok(n as u64)
     }
 
@@ -143,7 +141,8 @@ mod tests {
         let fpm = FailurePatternMemory::new(tmp.path()).unwrap();
         // Layer 3 succeeds 5× for "spa.com"
         for _ in 0..5 {
-            fpm.record_attempt("spa.com", 1, false, Some("timeout"), 0).unwrap();
+            fpm.record_attempt("spa.com", 1, false, Some("timeout"), 0)
+                .unwrap();
             fpm.record_attempt("spa.com", 3, true, None, 500).unwrap();
         }
         let (layer, conf) = fpm.recommend_layer("spa.com").unwrap();

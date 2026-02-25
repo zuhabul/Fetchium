@@ -111,8 +111,15 @@ pub enum HsxError {
     #[error("Invalid URL: {0}")]
     InvalidUrl(String),
 
+    #[error("YouTube error: {0}")]
+    YouTube(String),
+
     #[error("Operation '{operation}' timed out after {timeout_ms}ms: {suggestion}")]
-    OperationTimeout { operation: String, timeout_ms: u64, suggestion: String },
+    OperationTimeout {
+        operation: String,
+        timeout_ms: u64,
+        suggestion: String,
+    },
 
     #[error("{0}")]
     Other(#[from] anyhow::Error),

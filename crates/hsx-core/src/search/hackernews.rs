@@ -87,10 +87,7 @@ impl SearchBackend for HackerNewsBackend {
 
                 // Use provided URL or fall back to the HN story URL
                 let url = hit.url.unwrap_or_else(|| {
-                    format!(
-                        "https://news.ycombinator.com/item?id={}",
-                        hit.object_id
-                    )
+                    format!("https://news.ycombinator.com/item?id={}", hit.object_id)
                 });
 
                 // Build snippet from story text or metadata
@@ -159,7 +156,10 @@ mod tests {
         let resp: HnResponse = serde_json::from_str(json).unwrap();
         assert_eq!(resp.hits.len(), 1);
         assert_eq!(resp.hits[0].title.as_deref(), Some("Rust 2024"));
-        assert_eq!(resp.hits[0].url.as_deref(), Some("https://blog.rust-lang.org"));
+        assert_eq!(
+            resp.hits[0].url.as_deref(),
+            Some("https://blog.rust-lang.org")
+        );
         assert_eq!(resp.hits[0].points, Some(100));
     }
 

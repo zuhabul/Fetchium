@@ -5,15 +5,19 @@ fn bench_count_tokens(c: &mut Criterion) {
     let mut group = c.benchmark_group("token/count_tokens");
     let texts: Vec<(&str, String)> = vec![
         ("short", "Hello world, this is a test.".into()),
-        ("medium", "The quick brown fox jumps over the lazy dog. ".repeat(100)),
-        ("long", "Rust is a multi-paradigm systems programming language. ".repeat(1000)),
+        (
+            "medium",
+            "The quick brown fox jumps over the lazy dog. ".repeat(100),
+        ),
+        (
+            "long",
+            "Rust is a multi-paradigm systems programming language. ".repeat(1000),
+        ),
     ];
     for (label, text) in &texts {
-        group.bench_with_input(
-            BenchmarkId::new("text", label),
-            text.as_str(),
-            |b, text| b.iter(|| count_tokens(black_box(text))),
-        );
+        group.bench_with_input(BenchmarkId::new("text", label), text.as_str(), |b, text| {
+            b.iter(|| count_tokens(black_box(text)))
+        });
     }
     group.finish();
 }
@@ -26,11 +30,9 @@ fn bench_estimate_tokens_fast(c: &mut Criterion) {
         ("large", "word ".repeat(100_000)),
     ];
     for (label, text) in &texts {
-        group.bench_with_input(
-            BenchmarkId::new("text", label),
-            text.as_str(),
-            |b, text| b.iter(|| estimate_tokens_fast(black_box(text))),
-        );
+        group.bench_with_input(BenchmarkId::new("text", label), text.as_str(), |b, text| {
+            b.iter(|| estimate_tokens_fast(black_box(text)))
+        });
     }
     group.finish();
 }

@@ -105,7 +105,9 @@ impl SearchBackend for GithubBackend {
 
         // Handle rate limiting gracefully
         let status = resp.status();
-        if status == reqwest::StatusCode::FORBIDDEN || status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+        if status == reqwest::StatusCode::FORBIDDEN
+            || status == reqwest::StatusCode::TOO_MANY_REQUESTS
+        {
             tracing::warn!("GitHub rate limited (HTTP {status})");
             return Ok(vec![]);
         }

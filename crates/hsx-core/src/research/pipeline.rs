@@ -1,22 +1,22 @@
 //! Research pipeline orchestrator — 9-step PRD SS10 Mode B (PRD §10).
 
-use crate::error::HsxError;
-use crate::research::{ResearchConfig, ResearchMeta, ResearchReport};
-use crate::research::decompose::decompose_query;
 use crate::citation::evidence_graph::EvidenceGraphBuilder;
 use crate::citation::formatter::CitationFormatter;
 use crate::citation::types::SourceMeta;
-use crate::validate::calibration::ConfidenceCalibrator;
-use crate::validate::rar::{RarEngine, RarState};
-use crate::validate::authority::AuthorityScorer;
-use crate::validate::content::{ContentValidator, ContentInput};
-use crate::validate::temporal::{TemporalValidator, SourceFreshness};
-use crate::validate::cross_source::{CrossSourceVerifier, SourceContent as V4SourceContent};
-use crate::validate::extraction::{ExtractionValidator, ExtractionInput};
-use crate::search::orchestrator::{SearchOrchestrator, OrchestratorConfig};
-use crate::http::client::HttpClient;
 use crate::config::HsxConfig;
+use crate::error::HsxError;
 use crate::extract::pipeline::extract;
+use crate::http::client::HttpClient;
+use crate::research::decompose::decompose_query;
+use crate::research::{ResearchConfig, ResearchMeta, ResearchReport};
+use crate::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
+use crate::validate::authority::AuthorityScorer;
+use crate::validate::calibration::ConfidenceCalibrator;
+use crate::validate::content::{ContentInput, ContentValidator};
+use crate::validate::cross_source::{CrossSourceVerifier, SourceContent as V4SourceContent};
+use crate::validate::extraction::{ExtractionInput, ExtractionValidator};
+use crate::validate::rar::{RarEngine, RarState};
+use crate::validate::temporal::{SourceFreshness, TemporalValidator};
 use std::time::Instant;
 
 /// Research pipeline orchestrator.
@@ -49,11 +49,14 @@ impl ResearchPipeline {
         let sub_queries = decompose_query(&config.query);
 
         // Step 2: Parallel Dispatch (Search)
-        let mut orch_config = OrchestratorConfig::from_hsx_config(hsx_config, config.max_sources as u32);
+        let mut orch_config =
+            OrchestratorConfig::from_hsx_config(hsx_config, config.max_sources as u32);
         orch_config.max_total_results = config.max_sources as u32;
         let orchestrator = SearchOrchestrator::new(http_client.clone(), orch_config);
-        
-        let search_results = orchestrator.search(&config.query, Some(config.max_sources as u32)).await?;
+
+        let search_results = orchestrator
+            .search(&config.query, Some(config.max_sources as u32))
+            .await?;
 
         // Intelligence layer: PIE observation
         let pie = crate::intelligence::pie::PersistentIntelligenceEngine::new().ok();
@@ -98,7 +101,9 @@ impl ResearchPipeline {
         if config.trust_verify {
             let acs = crate::intelligence::acs::AdversarialContentShield::new();
             for (_item, ext) in &extracted_sources {
-                let domain = url::Url::parse(&_item.url).map(|u| u.host_str().unwrap_or("unknown").to_string()).unwrap_or_else(|_| "unknown".to_string());
+                let domain = url::Url::parse(&_item.url)
+                    .map(|u| u.host_str().unwrap_or("unknown").to_string())
+                    .unwrap_or_else(|_| "unknown".to_string());
                 acs_flags.push(acs.analyze(&ext.text, &domain));
             }
         }
@@ -109,7 +114,7 @@ impl ResearchPipeline {
         let mut v3_inputs = Vec::new();
         let mut v4_inputs = Vec::new();
         let mut v5_inputs = Vec::new();
-        
+
         for (idx, (item, ext)) in extracted_sources.iter().enumerate() {
             let has_ssl = item.url.starts_with("https");
             v1_inputs.push((item.url.clone(), has_ssl, 0));
@@ -122,7 +127,12 @@ impl ResearchPipeline {
                 published_date: None,
                 last_modified: None,
             });
-            let claims: Vec<String> = ext.text.split(". ").take(5).map(|s| s.to_string()).collect();
+            let claims: Vec<String> = ext
+                .text
+                .split(". ")
+                .take(5)
+                .map(|s| s.to_string())
+                .collect();
             v4_inputs.push(V4SourceContent {
                 url: item.url.clone(),
                 index: idx,
@@ -142,16 +152,16 @@ impl ResearchPipeline {
         // Run Validation Layers
         let authority = AuthorityScorer::default();
         let l1 = authority.validate_sources(&v1_inputs);
-        
+
         let content_val = ContentValidator::default();
         let l2 = content_val.validate(&v2_inputs, &config.query);
-        
+
         let temporal = TemporalValidator::default();
         let l3 = temporal.validate(&v3_inputs, &config.query);
-        
+
         let cross = CrossSourceVerifier::new();
         let l4 = cross.verify(&v4_inputs);
-        
+
         let l5 = ExtractionValidator::validate(&v5_inputs);
 
         // Step 5: RAR reflection loop
@@ -192,7 +202,12 @@ impl ResearchPipeline {
             extracted_sources
                 .iter()
                 .map(|(item, ext)| {
-                    let claim = ext.text.split(". ").next().unwrap_or(&ext.title).to_string();
+                    let claim = ext
+                        .text
+                        .split(". ")
+                        .next()
+                        .unwrap_or(&ext.title)
+                        .to_string();
                     (item.url.clone(), ext.title.clone(), claim)
                 })
                 .collect()
@@ -215,7 +230,10 @@ impl ResearchPipeline {
             if !synthesis.is_empty() {
                 synthesis.push(' ');
             }
-            synthesis.push_str(&format!("Information from {} was analyzed {}.", meta.title, citation.inline_marker));
+            synthesis.push_str(&format!(
+                "Information from {} was analyzed {}.",
+                meta.title, citation.inline_marker
+            ));
             formatted_citations.push(citation);
         }
 
@@ -237,7 +255,7 @@ impl ResearchPipeline {
         );
 
         let mut overall_confidence = validation_res.confidence;
-        
+
         // Intelligence layer: Confidence Calibration (CCE)
         if config.trust_verify {
             let db_path = crate::intelligence::intelligence_data_dir().join("calibration.db");
@@ -287,7 +305,9 @@ mod tests {
         };
         let hsx = crate::config::HsxConfig::default();
         let http = crate::http::client::HttpClient::new(&hsx).unwrap();
-        let report = ResearchPipeline::execute(&config, &hsx, &http).await.unwrap();
+        let report = ResearchPipeline::execute(&config, &hsx, &http)
+            .await
+            .unwrap();
         assert_eq!(report.query, "what is Rust");
         assert!(!report.sub_queries.is_empty());
     }
@@ -301,7 +321,9 @@ mod tests {
         };
         let hsx = crate::config::HsxConfig::default();
         let http = crate::http::client::HttpClient::new(&hsx).unwrap();
-        let report = ResearchPipeline::execute(&config, &hsx, &http).await.unwrap();
+        let report = ResearchPipeline::execute(&config, &hsx, &http)
+            .await
+            .unwrap();
         assert!(report.evidence_graph.is_some());
     }
 }

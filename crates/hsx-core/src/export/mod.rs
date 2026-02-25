@@ -72,7 +72,10 @@ mod tests {
         assert_eq!(ExportFormat::parse("word"), Some(ExportFormat::Docx));
         assert_eq!(ExportFormat::parse("bibtex"), Some(ExportFormat::Bibtex));
         assert_eq!(ExportFormat::parse("bib"), Some(ExportFormat::Bibtex));
-        assert_eq!(ExportFormat::parse("markdown"), Some(ExportFormat::Markdown));
+        assert_eq!(
+            ExportFormat::parse("markdown"),
+            Some(ExportFormat::Markdown)
+        );
         assert_eq!(ExportFormat::parse("unknown"), None);
     }
 

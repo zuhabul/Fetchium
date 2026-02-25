@@ -2,7 +2,7 @@
 //!
 //! Re-exported from `lib.rs` behind `#[cfg(test)] pub mod test_utils`.
 
-use crate::types::{BackendId, ResultItem, SegmentType, Segment};
+use crate::types::{BackendId, ResultItem, Segment, SegmentType};
 
 /// Build a synthetic `ResultItem` for testing rank and dedup logic.
 pub fn make_result_item(title: &str, url: &str, snippet: &str) -> ResultItem {
@@ -71,9 +71,15 @@ pub fn make_result_items(count: usize) -> Vec<ResultItem> {
         .map(|i| ResultItem {
             title: format!("Result {i}: Understanding Rust Concepts"),
             url: format!("https://example.com/page-{i}"),
-            snippet: format!("This result covers Rust topic {i} with details about ownership and borrowing."),
+            snippet: format!(
+                "This result covers Rust topic {i} with details about ownership and borrowing."
+            ),
             rank: i as u32,
-            backend: if i % 2 == 0 { BackendId::DuckDuckGo } else { BackendId::Google },
+            backend: if i % 2 == 0 {
+                BackendId::DuckDuckGo
+            } else {
+                BackendId::Google
+            },
             score: None,
             published_date: None,
         })

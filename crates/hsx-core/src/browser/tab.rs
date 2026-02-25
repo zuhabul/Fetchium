@@ -11,9 +11,9 @@ pub struct ManagedTab;
 
 #[cfg(feature = "headless")]
 mod headless_impl {
+    use anyhow::Context as _;
     use chromiumoxide::Page;
     use std::time::Duration;
-    use anyhow::Context as _;
 
     /// A managed browser tab that returns its semaphore permit on drop.
     ///
@@ -26,18 +26,18 @@ mod headless_impl {
 
     impl ManagedTab {
         pub(crate) fn new(page: Page, permit: tokio::sync::OwnedSemaphorePermit) -> Self {
-            Self { page, _permit: permit }
+            Self {
+                page,
+                _permit: permit,
+            }
         }
 
         /// Navigate to a URL, waiting up to `timeout_ms` milliseconds for load.
         pub async fn navigate(&self, url: &str, timeout_ms: u64) -> anyhow::Result<()> {
-            tokio::time::timeout(
-                Duration::from_millis(timeout_ms),
-                self.page.goto(url),
-            )
-            .await
-            .context("Navigation timed out")?
-            .context("Navigation failed")?;
+            tokio::time::timeout(Duration::from_millis(timeout_ms), self.page.goto(url))
+                .await
+                .context("Navigation timed out")?
+                .context("Navigation failed")?;
             Ok(())
         }
 
@@ -51,7 +51,8 @@ mod headless_impl {
 
         /// Evaluate JavaScript in the page context.
         pub async fn evaluate(&self, expression: &str) -> anyhow::Result<String> {
-            let result = self.page
+            let result = self
+                .page
                 .evaluate(expression)
                 .await
                 .context("JS evaluation failed")?;

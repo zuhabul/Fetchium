@@ -52,11 +52,7 @@ impl CrossSourceVerifier {
                 issues: vec![ValidationIssue {
                     severity: IssueSeverity::Info,
                     code: "V4_INSUFFICIENT_SOURCES".into(),
-                    message: format!(
-                        "Need {} sources, have {}",
-                        self.min_sources,
-                        sources.len()
-                    ),
+                    message: format!("Need {} sources, have {}", self.min_sources, sources.len()),
                     source_url: None,
                 }],
                 duration_ms: start.elapsed().as_millis() as u64,
@@ -94,20 +90,26 @@ impl CrossSourceVerifier {
                         source_b_date: None,
                         severity: match c.severity {
                             ContradictionSeverity::High => crate::intelligence::crp::Severity::High,
-                            ContradictionSeverity::Medium => crate::intelligence::crp::Severity::Medium,
+                            ContradictionSeverity::Medium => {
+                                crate::intelligence::crp::Severity::Medium
+                            }
                             ContradictionSeverity::Low => crate::intelligence::crp::Severity::Low,
                         },
                     };
 
                     let pie = crate::intelligence::pie::PersistentIntelligenceEngine::new().ok();
-                    if let Ok(res) = crate::intelligence::crp::resolve(&crp_contradiction, |domain| {
-                        if let Some(pie_engine) = &pie {
-                            pie_engine.stm.get_trust(domain).unwrap_or(0.5)
-                        } else {
-                            0.5
-                        }
-                    }) {
-                        if res.resolution_type != crate::intelligence::crp::ResolutionType::Unresolved {
+                    if let Ok(res) =
+                        crate::intelligence::crp::resolve(&crp_contradiction, |domain| {
+                            if let Some(pie_engine) = &pie {
+                                pie_engine.stm.get_trust(domain).unwrap_or(0.5)
+                            } else {
+                                0.5
+                            }
+                        })
+                    {
+                        if res.resolution_type
+                            != crate::intelligence::crp::ResolutionType::Unresolved
+                        {
                             is_resolved = true;
                             resolution_msg = res.synthesis;
                         }
@@ -117,7 +119,10 @@ impl CrossSourceVerifier {
                         issues.push(ValidationIssue {
                             severity: IssueSeverity::Info,
                             code: "V4_CONTRADICTION_RESOLVED".into(),
-                            message: format!("{} (CRP Resolved: {})", c.description, resolution_msg),
+                            message: format!(
+                                "{} (CRP Resolved: {})",
+                                c.description, resolution_msg
+                            ),
                             source_url: Some(c.claim_a.source_url.clone()),
                         });
                     } else {
@@ -229,7 +234,11 @@ impl CrossSourceVerifier {
         if union == 0 {
             // Both inputs produced no bigrams (single words or empty).
             // Treat as identical only if the normalized strings match.
-            if a == b { 1.0 } else { 0.0 }
+            if a == b {
+                1.0
+            } else {
+                0.0
+            }
         } else {
             inter as f64 / union as f64
         }
@@ -260,9 +269,27 @@ impl CrossSourceVerifier {
 
     fn claims_agree(a: &str, b: &str) -> f64 {
         // Negation patterns: standalone words and two-word phrases.
-        let neg_words = ["not", "no", "never", "neither", "doesnt", "isnt", "cant", "wont",
-                         "did not", "has not", "have not", "is not", "are not", "was not",
-                         "does not", "will not", "would not", "should not", "could not"];
+        let neg_words = [
+            "not",
+            "no",
+            "never",
+            "neither",
+            "doesnt",
+            "isnt",
+            "cant",
+            "wont",
+            "did not",
+            "has not",
+            "have not",
+            "is not",
+            "are not",
+            "was not",
+            "does not",
+            "will not",
+            "would not",
+            "should not",
+            "could not",
+        ];
         let a_neg = neg_words.iter().any(|w| a.contains(w));
         let b_neg = neg_words.iter().any(|w| b.contains(w));
         if a_neg != b_neg {
@@ -357,7 +384,11 @@ mod tests {
 
     #[test]
     fn jaccard_identical() {
-        assert!((CrossSourceVerifier::jaccard("the quick brown fox", "the quick brown fox") - 1.0).abs() < 1e-9);
+        assert!(
+            (CrossSourceVerifier::jaccard("the quick brown fox", "the quick brown fox") - 1.0)
+                .abs()
+                < 1e-9
+        );
     }
 
     #[test]
