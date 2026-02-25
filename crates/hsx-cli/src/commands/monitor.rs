@@ -5,8 +5,8 @@ use hsx_core::config::HsxConfig;
 use hsx_core::extract::pipeline;
 use hsx_core::http::client::HttpClient;
 use hsx_core::monitor::diff::{compute_diff_summary, DiffLine};
-use hsx_core::monitor::snapshot::SnapshotStore;
 use hsx_core::monitor::parse_interval;
+use hsx_core::monitor::snapshot::SnapshotStore;
 
 use crate::cli::{MonitorAction, MonitorArgs};
 
@@ -14,7 +14,11 @@ pub async fn run(args: MonitorArgs, config: &HsxConfig) -> Result<()> {
     let store = SnapshotStore::new()?;
 
     match args.action {
-        MonitorAction::Add { url, interval, notify } => {
+        MonitorAction::Add {
+            url,
+            interval,
+            notify,
+        } => {
             let interval_secs = parse_interval(&interval).unwrap_or(3600);
             store.register(&url, interval_secs, notify.as_deref())?;
             println!("Monitoring {url} every {interval} ({}s)", interval_secs);
@@ -31,7 +35,9 @@ pub async fn run(args: MonitorArgs, config: &HsxConfig) -> Result<()> {
 
         MonitorAction::Check { url } => {
             let http = HttpClient::new(config).context("Failed to build HTTP client")?;
-            let fetch_result = http.fetch(&url).await
+            let fetch_result = http
+                .fetch(&url)
+                .await
                 .with_context(|| format!("Failed to fetch {url}"))?;
             let extracted = pipeline::extract(&fetch_result.body, &fetch_result.url);
             let changed = store.save_snapshot(&url, &extracted.text)?;
@@ -71,33 +77,31 @@ pub async fn run(args: MonitorArgs, config: &HsxConfig) -> Result<()> {
             }
         }
 
-        MonitorAction::Diff { url } => {
-            match (store.get_previous(&url)?, store.get_latest(&url)?) {
-                (Some(prev), Some(curr)) => {
-                    let diff = compute_diff_summary(&prev.content, &curr.content);
-                    println!("Diff for {url}");
-                    println!(
-                        "Additions: {}  Deletions: {}  Similarity: {:.0}%",
-                        diff.additions,
-                        diff.deletions,
-                        diff.similarity * 100.0
-                    );
-                    for line in &diff.changes {
-                        match line {
-                            DiffLine::Added(s) => println!("+ {s}"),
-                            DiffLine::Removed(s) => println!("- {s}"),
-                            DiffLine::Equal(_) => {}
-                        }
+        MonitorAction::Diff { url } => match (store.get_previous(&url)?, store.get_latest(&url)?) {
+            (Some(prev), Some(curr)) => {
+                let diff = compute_diff_summary(&prev.content, &curr.content);
+                println!("Diff for {url}");
+                println!(
+                    "Additions: {}  Deletions: {}  Similarity: {:.0}%",
+                    diff.additions,
+                    diff.deletions,
+                    diff.similarity * 100.0
+                );
+                for line in &diff.changes {
+                    match line {
+                        DiffLine::Added(s) => println!("+ {s}"),
+                        DiffLine::Removed(s) => println!("- {s}"),
+                        DiffLine::Equal(_) => {}
                     }
                 }
-                _ => {
-                    eprintln!(
-                        "Not enough snapshots for {url}. \
-                         Run `hsx monitor check {url}` first."
-                    );
-                }
             }
-        }
+            _ => {
+                eprintln!(
+                    "Not enough snapshots for {url}. \
+                         Run `hsx monitor check {url}` first."
+                );
+            }
+        },
     }
 
     Ok(())

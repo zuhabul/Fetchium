@@ -15,19 +15,8 @@ use tracing::debug;
 
 /// Tags to remove entirely (element and all children).
 const REMOVE_TAGS: &[&str] = &[
-    "script",
-    "style",
-    "nav",
-    "footer",
-    "aside",
-    "noscript",
-    "svg",
-    "iframe",
-    "form",
-    "button",
-    "input",
-    "select",
-    "textarea",
+    "script", "style", "nav", "footer", "aside", "noscript", "svg", "iframe", "form", "button",
+    "input", "select", "textarea",
 ];
 
 /// Extract content using lol_html streaming rewriter (Layer 2).
@@ -99,10 +88,13 @@ fn strip_boilerplate(html: &str) -> String {
         el.remove();
         Ok(())
     }));
-    selectors.push(element!(".sidebar, .nav, .menu, .footer, .header, .ads, .ad, .advertisement", |el| {
-        el.remove();
-        Ok(())
-    }));
+    selectors.push(element!(
+        ".sidebar, .nav, .menu, .footer, .header, .ads, .ad, .advertisement",
+        |el| {
+            el.remove();
+            Ok(())
+        }
+    ));
 
     match rewrite_str(
         html,
@@ -141,26 +133,24 @@ fn html_to_text(html: &str) -> String {
 
     let text = TAG_RE.replace_all(&text, "");
 
-    let text = ENTITY_RE.replace_all(&text, |caps: &regex::Captures| {
-        match &caps[1] {
-            "amp" => "&".to_string(),
-            "lt" => "<".to_string(),
-            "gt" => ">".to_string(),
-            "quot" => "\"".to_string(),
-            "apos" => "'".to_string(),
-            "nbsp" => " ".to_string(),
-            s if s.starts_with('#') => {
-                let num = if let Some(hex) = s.strip_prefix("#x") {
-                    u32::from_str_radix(hex, 16).ok()
-                } else {
-                    s[1..].parse::<u32>().ok()
-                };
-                num.and_then(char::from_u32)
-                    .map(|c| c.to_string())
-                    .unwrap_or_default()
-            }
-            _ => String::new(),
+    let text = ENTITY_RE.replace_all(&text, |caps: &regex::Captures| match &caps[1] {
+        "amp" => "&".to_string(),
+        "lt" => "<".to_string(),
+        "gt" => ">".to_string(),
+        "quot" => "\"".to_string(),
+        "apos" => "'".to_string(),
+        "nbsp" => " ".to_string(),
+        s if s.starts_with('#') => {
+            let num = if let Some(hex) = s.strip_prefix("#x") {
+                u32::from_str_radix(hex, 16).ok()
+            } else {
+                s[1..].parse::<u32>().ok()
+            };
+            num.and_then(char::from_u32)
+                .map(|c| c.to_string())
+                .unwrap_or_default()
         }
+        _ => String::new(),
     });
 
     text.to_string()

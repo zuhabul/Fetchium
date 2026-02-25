@@ -102,8 +102,10 @@ pub fn detect_mutations(nodes: &[GenealogyNode]) -> Vec<Mutation> {
         let from = &nodes[i];
         let to = &nodes[i + 1];
 
-        let similarity =
-            string_similarity(&from.claim_text.to_lowercase(), &to.claim_text.to_lowercase());
+        let similarity = string_similarity(
+            &from.claim_text.to_lowercase(),
+            &to.claim_text.to_lowercase(),
+        );
 
         // Only flag when similarity drops below 0.95.
         if similarity < 0.95 {
@@ -225,8 +227,16 @@ mod tests {
     #[test]
     fn substantially_different_claims_are_high_severity() {
         let chain = make_chain(&[
-            ("https://a.com", "A", "Rust provides memory safety without garbage collection"),
-            ("https://b.com", "B", "Python is an interpreted scripting language for data science"),
+            (
+                "https://a.com",
+                "A",
+                "Rust provides memory safety without garbage collection",
+            ),
+            (
+                "https://b.com",
+                "B",
+                "Python is an interpreted scripting language for data science",
+            ),
         ]);
         let high = chain
             .mutations

@@ -32,8 +32,7 @@ impl SessionMeta {
     }
 
     pub fn load(sessions_dir: &std::path::Path, id: &str) -> Result<Self, HsxError> {
-        let content =
-            std::fs::read_to_string(sessions_dir.join(id).join("session.json"))?;
+        let content = std::fs::read_to_string(sessions_dir.join(id).join("session.json"))?;
         Ok(serde_json::from_str(&content)?)
     }
 }

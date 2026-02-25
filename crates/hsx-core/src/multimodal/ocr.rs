@@ -1,7 +1,7 @@
 //! OCR text extraction via Tesseract CLI (PRD §34).
 
-use crate::error::{HsxError, HsxResult};
 use super::{ContentType, MultimodalContent, MultimodalSegment};
+use crate::error::{HsxError, HsxResult};
 use std::process::Command;
 
 /// Run Tesseract OCR on an image file.
@@ -29,7 +29,10 @@ pub fn ocr_image_file(path: &std::path::Path, lang: &str) -> HsxResult<Multimoda
 
     Ok(MultimodalContent {
         source_url: path.to_string_lossy().to_string(),
-        content_type: ContentType::Image { width: 0, height: 0 },
+        content_type: ContentType::Image {
+            width: 0,
+            height: 0,
+        },
         text: full_text.clone(),
         segments: vec![MultimodalSegment {
             offset_ms: None,

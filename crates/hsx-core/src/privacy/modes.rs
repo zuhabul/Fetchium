@@ -87,8 +87,7 @@ pub fn apply_mode(mode: PrivacyMode, config: &mut RuntimeConfig) -> Result<(), H
             check_tor_available()?;
             config.proxy = Some("socks5://127.0.0.1:9050".to_string());
             config.user_agent = Some(
-                "Mozilla/5.0 (Windows NT 10.0; rv:128.0) Gecko/20100101 Firefox/128.0"
-                    .to_string(),
+                "Mozilla/5.0 (Windows NT 10.0; rv:128.0) Gecko/20100101 Firefox/128.0".to_string(),
             );
             tracing::info!("Privacy: Tor mode — routing via SOCKS5 proxy");
         }
@@ -145,10 +144,7 @@ mod tests {
             PrivacyMode::from_str_loose("private"),
             Some(PrivacyMode::Private)
         );
-        assert_eq!(
-            PrivacyMode::from_str_loose("TOR"),
-            Some(PrivacyMode::Tor)
-        );
+        assert_eq!(PrivacyMode::from_str_loose("TOR"), Some(PrivacyMode::Tor));
         assert_eq!(PrivacyMode::from_str_loose("unknown"), None);
     }
 }

@@ -1,9 +1,9 @@
 //! Topic subscriptions with SQLite-backed store.
 
 use crate::error::{HsxError, HsxResult};
+use dirs;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
-use dirs;
 
 /// A user-defined subscription to a topic or search query.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -70,7 +70,9 @@ impl SubscriptionStore {
     }
 
     pub fn remove(&self, id: &str) -> HsxResult<bool> {
-        let n = self.conn.execute("DELETE FROM subscriptions WHERE id=?1", [id])?;
+        let n = self
+            .conn
+            .execute("DELETE FROM subscriptions WHERE id=?1", [id])?;
         Ok(n > 0)
     }
 
@@ -92,9 +94,10 @@ impl SubscriptionStore {
         })?;
         let mut subs = Vec::new();
         for row in rows {
-            let (id, topic, interval_secs, notify_json, last_checked_at, created_at, enabled) = row?;
-            let notify_method: NotifyMethod = serde_json::from_str(&notify_json)
-                .unwrap_or(NotifyMethod::Stdout);
+            let (id, topic, interval_secs, notify_json, last_checked_at, created_at, enabled) =
+                row?;
+            let notify_method: NotifyMethod =
+                serde_json::from_str(&notify_json).unwrap_or(NotifyMethod::Stdout);
             subs.push(Subscription {
                 id,
                 topic,
@@ -193,7 +196,9 @@ mod tests {
     fn test_subscription_store_roundtrip() {
         let tmp = tempfile::NamedTempFile::new().unwrap();
         let store = SubscriptionStore::new(tmp.path()).unwrap();
-        let id = store.add("Rust async news", 86400, &NotifyMethod::Stdout).unwrap();
+        let id = store
+            .add("Rust async news", 86400, &NotifyMethod::Stdout)
+            .unwrap();
         let list = store.list().unwrap();
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].id, id);

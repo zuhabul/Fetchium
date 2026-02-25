@@ -54,7 +54,10 @@ impl RetrainReport {
             });
         }
 
-        let correct = records.iter().filter(|r| r.predicted_layer == r.actual_layer).count();
+        let correct = records
+            .iter()
+            .filter(|r| r.predicted_layer == r.actual_layer)
+            .count();
         let accuracy = correct as f64 / total as f64;
 
         // Build confusion counts
@@ -66,12 +69,19 @@ impl RetrainReport {
         }
         let mut layer_confusion: Vec<LayerConfusion> = conf
             .into_iter()
-            .map(|((p, a), c)| LayerConfusion { predicted: p, actual: a, count: c })
+            .map(|((p, a), c)| LayerConfusion {
+                predicted: p,
+                actual: a,
+                count: c,
+            })
             .collect();
         layer_confusion.sort_by(|a, b| b.count.cmp(&a.count));
 
         let recommendation = if accuracy >= 0.90 {
-            format!("Predictor healthy ({:.1}% accuracy). No retrain needed.", accuracy * 100.0)
+            format!(
+                "Predictor healthy ({:.1}% accuracy). No retrain needed.",
+                accuracy * 100.0
+            )
         } else if accuracy >= 0.75 {
             format!(
                 "Moderate drift ({:.1}% accuracy). Consider retraining when >1000 new samples collected.",
@@ -111,7 +121,10 @@ impl RetrainReport {
         if !self.layer_confusion.is_empty() {
             md.push_str("## Top Layer Confusions\n\n| Predicted | Actual | Count |\n|-----------|--------|-------|\n");
             for lc in self.layer_confusion.iter().take(10) {
-                md.push_str(&format!("| L{} | L{} | {} |\n", lc.predicted, lc.actual, lc.count));
+                md.push_str(&format!(
+                    "| L{} | L{} | {} |\n",
+                    lc.predicted, lc.actual, lc.count
+                ));
             }
         }
         md

@@ -1,8 +1,8 @@
 //! `hsx compare` — side-by-side comparison of two or more items.
 
 use anyhow::{Context, Result};
-use hsx_core::compare::parser::parse_comparison_query;
 use hsx_core::compare::build_comparison;
+use hsx_core::compare::parser::parse_comparison_query;
 use hsx_core::config::HsxConfig;
 use hsx_core::extract::pipeline;
 use hsx_core::http::client::HttpClient;

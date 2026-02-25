@@ -1,18 +1,18 @@
-//! DuckDuckGo search backend — scrapes html.duckduckgo.com (PRD §15).
+//! DuckDuckGo search backend — scrapes both the full and lite HTML endpoints.
 //!
-//! Uses the lite HTML interface at html.duckduckgo.com which:
-//! - Returns clean, parseable HTML
-//! - Requires no API keys
-//! - Has no aggressive bot detection
-//! - Uses POST form submission for queries
+//! ## Endpoints (tried in order on each search call)
+//! 1. `https://html.duckduckgo.com/html/` — full HTML, richer snippets
+//! 2. `https://lite.duckduckgo.com/lite/` — lightweight fallback, more
+//!    scraper-tolerant; used when the full endpoint returns no results
 //!
-//! CSS selectors (verified against current DDG HTML output):
-//! - Results container: div.result, div.results_links_deep
-//! - Title + link: a.result__a
-//! - Display URL: span.result__url, a.result__url
-//! - Snippet: a.result__snippet
+//! Both require browser-like User-Agent + Referer headers or DDG's CDN
+//! returns a bot-detection page (~14KB, no results).
+//!
+//! ## Selectors
+//! Full HTML: `div.result`, `a.result__a`, `a.result__snippet`, `span.result__url`
+//! Lite HTML:  `b a[href]` (titles), `td[valign=top]` (snippets)
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::HsxResult;
 use crate::http::HttpClient;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
@@ -20,8 +20,14 @@ use async_trait::async_trait;
 use scraper::{Html, Selector};
 use tracing::{debug, info, warn};
 
-/// DuckDuckGo HTML endpoint (lite version, no JS required).
+/// Full DDG HTML endpoint.
 const DDG_HTML_URL: &str = "https://html.duckduckgo.com/html/";
+/// Lite DDG endpoint — simpler HTML, more bot-tolerant.
+const DDG_LITE_URL: &str = "https://lite.duckduckgo.com/lite/";
+/// Browser User-Agent (required — DDG blocks generic/empty UAs).
+const BROWSER_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
+    AppleWebKit/537.36 (KHTML, like Gecko) \
+    Chrome/121.0.0.0 Safari/537.36";
 
 /// DuckDuckGo search backend.
 pub struct DuckDuckGoBackend {
@@ -136,6 +142,84 @@ impl DuckDuckGoBackend {
         results
     }
 
+    /// Parse DDG lite HTML response into ResultItems.
+    ///
+    /// Lite DDG HTML structure:
+    /// ```html
+    /// <table>
+    ///   <tr><td colspan="2"><b><a href="DDG-REDIRECT">Title</a></b></td></tr>
+    ///   <tr>
+    ///     <td valign="top">&nbsp;</td>
+    ///     <td valign="top">Snippet text. <span class="link-text">display.url</span></td>
+    ///   </tr>
+    ///   <tr><td colspan="2"><hr/></td></tr>
+    /// </table>
+    /// ```
+    fn parse_lite_results(&self, html: &str, max_results: u32) -> Vec<ResultItem> {
+        let document = Html::parse_document(html);
+
+        // Title links are inside <b><a href="...">Title</a></b>
+        let title_sel = Selector::parse("b a[href]").expect("valid");
+        // Snippets: <td valign="top"> with substantial content (filter out &nbsp; padding cells)
+        let snippet_sel = Selector::parse("td[valign='top']").expect("valid");
+
+        let title_links: Vec<_> = document.select(&title_sel).collect();
+        let snippets: Vec<_> = document
+            .select(&snippet_sel)
+            .filter(|td| {
+                // Filter out the blank padding cells (contain only non-breaking space)
+                let text = td.text().collect::<String>();
+                let t = text.trim();
+                t.len() > 2 && t != "\u{00a0}" // exclude &nbsp; cells
+            })
+            .collect();
+
+        title_links
+            .iter()
+            .zip(snippets.iter())
+            .take(max_results as usize)
+            .enumerate()
+            .filter_map(|(i, (link, snippet_td))| {
+                let title = link.text().collect::<String>().trim().to_string();
+                let href = link.value().attr("href").unwrap_or("").to_string();
+                let url = Self::resolve_url(&href);
+
+                if title.is_empty() || url.is_empty() {
+                    return None;
+                }
+
+                let snippet = snippet_td
+                    .text()
+                    .collect::<String>()
+                    .split_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" ");
+
+                Some(ResultItem {
+                    title,
+                    url,
+                    snippet,
+                    rank: (i + 1) as u32,
+                    backend: BackendId::DuckDuckGo,
+                    score: None,
+                    published_date: None,
+                })
+            })
+            .collect()
+    }
+
+    /// Detect DDG CAPTCHA / bot-detection pages.
+    ///
+    /// DDG serves a "Select all squares containing a duck" challenge when it
+    /// detects bot traffic. The page contains `anomaly-modal` class names and
+    /// the text "bots use DuckDuckGo too". HTTP status is typically 202.
+    fn is_captcha_page(html: &str) -> bool {
+        html.contains("anomaly-modal")
+            || html.contains("bots use DuckDuckGo")
+            || html.contains("cc=botnet")
+            || (html.contains("challenge-form") && html.contains("anomaly"))
+    }
+
     /// Resolve a DDG redirect URL to the actual destination URL.
     ///
     /// DDG wraps outbound links in one of these forms:
@@ -198,52 +282,113 @@ impl SearchBackend for DuckDuckGoBackend {
             return Ok(Vec::new());
         }
 
-        // Use POST form submission (more stable than GET for DDG)
+        // ── Attempt 1: Full HTML endpoint ────────────────────────────────────
         let form: &[(&str, &str)] = &[
             ("q", query),
-            ("b", ""),      // page marker (empty = page 1)
-            ("kl", ""),     // locale (empty = default)
-            ("df", ""),     // date filter (empty = any)
+            ("b", ""),
+            ("s", "0"),
+            ("kl", ""),
+            ("df", ""),
         ];
 
-        let response = self
+        let results = match self
             .client
             .client()
             .post(DDG_HTML_URL)
             .form(form)
-            .header("Accept", "text/html,application/xhtml+xml")
+            .header("User-Agent", BROWSER_UA)
+            .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
             .header("Accept-Language", "en-US,en;q=0.9")
+            .header("Referer", "https://duckduckgo.com/")
+            .header("Cache-Control", "no-cache")
             .send()
             .await
-            .map_err(HsxError::Network)?;
+        {
+            Ok(resp) if resp.status().is_success() || resp.status().as_u16() == 202 => {
+                match resp.text().await {
+                    Ok(html) if !html.trim().is_empty() => {
+                        // Detect CAPTCHA / bot-detection page before parsing
+                        if Self::is_captcha_page(&html) {
+                            warn!("DDG: CAPTCHA detected on full endpoint for {query:?}");
+                            vec![]
+                        } else {
+                            let r = self.parse_results(&html, max_results);
+                            debug!("DDG full HTML: {} results for {query:?}", r.len());
+                            r
+                        }
+                    }
+                    _ => vec![],
+                }
+            }
+            Ok(resp) => {
+                warn!("DDG full HTML: HTTP {} for {query:?}", resp.status());
+                vec![]
+            }
+            Err(e) => {
+                warn!("DDG full HTML request failed: {e}");
+                vec![]
+            }
+        };
 
-        let status = response.status();
-        if !status.is_success() {
-            return Err(HsxError::Search(format!(
-                "DuckDuckGo returned HTTP {status} for query {query:?}"
-            )));
+        if !results.is_empty() {
+            info!("DDG: {} results for {query:?}", results.len());
+            return Ok(results);
         }
 
-        let html = response.text().await.map_err(HsxError::Network)?;
+        // ── Attempt 2: Lite endpoint fallback ────────────────────────────────
+        debug!("DDG: full HTML returned no results for {query:?}, trying lite endpoint");
 
-        if html.trim().is_empty() {
-            warn!("DDG: empty response body for query {query:?}");
-            return Ok(Vec::new());
-        }
+        let lite_form: &[(&str, &str)] = &[
+            ("q", query),
+            ("s", "0"),
+            ("o", "json"),
+            ("dc", "1"),
+        ];
 
-        let results = self.parse_results(&html, max_results);
+        let lite_results = match self
+            .client
+            .client()
+            .post(DDG_LITE_URL)
+            .form(lite_form)
+            .header("User-Agent", BROWSER_UA)
+            .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+            .header("Accept-Language", "en-US,en;q=0.9")
+            .header("Referer", "https://duckduckgo.com/")
+            .send()
+            .await
+        {
+            Ok(resp) if resp.status().is_success() || resp.status().as_u16() == 202 => {
+                match resp.text().await {
+                    Ok(html) if !html.trim().is_empty() => {
+                        if Self::is_captcha_page(&html) {
+                            warn!("DDG: CAPTCHA detected on lite endpoint for {query:?}");
+                            vec![]
+                        } else {
+                            let r = self.parse_lite_results(&html, max_results);
+                            debug!("DDG lite: {} results for {query:?}", r.len());
+                            r
+                        }
+                    }
+                    _ => vec![],
+                }
+            }
+            Ok(resp) => {
+                warn!("DDG lite: HTTP {} for {query:?}", resp.status());
+                vec![]
+            }
+            Err(e) => {
+                warn!("DDG lite request failed: {e}");
+                vec![]
+            }
+        };
 
-        if results.is_empty() {
-            warn!("DDG: no results parsed for query {query:?} (HTML len={})", html.len());
+        if lite_results.is_empty() {
+            warn!("DDG: no results for {query:?} (CAPTCHA or rate-limited)");
         } else {
-            info!("DDG: parsed {} results for {query:?}", results.len());
-            debug!(
-                "DDG top results: {:?}",
-                results.iter().take(3).map(|r| &r.title).collect::<Vec<_>>()
-            );
+            info!("DDG lite: {} results for {query:?}", lite_results.len());
         }
 
-        Ok(results)
+        Ok(lite_results)
     }
 }
 
@@ -332,7 +477,10 @@ mod tests {
     #[test]
     fn resolve_protocol_relative_url() {
         let href = "//example.com/page";
-        assert_eq!(DuckDuckGoBackend::resolve_url(href), "https://example.com/page");
+        assert_eq!(
+            DuckDuckGoBackend::resolve_url(href),
+            "https://example.com/page"
+        );
     }
 
     #[test]
@@ -365,12 +513,14 @@ mod tests {
     #[test]
     fn max_results_respected() {
         let html = (0..20)
-            .map(|i| format!(
-                r#"<div class="result results_links_deep web-result">
+            .map(|i| {
+                format!(
+                    r#"<div class="result results_links_deep web-result">
                     <a class="result__a" href="https://result{i}.com/">Result {i}</a>
                     <a class="result__snippet">Snippet {i}</a>
                 </div>"#
-            ))
+                )
+            })
             .collect::<String>();
         let html = format!("<html><body>{html}</body></html>");
         let backend = make_backend();

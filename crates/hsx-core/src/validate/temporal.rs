@@ -40,14 +40,29 @@ impl TemporalValidator {
     /// Classify query temporal intent from keywords.
     pub fn classify_intent(query: &str) -> TemporalIntent {
         let q = query.to_lowercase();
-        if ["latest", "newest", "recent", "2026", "2025", "this year", "just released"]
-            .iter()
-            .any(|s| q.contains(s))
+        if [
+            "latest",
+            "newest",
+            "recent",
+            "2026",
+            "2025",
+            "this year",
+            "just released",
+        ]
+        .iter()
+        .any(|s| q.contains(s))
         {
             TemporalIntent::Recent
-        } else if ["history of", "origin of", "when was", "first", "originally", "founded"]
-            .iter()
-            .any(|s| q.contains(s))
+        } else if [
+            "history of",
+            "origin of",
+            "when was",
+            "first",
+            "originally",
+            "founded",
+        ]
+        .iter()
+        .any(|s| q.contains(s))
         {
             TemporalIntent::Historical
         } else {
@@ -75,7 +90,7 @@ impl TemporalValidator {
                 Some(date) => {
                     let age = (now - date).num_days().unsigned_abs();
                     let mut score = (-2.0 * age as f64 / max_age as f64).exp();
-                    
+
                     // Intelligence layer: Evidence Decay Function (EDF)
                     let edf = crate::intelligence::edf::EvidenceDecayFunction::new();
                     // Just use a generic "tech" domain for broad calibration, or try to guess.
@@ -91,10 +106,7 @@ impl TemporalValidator {
                                 IssueSeverity::Warning
                             },
                             code: "V3_STALE_CONTENT".into(),
-                            message: format!(
-                                "{} days old (max {} for {intent:?})",
-                                age, max_age
-                            ),
+                            message: format!("{} days old (max {} for {intent:?})", age, max_age),
                             source_url: Some(s.url.clone()),
                         });
                     }
@@ -179,8 +191,17 @@ mod tests {
 
     #[test]
     fn intent_classification() {
-        assert_eq!(TemporalValidator::classify_intent("latest news"), TemporalIntent::Recent);
-        assert_eq!(TemporalValidator::classify_intent("history of Rust"), TemporalIntent::Historical);
-        assert_eq!(TemporalValidator::classify_intent("what is Rust"), TemporalIntent::Default);
+        assert_eq!(
+            TemporalValidator::classify_intent("latest news"),
+            TemporalIntent::Recent
+        );
+        assert_eq!(
+            TemporalValidator::classify_intent("history of Rust"),
+            TemporalIntent::Historical
+        );
+        assert_eq!(
+            TemporalValidator::classify_intent("what is Rust"),
+            TemporalIntent::Default
+        );
     }
 }

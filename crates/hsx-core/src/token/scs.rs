@@ -36,7 +36,8 @@ static ORDERED_LIST_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^\s*\d+[.)]\s+(.+)$").expect("valid regex"));
 static CODE_FENCE_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^```(\w*)\s*$").expect("valid regex"));
-static HEADING_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(#{1,6})\s+(.+)$").expect("valid regex"));
+static HEADING_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^(#{1,6})\s+(.+)$").expect("valid regex"));
 static KV_PATTERN_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^(.{3,40}):\s+(.+)$").expect("valid regex"));
 static QUOTE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^>\s*(.+)$").expect("valid regex"));
@@ -322,10 +323,7 @@ fn collect_list_items(lines: &[&str], start: usize, ordered: bool) -> (Vec<Strin
     (items, i.saturating_sub(1))
 }
 
-fn collect_kv_pairs(
-    lines: &[&str],
-    start: usize,
-) -> (Vec<serde_json::Map<String, Value>>, usize) {
+fn collect_kv_pairs(lines: &[&str], start: usize) -> (Vec<serde_json::Map<String, Value>>, usize) {
     let mut pairs = Vec::new();
     let mut i = start;
 
@@ -407,8 +405,9 @@ mod tests {
 
     #[test]
     fn scs_detects_code_blocks() {
-        let content =
-            make_content("Some text\n\n```rust\nfn main() {\n    println!(\"hello\");\n}\n```\n\nMore text");
+        let content = make_content(
+            "Some text\n\n```rust\nfn main() {\n    println!(\"hello\");\n}\n```\n\nMore text",
+        );
         let result = segment(&content);
         assert!(result
             .segments

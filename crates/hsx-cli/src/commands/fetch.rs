@@ -80,9 +80,10 @@ pub async fn run(args: FetchArgs, config: &HsxConfig, format: Format) -> anyhow:
     let http = HttpClient::new(config).context("Failed to build HTTP client")?;
 
     info!("Fetching {url}");
-    let fetch_result = http.fetch(url).await.with_context(|| {
-        format!("Failed to fetch URL: {url}")
-    })?;
+    let fetch_result = http
+        .fetch(url)
+        .await
+        .with_context(|| format!("Failed to fetch URL: {url}"))?;
     let elapsed_fetch = start.elapsed().as_millis();
 
     debug!(
@@ -110,12 +111,20 @@ pub async fn run(args: FetchArgs, config: &HsxConfig, format: Format) -> anyhow:
         // Query provided → run QATBE then PDS
         let qatbe_result = qatbe::extract_with_budget(&extracted, &query, budget);
         let pds_result = pds::apply_tier(&extracted.text, &qatbe_result.segments, pds_tier);
-        (pds_result.content, pds_result.tokens_used, pds_result.segments)
+        (
+            pds_result.content,
+            pds_result.tokens_used,
+            pds_result.segments,
+        )
     } else {
         // No query → run QATBE with empty query for segmentation, then PDS
         let qatbe_result = qatbe::extract_with_budget(&extracted, "", budget);
         let pds_result = pds::apply_tier(&extracted.text, &qatbe_result.segments, pds_tier);
-        (pds_result.content, pds_result.tokens_used, pds_result.segments)
+        (
+            pds_result.content,
+            pds_result.tokens_used,
+            pds_result.segments,
+        )
     };
 
     let total_elapsed = start.elapsed().as_millis();
@@ -150,7 +159,11 @@ pub async fn run(args: FetchArgs, config: &HsxConfig, format: Format) -> anyhow:
         eprintln!(
             "  Trust score:              {:.0}% ({})",
             result.trust_score * 100.0,
-            if result.is_shadow { "shadow mode" } else { "active mode" }
+            if result.is_shadow {
+                "shadow mode"
+            } else {
+                "active mode"
+            }
         );
         if !result.flags.is_empty() {
             eprintln!("  Flags: {:?}", result.flags);
@@ -191,8 +204,7 @@ pub async fn run(args: FetchArgs, config: &HsxConfig, format: Format) -> anyhow:
                 },
                 "content": content,
             });
-            serde_json::to_string_pretty(&obj)
-                .unwrap_or_else(|_| content.clone())
+            serde_json::to_string_pretty(&obj).unwrap_or_else(|_| content.clone())
         }
         Format::Segments => format_segments_json(&segments),
         Format::Markdown => {
@@ -202,7 +214,11 @@ pub async fn run(args: FetchArgs, config: &HsxConfig, format: Format) -> anyhow:
                 effective_url,
                 &content,
                 tokens_used,
-                if metadata_str.is_empty() { None } else { Some(&metadata_str) },
+                if metadata_str.is_empty() {
+                    None
+                } else {
+                    Some(&metadata_str)
+                },
             );
             // Prepend colored header: bold title + separator in dimmed style
             let header = format!(

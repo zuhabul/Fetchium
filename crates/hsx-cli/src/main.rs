@@ -64,11 +64,9 @@ async fn main() -> anyhow::Result<()> {
         Commands::Compare(args) => commands::compare::run(args, &config, format).await,
         Commands::Monitor(args) => commands::monitor::run(args, &config).await,
         Commands::Index(args) => commands::index::run(args, &config, format).await,
-        Commands::Intelligence { sub } => {
-            commands::intelligence::run(&config, sub)
-                .await
-                .map_err(|e| anyhow::anyhow!("{e}"))
-        }
+        Commands::Intelligence { sub } => commands::intelligence::run(&config, sub)
+            .await
+            .map_err(|e| anyhow::anyhow!("{e}")),
         Commands::Plugin { sub } => commands::plugin::run(sub),
         Commands::Workspace { sub } => commands::workspace::run(sub),
         Commands::Subscribe { sub } => commands::subscribe::run(sub),
@@ -81,6 +79,8 @@ async fn main() -> anyhow::Result<()> {
             commands::completions::run(shell);
             Ok(())
         }
+        Commands::YouTube(args) => commands::youtube::run(args, &config, format).await,
+        Commands::Social(args) => commands::social::run(args, &config, format).await,
         Commands::Provider { action } => commands::provider::run(action, &config).await,
     }
 }

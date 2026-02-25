@@ -122,11 +122,7 @@ impl SourceTrustMemory {
     /// Count of tracked domains.
     pub fn domain_count(&self) -> Result<u64, HsxError> {
         let conn = self.conn.lock().unwrap();
-        let n: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM domain_trust",
-            [],
-            |row| row.get(0),
-        )?;
+        let n: i64 = conn.query_row("SELECT COUNT(*) FROM domain_trust", [], |row| row.get(0))?;
         Ok(n as u64)
     }
 

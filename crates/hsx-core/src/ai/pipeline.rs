@@ -3,7 +3,7 @@
 use crate::ai::prompt::{factual_system_prompt, synthesis_system_prompt};
 use crate::ai::provider_client::chat_with_fallback;
 use crate::ai::sandwich::{assemble_context, sandwich_layout};
-use crate::ai::setup::{DeviceSpec, format_setup_guide};
+use crate::ai::setup::{format_setup_guide, DeviceSpec};
 use crate::ai::types::{AiConfig, AiPreviewResult, ChatMessage, RankedSource};
 use crate::config::HsxConfig;
 use crate::error::HsxError;
@@ -35,16 +35,14 @@ pub async fn run_ai_pipeline(
     // Step 1: Search
     let orch_config = OrchestratorConfig::from_hsx_config(hsx_config, max_sources as u32);
     let orchestrator = SearchOrchestrator::new(http_client.clone(), orch_config);
-    let search_results = orchestrator
-        .search(query, Some(max_sources as u32))
-        .await?;
+    let search_results = orchestrator.search(query, Some(max_sources as u32)).await?;
 
     let top_n = search_results.len().min(max_sources);
     let per_source_budget = (token_budget / top_n.max(1)).max(200);
 
     // Step 2: Fetch and extract content with bounded concurrency (3) to save memory
     use futures::stream::{self, StreamExt};
-    
+
     let mut fetch_stream = stream::iter(search_results.into_iter().take(top_n).enumerate())
         .map(|(orig_idx, item)| {
             let client = http_client.clone();
@@ -183,7 +181,12 @@ mod tests {
             url: "https://example.com".into(),
             title: "Example".into(),
         }];
-        let spec = DeviceSpec { total_ram_gb: 16.0, cpu_cores: 8, is_apple_silicon: false, usable_ram_gb: 11.5 };
+        let spec = DeviceSpec {
+            total_ram_gb: 16.0,
+            cpu_cores: 8,
+            is_apple_silicon: false,
+            usable_ram_gb: 11.5,
+        };
         let result = format_fallback(&sources, "test query", &spec);
         assert!(result.contains("test query"));
         assert!(result.contains("Example"));

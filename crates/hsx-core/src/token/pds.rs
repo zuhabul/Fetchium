@@ -95,7 +95,11 @@ fn apply_key_facts(text: &str, segments: &[Segment]) -> PdsResult {
     let tokens_used = tracker.used;
     let truncated = tokens_used < count_tokens(text);
 
-    debug!("PDS key_facts: {} segments, {} tokens", selected.len(), tokens_used);
+    debug!(
+        "PDS key_facts: {} segments, {} tokens",
+        selected.len(),
+        tokens_used
+    );
 
     PdsResult {
         tier: PdsTier::KeyFacts,
@@ -171,7 +175,11 @@ fn apply_summary(text: &str, segments: &[Segment]) -> PdsResult {
     let tokens_used = tracker.used;
     let truncated = tokens_used < count_tokens(text);
 
-    debug!("PDS summary: {} segments, {} tokens", selected.len(), tokens_used);
+    debug!(
+        "PDS summary: {} segments, {} tokens",
+        selected.len(),
+        tokens_used
+    );
 
     PdsResult {
         tier: PdsTier::Summary,
@@ -239,7 +247,11 @@ fn apply_detailed(text: &str, segments: &[Segment]) -> PdsResult {
     let tokens_used = tracker.used;
     let truncated = tokens_used < count_tokens(text);
 
-    debug!("PDS detailed: {} segments, {} tokens", selected.len(), tokens_used);
+    debug!(
+        "PDS detailed: {} segments, {} tokens",
+        selected.len(),
+        tokens_used
+    );
 
     PdsResult {
         tier: PdsTier::Detailed,
@@ -292,9 +304,18 @@ fn truncate_to_budget(text: &str, budget: u32) -> String {
         return text.to_string();
     }
 
-    let truncated = &text[..max_chars.min(text.len())];
+    // Find safe char boundary at or before max_chars
+    let safe_end = {
+        let target = max_chars.min(text.len());
+        let mut idx = target;
+        while idx > 0 && !text.is_char_boundary(idx) {
+            idx -= 1;
+        }
+        idx
+    };
+    let truncated = &text[..safe_end];
     match truncated.rfind([' ', '\n']) {
-        Some(pos) if pos > max_chars / 2 => {
+        Some(pos) if pos > safe_end / 2 => {
             format!("{}...", truncated[..pos].trim_end())
         }
         _ => format!("{truncated}..."),
@@ -321,8 +342,18 @@ mod tests {
         let text = "Long article content with many paragraphs. ".repeat(200);
         let segs = vec![
             make_segment("Key finding one about Rust.", SegmentType::Fact, 0.9, 0),
-            make_segment("Key finding two about performance.", SegmentType::Fact, 0.8, 1),
-            make_segment("Supporting detail with more context.", SegmentType::Paragraph, 0.5, 2),
+            make_segment(
+                "Key finding two about performance.",
+                SegmentType::Fact,
+                0.8,
+                1,
+            ),
+            make_segment(
+                "Supporting detail with more context.",
+                SegmentType::Paragraph,
+                0.5,
+                2,
+            ),
         ];
         let result = apply_tier(&text, &segs, PdsTier::KeyFacts);
         assert_eq!(result.tier, PdsTier::KeyFacts);
@@ -334,12 +365,14 @@ mod tests {
     fn summary_tier_includes_more_than_key_facts() {
         let text = "Article with lots of content. ".repeat(200);
         let segs: Vec<Segment> = (0..20)
-            .map(|i| make_segment(
-                &format!("Segment {i} with some substantial content that fills tokens."),
-                SegmentType::Paragraph,
-                1.0 - (i as f64 * 0.05),
-                i as u32,
-            ))
+            .map(|i| {
+                make_segment(
+                    &format!("Segment {i} with some substantial content that fills tokens."),
+                    SegmentType::Paragraph,
+                    1.0 - (i as f64 * 0.05),
+                    i as u32,
+                )
+            })
             .collect();
 
         let key_facts = apply_tier(&text, &segs, PdsTier::KeyFacts);

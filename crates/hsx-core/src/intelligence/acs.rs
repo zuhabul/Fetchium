@@ -123,8 +123,7 @@ impl AiContentDetector {
         }
         let mean = lengths.iter().sum::<f64>() / lengths.len() as f64;
         let std_dev =
-            (lengths.iter().map(|l| (l - mean).powi(2)).sum::<f64>() / lengths.len() as f64)
-                .sqrt();
+            (lengths.iter().map(|l| (l - mean).powi(2)).sum::<f64>() / lengths.len() as f64).sqrt();
         (std_dev / mean.max(1.0)).clamp(0.0, 1.0)
     }
 }
@@ -146,7 +145,14 @@ impl BotFarmDetector {
         // Known content-farm / clickbait TLD patterns
         let lower = domain.to_lowercase();
         let suspicious_patterns = [
-            ".click", ".info", ".biz", ".xyz", "bestof", "top10", "viral", "clickbait",
+            ".click",
+            ".info",
+            ".biz",
+            ".xyz",
+            "bestof",
+            "top10",
+            "viral",
+            "clickbait",
         ];
         for pat in suspicious_patterns {
             if lower.contains(pat) {
@@ -170,8 +176,15 @@ impl ManipulationDetector {
         let mut score = 0.0_f64;
 
         // Excessive hedging / uncertainty language common in disinformation
-        let hedge_words = ["they say", "some people claim", "allegedly", "reportedly",
-                           "sources say", "rumored", "unverified"];
+        let hedge_words = [
+            "they say",
+            "some people claim",
+            "allegedly",
+            "reportedly",
+            "sources say",
+            "rumored",
+            "unverified",
+        ];
         let hedge_count = hedge_words.iter().filter(|w| lower.contains(*w)).count();
         score += (hedge_count as f64 * 0.1).min(0.4);
 
@@ -353,8 +366,10 @@ mod tests {
                      RUMORED to be true allegedly allegedly allegedly allegedly allegedly";
         let result = acs.analyze(manip, "clickbait.click");
         // Trust score will be low; action should not be Include
-        assert!(!matches!(result.action, AcsAction::Include),
-                "expected non-Include for low-trust content");
+        assert!(
+            !matches!(result.action, AcsAction::Include),
+            "expected non-Include for low-trust content"
+        );
     }
 
     #[test]

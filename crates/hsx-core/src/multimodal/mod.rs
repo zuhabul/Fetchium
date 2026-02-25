@@ -18,10 +18,21 @@ pub struct MultimodalContent {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ContentType {
-    Video { duration_secs: u32, transcript_source: String },
-    Pdf { page_count: u32 },
-    Image { width: u32, height: u32 },
-    Chart { chart_type: String, series_count: usize },
+    Video {
+        duration_secs: u32,
+        transcript_source: String,
+    },
+    Pdf {
+        page_count: u32,
+    },
+    Image {
+        width: u32,
+        height: u32,
+    },
+    Chart {
+        chart_type: String,
+        series_count: usize,
+    },
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

@@ -3,11 +3,11 @@
 //! Key derivation: Argon2id with a fixed salt (uniqueness via per-message nonces).
 //! Nonce generation: UUID v4 bytes (CSPRNG-backed via the `uuid` crate).
 
+use crate::error::HsxError;
 use aes_gcm::{
     aead::{Aead, KeyInit},
     Aes256Gcm, Key, Nonce,
 };
-use crate::error::HsxError;
 
 const NONCE_LEN: usize = 12;
 

@@ -18,10 +18,7 @@ pub fn format_search_markdown(result: &SearchResult) -> String {
     let mut out = String::new();
 
     // Header
-    out.push_str(&format!(
-        "# Search Results: {}\n\n",
-        result.meta.query
-    ));
+    out.push_str(&format!("# Search Results: {}\n\n", result.meta.query));
     out.push_str(&format!(
         "_Found {} results in {}ms_\n\n",
         result.items.len(),
@@ -35,10 +32,7 @@ pub fn format_search_markdown(result: &SearchResult) -> String {
     }
 
     for item in &result.items {
-        out.push_str(&format!(
-            "## {}. {}\n",
-            item.rank, item.title
-        ));
+        out.push_str(&format!("## {}. {}\n", item.rank, item.title));
         out.push_str(&format!("**URL:** <{}>\n\n", item.url));
         if !item.snippet.is_empty() {
             out.push_str(&format!("{}\n\n", item.snippet));
@@ -80,9 +74,8 @@ pub fn format_search_text(result: &SearchResult) -> String {
 
 /// Format search results as a JSON string (pretty-printed).
 pub fn format_search_json(result: &SearchResult) -> String {
-    serde_json::to_string_pretty(result).unwrap_or_else(|e| {
-        format!("{{\"error\": \"Serialization failed: {e}\"}}")
-    })
+    serde_json::to_string_pretty(result)
+        .unwrap_or_else(|e| format!("{{\"error\": \"Serialization failed: {e}\"}}"))
 }
 
 // ─── Fetch / Content Formatters ──────────────────────────────────
@@ -140,9 +133,8 @@ pub fn format_content_text(title: &str, url: &str, content: &str) -> String {
 /// This is the primary output format for `agent-search` and `agent-fetch`.
 /// Every field is included — the agent decides what to use.
 pub fn format_agent_json(result: &AgentSearchResult) -> String {
-    serde_json::to_string_pretty(result).unwrap_or_else(|e| {
-        format!("{{\"error\": \"Serialization failed: {e}\"}}")
-    })
+    serde_json::to_string_pretty(result)
+        .unwrap_or_else(|e| format!("{{\"error\": \"Serialization failed: {e}\"}}"))
 }
 
 /// Format segments as a JSON array optimized for AI consumption.
@@ -209,21 +201,38 @@ pub fn wrap_text(text: &str, width: usize) -> String {
 }
 
 /// Truncate a string to max_len chars, appending "..." if truncated.
+///
+/// Uses char-boundary-safe slicing to avoid panics on multi-byte characters.
 pub fn truncate_str(s: &str, max_len: usize) -> String {
     if s.len() <= max_len {
         return s.to_string();
     }
-    let truncated = &s[..max_len.saturating_sub(3)];
+    let target = max_len.saturating_sub(3);
+    let safe_end = safe_byte_index(s, target);
+    let truncated = &s[..safe_end];
     match truncated.rfind(' ') {
-        Some(pos) if pos > max_len / 2 => format!("{}...", &truncated[..pos]),
+        Some(pos) if pos > safe_end / 2 => format!("{}...", &truncated[..pos]),
         _ => format!("{truncated}..."),
     }
+}
+
+/// Find the last valid UTF-8 char boundary at or before `target` byte index.
+fn safe_byte_index(s: &str, target: usize) -> usize {
+    if target >= s.len() {
+        return s.len();
+    }
+    // Walk backwards from target to find a char boundary
+    let mut idx = target;
+    while idx > 0 && !s.is_char_boundary(idx) {
+        idx -= 1;
+    }
+    idx
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{BackendId, PdsTier, ResourceTier, SearchMode, SearchMeta};
+    use crate::types::{BackendId, PdsTier, ResourceTier, SearchMeta, SearchMode};
     use std::collections::HashMap;
 
     fn make_search_result(query: &str, items: Vec<ResultItem>) -> SearchResult {
@@ -314,15 +323,13 @@ mod tests {
 
     #[test]
     fn segments_json_format() {
-        let segs = vec![
-            Segment {
-                seg_type: crate::types::SegmentType::Paragraph,
-                relevance: 0.85,
-                tokens: 42,
-                content: serde_json::Value::String("Test content".into()),
-                source_ref: Some(0),
-            },
-        ];
+        let segs = vec![Segment {
+            seg_type: crate::types::SegmentType::Paragraph,
+            relevance: 0.85,
+            tokens: 42,
+            content: serde_json::Value::String("Test content".into()),
+            source_ref: Some(0),
+        }];
         let json = format_segments_json(&segs);
         let parsed: serde_json::Value = serde_json::from_str(&json).expect("valid JSON");
         assert!(parsed.is_array());

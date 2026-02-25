@@ -53,11 +53,7 @@ enum BlockType {
 }
 
 /// Run the QATBE pipeline on extracted content.
-pub fn extract_with_budget(
-    content: &ExtractedContent,
-    query: &str,
-    budget: u32,
-) -> QatbeResult {
+pub fn extract_with_budget(content: &ExtractedContent, query: &str, budget: u32) -> QatbeResult {
     info!(
         "QATBE: query={query:?}, budget={budget}, source_tokens={}",
         content.tokens
@@ -170,10 +166,7 @@ pub fn extract_with_budget(
 /// memory on long documents (consistent with QADD's EMBED_BATCH_SIZE).
 #[cfg(feature = "embeddings")]
 fn hybrid_rank_blocks(blocks: &mut [TextBlock], query: &str) {
-    let max_bm25 = blocks
-        .iter()
-        .map(|b| b.relevance)
-        .fold(0.0f64, f64::max);
+    let max_bm25 = blocks.iter().map(|b| b.relevance).fold(0.0f64, f64::max);
 
     if max_bm25 <= 0.0 {
         return;
@@ -364,10 +357,7 @@ fn classify_block(text: &str) -> BlockType {
 
     if trimmed.len() < 100
         && !trimmed.contains('.')
-        && trimmed
-            .chars()
-            .next()
-            .is_some_and(|c| c.is_uppercase())
+        && trimmed.chars().next().is_some_and(|c| c.is_uppercase())
     {
         return BlockType::Heading;
     }
@@ -470,13 +460,24 @@ fn block_to_segment(block: &TextBlock, index: usize) -> Segment {
 }
 
 /// Truncate text to fit within an approximate token count.
+///
+/// Uses char-boundary-safe slicing to avoid panics on multi-byte characters
+/// (e.g., em-dashes, CJK, emoji).
 fn truncate_to_tokens(text: &str, max_tokens: u32) -> String {
     let max_chars = (max_tokens as f64 * 4.0) as usize;
     if text.len() <= max_chars {
         return text.to_string();
     }
 
-    let truncated = &text[..max_chars];
+    // Find the last valid char boundary at or before max_chars
+    let safe_end = text
+        .char_indices()
+        .take_while(|&(i, _)| i <= max_chars)
+        .last()
+        .map(|(i, c)| i + c.len_utf8())
+        .unwrap_or(0);
+
+    let truncated = &text[..safe_end];
     match truncated.rfind(' ') {
         Some(pos) => format!("{}...", &truncated[..pos]),
         None => format!("{truncated}..."),
@@ -513,11 +514,7 @@ mod tests {
         assert!(!result.segments.is_empty());
         let first = &result.segments[0];
         assert!(
-            first
-                .content
-                .as_str()
-                .unwrap_or("")
-                .contains("Rust"),
+            first.content.as_str().unwrap_or("").contains("Rust"),
             "First segment should be about Rust"
         );
     }
@@ -574,7 +571,9 @@ mod tests {
             BlockType::Quote
         ));
         assert!(matches!(
-            classify_block("This is a regular paragraph with multiple sentences. It contains details."),
+            classify_block(
+                "This is a regular paragraph with multiple sentences. It contains details."
+            ),
             BlockType::Paragraph
         ));
     }

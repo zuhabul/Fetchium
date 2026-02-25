@@ -59,12 +59,7 @@ fn bench_rerank_with_duplicates(c: &mut Criterion) {
         });
     }
     c.bench_function("rank/bm25/rerank_100_with_dupes", |b| {
-        b.iter(|| {
-            rerank(
-                black_box(results.clone()),
-                black_box("Rust ownership"),
-            )
-        })
+        b.iter(|| rerank(black_box(results.clone()), black_box("Rust ownership")))
     });
 }
 

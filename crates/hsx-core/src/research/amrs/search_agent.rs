@@ -1,13 +1,13 @@
 //! Search Agent — dispatches queries to the search orchestrator (PRD §8.8).
 
-use async_trait::async_trait;
+use crate::config::HsxConfig;
 use crate::error::HsxError;
+use crate::http::client::HttpClient;
 use crate::research::amrs::agent::Agent;
 use crate::research::amrs::channel::{AgentMessage, AgentReceiver, AgentSender, AgentType};
 use crate::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
 use crate::types::ResultItem;
-use crate::http::client::HttpClient;
-use crate::config::HsxConfig;
+use async_trait::async_trait;
 use std::collections::HashSet;
 
 /// Executes search queries and discovers multi-hop follow-ups.
@@ -18,7 +18,10 @@ pub struct SearchAgent {
 
 impl SearchAgent {
     pub fn new(http_client: HttpClient, hsx_config: HsxConfig) -> Self {
-        Self { http_client, hsx_config }
+        Self {
+            http_client,
+            hsx_config,
+        }
     }
 
     /// Detect follow-up queries from result snippets not covered by the original query.
@@ -65,7 +68,10 @@ impl Agent for SearchAgent {
                     let orchestrator =
                         SearchOrchestrator::new(self.http_client.clone(), orch_config);
 
-                    let results = orchestrator.search(&query, Some(10)).await.unwrap_or_default();
+                    let results = orchestrator
+                        .search(&query, Some(10))
+                        .await
+                        .unwrap_or_default();
 
                     let follow_ups = if depth > 0 {
                         self.detect_follow_ups(&query, &results)

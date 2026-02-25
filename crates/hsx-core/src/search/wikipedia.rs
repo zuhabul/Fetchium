@@ -169,7 +169,10 @@ mod tests {
         let title = "Rust (programming language)";
         let slug = title.replace(' ', "_");
         let url = format!("https://en.wikipedia.org/wiki/{slug}");
-        assert_eq!(url, "https://en.wikipedia.org/wiki/Rust_(programming_language)");
+        assert_eq!(
+            url,
+            "https://en.wikipedia.org/wiki/Rust_(programming_language)"
+        );
     }
 
     #[test]

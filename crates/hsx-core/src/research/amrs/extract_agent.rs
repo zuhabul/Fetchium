@@ -1,12 +1,14 @@
 //! Extract Agent — fetches URLs and runs CEP content extraction (PRD §8.8).
 
-use async_trait::async_trait;
-use sha2::{Digest, Sha256};
 use crate::error::HsxError;
 use crate::extract::pipeline::extract;
 use crate::http::client::HttpClient;
 use crate::research::amrs::agent::Agent;
-use crate::research::amrs::channel::{AgentMessage, AgentReceiver, AgentSender, AgentType, AmrsSource};
+use crate::research::amrs::channel::{
+    AgentMessage, AgentReceiver, AgentSender, AgentType, AmrsSource,
+};
+use async_trait::async_trait;
+use sha2::{Digest, Sha256};
 
 /// Fetches URLs and extracts content using the CEP pipeline.
 pub struct ExtractAgent {
@@ -22,7 +24,11 @@ impl ExtractAgent {
     fn sha256_hex(data: &str) -> String {
         let mut hasher = Sha256::new();
         hasher.update(data.as_bytes());
-        hasher.finalize().iter().map(|b| format!("{b:02x}")).collect()
+        hasher
+            .finalize()
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect()
     }
 }
 
@@ -78,9 +84,7 @@ impl Agent for ExtractAgent {
                             .await;
                     }
 
-                    let _ = tx
-                        .send(AgentMessage::ExtractComplete { sources })
-                        .await;
+                    let _ = tx.send(AgentMessage::ExtractComplete { sources }).await;
                 }
                 AgentMessage::Shutdown => break,
                 _ => {}

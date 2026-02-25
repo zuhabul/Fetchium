@@ -173,7 +173,11 @@ fn build_snippet(q: &SoQuestion) -> String {
         }
     }
 
-    let status = if q.is_answered { "Answered" } else { "Unanswered" };
+    let status = if q.is_answered {
+        "Answered"
+    } else {
+        "Unanswered"
+    };
     parts.push(format!(
         "{status} | {} answers | score {}",
         q.answer_count, q.score
@@ -262,7 +266,10 @@ mod tests {
     fn decode_html_entities_works() {
         assert_eq!(decode_html_entities("A &amp; B"), "A & B");
         assert_eq!(decode_html_entities("&lt;code&gt;"), "<code>");
-        assert_eq!(decode_html_entities("it&#39;s &quot;quoted&quot;"), "it's \"quoted\"");
+        assert_eq!(
+            decode_html_entities("it&#39;s &quot;quoted&quot;"),
+            "it's \"quoted\""
+        );
     }
 
     #[test]

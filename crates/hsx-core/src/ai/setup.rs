@@ -75,10 +75,10 @@ impl RecommendCategory {
     pub fn label(&self) -> &'static str {
         match self {
             Self::BestForDevice => "BEST FOR YOU",
-            Self::FastAndLight  => "FAST & LIGHT",
-            Self::MaxQuality    => "MAX QUALITY",
-            Self::Reasoning     => "REASONING",
-            Self::TooLarge      => "TOO LARGE (swap risk)",
+            Self::FastAndLight => "FAST & LIGHT",
+            Self::MaxQuality => "MAX QUALITY",
+            Self::Reasoning => "REASONING",
+            Self::TooLarge => "TOO LARGE (swap risk)",
         }
     }
 }
@@ -86,19 +86,67 @@ impl RecommendCategory {
 /// All models we know about, in descending quality order.
 /// size_gb is Q4_K_M quantization footprint.
 static KNOWN_MODELS: &[(&str, f64, &str)] = &[
-    ("qwen3:30b-a3b",  17.0, "Qwen3 30B MoE (3B active) — best reasoning with low compute cost"),
-    ("deepseek-r1:32b", 20.0, "DeepSeek-R1 32B — state-of-the-art reasoning, large context"),
-    ("qwen3:14b",        9.0, "Qwen3 14B — best quality/size ratio, multilingual, tool use"),
-    ("deepseek-r1:14b",  9.0, "DeepSeek-R1 14B — chain-of-thought reasoning, 128k context"),
-    ("gemma3:12b",       7.5, "Gemma3 12B — Google's best 12B, strong at code and analysis"),
-    ("qwen3:8b",         5.0, "Qwen3 8B — fast, accurate, excellent at following instructions"),
-    ("deepseek-r1:7b",   4.7, "DeepSeek-R1 7B — reasoning specialist, great for Q&A"),
-    ("gemma3:9b",        5.5, "Gemma3 9B — well-rounded, fast, strong at code"),
-    ("qwen3:4b",         2.6, "Qwen3 4B — compact, surprisingly capable"),
-    ("phi3:mini",        2.3, "Phi-3 Mini — Microsoft's 3.8B, punches above its weight"),
-    ("gemma3:2b",        1.8, "Gemma3 2B — smallest useful model, good for simple Q&A"),
-    ("qwen3:1.7b",       1.2, "Qwen3 1.7B — ultra-light, CPU-only viable"),
-    ("gemma3:1b",        0.8, "Gemma3 1B — absolute minimum, fast even on old hardware"),
+    (
+        "qwen3:30b-a3b",
+        17.0,
+        "Qwen3 30B MoE (3B active) — best reasoning with low compute cost",
+    ),
+    (
+        "deepseek-r1:32b",
+        20.0,
+        "DeepSeek-R1 32B — state-of-the-art reasoning, large context",
+    ),
+    (
+        "qwen3:14b",
+        9.0,
+        "Qwen3 14B — best quality/size ratio, multilingual, tool use",
+    ),
+    (
+        "deepseek-r1:14b",
+        9.0,
+        "DeepSeek-R1 14B — chain-of-thought reasoning, 128k context",
+    ),
+    (
+        "gemma3:12b",
+        7.5,
+        "Gemma3 12B — Google's best 12B, strong at code and analysis",
+    ),
+    (
+        "qwen3:8b",
+        5.0,
+        "Qwen3 8B — fast, accurate, excellent at following instructions",
+    ),
+    (
+        "deepseek-r1:7b",
+        4.7,
+        "DeepSeek-R1 7B — reasoning specialist, great for Q&A",
+    ),
+    (
+        "gemma3:9b",
+        5.5,
+        "Gemma3 9B — well-rounded, fast, strong at code",
+    ),
+    ("qwen3:4b", 2.6, "Qwen3 4B — compact, surprisingly capable"),
+    (
+        "phi3:mini",
+        2.3,
+        "Phi-3 Mini — Microsoft's 3.8B, punches above its weight",
+    ),
+    (
+        "gemma3:2b",
+        1.8,
+        "Gemma3 2B — smallest useful model, good for simple Q&A",
+    ),
+    (
+        "qwen3:1.7b",
+        1.2,
+        "Qwen3 1.7B — ultra-light, CPU-only viable",
+    ),
+    (
+        "gemma3:1b",
+        0.8,
+        "Gemma3 1B — absolute minimum, fast even on old hardware",
+    ),
 ];
 
 /// Build a ranked, categorised recommendation list for this device.
@@ -107,9 +155,9 @@ pub fn recommend_models(spec: &DeviceSpec) -> Vec<ModelRecommendation> {
     let mut recs: Vec<ModelRecommendation> = Vec::new();
 
     // Determine tiers based on usable RAM
-    let best_name  = best_model_name(usable);
-    let fast_name  = fast_model_name(usable);
-    let max_name   = max_quality_model_name(usable);
+    let best_name = best_model_name(usable);
+    let fast_name = fast_model_name(usable);
+    let max_name = max_quality_model_name(usable);
     let reason_name = reasoning_model_name(usable);
 
     for &(name, size_gb, description) in KNOWN_MODELS {
@@ -131,19 +179,24 @@ pub fn recommend_models(spec: &DeviceSpec) -> Vec<ModelRecommendation> {
         } else if size_gb > usable {
             RecommendCategory::TooLarge
         } else {
-            continue // Don't include models that don't fit any category
+            continue; // Don't include models that don't fit any category
         };
 
-        recs.push(ModelRecommendation { name, size_gb, description, category });
+        recs.push(ModelRecommendation {
+            name,
+            size_gb,
+            description,
+            category,
+        });
     }
 
     // Sort: BestForDevice first, TooLarge last
     recs.sort_by_key(|r| match r.category {
         RecommendCategory::BestForDevice => 0,
-        RecommendCategory::FastAndLight  => 1,
-        RecommendCategory::MaxQuality    => 2,
-        RecommendCategory::Reasoning     => 3,
-        RecommendCategory::TooLarge      => 4,
+        RecommendCategory::FastAndLight => 1,
+        RecommendCategory::MaxQuality => 2,
+        RecommendCategory::Reasoning => 3,
+        RecommendCategory::TooLarge => 4,
     });
 
     recs
@@ -152,22 +205,22 @@ pub fn recommend_models(spec: &DeviceSpec) -> Vec<ModelRecommendation> {
 /// The single best model name for the given usable RAM.
 pub fn best_model_name(usable_gb: f64) -> &'static str {
     match usable_gb as u64 {
-        u if u >= 28 => "qwen3:30b-a3b",   // 17 GB — fits in 32GB machines
-        u if u >= 20 => "qwen3:14b",        // 9 GB — best in class for 24GB
-        u if u >= 11 => "qwen3:14b",        // 9 GB — fits safely in 16GB
-        u if u >= 6  => "qwen3:8b",         // 5 GB — best for 8-12GB
-        u if u >= 4  => "deepseek-r1:7b",   // 4.7 GB — small but reasoning-focused
-        u if u >= 2  => "qwen3:4b",         // 2.6 GB
-        _            => "gemma3:1b",         // Absolute minimum
+        u if u >= 28 => "qwen3:30b-a3b", // 17 GB — fits in 32GB machines
+        u if u >= 20 => "qwen3:14b",     // 9 GB — best in class for 24GB
+        u if u >= 11 => "qwen3:14b",     // 9 GB — fits safely in 16GB
+        u if u >= 6 => "qwen3:8b",       // 5 GB — best for 8-12GB
+        u if u >= 4 => "deepseek-r1:7b", // 4.7 GB — small but reasoning-focused
+        u if u >= 2 => "qwen3:4b",       // 2.6 GB
+        _ => "gemma3:1b",                // Absolute minimum
     }
 }
 
 fn fast_model_name(usable_gb: f64) -> Option<&'static str> {
     match usable_gb as u64 {
         u if u >= 11 => Some("qwen3:8b"),
-        u if u >= 6  => Some("deepseek-r1:7b"),
-        u if u >= 3  => Some("phi3:mini"),
-        _            => None,
+        u if u >= 6 => Some("deepseek-r1:7b"),
+        u if u >= 3 => Some("phi3:mini"),
+        _ => None,
     }
 }
 
@@ -175,16 +228,16 @@ fn max_quality_model_name(usable_gb: f64) -> Option<&'static str> {
     match usable_gb as u64 {
         u if u >= 28 => Some("deepseek-r1:32b"),
         u if u >= 11 => Some("deepseek-r1:14b"),
-        u if u >= 6  => Some("gemma3:9b"),
-        _            => None,
+        u if u >= 6 => Some("gemma3:9b"),
+        _ => None,
     }
 }
 
 fn reasoning_model_name(usable_gb: f64) -> Option<&'static str> {
     match usable_gb as u64 {
         u if u >= 11 => Some("deepseek-r1:14b"),
-        u if u >= 5  => Some("deepseek-r1:7b"),
-        _            => None,
+        u if u >= 5 => Some("deepseek-r1:7b"),
+        _ => None,
     }
 }
 
@@ -217,7 +270,11 @@ pub fn format_setup_guide(spec: &DeviceSpec) -> String {
         "  Your device: {:.0} GB RAM, {} cores{}\n",
         spec.total_ram_gb,
         spec.cpu_cores,
-        if spec.is_apple_silicon { ", Apple Silicon (fast)" } else { ", Intel/AMD (CPU inference)" }
+        if spec.is_apple_silicon {
+            ", Apple Silicon (fast)"
+        } else {
+            ", Intel/AMD (CPU inference)"
+        }
     ));
     out.push_str(&format!(
         "  Usable for LLM: ~{:.0} GB\n\n",
@@ -233,10 +290,7 @@ pub fn format_setup_guide(spec: &DeviceSpec) -> String {
             rec.size_gb,
             rec.description
         ));
-        out.push_str(&format!(
-            "      ollama pull {}\n\n",
-            rec.name
-        ));
+        out.push_str(&format!("      ollama pull {}\n\n", rec.name));
     }
 
     // Quick-start
@@ -246,7 +300,9 @@ pub fn format_setup_guide(spec: &DeviceSpec) -> String {
     out.push_str(&format!("    ollama pull {best}\n"));
     out.push_str("    hsx ai \"your question\"\n\n");
 
-    out.push_str("  After pulling a model, re-run your command — hsx will detect it automatically.\n");
+    out.push_str(
+        "  After pulling a model, re-run your command — hsx will detect it automatically.\n",
+    );
     out.push_str("  Tip: Add `default_model = \"{best}\"` to ~/.hypersearchx/config.toml to always use it.\n");
 
     out

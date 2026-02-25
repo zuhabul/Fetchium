@@ -35,7 +35,9 @@ pub fn install_plugin(
 pub fn remove_plugin(name: &str, plugin_dir: &std::path::Path) -> Result<(), HsxError> {
     let dest = plugin_dir.join(name);
     if !dest.exists() {
-        return Err(HsxError::Config(format!("Plugin '{name}' is not installed")));
+        return Err(HsxError::Config(format!(
+            "Plugin '{name}' is not installed"
+        )));
     }
     std::fs::remove_dir_all(&dest)?;
     tracing::info!(plugin = name, "Plugin removed");

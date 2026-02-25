@@ -1,8 +1,8 @@
 //! `hsx agent-research` — structured research output for AI agents.
 
 use crate::cli::AgentResearchArgs;
-use hsx_core::citation::types::CitationStyle as CoreCitationStyle;
 use hsx_core::citation::evidence_graph::EvidenceGraph;
+use hsx_core::citation::types::CitationStyle as CoreCitationStyle;
 use hsx_core::config::HsxConfig;
 use hsx_core::research::pipeline::ResearchPipeline;
 use hsx_core::research::ResearchConfig;
@@ -68,20 +68,30 @@ pub async fn run(args: AgentResearchArgs, config_obj: &HsxConfig) -> anyhow::Res
     let http_client = hsx_core::http::client::HttpClient::new(config_obj)?;
     let report = ResearchPipeline::execute(&config, config_obj, &http_client).await?;
 
-    let findings = report.synthesis.split(". ").filter(|s| !s.trim().is_empty()).map(|c| Finding {
-        claim: c.trim().to_string(),
-        confidence: report.meta.overall_confidence,
-        source_indices: vec![],
-        verified: true,
-    }).collect();
+    let findings = report
+        .synthesis
+        .split(". ")
+        .filter(|s| !s.trim().is_empty())
+        .map(|c| Finding {
+            claim: c.trim().to_string(),
+            confidence: report.meta.overall_confidence,
+            source_indices: vec![],
+            verified: true,
+        })
+        .collect();
 
-    let sources = report.sources.into_iter().enumerate().map(|(i, s)| AgentSource {
-        index: i + 1,
-        url: s.url,
-        title: s.title,
-        relevance: 1.0,
-        content_hash: "none".into(),
-    }).collect();
+    let sources = report
+        .sources
+        .into_iter()
+        .enumerate()
+        .map(|(i, s)| AgentSource {
+            index: i + 1,
+            url: s.url,
+            title: s.title,
+            relevance: 1.0,
+            content_hash: "none".into(),
+        })
+        .collect();
 
     let output = AgentResearchOutput {
         meta: AgentMeta {

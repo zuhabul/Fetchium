@@ -159,10 +159,9 @@ pub fn semantic_score(result: &ResultItem, ctx: &ScoringContext) -> f64 {
     // Feature-gated: real cosine similarity via pre-computed batch embeddings
     #[cfg(feature = "embeddings")]
     {
-        if let (Some(ref query_emb), Some(result_emb)) = (
-            &ctx.query_embedding,
-            ctx.result_embeddings.get(&result.url),
-        ) {
+        if let (Some(ref query_emb), Some(result_emb)) =
+            (&ctx.query_embedding, ctx.result_embeddings.get(&result.url))
+        {
             let cosine = crate::embeddings::cosine_similarity(query_emb, result_emb);
             return (cosine.max(0.0) as f64).min(1.0);
         }
@@ -270,23 +269,43 @@ pub fn authority_score(result: &ResultItem) -> f64 {
 
 fn domain_tier_score(domain: &str) -> f64 {
     const HIGH_AUTHORITY: &[&str] = &[
-        "wikipedia.org", "github.com", "arxiv.org", "nature.com",
-        "nih.gov", "pubmed.ncbi.nlm.nih.gov", "scholar.google.com",
-        "docs.rs", "crates.io", "rust-lang.org",
+        "wikipedia.org",
+        "github.com",
+        "arxiv.org",
+        "nature.com",
+        "nih.gov",
+        "pubmed.ncbi.nlm.nih.gov",
+        "scholar.google.com",
+        "docs.rs",
+        "crates.io",
+        "rust-lang.org",
     ];
     const MEDIUM_AUTHORITY: &[&str] = &[
-        "stackoverflow.com", "medium.com", "bbc.com", "nytimes.com",
-        "reuters.com", "theguardian.com", "techcrunch.com",
-        "arstechnica.com", "wired.com", "ieee.org",
+        "stackoverflow.com",
+        "medium.com",
+        "bbc.com",
+        "nytimes.com",
+        "reuters.com",
+        "theguardian.com",
+        "techcrunch.com",
+        "arstechnica.com",
+        "wired.com",
+        "ieee.org",
     ];
 
-    if HIGH_AUTHORITY.iter().any(|h| domain == *h || domain.ends_with(&format!(".{h}"))) {
+    if HIGH_AUTHORITY
+        .iter()
+        .any(|h| domain == *h || domain.ends_with(&format!(".{h}")))
+    {
         return 0.9;
     }
     if domain.ends_with(".gov") || domain.ends_with(".edu") {
         return 0.9;
     }
-    if MEDIUM_AUTHORITY.iter().any(|m| domain == *m || domain.ends_with(&format!(".{m}"))) {
+    if MEDIUM_AUTHORITY
+        .iter()
+        .any(|m| domain == *m || domain.ends_with(&format!(".{m}")))
+    {
         return 0.7;
     }
     0.5
@@ -343,7 +362,8 @@ pub fn evidence_score(result: &ResultItem) -> f64 {
     }
 
     // Count numbers/statistics (words containing digits)
-    let stat_count = text.split_whitespace()
+    let stat_count = text
+        .split_whitespace()
         .filter(|w| w.chars().any(|c| c.is_ascii_digit()))
         .count() as f64;
     let stat_density = (stat_count / word_count).min(0.3);
@@ -402,7 +422,9 @@ pub fn consensus_score(result: &ResultItem, ctx: &ScoringContext) -> f64 {
     let query_set: HashSet<&str> = ctx.query_terms.iter().map(|s| s.as_str()).collect();
 
     let mut agreement_count = 0usize;
-    let others = ctx.all_text.iter()
+    let others = ctx
+        .all_text
+        .iter()
         .filter(|t| **t != my_text.as_str())
         .count();
 
@@ -423,7 +445,12 @@ pub fn consensus_score(result: &ResultItem, ctx: &ScoringContext) -> f64 {
         }
     }
 
-    trace!("consensus: {}/{} agreement for {:?}", agreement_count, others, result.title);
+    trace!(
+        "consensus: {}/{} agreement for {:?}",
+        agreement_count,
+        others,
+        result.title
+    );
     (agreement_count as f64 / others as f64).min(1.0)
 }
 
@@ -451,13 +478,20 @@ mod tests {
     #[test]
     fn bm25_scores_relevant_higher() {
         let results = vec![
-            make_result("Rust Language", "https://rust-lang.org", "systems programming language"),
+            make_result(
+                "Rust Language",
+                "https://rust-lang.org",
+                "systems programming language",
+            ),
             make_result("Python", "https://python.org", "dynamic scripting language"),
         ];
         let ctx = make_ctx("rust programming", &results);
         let rust_score = bm25_score(&results[0], &ctx);
         let py_score = bm25_score(&results[1], &ctx);
-        assert!(rust_score > py_score, "rust={rust_score}, python={py_score}");
+        assert!(
+            rust_score > py_score,
+            "rust={rust_score}, python={py_score}"
+        );
     }
 
     #[test]
@@ -486,19 +520,30 @@ mod tests {
 
         let recent_score = temporal_score(&recent, 1.0);
         let old_score = temporal_score(&aged, 1.0);
-        assert!(recent_score > old_score, "recent={recent_score}, old={old_score}");
+        assert!(
+            recent_score > old_score,
+            "recent={recent_score}, old={old_score}"
+        );
     }
 
     #[test]
     fn authority_wikipedia_high() {
-        let r = make_result("Rust", "https://en.wikipedia.org/wiki/Rust", "A systems language");
+        let r = make_result(
+            "Rust",
+            "https://en.wikipedia.org/wiki/Rust",
+            "A systems language",
+        );
         let score = authority_score(&r);
         assert!(score >= 0.9, "score={score}");
     }
 
     #[test]
     fn authority_random_blog_default() {
-        let r = make_result("Blog Post", "https://my-random-blog.xyz/post", "some content");
+        let r = make_result(
+            "Blog Post",
+            "https://my-random-blog.xyz/post",
+            "some content",
+        );
         let score = authority_score(&r);
         assert!((0.4..=0.6).contains(&score), "score={score}");
     }
@@ -560,9 +605,21 @@ mod tests {
     #[test]
     fn consensus_scores_in_range() {
         let results = vec![
-            make_result("Rust safety", "https://a.com", "rust is safe and fast systems language"),
-            make_result("Rust performance", "https://b.com", "rust systems language with zero cost"),
-            make_result("Python basics", "https://c.com", "python is dynamic and easy scripting"),
+            make_result(
+                "Rust safety",
+                "https://a.com",
+                "rust is safe and fast systems language",
+            ),
+            make_result(
+                "Rust performance",
+                "https://b.com",
+                "rust systems language with zero cost",
+            ),
+            make_result(
+                "Python basics",
+                "https://c.com",
+                "python is dynamic and easy scripting",
+            ),
         ];
         let ctx = make_ctx("rust systems", &results);
         for r in &results {

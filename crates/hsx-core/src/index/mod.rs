@@ -19,7 +19,7 @@ pub mod store;
 #[cfg(feature = "vector-search")]
 pub mod vector;
 
-pub use document::{IndexedDocument, IndexStats};
+pub use document::{IndexStats, IndexedDocument};
 pub use store::DocumentStore;
 
 #[cfg(feature = "vector-search")]

@@ -62,12 +62,11 @@ impl FallbackChain {
     ///
     /// `min_results` triggers fallback to the next entry if the backend returns
     /// fewer results. Set to `0` to always accept results from this backend.
-    pub fn add(
-        &mut self,
-        backend: Arc<dyn SearchBackend>,
-        min_results: usize,
-    ) -> &mut Self {
-        self.entries.push(ChainEntry { backend, min_results });
+    pub fn add(&mut self, backend: Arc<dyn SearchBackend>, min_results: usize) -> &mut Self {
+        self.entries.push(ChainEntry {
+            backend,
+            min_results,
+        });
         self
     }
 
@@ -77,11 +76,7 @@ impl FallbackChain {
     /// - Results from the first backend that meets `min_results`, **or**
     /// - The largest partial result set collected across all backends if none meet the threshold.
     /// - An empty `Vec` if all backends fail entirely.
-    pub async fn execute(
-        &self,
-        query: &str,
-        max_results: u32,
-    ) -> HsxResult<Vec<ResultItem>> {
+    pub async fn execute(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
         let mut best_results: Vec<ResultItem> = Vec::new();
 
         for entry in &self.entries {
@@ -202,10 +197,7 @@ mod tests {
 
     impl MockBackend {
         /// Construct a mock backend and return its call counter and `Arc<dyn SearchBackend>`.
-        fn new(
-            id: BackendId,
-            n_results: usize,
-        ) -> (Arc<AtomicUsize>, Arc<dyn SearchBackend>) {
+        fn new(id: BackendId, n_results: usize) -> (Arc<AtomicUsize>, Arc<dyn SearchBackend>) {
             let counter = Arc::new(AtomicUsize::new(0));
             let results = (0..n_results)
                 .map(|i| ResultItem {
@@ -264,9 +256,7 @@ mod tests {
 
         async fn search(&self, _query: &str, _max: u32) -> HsxResult<Vec<ResultItem>> {
             self.call_count.fetch_add(1, Ordering::SeqCst);
-            Err(crate::error::HsxError::Search(
-                "mock error".to_string(),
-            ))
+            Err(crate::error::HsxError::Search("mock error".to_string()))
         }
     }
 
@@ -281,9 +271,21 @@ mod tests {
         chain.add(b1, 5).add(b2, 5);
 
         let results = chain.execute("test query", 10).await.unwrap();
-        assert_eq!(results.len(), 10, "Should get 10 results from first backend");
-        assert_eq!(counter1.load(Ordering::SeqCst), 1, "First backend called once");
-        assert_eq!(counter2.load(Ordering::SeqCst), 0, "Second backend NOT called");
+        assert_eq!(
+            results.len(),
+            10,
+            "Should get 10 results from first backend"
+        );
+        assert_eq!(
+            counter1.load(Ordering::SeqCst),
+            1,
+            "First backend called once"
+        );
+        assert_eq!(
+            counter2.load(Ordering::SeqCst),
+            0,
+            "Second backend NOT called"
+        );
     }
 
     #[tokio::test]
@@ -306,7 +308,7 @@ mod tests {
     #[tokio::test]
     async fn chain_returns_best_partial_when_all_fail_threshold() {
         let (_c1, b1) = MockBackend::new(BackendId::Google, 0); // 0 results
-        let (_c2, b2) = MockBackend::new(BackendId::Bing, 2);  // 2 results (< min 5)
+        let (_c2, b2) = MockBackend::new(BackendId::Bing, 2); // 2 results (< min 5)
 
         let mut chain = FallbackChain::new();
         chain.add(b1, 5).add(b2, 5); // Neither meets min_results=5
@@ -326,7 +328,11 @@ mod tests {
 
         let results = chain.execute("test", 10).await.unwrap();
         assert_eq!(results.len(), 7);
-        assert_eq!(err_counter.load(Ordering::SeqCst), 1, "Error backend was tried");
+        assert_eq!(
+            err_counter.load(Ordering::SeqCst),
+            1,
+            "Error backend was tried"
+        );
         assert_eq!(ok_counter.load(Ordering::SeqCst), 1, "OK backend was used");
     }
 

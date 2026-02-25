@@ -1,12 +1,12 @@
+use crate::cache::MemoryCache;
+use crate::config::HsxConfig;
+use crate::error::HsxError;
+use crate::extract::pipeline::extract as cep_extract;
+use crate::http::client::HttpClient;
+use crate::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
 use serde_json::{json, Value};
 use std::time::Instant;
 use uuid::Uuid;
-use crate::config::HsxConfig;
-use crate::error::HsxError;
-use crate::http::client::HttpClient;
-use crate::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
-use crate::extract::pipeline::extract as cep_extract;
-use crate::cache::MemoryCache;
 
 /// Execute a search pipeline: Orchestrator -> Extraction -> Format -> Cache
 pub async fn search(
@@ -77,14 +77,14 @@ pub async fn fetch(
 ) -> Result<Value, HsxError> {
     let html = http.fetch_text(url).await?;
     let ext = cep_extract(&html, url);
-    
+
     let max_chars = token_budget * 4;
     let content = if ext.text.len() > max_chars {
         ext.text[..max_chars].to_string()
     } else {
         ext.text
     };
-    
+
     let tokens = crate::extract::layer1::estimate_tokens(&content) as usize;
     let result_id = Uuid::new_v4().to_string();
 
@@ -120,5 +120,7 @@ pub async fn expand(
             return Ok(expanded_data);
         }
     }
-    Err(HsxError::Internal("Cache miss or cache not configured for session".into()))
+    Err(HsxError::Internal(
+        "Cache miss or cache not configured for session".into(),
+    ))
 }

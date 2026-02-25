@@ -166,7 +166,12 @@ impl SnapshotStore {
     }
 
     /// Register a URL for monitoring.
-    pub fn register(&self, url: &str, interval_secs: u64, notify_method: Option<&str>) -> Result<(), HsxError> {
+    pub fn register(
+        &self,
+        url: &str,
+        interval_secs: u64,
+        notify_method: Option<&str>,
+    ) -> Result<(), HsxError> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
             "INSERT INTO monitors (url, interval_secs, notify_method) VALUES (?1, ?2, ?3)
@@ -187,9 +192,8 @@ impl SnapshotStore {
     /// List all monitored URLs.
     pub fn list_monitors(&self) -> Result<Vec<MonitorEntry>, HsxError> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare(
-            "SELECT url, interval_secs, last_checked, notify_method FROM monitors",
-        )?;
+        let mut stmt =
+            conn.prepare("SELECT url, interval_secs, last_checked, notify_method FROM monitors")?;
         let entries = stmt
             .query_map([], |r| {
                 Ok(MonitorEntry {
@@ -245,23 +249,33 @@ mod tests {
     #[test]
     fn first_snapshot_is_changed() {
         let (store, _tmp) = make_store();
-        let changed = store.save_snapshot("https://example.com", "content v1").unwrap();
+        let changed = store
+            .save_snapshot("https://example.com", "content v1")
+            .unwrap();
         assert!(changed, "first snapshot should report changed");
     }
 
     #[test]
     fn same_content_not_changed() {
         let (store, _tmp) = make_store();
-        store.save_snapshot("https://example.com", "content").unwrap();
-        let changed = store.save_snapshot("https://example.com", "content").unwrap();
+        store
+            .save_snapshot("https://example.com", "content")
+            .unwrap();
+        let changed = store
+            .save_snapshot("https://example.com", "content")
+            .unwrap();
         assert!(!changed, "identical content should not report changed");
     }
 
     #[test]
     fn different_content_is_changed() {
         let (store, _tmp) = make_store();
-        store.save_snapshot("https://example.com", "version 1").unwrap();
-        let changed = store.save_snapshot("https://example.com", "version 2").unwrap();
+        store
+            .save_snapshot("https://example.com", "version 1")
+            .unwrap();
+        let changed = store
+            .save_snapshot("https://example.com", "version 2")
+            .unwrap();
         assert!(changed, "different content should report changed");
     }
 
@@ -278,7 +292,9 @@ mod tests {
     fn register_and_list_monitors() {
         let (store, _tmp) = make_store();
         store.register("https://a.com", 3600, None).unwrap();
-        store.register("https://b.com", 1800, Some("webhook")).unwrap();
+        store
+            .register("https://b.com", 1800, Some("webhook"))
+            .unwrap();
         let monitors = store.list_monitors().unwrap();
         assert_eq!(monitors.len(), 2);
     }

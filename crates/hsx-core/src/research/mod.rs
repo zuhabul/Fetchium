@@ -10,8 +10,8 @@ pub use pipeline::ResearchPipeline;
 pub use srp::run_srp_pipeline;
 pub use srp_types::{SrpChunk, SrpConfig, SrpEvent};
 
-use crate::citation::types::{CitationStyle, FormattedCitation, SourceMeta};
 use crate::citation::evidence_graph::EvidenceGraph;
+use crate::citation::types::{CitationStyle, FormattedCitation, SourceMeta};
 use crate::validate::types::{ValidationMode, ValidationResult};
 use serde::{Deserialize, Serialize};
 

@@ -35,7 +35,11 @@ pub async fn run(args: AiArgs, config: &HsxConfig) -> anyhow::Result<()> {
     if streaming {
         spinner.finish_and_clear();
         println!("{}", style("─".repeat(60)).dim());
-        println!("{} {}", style("AI Answer:").bold().cyan(), style(&args.query).dim());
+        println!(
+            "{} {}",
+            style("AI Answer:").bold().cyan(),
+            style(&args.query).dim()
+        );
         println!("{}", style("─".repeat(60)).dim());
     }
 
@@ -54,7 +58,11 @@ pub async fn run(args: AiArgs, config: &HsxConfig) -> anyhow::Result<()> {
     if !streaming {
         spinner.finish_and_clear();
         println!("{}", style("─".repeat(60)).dim());
-        println!("{} {}", style("AI Answer:").bold().cyan(), style(&args.query).dim());
+        println!(
+            "{} {}",
+            style("AI Answer:").bold().cyan(),
+            style(&args.query).dim()
+        );
         println!("{}", style("─".repeat(60)).dim());
         println!("{}", result.answer);
     } else if !result.fallback {
@@ -64,9 +72,12 @@ pub async fn run(args: AiArgs, config: &HsxConfig) -> anyhow::Result<()> {
     println!("{}", style("─".repeat(60)).dim());
     println!(
         "{} {} │ {} {} │ {} {}",
-        style("Model:").dim(),   style(&result.model_used).cyan(),
-        style("Sources:").dim(), style(result.sources_used).cyan(),
-        style("Fallback:").dim(), style(if result.fallback { "yes" } else { "no" }).cyan(),
+        style("Model:").dim(),
+        style(&result.model_used).cyan(),
+        style("Sources:").dim(),
+        style(result.sources_used).cyan(),
+        style("Fallback:").dim(),
+        style(if result.fallback { "yes" } else { "no" }).cyan(),
     );
 
     if result.fallback {

@@ -1,9 +1,9 @@
 //! `hsx doctor` — system health check (PRD §13).
 
 use colored::Colorize;
-use hsx_core::ai::setup::{DeviceSpec, RecommendCategory, format_setup_guide, recommend_models};
-use hsx_core::ai::{check_provider, AiConfig, ProviderStatus};
 use hsx_core::ai::providers::ProviderKind;
+use hsx_core::ai::setup::{format_setup_guide, recommend_models, DeviceSpec, RecommendCategory};
+use hsx_core::ai::{check_provider, AiConfig, ProviderStatus};
 use hsx_core::config::HsxConfig;
 use sysinfo::System;
 
@@ -101,6 +101,38 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
 
     println!();
 
+    // ---- Search Backends ----
+    println!("{}", "Search Backends".bold());
+
+    // Show which backends are active and in which mode.
+    // HTTP-mode backends work with zero setup; headless ones need Chrome/Chromium.
+    let configured_backends = &config.search.backends;
+    let headless_backends = ["google_scholar"];
+    let http_backends = ["duckduckgo", "google", "bing", "searxng", "wikipedia",
+                         "hackernews", "arxiv", "github", "reddit", "stackoverflow",
+                         "brave"];
+
+    for backend in configured_backends {
+        let b = backend.to_lowercase();
+        if http_backends.contains(&b.as_str()) {
+            let note = if b == "brave" {
+                "HTTP (free tier 2000 req/mo — set BRAVE_API_KEY)"
+            } else if b == "google" {
+                "HTTP scraper (zero setup, CAPTCHA-graceful)"
+            } else if b == "bing" {
+                "HTTP scraper (zero setup, robust)"
+            } else {
+                "HTTP (no API key needed)"
+            };
+            check(backend, true, note);
+        } else if headless_backends.contains(&b.as_str()) {
+            check(backend, false, "requires --features headless + Chrome");
+        } else {
+            check(backend, true, "configured");
+        }
+    }
+    println!();
+
     // ---- External Tools ----
     println!("{}", "External Tools".bold());
 
@@ -108,10 +140,10 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
     let chromium = which_chromium();
     check(
         "Chromium/Chrome",
-        chromium.is_some(),
+        true, // HTTP-mode Google/Bing work without Chrome
         chromium
             .as_deref()
-            .unwrap_or("not found (headless features unavailable)"),
+            .unwrap_or("not found — Google/Bing use HTTP scraper mode (zero setup)"),
     );
     println!();
 
@@ -126,7 +158,9 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
     println!(
         "  Fallback chain: {}",
         if chain_str.is_empty() {
-            "(none configured — run `hsx provider setup`)".yellow().to_string()
+            "(none configured — run `hsx provider setup`)"
+                .yellow()
+                .to_string()
         } else {
             chain_str.join(" → ").green().to_string()
         }
@@ -158,7 +192,8 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
                     Some(n) => {
                         if *kind == ProviderKind::Ollama {
                             // Collect Ollama model list for recommendations below
-                            if let Ok(models) = get_ollama_model_names(&config.ai.ollama_host).await {
+                            if let Ok(models) = get_ollama_model_names(&config.ai.ollama_host).await
+                            {
                                 ollama_models = models;
                             }
                             format!("running ({n} models installed)")
@@ -168,11 +203,19 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
                     }
                     None => "key configured".to_string(),
                 };
-                let chain_tag = if in_chain { " [in chain]".cyan().to_string() } else { String::new() };
+                let chain_tag = if in_chain {
+                    " [in chain]".cyan().to_string()
+                } else {
+                    String::new()
+                };
                 check(kind.display_name(), true, &format!("{detail}{chain_tag}"));
             }
             ProviderStatus::Unavailable { reason } => {
-                let chain_tag = if in_chain { " [in chain — WILL FAIL]".red().to_string() } else { String::new() };
+                let chain_tag = if in_chain {
+                    " [in chain — WILL FAIL]".red().to_string()
+                } else {
+                    String::new()
+                };
                 check(kind.display_name(), false, &format!("{reason}{chain_tag}"));
             }
         }
@@ -188,7 +231,11 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
             "  Device: {:.0} GB RAM, {} cores{}  |  Available for LLM: ~{:.0} GB",
             spec.total_ram_gb,
             spec.cpu_cores,
-            if spec.is_apple_silicon { " (Apple Silicon)" } else { "" },
+            if spec.is_apple_silicon {
+                " (Apple Silicon)"
+            } else {
+                ""
+            },
             spec.usable_ram_gb,
         );
         println!();
@@ -203,17 +250,36 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
 
         let recs = recommend_models(&spec);
         for rec in &recs {
-            let installed = ollama_models.iter().any(|m| m.contains(rec.name) || rec.name.contains(m.as_str()));
-            if installed { continue; }
+            let installed = ollama_models
+                .iter()
+                .any(|m| m.contains(rec.name) || rec.name.contains(m.as_str()));
+            if installed {
+                continue;
+            }
 
             let (label_color, cmd_note) = match rec.category {
-                RecommendCategory::BestForDevice => (format!("{}", "[BEST FOR YOU]".green().bold()), "← run this first"),
-                RecommendCategory::FastAndLight  => (format!("{}", "[FAST & LIGHT ]".cyan()),        "← quick responses"),
-                RecommendCategory::MaxQuality    => (format!("{}", "[MAX QUALITY  ]".yellow()),       "← best accuracy"),
-                RecommendCategory::Reasoning     => (format!("{}", "[REASONING    ]".magenta()),      "← logic & math"),
-                RecommendCategory::TooLarge      => (format!("{}", "[TOO LARGE    ]".red().dimmed()),  "← needs more RAM"),
+                RecommendCategory::BestForDevice => (
+                    format!("{}", "[BEST FOR YOU]".green().bold()),
+                    "← run this first",
+                ),
+                RecommendCategory::FastAndLight => {
+                    (format!("{}", "[FAST & LIGHT ]".cyan()), "← quick responses")
+                }
+                RecommendCategory::MaxQuality => {
+                    (format!("{}", "[MAX QUALITY  ]".yellow()), "← best accuracy")
+                }
+                RecommendCategory::Reasoning => {
+                    (format!("{}", "[REASONING    ]".magenta()), "← logic & math")
+                }
+                RecommendCategory::TooLarge => (
+                    format!("{}", "[TOO LARGE    ]".red().dimmed()),
+                    "← needs more RAM",
+                ),
             };
-            println!("  {}  {:<22}  ~{:.0} GB  {}", label_color, rec.name, rec.size_gb, cmd_note);
+            println!(
+                "  {}  {:<22}  ~{:.0} GB  {}",
+                label_color, rec.name, rec.size_gb, cmd_note
+            );
             if rec.category != RecommendCategory::TooLarge {
                 println!("    {}", format!("ollama pull {}", rec.name).dimmed());
             }
@@ -227,9 +293,14 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
     }
 
     // Quick setup hint if no cloud providers have keys
-    let has_cloud = chain.iter().any(|k| *k != ProviderKind::Ollama && *k != ProviderKind::GeminiCli);
+    let has_cloud = chain
+        .iter()
+        .any(|k| *k != ProviderKind::Ollama && *k != ProviderKind::GeminiCli);
     if !has_cloud {
-        println!("{}", "Tip: Configure a cloud provider for instant AI (no GPU needed):".yellow());
+        println!(
+            "{}",
+            "Tip: Configure a cloud provider for instant AI (no GPU needed):".yellow()
+        );
         println!("  hsx provider setup gemini    # Free tier, gemini-2.0-flash");
         println!("  hsx provider setup openai    # GPT-4o-mini");
         println!("  hsx provider setup openrouter # 100+ models");
@@ -257,7 +328,9 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
     if chromium.is_none() {
         println!(
             "  {}",
-            "Install Chrome/Chromium for headless search (Google, Bing, Scholar)".yellow()
+            "Google & Bing use HTTP scraper mode (no Chrome needed). \
+             Install Chrome + build with --features headless for JS-rendered results."
+                .dimmed()
         );
     }
     if !ollama_ok {
@@ -284,7 +357,11 @@ async fn get_ollama_model_names(host: &str) -> anyhow::Result<Vec<String>> {
         .and_then(|m| m.as_array())
         .map(|arr| {
             arr.iter()
-                .filter_map(|v| v.get("name").and_then(|n| n.as_str()).map(|s| s.to_string()))
+                .filter_map(|v| {
+                    v.get("name")
+                        .and_then(|n| n.as_str())
+                        .map(|s| s.to_string())
+                })
                 .collect()
         })
         .unwrap_or_default();
@@ -328,4 +405,3 @@ fn which_chromium() -> Option<String> {
     }
     None
 }
-

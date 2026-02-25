@@ -9,9 +9,9 @@ use crate::error::HsxResult;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
-use tracing::warn;
 #[cfg(feature = "headless")]
 use tracing::debug;
+use tracing::warn;
 
 /// Academic metadata from Google Scholar.
 #[derive(Debug, Clone, Default)]
@@ -46,9 +46,7 @@ impl ScholarBackend {
         let encoded = url::form_urlencoded::Serializer::new(String::new())
             .append_key_only(query)
             .finish();
-        format!(
-            "https://scholar.google.com/scholar?q={encoded}&start={start}&hl=en"
-        )
+        format!("https://scholar.google.com/scholar?q={encoded}&start={start}&hl=en")
     }
 
     #[cfg(feature = "headless")]
@@ -135,7 +133,11 @@ impl ScholarBackend {
             rank += 1;
         }
 
-        debug!("Scholar parse_serp: {} results from page {}", results.len(), page);
+        debug!(
+            "Scholar parse_serp: {} results from page {}",
+            results.len(),
+            page
+        );
         results
     }
 }
@@ -175,10 +177,7 @@ fn build_rich_snippet(
 
     if !meta.authors.is_empty() {
         let authors = meta.authors.join(", ");
-        let year_str = meta
-            .year
-            .map(|y| format!(" ({y})"))
-            .unwrap_or_default();
+        let year_str = meta.year.map(|y| format!(" ({y})")).unwrap_or_default();
         parts.push(format!("Authors: {authors}{year_str}"));
     }
 

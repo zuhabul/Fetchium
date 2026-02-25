@@ -99,8 +99,8 @@ pub mod search;
 pub mod token;
 
 // Phase 2: QADD and browser pool
-pub mod qadd;
 pub mod browser;
+pub mod qadd;
 
 // Phase 3+
 pub mod citation;
@@ -131,6 +131,12 @@ pub mod multimodal;
 pub mod plugin;
 pub mod privacy;
 pub mod proactive;
+
+// YouTube Intelligence System
+pub mod youtube;
+
+// Social Media Intelligence System (Twitter/X, Reddit, TikTok, HackerNews + unified)
+pub mod social;
 
 #[cfg(test)]
 pub mod test_utils;

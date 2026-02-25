@@ -19,12 +19,7 @@ fn load_fixture(name: &str) -> String {
 fn bench_extract_simple_article(c: &mut Criterion) {
     let html = load_fixture("simple-article.html");
     c.bench_function("extract/layer1/simple_article", |b| {
-        b.iter(|| {
-            layer1::extract(
-                black_box(&html),
-                black_box("https://example.com/article"),
-            )
-        })
+        b.iter(|| layer1::extract(black_box(&html), black_box("https://example.com/article")))
     });
 }
 
@@ -51,10 +46,7 @@ fn bench_extract_scaling(c: &mut Criterion) {
             &large_html,
             |b, html| {
                 b.iter(|| {
-                    layer1::extract(
-                        black_box(html.as_str()),
-                        black_box("https://example.com"),
-                    )
+                    layer1::extract(black_box(html.as_str()), black_box("https://example.com"))
                 })
             },
         );

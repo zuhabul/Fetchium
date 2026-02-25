@@ -62,7 +62,11 @@ pub struct DigestBuilder {
 
 impl DigestBuilder {
     pub fn new(period: DigestPeriod, topics: Vec<String>) -> Self {
-        Self { period, topics, sections: Vec::new() }
+        Self {
+            period,
+            topics,
+            sections: Vec::new(),
+        }
     }
 
     pub fn add_section(&mut self, topic: &str, items: Vec<crate::types::ResultItem>) {

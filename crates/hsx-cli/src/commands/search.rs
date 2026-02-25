@@ -44,9 +44,7 @@ pub async fn run(
         if !parsed.is_empty() {
             orch_config.enabled_backends = parsed;
         } else {
-            eprintln!(
-                "warn: none of the requested backends are recognised; using defaults"
-            );
+            eprintln!("warn: none of the requested backends are recognised; using defaults");
         }
     }
 
@@ -65,10 +63,7 @@ pub async fn run(
         let formatted = format_result(&cached, format);
         write_output(&formatted, args.output.as_deref())?;
         if !quiet {
-            eprintln!(
-                "  {} results (cached)",
-                cached.items.len()
-            );
+            eprintln!("  {} results (cached)", cached.items.len());
         }
         return Ok(());
     }

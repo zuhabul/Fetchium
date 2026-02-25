@@ -90,13 +90,29 @@ fn fnv1a_64(bytes: &[u8]) -> u64 {
 /// Common tracking/analytics query parameters to strip during URL normalisation.
 const TRACKING_PARAMS: &[&str] = &[
     // UTM (Google Analytics)
-    "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
-    "utm_id", "utm_name",
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_term",
+    "utm_content",
+    "utm_id",
+    "utm_name",
     // Social platform trackers
-    "fbclid", "gclid", "msclkid", "twclid", "igshid",
+    "fbclid",
+    "gclid",
+    "msclkid",
+    "twclid",
+    "igshid",
     // Generic referral/tracking
-    "ref", "source", "_ga", "_gl", "mc_cid", "mc_eid",
-    "si", "feature", "app",
+    "ref",
+    "source",
+    "_ga",
+    "_gl",
+    "mc_cid",
+    "mc_eid",
+    "si",
+    "feature",
+    "app",
 ];
 
 /// Normalise a URL for deduplication.
@@ -278,7 +294,8 @@ mod tests {
     fn simhash_near_identical_texts_low_distance() {
         let h1 = SimHash::compute("Rust programming language systems safe fast reliable");
         // Adding a couple of words shouldn't push beyond a moderate threshold
-        let h2 = SimHash::compute("Rust programming language systems safe fast reliable concurrent");
+        let h2 =
+            SimHash::compute("Rust programming language systems safe fast reliable concurrent");
         assert!(
             h1.distance(&h2) <= 20,
             "Expected low distance for similar text, got {}",
@@ -317,30 +334,48 @@ mod tests {
         let url = "https://example.com/article?id=42&utm_source=twitter&utm_medium=social";
         let norm = normalize_url(url);
         assert!(norm.contains("id=42"), "id=42 should be kept in: {norm}");
-        assert!(!norm.contains("utm_source"), "utm_source should be stripped from: {norm}");
-        assert!(!norm.contains("utm_medium"), "utm_medium should be stripped from: {norm}");
+        assert!(
+            !norm.contains("utm_source"),
+            "utm_source should be stripped from: {norm}"
+        );
+        assert!(
+            !norm.contains("utm_medium"),
+            "utm_medium should be stripped from: {norm}"
+        );
     }
 
     #[test]
     fn normalize_url_strips_fbclid() {
         let url = "https://example.com/page?fbclid=abc123";
         let norm = normalize_url(url);
-        assert!(!norm.contains("fbclid"), "fbclid should be stripped from: {norm}");
+        assert!(
+            !norm.contains("fbclid"),
+            "fbclid should be stripped from: {norm}"
+        );
     }
 
     #[test]
     fn normalize_url_strips_fragment() {
         let url = "https://example.com/page#section-2";
         let norm = normalize_url(url);
-        assert!(!norm.contains('#'), "Fragment should be stripped from: {norm}");
-        assert!(norm.contains("example.com/page"), "Path should be kept in: {norm}");
+        assert!(
+            !norm.contains('#'),
+            "Fragment should be stripped from: {norm}"
+        );
+        assert!(
+            norm.contains("example.com/page"),
+            "Path should be kept in: {norm}"
+        );
     }
 
     #[test]
     fn normalize_url_strips_trailing_slash_on_path() {
         let url = "https://example.com/article/";
         let norm = normalize_url(url);
-        assert!(!norm.ends_with('/'), "Trailing slash should be stripped from: {norm}");
+        assert!(
+            !norm.ends_with('/'),
+            "Trailing slash should be stripped from: {norm}"
+        );
         assert!(norm.ends_with("article"), "Path should be kept in: {norm}");
     }
 
@@ -348,7 +383,10 @@ mod tests {
     fn normalize_url_keeps_root_slash() {
         let url = "https://example.com/";
         let norm = normalize_url(url);
-        assert!(norm.contains("example.com"), "Host should be present in: {norm}");
+        assert!(
+            norm.contains("example.com"),
+            "Host should be present in: {norm}"
+        );
         // Root slash is preserved (it's the only path component)
     }
 
@@ -356,7 +394,10 @@ mod tests {
     fn normalize_url_strips_all_tracking_no_remaining_query() {
         let url = "https://example.com/page?utm_source=x&utm_medium=y&utm_campaign=z";
         let norm = normalize_url(url);
-        assert!(!norm.contains('?'), "All params stripped, so no '?' in: {norm}");
+        assert!(
+            !norm.contains('?'),
+            "All params stripped, so no '?' in: {norm}"
+        );
     }
 
     #[test]
@@ -377,7 +418,11 @@ mod tests {
     fn deduplicate_removes_exact_url_duplicates() {
         let items = vec![
             make_item("Page A", "https://example.com/page", "content A"),
-            make_item("Page A dup", "https://example.com/page", "content A duplicate"),
+            make_item(
+                "Page A dup",
+                "https://example.com/page",
+                "content A duplicate",
+            ),
             make_item("Page B", "https://other.com/page", "different content B"),
         ];
         let deduped = deduplicate(items, 6);
@@ -388,7 +433,11 @@ mod tests {
     fn deduplicate_removes_url_duplicates_with_tracking_params() {
         let items = vec![
             make_item("Page A", "https://example.com/page", "content"),
-            make_item("Page A twitter", "https://example.com/page?utm_source=twitter", "content"),
+            make_item(
+                "Page A twitter",
+                "https://example.com/page?utm_source=twitter",
+                "content",
+            ),
             make_item("Page B", "https://other.com/different", "different content"),
         ];
         let deduped = deduplicate(items, 6);
@@ -419,10 +468,13 @@ mod tests {
             ),
         ];
         let deduped = deduplicate(items, 3); // Strict SimHash threshold
-        // Python should survive; the two Rust items with identical content should be deduped
+                                             // Python should survive; the two Rust items with identical content should be deduped
         let has_python = deduped.iter().any(|r| r.title == "Python");
         assert!(has_python, "Python result should survive dedup");
-        assert!(deduped.len() < 3, "At least one Rust duplicate should be removed");
+        assert!(
+            deduped.len() < 3,
+            "At least one Rust duplicate should be removed"
+        );
     }
 
     #[test]
@@ -462,11 +514,31 @@ mod tests {
     fn deduplicate_preserves_unique_results() {
         // Use clearly distinct topics so SimHash does not group them
         let distinct_items = vec![
-            make_item("Rust compiler", "https://rustlang.org", "memory safety borrow checker lifetimes ownership systems"),
-            make_item("Machine learning", "https://pytorch.org", "neural networks gradient descent backpropagation training epochs"),
-            make_item("Database indexing", "https://postgresql.org", "btree btree index scan sequential lookup primary key"),
-            make_item("Network protocol", "https://ietf.org", "tcp ip handshake packets routing latency bandwidth"),
-            make_item("Cryptocurrency", "https://bitcoin.org", "blockchain hash proof-of-work mining consensus ledger"),
+            make_item(
+                "Rust compiler",
+                "https://rustlang.org",
+                "memory safety borrow checker lifetimes ownership systems",
+            ),
+            make_item(
+                "Machine learning",
+                "https://pytorch.org",
+                "neural networks gradient descent backpropagation training epochs",
+            ),
+            make_item(
+                "Database indexing",
+                "https://postgresql.org",
+                "btree btree index scan sequential lookup primary key",
+            ),
+            make_item(
+                "Network protocol",
+                "https://ietf.org",
+                "tcp ip handshake packets routing latency bandwidth",
+            ),
+            make_item(
+                "Cryptocurrency",
+                "https://bitcoin.org",
+                "blockchain hash proof-of-work mining consensus ledger",
+            ),
         ];
         let deduped = deduplicate(distinct_items, 6);
         // All items are topically distinct — none should be removed

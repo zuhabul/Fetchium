@@ -1,11 +1,11 @@
 //! `hsx deep` — deep multi-agent research with evidence graphs (Mode E, PRD §8.8).
 
 use crate::cli::DeepArgs;
+use console::style;
 use hsx_core::config::HsxConfig;
 use hsx_core::http::client::HttpClient;
 use hsx_core::research::amrs::{AmrsConfig, Coordinator};
 use hsx_core::resource;
-use console::style;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::Duration;
 
@@ -30,21 +30,27 @@ pub async fn run(args: DeepArgs, config: &HsxConfig) -> anyhow::Result<()> {
         amrs_config.max_agents = args.max_agents as usize;
     }
 
-
     let result = if args.tree_of_thoughts {
         spinner.set_message("ToTR: Decomposing query...");
-        
+
         // For simplicity, using heuristic decomposition in CLI to avoid complex trait bounds if AI client isn't directly exposed
-        let perspectives = hsx_core::intelligence::totr::decompose_query_heuristic(&args.query, amrs_config.max_agents.max(2));
-        
-        spinner.set_message(format!("ToTR: Generated {} reasoning paths", perspectives.len()));
-        
+        let perspectives = hsx_core::intelligence::totr::decompose_query_heuristic(
+            &args.query,
+            amrs_config.max_agents.max(2),
+        );
+
+        spinner.set_message(format!(
+            "ToTR: Generated {} reasoning paths",
+            perspectives.len()
+        ));
+
         let mut branches = Vec::new();
         for (i, (persp, queries)) in perspectives.into_iter().enumerate() {
             let mut findings = Vec::new();
             for q in &queries {
                 spinner.set_message(format!("ToTR Path {}: {}", i + 1, q));
-                let mut coord = Coordinator::new(amrs_config.clone(), http_client.clone(), config.clone());
+                let mut coord =
+                    Coordinator::new(amrs_config.clone(), http_client.clone(), config.clone());
                 if let Ok(res) = coord.run(q).await {
                     findings.push(res.report);
                 }
@@ -58,24 +64,35 @@ pub async fn run(args: DeepArgs, config: &HsxConfig) -> anyhow::Result<()> {
                 status: hsx_core::intelligence::totr::BranchStatus::Active,
             });
         }
-        
+
         hsx_core::intelligence::totr::score_and_prune(&mut branches, 0.3);
         let synthesis = hsx_core::intelligence::totr::synthesize(&branches, &args.query);
         let debate = if args.self_debate {
-            Some(hsx_core::intelligence::totr::self_debate_heuristic(&branches, &args.query))
+            Some(hsx_core::intelligence::totr::self_debate_heuristic(
+                &branches,
+                &args.query,
+            ))
         } else {
             None
         };
-        
+
         let totr_res = hsx_core::intelligence::totr::TotrResult {
             query: args.query.clone(),
             branches: branches.clone(),
             synthesis,
             debate,
             total_branches: branches.len(),
-            pruned_branches: branches.iter().filter(|b| matches!(b.status, hsx_core::intelligence::totr::BranchStatus::Pruned {..})).count(),
+            pruned_branches: branches
+                .iter()
+                .filter(|b| {
+                    matches!(
+                        b.status,
+                        hsx_core::intelligence::totr::BranchStatus::Pruned { .. }
+                    )
+                })
+                .count(),
         };
-        
+
         // Wrap ToTR result into standard format
         let report = totr_res.to_markdown();
         let mut coordinator = Coordinator::new(amrs_config, http_client, config.clone());

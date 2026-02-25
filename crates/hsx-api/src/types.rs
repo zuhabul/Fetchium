@@ -111,3 +111,43 @@ pub struct EstimateResponse {
     pub extraction_layer: u8,
     pub content_type: String,
 }
+
+// ─── YouTube ─────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct YouTubeSearchRequest {
+    pub query: String,
+    pub max_results: Option<usize>,
+    pub fact_check: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct YouTubeAnalyzeRequest {
+    pub url: String,
+    pub transcript: Option<bool>,
+    pub comments: Option<bool>,
+    pub teaching: Option<bool>,
+}
+
+// ─── Social ───────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct SocialResearchRequest {
+    pub query: String,
+    pub platforms: Option<Vec<String>>,
+    pub max_per_platform: Option<usize>,
+    pub generate_ideas: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RedditSearchRequest {
+    pub query: String,
+    pub subreddits: Option<Vec<String>>,
+    pub max_posts: Option<usize>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct HackerNewsSearchRequest {
+    pub query: String,
+    pub max_results: Option<usize>,
+}

@@ -44,8 +44,8 @@ mod headless_impl {
     impl BrowserTier {
         pub fn tab_limit(&self) -> usize {
             match self {
-                Self::Minimal     => 2,
-                Self::Standard    => 4,
+                Self::Minimal => 2,
+                Self::Standard => 4,
                 Self::Performance => 8,
             }
         }
@@ -53,7 +53,7 @@ mod headless_impl {
         pub fn browser_count(&self) -> usize {
             match self {
                 Self::Performance => 2,
-                _                 => 1,
+                _ => 1,
             }
         }
     }
@@ -107,7 +107,10 @@ mod headless_impl {
                 debug!("BrowserPool: browser {} launched", i);
             }
 
-            info!("BrowserPool: ready ({} tabs available)", self.tier.tab_limit());
+            info!(
+                "BrowserPool: ready ({} tabs available)",
+                self.tier.tab_limit()
+            );
             Ok(())
         }
 
@@ -123,7 +126,9 @@ mod headless_impl {
             let browser = {
                 let browsers = self.browsers.lock();
                 if browsers.is_empty() {
-                    return Err(anyhow::anyhow!("BrowserPool not initialized — call init() first"));
+                    return Err(anyhow::anyhow!(
+                        "BrowserPool not initialized — call init() first"
+                    ));
                 }
                 Arc::clone(&browsers[0]) // Simple: always use first browser
             };
@@ -133,8 +138,10 @@ mod headless_impl {
                 .await
                 .map_err(|e| anyhow::anyhow!("Failed to open new tab: {e}"))?;
 
-            debug!("BrowserPool: tab acquired ({} permits remaining)",
-                self.tab_semaphore.available_permits());
+            debug!(
+                "BrowserPool: tab acquired ({} permits remaining)",
+                self.tab_semaphore.available_permits()
+            );
 
             Ok(ManagedTab::new(page, permit))
         }

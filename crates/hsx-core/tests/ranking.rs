@@ -18,7 +18,12 @@ fn make_item(title: &str, url: &str, snippet: &str, rank: u32) -> ResultItem {
 #[test]
 fn rerank_sorts_by_relevance_descending() {
     let results = vec![
-        make_item("Python Tutorial", "https://python.org/tutorial", "Learn Python basics", 0),
+        make_item(
+            "Python Tutorial",
+            "https://python.org/tutorial",
+            "Learn Python basics",
+            0,
+        ),
         make_item(
             "Rust Ownership Guide",
             "https://doc.rust-lang.org/book/ch04.html",
@@ -51,7 +56,10 @@ fn rerank_sorts_by_relevance_descending() {
         .iter()
         .position(|r| r.url.contains("rust-lang"))
         .expect("Rust result must be present");
-    assert!(rust_pos < 2, "Rust result should rank in top 2 for Rust query");
+    assert!(
+        rust_pos < 2,
+        "Rust result should rank in top 2 for Rust query"
+    );
 }
 
 #[test]
@@ -63,7 +71,10 @@ fn rerank_empty_query_returns_original_order() {
     let original_urls: Vec<_> = results.iter().map(|r| r.url.clone()).collect();
     let ranked = rerank(results, "");
     let ranked_urls: Vec<_> = ranked.iter().map(|r| r.url.clone()).collect();
-    assert_eq!(original_urls, ranked_urls, "empty query should preserve order");
+    assert_eq!(
+        original_urls, ranked_urls,
+        "empty query should preserve order"
+    );
 }
 
 #[test]
@@ -75,13 +86,27 @@ fn rerank_empty_results_returns_empty() {
 #[test]
 fn rerank_reassigns_ranks_after_sorting() {
     let results = vec![
-        make_item("Rust Book", "https://doc.rust-lang.org", "The Rust programming language book", 0),
-        make_item("Python Tutorial", "https://python.org", "Learn Python basics", 1),
+        make_item(
+            "Rust Book",
+            "https://doc.rust-lang.org",
+            "The Rust programming language book",
+            0,
+        ),
+        make_item(
+            "Python Tutorial",
+            "https://python.org",
+            "Learn Python basics",
+            1,
+        ),
     ];
     let ranked = rerank(results, "Rust programming language");
     for (i, item) in ranked.iter().enumerate() {
         // rerank() assigns ranks starting from 1 (1-indexed)
-        assert_eq!(item.rank as usize, i + 1, "rank should be reassigned 1-indexed after sorting");
+        assert_eq!(
+            item.rank as usize,
+            i + 1,
+            "rank should be reassigned 1-indexed after sorting"
+        );
     }
 }
 
@@ -95,10 +120,20 @@ fn rerank_single_item_returns_single() {
 #[test]
 fn rerank_all_results_get_scores() {
     let results = (0..5)
-        .map(|i| make_item(&format!("Result {i}"), &format!("https://example.com/{i}"), "content about Rust", i as u32))
+        .map(|i| {
+            make_item(
+                &format!("Result {i}"),
+                &format!("https://example.com/{i}"),
+                "content about Rust",
+                i as u32,
+            )
+        })
         .collect();
     let ranked = rerank(results, "Rust");
     for item in &ranked {
-        assert!(item.score.is_some(), "every result should have a score after reranking");
+        assert!(
+            item.score.is_some(),
+            "every result should have a score after reranking"
+        );
     }
 }

@@ -2,8 +2,8 @@
 
 use clap::Subcommand;
 use colored::Colorize;
-use hsx_core::proactive::subscription::{NotifyMethod, SubscriptionStore};
 use hsx_core::proactive::parse_interval;
+use hsx_core::proactive::subscription::{NotifyMethod, SubscriptionStore};
 
 #[derive(Debug, Subcommand)]
 pub enum SubscribeCommand {
@@ -42,8 +42,9 @@ pub fn run(cmd: SubscribeCommand) -> anyhow::Result<()> {
             interval,
             webhook,
         } => {
-            let secs = parse_interval(&interval)
-                .map_err(|_| anyhow::anyhow!("Invalid interval '{}'. Use e.g. 30s, 5m, 2h, 7d", interval))?;
+            let secs = parse_interval(&interval).map_err(|_| {
+                anyhow::anyhow!("Invalid interval '{}'. Use e.g. 30s, 5m, 2h, 7d", interval)
+            })?;
             let method = if let Some(url) = webhook {
                 NotifyMethod::Webhook { url }
             } else {

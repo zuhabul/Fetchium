@@ -130,7 +130,8 @@ mod tests {
 
     #[test]
     fn strip_heavy_tags_removes_noscript() {
-        let html = r#"<html><body><noscript>Please enable JS</noscript><p>Article text</p></body></html>"#;
+        let html =
+            r#"<html><body><noscript>Please enable JS</noscript><p>Article text</p></body></html>"#;
         let result = strip_heavy_tags(html);
         assert!(!result.contains("Please enable JS"));
         assert!(!result.contains("<noscript"));

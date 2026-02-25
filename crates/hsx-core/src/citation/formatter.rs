@@ -139,7 +139,8 @@ impl CitationFormatter {
     }
 
     fn extract_year(date: &Option<String>) -> Option<String> {
-        date.as_ref().and_then(|d| d.get(..4).map(|s| s.to_string()))
+        date.as_ref()
+            .and_then(|d| d.get(..4).map(|s| s.to_string()))
     }
 
     fn bibtex_key(source: &SourceMeta) -> String {

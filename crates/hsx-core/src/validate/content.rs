@@ -54,10 +54,7 @@ impl ContentValidator {
                 });
             }
 
-            let query_terms: Vec<&str> = query
-                .split_whitespace()
-                .filter(|w| w.len() > 2)
-                .collect();
+            let query_terms: Vec<&str> = query.split_whitespace().filter(|w| w.len() > 2).collect();
             let lower = src.text.to_lowercase();
             let term_hits = query_terms
                 .iter()

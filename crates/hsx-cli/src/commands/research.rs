@@ -36,7 +36,7 @@ pub async fn run(args: ResearchArgs, config_obj: &HsxConfig) -> anyhow::Result<(
 
     let http_client = hsx_core::http::client::HttpClient::new(config_obj)?;
     let report = ResearchPipeline::execute(&config, config_obj, &http_client).await?;
-    
+
     // Format output
     let output = format_report(&report, &args);
 
@@ -64,10 +64,7 @@ pub async fn run(args: ResearchArgs, config_obj: &HsxConfig) -> anyhow::Result<(
     Ok(())
 }
 
-fn format_report(
-    report: &hsx_core::research::ResearchReport,
-    args: &ResearchArgs,
-) -> String {
+fn format_report(report: &hsx_core::research::ResearchReport, args: &ResearchArgs) -> String {
     let mut out = String::new();
     out.push_str(&format!("# Research: {}\n\n", report.query));
 
@@ -81,7 +78,9 @@ fn format_report(
 
     out.push_str("## Findings\n\n");
     if report.synthesis.is_empty() {
-        out.push_str("*Research pipeline pending full implementation — Phase 3 scaffold complete.*\n");
+        out.push_str(
+            "*Research pipeline pending full implementation — Phase 3 scaffold complete.*\n",
+        );
     } else {
         out.push_str(&report.synthesis);
     }

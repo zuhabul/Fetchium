@@ -125,6 +125,13 @@ pub enum Commands {
         shell: Shell,
     },
 
+    /// YouTube Intelligence System — search, analyze, transcribe, research YouTube videos
+    #[command(name = "youtube")]
+    YouTube(YouTubeArgs),
+
+    /// Social Media Intelligence — Twitter/X, Reddit, TikTok, HackerNews, unified research
+    Social(SocialArgs),
+
     /// Manage AI provider authentication and fallback chain
     Provider {
         #[command(subcommand)]
@@ -321,8 +328,8 @@ pub struct AgentFetchArgs {
     #[arg(short, long, default_value = "summary")]
     pub tier: Tier,
 
-    /// Query context for QATBE
-    #[arg(short, long)]
+    /// Query context for QATBE (use --query to avoid conflict with global -q)
+    #[arg(long)]
     pub query: Option<String>,
 }
 
@@ -592,11 +599,22 @@ pub enum ProviderAction {
     /// Interactive authentication wizard for one or all providers
     ///
     /// Examples:
-    ///   hsx provider auth              # wizard for all providers  
+    ///   hsx provider auth              # wizard for all providers
     ///   hsx provider auth gemini       # Gemini only (API key or OAuth)
     ///   hsx provider auth anthropic    # Anthropic API key
     Auth {
         /// Provider slug (omit for full wizard)
+        provider: Option<String>,
+    },
+
+    /// List available models for a provider (with tiers and short aliases)
+    ///
+    /// Examples:
+    ///   hsx provider models              # list all providers' models
+    ///   hsx provider models gemini_cli   # GeminiCli models only
+    ///   hsx provider models anthropic    # Claude models with aliases
+    Models {
+        /// Provider slug (omit to show all providers)
         provider: Option<String>,
     },
 }
@@ -622,6 +640,166 @@ pub struct ProviderSetArgs {
     /// Enable or disable this provider in the fallback chain
     #[arg(long)]
     pub enable: Option<bool>,
+}
+
+// ─── YouTube ──────────────────────────────────────────────────
+
+#[derive(Debug, Parser)]
+pub struct YouTubeArgs {
+    #[command(subcommand)]
+    pub action: YouTubeAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum YouTubeAction {
+    /// Search YouTube for videos
+    Search(YtSearchArgs),
+    /// Analyze a specific YouTube video
+    Analyze(YtAnalyzeArgs),
+    /// Extract transcript from a YouTube video
+    Transcript(YtTranscriptArgs),
+    /// Full research pipeline with fact-checking
+    Research(YtResearchArgs),
+    /// Compare two YouTube videos
+    Compare(YtCompareArgs),
+}
+
+#[derive(Debug, Parser)]
+pub struct YtSearchArgs {
+    /// Search query
+    pub query: String,
+    /// Maximum number of results
+    #[arg(short = 'n', long, default_value = "10")]
+    pub max_results: usize,
+}
+
+#[derive(Debug, Parser)]
+pub struct YtAnalyzeArgs {
+    /// YouTube video URL
+    pub url: String,
+    /// Fetch and analyze transcript
+    #[arg(long)]
+    pub transcript: bool,
+    /// Fetch and analyze comments
+    #[arg(long)]
+    pub comments: bool,
+    /// Generate teaching content (flashcards, quiz)
+    #[arg(long)]
+    pub teaching: bool,
+}
+
+#[derive(Debug, Parser)]
+pub struct YtTranscriptArgs {
+    /// YouTube video URL
+    pub url: String,
+    /// Align transcript to video chapters
+    #[arg(long)]
+    pub chapters: bool,
+}
+
+#[derive(Debug, Parser)]
+pub struct YtResearchArgs {
+    /// Research query
+    pub query: String,
+    /// Maximum videos to analyze
+    #[arg(long, default_value = "5")]
+    pub max_videos: usize,
+    /// Build topic timeline
+    #[arg(long)]
+    pub timeline: bool,
+    /// Generate learning path
+    #[arg(long)]
+    pub learning_path: bool,
+    /// Enable cross-video fact checking
+    #[arg(long)]
+    pub fact_check: bool,
+    /// Output file for the report
+    #[arg(short, long)]
+    pub output: Option<String>,
+}
+
+#[derive(Debug, Parser)]
+pub struct YtCompareArgs {
+    /// Two YouTube video URLs to compare
+    #[arg(required = true, num_args = 2)]
+    pub urls: Vec<String>,
+}
+
+// ─── Social ──────────────────────────────────────────────────────
+
+/// Arguments for `hsx social`.
+///
+/// Quick usage:
+///   hsx social "AI tools"                     # unified search (all platforms)
+///   hsx social "AI tools" --twitter           # Twitter only
+///   hsx social "AI tools" --hackernews        # Hacker News only
+///   hsx social "AI tools" --reddit --tiktok   # Reddit + TikTok
+///   hsx social "AI tools" --unified --ideas   # Unified + content ideas
+///   hsx social "AI tools" --reddit --subreddits r/ML,r/AI  # Reddit with subreddits
+#[derive(Debug, Parser)]
+pub struct SocialArgs {
+    /// Search query (e.g. "AI tools", "rust programming", "#coding")
+    pub query: String,
+
+    // ── Platform selection ──────────────────────────────────────
+    /// Search all platforms simultaneously (default when no platform flag given)
+    #[arg(long)]
+    pub unified: bool,
+
+    /// Search Twitter/X (via Nitter instances + DDG site:x.com)
+    #[arg(long)]
+    pub twitter: bool,
+
+    /// Search Reddit posts and communities
+    #[arg(long)]
+    pub reddit: bool,
+
+    /// Search TikTok videos and hashtag trends
+    #[arg(long)]
+    pub tiktok: bool,
+
+    /// Search Hacker News stories (Algolia API)
+    #[arg(long, alias = "hn")]
+    pub hackernews: bool,
+
+    /// Search Facebook via DDG site:search + Open Graph metadata
+    #[arg(long)]
+    pub facebook: bool,
+
+    /// Search YouTube videos
+    #[arg(long)]
+    pub youtube: bool,
+
+    // ── Common options ──────────────────────────────────────────
+    /// Maximum posts to fetch (per platform in unified mode, total otherwise)
+    #[arg(short = 'n', long, default_value = "50")]
+    pub max: usize,
+
+    // ── Platform-specific options ───────────────────────────────
+    /// Subreddits to search — Reddit only (comma-separated, e.g. r/MachineLearning,r/Python)
+    #[arg(long, value_delimiter = ',')]
+    pub subreddits: Vec<String>,
+
+    /// Also fetch Twitter trending topics
+    #[arg(long)]
+    pub trends: bool,
+
+    /// Generate 20 content ideas from viral patterns (unified mode)
+    #[arg(long)]
+    pub ideas: bool,
+
+    /// Deep analysis mode — more thorough, slower
+    #[arg(long)]
+    pub deep: bool,
+
+    /// Facebook Graph API token for richer data (APP_ID|APP_SECRET or bearer token)
+    #[arg(long)]
+    pub token: Option<String>,
+
+    // ── Output ──────────────────────────────────────────────────
+    /// Save report to file
+    #[arg(short, long)]
+    pub output: Option<String>,
 }
 
 // ─── Index ───────────────────────────────────────────────────────

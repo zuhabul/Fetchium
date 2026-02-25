@@ -107,9 +107,7 @@ mod tests {
 
     #[test]
     fn is_document_msword() {
-        assert!(Layer4Extractor::is_document(
-            "application/msword"
-        ));
+        assert!(Layer4Extractor::is_document("application/msword"));
         assert!(Layer4Extractor::is_document(
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         ));

@@ -103,13 +103,7 @@ impl EvidenceGraphBuilder {
     }
 
     /// Add a source node and register its content hash.
-    pub fn add_source(
-        &mut self,
-        url: &str,
-        title: &str,
-        content: &str,
-        confidence: f64,
-    ) -> String {
+    pub fn add_source(&mut self, url: &str, title: &str, content: &str, confidence: f64) -> String {
         let hash = Self::sha256_hex(content);
         self.content_hashes.insert(url.to_string(), hash);
         self.add_node(NodeType::Source, title, confidence, Some(url))
@@ -184,7 +178,10 @@ impl EvidenceGraph {
             let computed = {
                 let mut h = Sha256::new();
                 h.update(edge.quote.as_bytes());
-                h.finalize().iter().map(|b| format!("{b:02x}")).collect::<String>()
+                h.finalize()
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect::<String>()
             };
             computed == edge.quote_hash
         } else {

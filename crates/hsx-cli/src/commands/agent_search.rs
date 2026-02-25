@@ -63,27 +63,32 @@ pub async fn run(args: AgentSearchArgs, config: &HsxConfig) -> anyhow::Result<()
     let orchestrator = SearchOrchestrator::new(http_client.clone(), orch_config);
 
     let cache_key = search_key(&args.query, "all", args.max_results);
-    let search_results =
-        if let Some(cached) = cache.get::<Vec<hsx_core::types::ResultItem>>(&cache_key).await {
-            cached
-        } else {
-            match orchestrator.search(&args.query, Some(args.max_results)).await {
-                Ok(results) => {
-                    cache.set(&cache_key, &results).await;
-                    results
-                }
-                Err(e) => {
-                    let err = serde_json::json!({
-                        "error": true,
-                        "code": "search_failed",
-                        "query": args.query,
-                        "message": e.to_string(),
-                    });
-                    println!("{}", serde_json::to_string_pretty(&err)?);
-                    return Ok(());
-                }
+    let search_results = if let Some(cached) = cache
+        .get::<Vec<hsx_core::types::ResultItem>>(&cache_key)
+        .await
+    {
+        cached
+    } else {
+        match orchestrator
+            .search(&args.query, Some(args.max_results))
+            .await
+        {
+            Ok(results) => {
+                cache.set(&cache_key, &results).await;
+                results
             }
-        };
+            Err(e) => {
+                let err = serde_json::json!({
+                    "error": true,
+                    "code": "search_failed",
+                    "query": args.query,
+                    "message": e.to_string(),
+                });
+                println!("{}", serde_json::to_string_pretty(&err)?);
+                return Ok(());
+            }
+        }
+    };
 
     let sources_fetched = search_results.len() as u32;
 

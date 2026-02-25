@@ -35,10 +35,7 @@ pub fn parse_comparison_query(query: &str) -> ComparisonQuery {
     // "compare X Y Z" prefix
     let lower = query.to_lowercase();
     if let Some(rest) = lower.strip_prefix("compare ") {
-        let items: Vec<String> = rest
-            .split_whitespace()
-            .map(|s| s.to_string())
-            .collect();
+        let items: Vec<String> = rest.split_whitespace().map(|s| s.to_string()).collect();
         if items.len() >= 2 {
             return ComparisonQuery {
                 items,

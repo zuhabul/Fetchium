@@ -11,12 +11,18 @@ use async_trait::async_trait;
 use serde::Deserialize;
 use tracing::{debug, warn};
 
-/// Public SearXNG instances that tend to support the JSON API.
-/// Rotated through in order when the first fails.
+/// Public SearXNG instances with JSON API enabled (verified early 2026).
+///
+/// Listed from most-to-least reliable. The backend tries each in order and
+/// returns on the first successful JSON parse. Instances with Cloudflare or
+/// disabled JSON APIs are excluded.
 const SEARXNG_INSTANCES: &[&str] = &[
-    "https://searx.be",
-    "https://search.ononoki.org",
-    "https://search.sapti.me",
+    "https://paulgo.io",           // Community, JSON API confirmed, no CF
+    "https://search.inetol.net",   // EU/DE, stable, JSON API confirmed
+    "https://searxng.site",        // US, stable uptime
+    "https://priv.au",             // AU, low latency Asia-Pacific
+    "https://searx.be",            // Historical; occasionally offline or CF-blocked
+    "https://search.sapti.me",     // Intermittent; kept as last resort
 ];
 
 #[derive(Debug, Deserialize)]
@@ -149,8 +155,11 @@ mod tests {
     fn urlencoding_spaces() {
         let encoded = urlencoding_encode("hello world");
         // form_urlencoded encodes spaces as '+'
-        assert!(encoded.contains('+') || encoded.contains("%20"),
-            "Expected '+' or '%20' in {:?}", encoded);
+        assert!(
+            encoded.contains('+') || encoded.contains("%20"),
+            "Expected '+' or '%20' in {:?}",
+            encoded
+        );
     }
 
     #[test]

@@ -16,20 +16,20 @@ pub mod search_agent;
 pub mod synthesize_agent;
 pub mod verify_agent;
 
-use tokio::sync::mpsc;
 use crate::citation::evidence_graph::{EvidenceGraph, EvidenceGraphBuilder};
 use crate::config::HsxConfig;
 use crate::error::HsxError;
 use crate::http::client::HttpClient;
 use crate::types::ResourceTier;
+use tokio::sync::mpsc;
 
-use channel::{AgentMessage, AgentType, AmrsContradiction, AmrsFinding, AmrsSource, AuditEntry};
-use decompose::{QueryNode, decompose_query};
-use search_agent::SearchAgent;
-use extract_agent::ExtractAgent;
-use verify_agent::VerifyAgent;
-use synthesize_agent::SynthesizeAgent;
 use agent::Agent;
+use channel::{AgentMessage, AgentType, AmrsContradiction, AmrsFinding, AmrsSource, AuditEntry};
+use decompose::{decompose_query, QueryNode};
+use extract_agent::ExtractAgent;
+use search_agent::SearchAgent;
+use synthesize_agent::SynthesizeAgent;
+use verify_agent::VerifyAgent;
 
 /// AMRS configuration derived from the machine's resource tier.
 #[derive(Debug, Clone)]
@@ -102,7 +102,11 @@ pub struct Coordinator {
 
 impl Coordinator {
     pub fn new(config: AmrsConfig, http_client: HttpClient, hsx_config: HsxConfig) -> Self {
-        Self { config, http_client, hsx_config }
+        Self {
+            config,
+            http_client,
+            hsx_config,
+        }
     }
 
     /// Execute a full deep research session.
@@ -159,7 +163,9 @@ impl Coordinator {
         let mut received = 0;
         while let Some(msg) = coord_rx.recv().await {
             match msg {
-                AgentMessage::SearchComplete { sub_query, results, .. } => {
+                AgentMessage::SearchComplete {
+                    sub_query, results, ..
+                } => {
                     audit.push(AuditEntry {
                         timestamp: chrono::Utc::now(),
                         agent: AgentType::Search,
@@ -172,7 +178,11 @@ impl Coordinator {
                         break;
                     }
                 }
-                AgentMessage::ProgressUpdate { agent_type, message, .. } => {
+                AgentMessage::ProgressUpdate {
+                    agent_type,
+                    message,
+                    ..
+                } => {
                     tracing::debug!(?agent_type, %message, "Agent progress");
                 }
                 _ => {}
@@ -181,12 +191,14 @@ impl Coordinator {
 
         // ── Phase 2: Extract ─────────────────────────────────────────
         let urls: Vec<String> = all_results.iter().map(|r| r.url.clone()).collect();
-        let (coord_tx2, mut coord_rx2) =
-            mpsc::channel::<AgentMessage>(self.config.channel_buffer);
+        let (coord_tx2, mut coord_rx2) = mpsc::channel::<AgentMessage>(self.config.channel_buffer);
         let (agent_tx2, agent_rx2) = mpsc::channel::<AgentMessage>(self.config.channel_buffer);
 
         agent_tx2
-            .send(AgentMessage::SpawnExtract { urls, query: query.to_string() })
+            .send(AgentMessage::SpawnExtract {
+                urls,
+                query: query.to_string(),
+            })
             .await
             .map_err(|e| HsxError::Internal(e.to_string()))?;
         agent_tx2.send(AgentMessage::Shutdown).await.ok();
@@ -214,8 +226,7 @@ impl Coordinator {
         });
 
         // ── Phase 3: Verify ──────────────────────────────────────────
-        let (coord_tx3, mut coord_rx3) =
-            mpsc::channel::<AgentMessage>(self.config.channel_buffer);
+        let (coord_tx3, mut coord_rx3) = mpsc::channel::<AgentMessage>(self.config.channel_buffer);
         let (agent_tx3, agent_rx3) = mpsc::channel::<AgentMessage>(self.config.channel_buffer);
 
         agent_tx3
@@ -237,7 +248,11 @@ impl Coordinator {
         let mut all_findings: Vec<AmrsFinding> = Vec::new();
         let mut all_contradictions: Vec<AmrsContradiction> = Vec::new();
         while let Some(msg) = coord_rx3.recv().await {
-            if let AgentMessage::VerifyComplete { findings, contradictions } = msg {
+            if let AgentMessage::VerifyComplete {
+                findings,
+                contradictions,
+            } = msg
+            {
                 all_findings = findings;
                 all_contradictions = contradictions;
                 break;
@@ -256,8 +271,7 @@ impl Coordinator {
         });
 
         // ── Phase 4: Synthesize ──────────────────────────────────────
-        let (coord_tx4, mut coord_rx4) =
-            mpsc::channel::<AgentMessage>(self.config.channel_buffer);
+        let (coord_tx4, mut coord_rx4) = mpsc::channel::<AgentMessage>(self.config.channel_buffer);
         let (agent_tx4, agent_rx4) = mpsc::channel::<AgentMessage>(self.config.channel_buffer);
 
         agent_tx4
@@ -279,7 +293,11 @@ impl Coordinator {
 
         let mut report = String::new();
         while let Some(msg) = coord_rx4.recv().await {
-            if let AgentMessage::SynthesisComplete { report: r, audit_entries } = msg {
+            if let AgentMessage::SynthesisComplete {
+                report: r,
+                audit_entries,
+            } = msg
+            {
                 report = r;
                 audit.extend(audit_entries);
                 break;

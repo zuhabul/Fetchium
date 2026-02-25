@@ -1,11 +1,11 @@
 //! Verify Agent — cross-source contradiction detection and confidence scoring (PRD §8.8).
 
-use async_trait::async_trait;
 use crate::error::HsxError;
 use crate::research::amrs::agent::Agent;
 use crate::research::amrs::channel::{
     AgentMessage, AgentReceiver, AgentSender, AgentType, AmrsContradiction, AmrsFinding, AmrsSource,
 };
+use async_trait::async_trait;
 
 /// Detects contradictions between sources and assigns confidence scores.
 pub struct VerifyAgent;
@@ -55,8 +55,14 @@ impl VerifyAgent {
         }
 
         // Number conflict: look for different numeric values on same topic
-        let numbers_a: Vec<&str> = lower_a.split_whitespace().filter(|w| w.chars().all(|c| c.is_ascii_digit() || c == '.')).collect();
-        let numbers_b: Vec<&str> = lower_b.split_whitespace().filter(|w| w.chars().all(|c| c.is_ascii_digit() || c == '.')).collect();
+        let numbers_a: Vec<&str> = lower_a
+            .split_whitespace()
+            .filter(|w| w.chars().all(|c| c.is_ascii_digit() || c == '.'))
+            .collect();
+        let numbers_b: Vec<&str> = lower_b
+            .split_whitespace()
+            .filter(|w| w.chars().all(|c| c.is_ascii_digit() || c == '.'))
+            .collect();
         if !numbers_a.is_empty() && !numbers_b.is_empty() && numbers_a != numbers_b {
             conflict_score += 0.2;
         }

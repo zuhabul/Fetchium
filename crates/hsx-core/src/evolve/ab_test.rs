@@ -37,7 +37,13 @@ impl Variant {
 }
 
 impl AbTest {
-    pub fn new(name: &str, description: &str, variant_a: &str, variant_b: &str, split_ratio: f64) -> Self {
+    pub fn new(
+        name: &str,
+        description: &str,
+        variant_a: &str,
+        variant_b: &str,
+        split_ratio: f64,
+    ) -> Self {
         Self {
             name: name.to_string(),
             description: description.to_string(),
@@ -90,7 +96,13 @@ pub struct AbResult {
 }
 
 impl AbResult {
-    pub fn new(test_name: &str, session_id: &str, variant: Variant, metric: &str, value: f64) -> Self {
+    pub fn new(
+        test_name: &str,
+        session_id: &str,
+        variant: Variant,
+        metric: &str,
+        value: f64,
+    ) -> Self {
         Self {
             test_name: test_name.to_string(),
             session_id: session_id.to_string(),
@@ -112,7 +124,10 @@ pub struct VariantStats {
 }
 
 /// Compute per-variant statistics for a set of results.
-pub fn compute_stats(results: &[AbResult], metric: &str) -> HsxResult<(VariantStats, VariantStats)> {
+pub fn compute_stats(
+    results: &[AbResult],
+    metric: &str,
+) -> HsxResult<(VariantStats, VariantStats)> {
     let values_a: Vec<f64> = results
         .iter()
         .filter(|r| r.metric == metric && r.variant == Variant::A)
@@ -130,14 +145,22 @@ pub fn compute_stats(results: &[AbResult], metric: &str) -> HsxResult<(VariantSt
         )));
     }
 
-    Ok((stats_for(Variant::A, &values_a), stats_for(Variant::B, &values_b)))
+    Ok((
+        stats_for(Variant::A, &values_a),
+        stats_for(Variant::B, &values_b),
+    ))
 }
 
 fn stats_for(variant: Variant, values: &[f64]) -> VariantStats {
     let n = values.len();
     let mean = values.iter().sum::<f64>() / n as f64;
     let variance = values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n as f64;
-    VariantStats { variant, n, mean, std_dev: variance.sqrt() }
+    VariantStats {
+        variant,
+        n,
+        mean,
+        std_dev: variance.sqrt(),
+    }
 }
 
 #[cfg(test)]

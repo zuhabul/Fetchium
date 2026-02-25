@@ -152,10 +152,16 @@ mod tests {
 
     #[test]
     fn validation_mode_from_str() {
-        assert_eq!(ValidationMode::from_str_loose("strict"), ValidationMode::Strict);
+        assert_eq!(
+            ValidationMode::from_str_loose("strict"),
+            ValidationMode::Strict
+        );
         assert_eq!(ValidationMode::from_str_loose("FAST"), ValidationMode::Fast);
         assert_eq!(ValidationMode::from_str_loose("off"), ValidationMode::Off);
-        assert_eq!(ValidationMode::from_str_loose("anything"), ValidationMode::Standard);
+        assert_eq!(
+            ValidationMode::from_str_loose("anything"),
+            ValidationMode::Standard
+        );
     }
 
     #[test]

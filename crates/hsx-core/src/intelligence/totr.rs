@@ -100,7 +100,11 @@ impl TotrResult {
             if branch.status != BranchStatus::Complete {
                 continue;
             }
-            let _ = writeln!(out, "## {} (score: {:.2})\n", branch.perspective, branch.score);
+            let _ = writeln!(
+                out,
+                "## {} (score: {:.2})\n",
+                branch.perspective, branch.score
+            );
             for finding in &branch.findings {
                 let _ = writeln!(out, "- {finding}");
             }
@@ -287,6 +291,13 @@ pub fn score_and_prune(branches: &mut [ThoughtBranch], threshold: f64) {
         .fold(f64::NEG_INFINITY, f64::max);
 
     if max_score <= 0.0 {
+        // All branches scored 0 (no findings yet) — mark them Complete so
+        // synthesize can produce best-effort output from query decomposition.
+        for branch in branches.iter_mut() {
+            if branch.status == BranchStatus::Active {
+                branch.status = BranchStatus::Complete;
+            }
+        }
         return;
     }
 
@@ -367,19 +378,13 @@ pub fn self_debate_heuristic(branches: &[ThoughtBranch], query: &str) -> DebateR
     let advocate_argument = if pros.is_empty() {
         format!("Insufficient evidence to advocate for a strong conclusion about {query}.")
     } else {
-        format!(
-            "Evidence in favour: {}",
-            pros.join("; ")
-        )
+        format!("Evidence in favour: {}", pros.join("; "))
     };
 
     let critic_argument = if cons.is_empty() {
         format!("No significant counterevidence found against the main claim about {query}.")
     } else {
-        format!(
-            "Counterevidence or limitations: {}",
-            cons.join("; ")
-        )
+        format!("Counterevidence or limitations: {}", cons.join("; "))
     };
 
     let confidence = branches
@@ -487,7 +492,9 @@ mod tests {
         // Should detect the vs pattern
         let names: Vec<&str> = branches.iter().map(|(n, _)| n.as_str()).collect();
         assert!(
-            names.iter().any(|n| n.contains("Comparison") || n.contains("Perspective")),
+            names
+                .iter()
+                .any(|n| n.contains("Comparison") || n.contains("Perspective")),
             "perspectives={names:?}"
         );
     }
@@ -513,7 +520,11 @@ mod tests {
         // Only branches with findings get non-zero scores.
         // Queries for branch-0 return findings; branches 1,2 return none.
         let result = run_totr_sync("complex query with technical implications", &config, |q| {
-            if q.contains("Conceptual") || q.contains("Perspective 1") || q.contains("fundamentals") || q.contains("overview") {
+            if q.contains("Conceptual")
+                || q.contains("Perspective 1")
+                || q.contains("fundamentals")
+                || q.contains("overview")
+            {
                 vec!["A relevant finding".to_string()]
             } else {
                 vec![]

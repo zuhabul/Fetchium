@@ -44,12 +44,9 @@ impl EmbeddingCache {
     pub fn get(&self, text: &str) -> Result<Option<Vec<f32>>, HsxError> {
         let hash = Self::hash_text(text);
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare_cached(
-            "SELECT embedding FROM embedding_cache WHERE text_hash = ?1",
-        )?;
-        let blob: Option<Vec<u8>> = stmt
-            .query_row([&hash], |row| row.get(0))
-            .optional()?;
+        let mut stmt =
+            conn.prepare_cached("SELECT embedding FROM embedding_cache WHERE text_hash = ?1")?;
+        let blob: Option<Vec<u8>> = stmt.query_row([&hash], |row| row.get(0)).optional()?;
 
         match blob {
             Some(b) => {

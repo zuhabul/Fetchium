@@ -1,11 +1,11 @@
 //! Synthesize Agent — assembles final research report from verified findings (PRD §8.8).
 
-use async_trait::async_trait;
 use crate::error::HsxError;
 use crate::research::amrs::agent::Agent;
 use crate::research::amrs::channel::{
-    AgentMessage, AgentReceiver, AgentSender, AgentType, AuditEntry, AmrsFinding, AmrsSource,
+    AgentMessage, AgentReceiver, AgentSender, AgentType, AmrsFinding, AmrsSource, AuditEntry,
 };
+use async_trait::async_trait;
 
 /// Synthesizes verified findings into a structured research report.
 pub struct SynthesizeAgent;
@@ -24,8 +24,11 @@ impl SynthesizeAgent {
             report.push_str("No findings were retrieved for this query.\n");
         } else {
             for (i, finding) in findings.iter().enumerate().take(10) {
-                let source_refs: Vec<String> =
-                    finding.source_indices.iter().map(|&i| format!("[{}]", i + 1)).collect();
+                let source_refs: Vec<String> = finding
+                    .source_indices
+                    .iter()
+                    .map(|&i| format!("[{}]", i + 1))
+                    .collect();
                 report.push_str(&format!(
                     "{}. {} {} *(confidence: {:.0}%)*\n",
                     i + 1,
@@ -67,7 +70,11 @@ impl Agent for SynthesizeAgent {
     async fn run(&self, mut rx: AgentReceiver, tx: AgentSender) -> Result<(), HsxError> {
         while let Some(msg) = rx.recv().await {
             match msg {
-                AgentMessage::SpawnSynthesize { findings, sources, query } => {
+                AgentMessage::SpawnSynthesize {
+                    findings,
+                    sources,
+                    query,
+                } => {
                     let _ = tx
                         .send(AgentMessage::ProgressUpdate {
                             agent_type: AgentType::Synthesize,

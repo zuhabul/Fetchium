@@ -19,7 +19,10 @@ pub struct AnomalyConfig {
 
 impl Default for AnomalyConfig {
     fn default() -> Self {
-        Self { similarity_threshold: 0.70, min_changed_lines: 10 }
+        Self {
+            similarity_threshold: 0.70,
+            min_changed_lines: 10,
+        }
     }
 }
 
@@ -34,10 +37,14 @@ pub struct AnomalyReport {
 }
 
 /// Check whether a `ContentDiff` represents an anomalous change.
-pub fn check_anomaly(url: &str, diff: &ContentDiff, cfg: &AnomalyConfig) -> HsxResult<AnomalyReport> {
+pub fn check_anomaly(
+    url: &str,
+    diff: &ContentDiff,
+    cfg: &AnomalyConfig,
+) -> HsxResult<AnomalyReport> {
     let changed_lines = diff.additions + diff.deletions;
-    let is_anomalous = diff.similarity < cfg.similarity_threshold
-        || changed_lines >= cfg.min_changed_lines;
+    let is_anomalous =
+        diff.similarity < cfg.similarity_threshold || changed_lines >= cfg.min_changed_lines;
 
     let summary = if is_anomalous {
         format!(
@@ -76,14 +83,16 @@ mod tests {
     #[test]
     fn test_anomaly_low_similarity() {
         let diff = make_diff(100, 80, 0.20);
-        let report = check_anomaly("https://example.com", &diff, &AnomalyConfig::default()).unwrap();
+        let report =
+            check_anomaly("https://example.com", &diff, &AnomalyConfig::default()).unwrap();
         assert!(report.is_anomalous);
     }
 
     #[test]
     fn test_no_anomaly_high_similarity() {
         let diff = make_diff(1, 0, 0.99);
-        let report = check_anomaly("https://example.com", &diff, &AnomalyConfig::default()).unwrap();
+        let report =
+            check_anomaly("https://example.com", &diff, &AnomalyConfig::default()).unwrap();
         assert!(!report.is_anomalous);
     }
 }

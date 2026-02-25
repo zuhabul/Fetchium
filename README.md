@@ -16,7 +16,7 @@
 
 <br/>
 
-[![Tests](https://img.shields.io/badge/tests-563%20passing-brightgreen?style=flat-square&logo=rust)](https://github.com/user/hypersearchx)
+[![Tests](https://img.shields.io/badge/tests-674%20passing-brightgreen?style=flat-square&logo=rust)](https://github.com/user/hypersearchx)
 [![Rust](https://img.shields.io/badge/rust-1.75%2B-orange?style=flat-square&logo=rust)](https://rustup.rs)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![Binary](https://img.shields.io/badge/binary-single%20static-purple?style=flat-square)](https://github.com/user/hypersearchx/releases)
@@ -25,7 +25,7 @@
 
 <br/>
 
-[**Install**](#-installation) · [**Quick Start**](#-quick-start) · [**AI Setup**](#-ai-provider-setup) · [**Search Engines**](#-search-engines) · [**Intelligence**](#-intelligence-engine) · [**CLI**](#-cli-reference) · [**Config**](#-configuration)
+[**Install**](#-installation) · [**Quick Start**](#-quick-start) · [**AI Setup**](#-ai-provider-setup) · [**Search Engines**](#-search-engines) · [**Social Media**](#-social-media-intelligence) · [**Intelligence**](#-intelligence-engine) · [**CLI**](#-cli-reference) · [**Config**](#-configuration)
 
 <br/>
 
@@ -39,7 +39,7 @@
 >
 > 🤖 **6 AI providers** with subscription OAuth auto-detection — zero API key needed for Claude Code, Gemini CLI, or Codex CLI users
 >
-> ⚡ **Single Rust binary** — 5ms startup, 97% token reduction, 563 tests, zero runtime dependencies
+> ⚡ **Single Rust binary** — 5ms startup, 97% token reduction, 674 tests, zero runtime dependencies
 
 </div>
 
@@ -672,6 +672,108 @@ hsx fetch "https://example.com/comparison-table" --format json
 
 ---
 
+## 📱 Social Media Intelligence
+
+Monitor, analyse, and extract viral intelligence from **6 platforms** simultaneously.
+
+### Supported Platforms
+
+| Platform | Data Source | Free? | Signal Weight |
+|----------|-------------|-------|---------------|
+| **Twitter/X** | Nitter public API | ✅ | 0.65 |
+| **Reddit** | Reddit JSON API (no key) | ✅ | 0.85 |
+| **TikTok** | Creative Center trends | ✅ | 0.55 |
+| **Hacker News** | Firebase + Algolia | ✅ | 1.00 |
+| **YouTube** | Data API v3 + transcript | ✅ | 0.80 |
+| **Facebook** | DDG + OpenGraph + Graph API | ✅/⚠️ | 0.70 |
+
+### Quick Start
+
+```bash
+# Unified cross-platform research (all 6 platforms at once)
+hsx social "rust programming" --unified
+
+# Per-platform commands
+hsx social twitter "AI safety" --max 20
+hsx social reddit "rust programming" --subreddit r/rust --sort hot
+hsx social tiktok "viral coding" --max 15
+hsx social hackernews "LLM papers" --category ask
+hsx social youtube "machine learning tutorial" --max 10
+hsx social facebook "open source tools" --max 20
+```
+
+### Viral Trend Detection
+
+```bash
+# Detect cross-platform trending topics
+hsx social "quantum computing" --unified --trends
+
+# Output includes:
+# ✓ Cross-platform trends (topics trending on ≥2 platforms simultaneously)
+# ✓ Viral burst detection (velocity > 3× median across all topics)
+# ✓ Sentiment breakdown per platform
+# ✓ Content ideas with viral potential score
+```
+
+### Content Idea Generation
+
+The unified engine automatically generates **platform-optimised content ideas** from trending topics:
+
+```
+## Content Ideas
+
+### 1. 🧵 Thread: Everything about Rust (and why it matters) [87% viral potential]
+**Platform:** Hacker News | **Format:** Twitter Thread
+
+**Hook:** Everyone's talking about Rust. Here's what you're missing 👇
+
+**Key Points:**
+- Why Rust is trending across 4 platforms
+- Key insight from 12 posts analysed
+- Viral signal: velocity=340 posts/hour
+- From the community: "Memory safety without GC — this changes systems programming..."
+```
+
+### Facebook Graph API Setup (Optional, for Richer Data)
+
+Facebook basic data works **free** via DDG/OpenGraph. For richer data (page posts, reactions, engagement metrics), add a Graph API token:
+
+**Option 1 — Config file** (recommended):
+```toml
+# ~/.hypersearchx/config.toml
+[social]
+facebook_graph_token = "APP_ID|APP_SECRET"
+```
+
+**Option 2 — Environment variable**:
+```bash
+export HSX_FACEBOOK_TOKEN="APP_ID|APP_SECRET"
+```
+
+**Option 3 — CLI flag**:
+```bash
+hsx social facebook "open source" --token "APP_ID|APP_SECRET"
+```
+
+**Getting a free token**: Visit [developers.facebook.com](https://developers.facebook.com) → Create App → Get `App ID` and `App Secret` → token = `APP_ID|APP_SECRET`. Free tier supports page data.
+
+### Cross-Platform Signal Fusion
+
+The `cross_signal_score()` function weights engagement by platform credibility:
+
+```
+HackerNews (1.00) × engagement → expert signal, high noise reduction
+Reddit     (0.85) × engagement → topic-focused, community moderated
+YouTube    (0.80) × engagement → long-form, researched content
+Facebook   (0.70) × engagement → large reach, moderate signal quality
+Twitter    (0.65) × engagement → fast but noisy
+TikTok     (0.55) × engagement → viral reach, lower analytical depth
+```
+
+Weights auto-apply when combining posts across platforms in the unified engine.
+
+---
+
 ## 📐 Validation Layer
 
 Every result passes through **6-layer validation** + self-correction:
@@ -737,6 +839,12 @@ mode = "standard"   # standard | private | tor | air-gap
 
 [pie]
 enabled = true
+
+[social]
+# Optional Facebook Graph API token for richer data
+# Get from: developers.facebook.com → App ID + App Secret
+# facebook_graph_token = "APP_ID|APP_SECRET"
+# Also accepts: export HSX_FACEBOOK_TOKEN="APP_ID|APP_SECRET"
 ```
 
 ### Environment Variables
@@ -747,6 +855,7 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 export GEMINI_API_KEY="AIza..."
 export OPENROUTER_API_KEY="sk-or-..."
 export HSX_AI_PROVIDER="gemini"        # Override provider chain for this session
+export HSX_FACEBOOK_TOKEN="APP_ID|APP_SECRET"  # Optional: Facebook Graph API
 ```
 
 ---
@@ -796,6 +905,15 @@ export HSX_AI_PROVIDER="gemini"        # Override provider chain for this sessio
 │  subscribe list/remove  Manage subscriptions                               │
 │  radar [limit]          Trending topics from subscriptions                 │
 │  digest <period>        Generate digest (daily/weekly/monthly)             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ SOCIAL MEDIA INTELLIGENCE                                                   │
+│  social twitter <query>   Search Twitter/X via Nitter                      │
+│  social reddit <query>    Reddit posts + subreddit trends                  │
+│  social tiktok <query>    TikTok videos + viral scores                     │
+│  social hackernews <q>    Hacker News stories + analysis                   │
+│  social youtube <query>   YouTube videos + transcripts                     │
+│  social facebook <query>  Facebook via DDG/OG/Graph API                    │
+│  social <query> --unified Cross-platform research + content ideas          │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ WORKSPACE & PLUGIN                                                          │
 │  workspace create/fork/merge/sync   Collaborative research sessions        │
@@ -859,6 +977,7 @@ KEY FLAGS
 | **Multimodal** | ✅ YouTube/PDF/OCR | ❌ | ❌ | ⚠️ | ❌ | ❌ |
 | **Self-Evolving** | ✅ AutoML + A/B | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **AI Synthesis** | ✅ 6 providers | ❌ | ✅ paid | ❌ | ❌ | ❌ |
+| **Social Media Intel** | ✅ 6 platforms | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 ---
 
@@ -931,11 +1050,11 @@ git clone https://github.com/user/hypersearchx.git
 cd hypersearchx
 cargo build -p hsx-cli
 
-# Run (26 commands)
+# Run (33 commands)
 ./target/debug/hsx --help
 ./target/debug/hsx doctor
 
-# Tests (563 passing, 0 failures)
+# Tests (666 passing, 0 failures)
 cargo test
 
 # Lint — zero warnings policy

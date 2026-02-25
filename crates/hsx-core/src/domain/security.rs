@@ -5,11 +5,7 @@ use super::{DomainMode, RankingOverrides, SpecialFeature};
 pub fn mode() -> DomainMode {
     DomainMode {
         name: "security".into(),
-        backends_priority: vec![
-            "duckduckgo".into(),
-            "github".into(),
-            "stackoverflow".into(),
-        ],
+        backends_priority: vec!["duckduckgo".into(), "github".into(), "stackoverflow".into()],
         ranking_overrides: RankingOverrides {
             authority_multiplier: 1.5,
             temporal_multiplier: 3.0,

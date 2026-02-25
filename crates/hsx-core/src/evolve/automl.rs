@@ -40,8 +40,14 @@ impl Default for HyperFusionWeights {
 impl HyperFusionWeights {
     /// Normalise all weights so they sum to 1.0.
     pub fn normalise(&mut self) {
-        let sum = self.bm25 + self.semantic + self.temporal + self.authority
-            + self.evidence + self.diversity + self.depth + self.consensus;
+        let sum = self.bm25
+            + self.semantic
+            + self.temporal
+            + self.authority
+            + self.evidence
+            + self.diversity
+            + self.depth
+            + self.consensus;
         if sum <= 0.0 {
             return;
         }
@@ -121,7 +127,11 @@ impl AutoMlTuner {
                 updated_at  TEXT NOT NULL
             );",
         )?;
-        Ok(Self { conn, learning_rate: 0.01, min_events: 50 })
+        Ok(Self {
+            conn,
+            learning_rate: 0.01,
+            min_events: 50,
+        })
     }
 
     /// Record a feedback event.
@@ -144,18 +154,19 @@ impl AutoMlTuner {
 
     /// Count recorded events.
     pub fn event_count(&self) -> HsxResult<usize> {
-        let n: i64 =
-            self.conn.query_row("SELECT COUNT(*) FROM feedback_events", [], |r| r.get(0))?;
+        let n: i64 = self
+            .conn
+            .query_row("SELECT COUNT(*) FROM feedback_events", [], |r| r.get(0))?;
         Ok(n as usize)
     }
 
     /// Load current tuned weights (falls back to Default if not yet tuned).
     pub fn load_weights(&self) -> HsxResult<HyperFusionWeights> {
-        let row: rusqlite::Result<String> = self.conn.query_row(
-            "SELECT weights FROM tuned_weights WHERE id=1",
-            [],
-            |r| r.get(0),
-        );
+        let row: rusqlite::Result<String> =
+            self.conn
+                .query_row("SELECT weights FROM tuned_weights WHERE id=1", [], |r| {
+                    r.get(0)
+                });
         match row {
             Ok(json) => Ok(serde_json::from_str(&json)?),
             Err(_) => Ok(HyperFusionWeights::default()),
@@ -171,9 +182,9 @@ impl AutoMlTuner {
         }
 
         let mut weights = self.load_weights()?;
-        let mut stmt = self.conn.prepare(
-            "SELECT signals, clicked FROM feedback_events",
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT signals, clicked FROM feedback_events")?;
 
         let rows: Vec<(SignalSnapshot, bool)> = stmt
             .query_map([], |r| {
@@ -182,7 +193,11 @@ impl AutoMlTuner {
                 Ok((s, c != 0))
             })?
             .filter_map(|r| r.ok())
-            .filter_map(|(s, c)| serde_json::from_str::<SignalSnapshot>(&s).ok().map(|snap| (snap, c)))
+            .filter_map(|(s, c)| {
+                serde_json::from_str::<SignalSnapshot>(&s)
+                    .ok()
+                    .map(|snap| (snap, c))
+            })
             .collect();
 
         // Simple perceptron update: for each event, if clicked, increase
@@ -190,24 +205,40 @@ impl AutoMlTuner {
         for (snap, clicked) in &rows {
             let label = if *clicked { 1.0_f64 } else { 0.0_f64 };
             let scores = [
-                snap.bm25, snap.semantic, snap.temporal, snap.authority,
-                snap.evidence, snap.diversity, snap.depth, snap.consensus,
+                snap.bm25,
+                snap.semantic,
+                snap.temporal,
+                snap.authority,
+                snap.evidence,
+                snap.diversity,
+                snap.depth,
+                snap.consensus,
             ];
-            let prediction: f64 = scores.iter().zip([
-                weights.bm25, weights.semantic, weights.temporal, weights.authority,
-                weights.evidence, weights.diversity, weights.depth, weights.consensus,
-            ]).map(|(s, w)| s * w).sum();
+            let prediction: f64 = scores
+                .iter()
+                .zip([
+                    weights.bm25,
+                    weights.semantic,
+                    weights.temporal,
+                    weights.authority,
+                    weights.evidence,
+                    weights.diversity,
+                    weights.depth,
+                    weights.consensus,
+                ])
+                .map(|(s, w)| s * w)
+                .sum();
 
             let error = label - prediction;
             let lr = self.learning_rate;
-            weights.bm25      += lr * error * snap.bm25;
-            weights.semantic   += lr * error * snap.semantic;
-            weights.temporal   += lr * error * snap.temporal;
-            weights.authority  += lr * error * snap.authority;
-            weights.evidence   += lr * error * snap.evidence;
-            weights.diversity  += lr * error * snap.diversity;
-            weights.depth      += lr * error * snap.depth;
-            weights.consensus  += lr * error * snap.consensus;
+            weights.bm25 += lr * error * snap.bm25;
+            weights.semantic += lr * error * snap.semantic;
+            weights.temporal += lr * error * snap.temporal;
+            weights.authority += lr * error * snap.authority;
+            weights.evidence += lr * error * snap.evidence;
+            weights.diversity += lr * error * snap.diversity;
+            weights.depth += lr * error * snap.depth;
+            weights.consensus += lr * error * snap.consensus;
         }
 
         weights.clamp();
@@ -233,8 +264,14 @@ impl AutoMlTuner {
              evidence={:.3}  diversity={:.3}  depth={:.3}  consensus={:.3}",
             count,
             self.min_events,
-            weights.bm25, weights.semantic, weights.temporal, weights.authority,
-            weights.evidence, weights.diversity, weights.depth, weights.consensus,
+            weights.bm25,
+            weights.semantic,
+            weights.temporal,
+            weights.authority,
+            weights.evidence,
+            weights.diversity,
+            weights.depth,
+            weights.consensus,
         ))
     }
 }
@@ -251,12 +288,24 @@ mod tests {
     #[test]
     fn test_weights_normalise() {
         let mut w = HyperFusionWeights {
-            bm25: 2.0, semantic: 2.0, temporal: 1.0, authority: 1.0,
-            evidence: 1.0, diversity: 1.0, depth: 0.5, consensus: 0.5,
+            bm25: 2.0,
+            semantic: 2.0,
+            temporal: 1.0,
+            authority: 1.0,
+            evidence: 1.0,
+            diversity: 1.0,
+            depth: 0.5,
+            consensus: 0.5,
         };
         w.normalise();
-        let sum = w.bm25 + w.semantic + w.temporal + w.authority
-            + w.evidence + w.diversity + w.depth + w.consensus;
+        let sum = w.bm25
+            + w.semantic
+            + w.temporal
+            + w.authority
+            + w.evidence
+            + w.diversity
+            + w.depth
+            + w.consensus;
         assert!((sum - 1.0).abs() < 1e-9);
     }
 

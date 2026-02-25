@@ -291,6 +291,7 @@ pub enum BackendId {
     Github,
     Reddit,
     StackOverflow,
+    YouTube,
     Custom(String),
 }
 
@@ -309,6 +310,7 @@ impl std::fmt::Display for BackendId {
             Self::Github => write!(f, "github"),
             Self::Reddit => write!(f, "reddit"),
             Self::StackOverflow => write!(f, "stackoverflow"),
+            Self::YouTube => write!(f, "youtube"),
             Self::Custom(name) => write!(f, "{name}"),
         }
     }

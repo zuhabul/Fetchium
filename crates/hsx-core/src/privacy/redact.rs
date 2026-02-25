@@ -21,15 +21,9 @@ static PII_PATTERNS: Lazy<Vec<(Regex, &'static str)>> = Lazy::new(|| {
         // US SSNs
         (Regex::new(r"\b\d{3}-\d{2}-\d{4}\b").unwrap(), "[SSN]"),
         // Credit card numbers (16 digits, optionally grouped)
-        (
-            Regex::new(r"\b(?:\d{4}[\s\-]?){3}\d{4}\b").unwrap(),
-            "[CC]",
-        ),
+        (Regex::new(r"\b(?:\d{4}[\s\-]?){3}\d{4}\b").unwrap(), "[CC]"),
         // IPv4 addresses
-        (
-            Regex::new(r"\b(?:\d{1,3}\.){3}\d{1,3}\b").unwrap(),
-            "[IP]",
-        ),
+        (Regex::new(r"\b(?:\d{1,3}\.){3}\d{1,3}\b").unwrap(), "[IP]"),
         // API keys / tokens (hex 32+ chars)
         (Regex::new(r"\b[0-9a-fA-F]{32,}\b").unwrap(), "[TOKEN]"),
     ]

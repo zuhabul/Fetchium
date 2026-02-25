@@ -32,18 +32,38 @@ pub struct CepFeatures {
 
 /// Known SPA/JavaScript-heavy domains that require Layer 3+.
 const SPA_DOMAINS: &[&str] = &[
-    "twitter.com", "x.com", "facebook.com", "instagram.com",
-    "tiktok.com", "linkedin.com", "discord.com", "slack.com",
-    "notion.so", "figma.com", "airtable.com", "trello.com",
-    "app.github.com", "gitlab.com", "jira.atlassian.net",
-    "app.netlify.com", "vercel.app", "app.render.com",
-    "grafana.com", "kibana.io",
+    "twitter.com",
+    "x.com",
+    "facebook.com",
+    "instagram.com",
+    "tiktok.com",
+    "linkedin.com",
+    "discord.com",
+    "slack.com",
+    "notion.so",
+    "figma.com",
+    "airtable.com",
+    "trello.com",
+    "app.github.com",
+    "gitlab.com",
+    "jira.atlassian.net",
+    "app.netlify.com",
+    "vercel.app",
+    "app.render.com",
+    "grafana.com",
+    "kibana.io",
 ];
 
 /// Framework markers that indicate a JavaScript SPA.
 const FRAMEWORK_MARKERS: &[&str] = &[
-    "__next", "__nuxt", "ng-app", "data-reactroot", "__svelte",
-    "v-app", "ember-application", "__quasar",
+    "__next",
+    "__nuxt",
+    "ng-app",
+    "data-reactroot",
+    "__svelte",
+    "v-app",
+    "ember-application",
+    "__quasar",
 ];
 
 /// Extract `CepFeatures` from a domain + initial HTML peek.
@@ -151,7 +171,9 @@ fn compute_text_ratio(html: &str) -> f32 {
 
 fn has_framework_markers(html: &str) -> bool {
     let lower = html.to_lowercase();
-    FRAMEWORK_MARKERS.iter().any(|marker| lower.contains(marker))
+    FRAMEWORK_MARKERS
+        .iter()
+        .any(|marker| lower.contains(marker))
 }
 
 #[cfg(test)]
@@ -239,7 +261,8 @@ mod tests {
 
     #[test]
     fn extract_features_from_html_peek() {
-        let html = "<html><script src='app.js'></script><div id='__next'><p>content here</p></div></html>";
+        let html =
+            "<html><script src='app.js'></script><div id='__next'><p>content here</p></div></html>";
         let features = extract_features("example.com", "https://example.com/page", html);
         assert!(features.has_framework_markers);
         assert_eq!(features.script_tag_count, 1);

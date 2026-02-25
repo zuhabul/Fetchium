@@ -9,8 +9,10 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 fn load_fixture(name: &str) -> String {
     // CARGO_MANIFEST_DIR = crates/hsx-core, fixtures are at workspace root tests/fixtures/
     let p = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent().unwrap()  // crates/
-        .parent().unwrap()  // workspace root
+        .parent()
+        .unwrap() // crates/
+        .parent()
+        .unwrap() // workspace root
         .join("tests")
         .join("fixtures")
         .join(name);

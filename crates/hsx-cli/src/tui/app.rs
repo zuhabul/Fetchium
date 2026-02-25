@@ -61,8 +61,10 @@ impl App {
                             "Placeholder result. Connect to search engine for live results.".into(),
                         )];
                         self.active_panel = Panel::Results;
-                        self.status =
-                            format!(" {} result(s) | Tab: switch | \u{2191}\u{2193}: navigate", self.results.len());
+                        self.status = format!(
+                            " {} result(s) | Tab: switch | \u{2191}\u{2193}: navigate",
+                            self.results.len()
+                        );
                     }
                 }
                 KeyCode::Tab => self.active_panel = Panel::Results,
@@ -146,10 +148,7 @@ impl App {
                 };
                 ListItem::new(vec![
                     Line::styled(format!("[{}] {}", i + 1, title), style),
-                    Line::styled(
-                        format!("    {url}"),
-                        Style::default().fg(Color::Blue),
-                    ),
+                    Line::styled(format!("    {url}"), Style::default().fg(Color::Blue)),
                 ])
             })
             .collect();
@@ -184,8 +183,8 @@ impl App {
         frame.render_widget(preview, main_chunks[1]);
 
         // Status bar
-        let status = Paragraph::new(self.status.as_str())
-            .style(Style::default().fg(Color::DarkGray));
+        let status =
+            Paragraph::new(self.status.as_str()).style(Style::default().fg(Color::DarkGray));
         frame.render_widget(status, chunks[2]);
     }
 }

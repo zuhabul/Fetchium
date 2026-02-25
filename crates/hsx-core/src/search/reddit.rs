@@ -122,18 +122,17 @@ impl SearchBackend for RedditBackend {
                 let snippet = build_snippet(&post);
 
                 // For self-posts (Reddit-internal links), use the permalink
-                let final_url =
-                    if post.url.starts_with("https://www.reddit.com")
-                        || post.url.starts_with("http://www.reddit.com")
-                        || post.url.starts_with('/')
-                    {
-                        post.permalink
-                            .as_deref()
-                            .map(|p| format!("https://www.reddit.com{p}"))
-                            .unwrap_or(post.url.clone())
-                    } else {
-                        post.url.clone()
-                    };
+                let final_url = if post.url.starts_with("https://www.reddit.com")
+                    || post.url.starts_with("http://www.reddit.com")
+                    || post.url.starts_with('/')
+                {
+                    post.permalink
+                        .as_deref()
+                        .map(|p| format!("https://www.reddit.com{p}"))
+                        .unwrap_or(post.url.clone())
+                } else {
+                    post.url.clone()
+                };
 
                 // Convert UTC epoch to ISO-8601 string
                 let published = post.created_utc.and_then(|ts| {
@@ -176,11 +175,7 @@ fn build_snippet(post: &RedditPost) -> String {
         }
     }
 
-    let meta = format!(
-        "r/{} | {} points",
-        post.subreddit,
-        post.score.unwrap_or(0)
-    );
+    let meta = format!("r/{} | {} points", post.subreddit, post.score.unwrap_or(0));
     parts.push(meta);
 
     parts.join(" — ")
@@ -286,10 +281,7 @@ mod tests {
         } else {
             post.url.clone()
         };
-        assert_eq!(
-            final_url,
-            "https://www.reddit.com/r/AskReddit/comments/abc"
-        );
+        assert_eq!(final_url, "https://www.reddit.com/r/AskReddit/comments/abc");
     }
 
     #[test]

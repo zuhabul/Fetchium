@@ -132,8 +132,7 @@ impl RarEngine {
         }
 
         // R2: Are results relevant?
-        let relevant_ratio =
-            state.relevant_count as f64 / state.total_results.max(1) as f64;
+        let relevant_ratio = state.relevant_count as f64 / state.total_results.max(1) as f64;
         if relevant_ratio < self.config.min_relevant_ratio {
             let new_query = Self::reformulate(&state.query, &state.low_relevance_terms);
             return RarIterationResult {

@@ -21,13 +21,17 @@ pub async fn run(args: IndexArgs, config: &HsxConfig, format: Format) -> Result<
             let http = HttpClient::new(config).context("Failed to build HTTP client")?;
             let query_str = query.as_deref().unwrap_or("");
 
-            let fetch_result = http.fetch(&url).await
+            let fetch_result = http
+                .fetch(&url)
+                .await
                 .with_context(|| format!("Failed to fetch {url}"))?;
             let extracted = pipeline::extract(&fetch_result.body, &fetch_result.url);
             let qatbe = extract_with_budget(&extracted, query_str, 4000);
 
             // Combine all segment text for storage
-            let content: String = qatbe.segments.iter()
+            let content: String = qatbe
+                .segments
+                .iter()
                 .filter_map(|s| s.content.as_str())
                 .collect::<Vec<_>>()
                 .join("\n\n");
@@ -62,14 +66,17 @@ pub async fn run(args: IndexArgs, config: &HsxConfig, format: Format) -> Result<
             } else {
                 match format {
                     Format::Json => {
-                        let out: Vec<_> = results.iter().map(|d| {
-                            serde_json::json!({
-                                "id": d.id,
-                                "url": d.url,
-                                "title": d.title,
-                                "domain": d.domain,
+                        let out: Vec<_> = results
+                            .iter()
+                            .map(|d| {
+                                serde_json::json!({
+                                    "id": d.id,
+                                    "url": d.url,
+                                    "title": d.title,
+                                    "domain": d.domain,
+                                })
                             })
-                        }).collect();
+                            .collect();
                         println!("{}", serde_json::to_string_pretty(&out)?);
                     }
                     _ => {

@@ -39,9 +39,7 @@ fn event_handler_injection_stripped() {
     for input in &inputs {
         let safe = sanitize_html(input);
         assert!(
-            !safe.contains("onclick")
-                && !safe.contains("onerror")
-                && !safe.contains("onmouseover"),
+            !safe.contains("onclick") && !safe.contains("onerror") && !safe.contains("onmouseover"),
             "event handler not stripped from: {input}"
         );
     }
@@ -49,7 +47,8 @@ fn event_handler_injection_stripped() {
 
 #[test]
 fn semantic_tags_preserved() {
-    let input = r#"<h1>Title</h1><p>Para</p><ul><li>Item</li></ul><code>fn()</code><pre>block</pre>"#;
+    let input =
+        r#"<h1>Title</h1><p>Para</p><ul><li>Item</li></ul><code>fn()</code><pre>block</pre>"#;
     let safe = sanitize_html(input);
     assert!(safe.contains("<h1>"));
     assert!(safe.contains("<p>"));
