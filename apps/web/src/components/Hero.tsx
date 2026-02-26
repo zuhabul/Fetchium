@@ -6,15 +6,15 @@ import dynamic from "next/dynamic";
 
 const NeuralCanvas = dynamic(() => import("./NeuralCanvas"), { ssr: false });
 
-const WORDS = ["thinks.", "learns.", "ranks.", "extracts.", "reasons."];
+// Similar character counts (6–8) keep width variation imperceptible
+const WORDS = ["thinks.", "learns.", "reasons.", "adapts.", "ranks."];
 
 /**
- * Slot-machine word rotator — zero layout shift, zero clipping.
+ * Slot-machine word rotator.
  *
- * Technique: an invisible spacer span containing the WIDEST word forces the
- * container to exactly the right width. Animated words use absolute inset-0
- * + justify-center so they are always centred inside that fixed box.
- * overflow:hidden clips only vertical overflow (the incoming/outgoing slide).
+ * mode="popLayout" pops the exiting word out of flow, so the container
+ * width is always the CURRENT word's natural width — no fixed spacer,
+ * no artificial gap. Height stays locked via overflow:hidden on the parent.
  */
 function WordRotator() {
   const [idx, setIdx] = useState(0);
@@ -23,28 +23,19 @@ function WordRotator() {
     return () => clearInterval(t);
   }, []);
 
-  // Widest word sets the permanent container width — "extracts." is longest
-  const widest = WORDS.reduce((a, b) => (a.length >= b.length ? a : b));
-
   return (
     <span
       className="relative inline-block overflow-hidden"
       style={{ height: "1.15em", verticalAlign: "bottom" }}
     >
-      {/* Invisible spacer: sets container width to the widest word, always */}
-      <span aria-hidden className="invisible select-none whitespace-nowrap">
-        {widest}
-      </span>
-
-      {/* Animated words: absolutely fill the spacer-sized container */}
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
           key={WORDS[idx]}
-          className="absolute inset-0 flex items-center justify-center gradient-text-purple whitespace-nowrap"
+          className="block gradient-text-purple whitespace-nowrap"
           initial={{ y: "110%" }}
           animate={{ y: "0%" }}
           exit={{ y: "-110%" }}
-          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
           {WORDS[idx]}
         </motion.span>
