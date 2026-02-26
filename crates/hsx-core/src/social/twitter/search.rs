@@ -123,7 +123,10 @@ async fn reddit_json_to_tweets(
     // Reddit requires a descriptive UA to avoid 429s
     let resp = match client
         .get(url)
-        .header("User-Agent", "HyperSearchX:twitter-intel:v0.1 (research tool)")
+        .header(
+            "User-Agent",
+            "HyperSearchX:twitter-intel:v0.1 (research tool)",
+        )
         .timeout(Duration::from_secs(10))
         .send()
         .await
@@ -152,8 +155,7 @@ async fn reddit_json_to_tweets(
         .filter_map(|child| {
             let post = &child["data"];
             let post_url = post["url"].as_str().unwrap_or("");
-            let is_platform_url =
-                post_url.contains("x.com") || post_url.contains("twitter.com");
+            let is_platform_url = post_url.contains("x.com") || post_url.contains("twitter.com");
 
             if require_platform_url && !is_platform_url {
                 return None;
@@ -171,9 +173,7 @@ async fn reddit_json_to_tweets(
                 None
             };
 
-            let text = if selftext.is_empty()
-                || selftext == "[deleted]"
-                || selftext == "[removed]"
+            let text = if selftext.is_empty() || selftext == "[deleted]" || selftext == "[removed]"
             {
                 title.clone()
             } else {
@@ -197,8 +197,7 @@ async fn reddit_json_to_tweets(
                 id: post["id"].as_str().unwrap_or("").to_string(),
                 url: display_url,
                 author: TwitterUser {
-                    username: username
-                        .unwrap_or_else(|| format!("via_r/{subreddit}")),
+                    username: username.unwrap_or_else(|| format!("via_r/{subreddit}")),
                     display_name: title,
                     verified: false,
                     followers: None,
@@ -257,11 +256,7 @@ async fn search_via_hackernews(query: &str, max: usize, http: &HttpClient) -> Ve
 }
 
 /// Parse HN Algolia JSON into Tweet objects.
-async fn hn_json_to_tweets(
-    http: &HttpClient,
-    url: &str,
-    require_platform_url: bool,
-) -> Vec<Tweet> {
+async fn hn_json_to_tweets(http: &HttpClient, url: &str, require_platform_url: bool) -> Vec<Tweet> {
     let body = match http.fetch_text(url).await {
         Ok(b) => b,
         Err(_) => return Vec::new(),
@@ -307,8 +302,7 @@ async fn hn_json_to_tweets(
                 id: obj_id,
                 url: display_url,
                 author: TwitterUser {
-                    username: username
-                        .unwrap_or_else(|| format!("via_HN/{hn_author}")),
+                    username: username.unwrap_or_else(|| format!("via_HN/{hn_author}")),
                     display_name: title.clone(),
                     verified: false,
                     followers: None,
@@ -365,11 +359,7 @@ fn truncate_text_safe(s: &str, max: usize) -> String {
 async fn search_via_ddg(query: &str, max: usize, http: &HttpClient) -> HsxResult<Vec<Tweet>> {
     // Try xcancel.com (nitter mirror) first — best indexed nitter instance
     let ddg_query = format!("site:xcancel.com {query}");
-    let form: &[(&str, &str)] = &[
-        ("q", &ddg_query),
-        ("b", ""),
-        ("kl", "en-us"),
-    ];
+    let form: &[(&str, &str)] = &[("q", &ddg_query), ("b", ""), ("kl", "en-us")];
 
     let resp_result = tokio::time::timeout(Duration::from_secs(12), async {
         http.client()
@@ -391,10 +381,7 @@ async fn search_via_ddg(query: &str, max: usize, http: &HttpClient) -> HsxResult
     .map_err(HsxError::Network)?;
 
     let status = resp_result.status().as_u16();
-    let body: String = resp_result
-        .text()
-        .await
-        .map_err(HsxError::Network)?;
+    let body: String = resp_result.text().await.map_err(HsxError::Network)?;
 
     if status >= 400 || body.len() < 200 {
         return Ok(Vec::new());
@@ -436,7 +423,8 @@ fn parse_ddg_twitter_results(html: &str, max: usize) -> Vec<Tweet> {
     let doc = Html::parse_document(html);
     let result_sel = Selector::parse("div.result").expect("valid selector");
     let link_sel = Selector::parse("a.result__a, h2.result__title a").expect("valid selector");
-    let snippet_sel = Selector::parse("a.result__snippet, .result__snippet").expect("valid selector");
+    let snippet_sel =
+        Selector::parse("a.result__snippet, .result__snippet").expect("valid selector");
 
     let mut tweets = Vec::new();
 
@@ -573,8 +561,7 @@ async fn search_nitter_rss(
             let http2 = http.clone();
             let instance = instance.clone();
             handles.push(tokio::spawn(async move {
-                match tokio::time::timeout(Duration::from_secs(3), http2.fetch_text(&rss_url))
-                    .await
+                match tokio::time::timeout(Duration::from_secs(3), http2.fetch_text(&rss_url)).await
                 {
                     Ok(Ok(body)) if !is_error_response(&body) && body.contains("<item>") => {
                         parse_nitter_rss(&body, &instance, max)
@@ -651,31 +638,38 @@ fn parse_nitter_html(html: &str, instance: &str, max: usize) -> Vec<Tweet> {
 
     for card in containers.iter().take(max) {
         // ── Tweet text (try multiple selectors) ──────────────────────
-        let text = try_selectors(card, &[
-            ".tweet-content",
-            ".tweet-body",
-            "div.tweet-content",
-            "p.tweet-text",
-        ]);
+        let text = try_selectors(
+            card,
+            &[
+                ".tweet-content",
+                ".tweet-body",
+                "div.tweet-content",
+                "p.tweet-text",
+            ],
+        );
         if text.is_empty() {
             continue;
         }
 
         // ── Author ────────────────────────────────────────────────────
-        let username_raw = try_selectors(card, &[
-            "a.username",
-            ".username",
-            ".tweet-username",
-            "a[href*='/status/']",
-        ]);
+        let username_raw = try_selectors(
+            card,
+            &[
+                "a.username",
+                ".username",
+                ".tweet-username",
+                "a[href*='/status/']",
+            ],
+        );
         let username = username_raw.trim_start_matches('@').to_string();
 
         // ── URL from tweet-date link or direct status link ────────────
-        let tweet_url = try_attr(card, &[
-            "a.tweet-date",
-            "span.tweet-date a",
-            "a[href*='/status/']",
-        ], "href").unwrap_or_default();
+        let tweet_url = try_attr(
+            card,
+            &["a.tweet-date", "span.tweet-date a", "a[href*='/status/']"],
+            "href",
+        )
+        .unwrap_or_default();
         let full_url = if tweet_url.starts_with('/') {
             format!("{instance}{tweet_url}")
         } else if tweet_url.is_empty() {
@@ -693,19 +687,17 @@ fn parse_nitter_html(html: &str, instance: &str, max: usize) -> Vec<Tweet> {
             .to_string();
 
         // ── Published date ────────────────────────────────────────────
-        let published = try_attr(card, &[
-            "span.tweet-date a",
-            "a.tweet-date",
-            "time",
-        ], "title")
+        let published = try_attr(
+            card,
+            &["span.tweet-date a", "a.tweet-date", "time"],
+            "title",
+        )
         .or_else(|| try_attr(card, &["time"], "datetime"))
         .unwrap_or_default();
 
         // ── Engagement stats ──────────────────────────────────────────
-        let stat_containers = Selector::parse(
-            ".icon-container, .tweet-stat, .tweet-stats span",
-        )
-        .ok();
+        let stat_containers =
+            Selector::parse(".icon-container, .tweet-stat, .tweet-stats span").ok();
         let stat_vals: Vec<u64> = stat_containers
             .as_ref()
             .map(|s| {
@@ -791,7 +783,11 @@ fn parse_nitter_rss(xml: &str, instance: &str, max: usize) -> Vec<Tweet> {
             .unwrap_or("")
             .to_string();
 
-        let text = if desc.is_empty() { title.clone() } else { strip_html(&desc) };
+        let text = if desc.is_empty() {
+            title.clone()
+        } else {
+            strip_html(&desc)
+        };
         if text.is_empty() {
             continue;
         }
@@ -890,9 +886,8 @@ fn is_error_response(body: &str) -> bool {
 /// Check if a URL is a Twitter/X tweet or profile URL.
 fn is_tweet_url(url: &str) -> bool {
     // Accept nitter-proxied tweet pages (xcancel.com, lightbrd.com, etc.)
-    let is_nitter = url.contains("xcancel.com/")
-        || url.contains("lightbrd.com/")
-        || url.contains("nitter.");
+    let is_nitter =
+        url.contains("xcancel.com/") || url.contains("lightbrd.com/") || url.contains("nitter.");
 
     // Accept direct Twitter/X tweet status pages only (must have /status/)
     let is_direct_tweet = (url.contains("twitter.com/") || url.contains("x.com/"))
@@ -948,7 +943,7 @@ fn extract_twitter_id_and_author(url: &str) -> (String, String) {
     let path = url
         .trim_start_matches("https://")
         .trim_start_matches("http://")
-        .split_once('/')   // skip host
+        .split_once('/') // skip host
         .map(|x| x.1)
         .unwrap_or("");
 
@@ -968,10 +963,7 @@ fn extract_twitter_id_and_author(url: &str) -> (String, String) {
 }
 
 /// Try multiple CSS selectors and return the first non-empty text match.
-fn try_selectors<'a>(
-    el: &scraper::ElementRef<'a>,
-    selectors: &[&str],
-) -> String {
+fn try_selectors<'a>(el: &scraper::ElementRef<'a>, selectors: &[&str]) -> String {
     for s in selectors {
         if let Ok(sel) = scraper::Selector::parse(s) {
             if let Some(found) = el.select(&sel).next() {
@@ -986,11 +978,7 @@ fn try_selectors<'a>(
 }
 
 /// Try multiple CSS selectors and return the first non-empty attribute match.
-fn try_attr<'a>(
-    el: &scraper::ElementRef<'a>,
-    selectors: &[&str],
-    attr: &str,
-) -> Option<String> {
+fn try_attr<'a>(el: &scraper::ElementRef<'a>, selectors: &[&str], attr: &str) -> Option<String> {
     for s in selectors {
         if let Ok(sel) = scraper::Selector::parse(s) {
             if let Some(found) = el.select(&sel).next() {
@@ -1030,14 +1018,20 @@ fn strip_html(html: &str) -> String {
 fn extract_hashtags(text: &str) -> Vec<String> {
     text.split_whitespace()
         .filter(|w| w.starts_with('#') && w.len() > 1)
-        .map(|w| w.trim_end_matches(|c: char| !c.is_alphanumeric()).to_string())
+        .map(|w| {
+            w.trim_end_matches(|c: char| !c.is_alphanumeric())
+                .to_string()
+        })
         .collect()
 }
 
 fn extract_mentions(text: &str) -> Vec<String> {
     text.split_whitespace()
         .filter(|w| w.starts_with('@') && w.len() > 1)
-        .map(|w| w.trim_end_matches(|c: char| !c.is_alphanumeric()).to_string())
+        .map(|w| {
+            w.trim_end_matches(|c: char| !c.is_alphanumeric())
+                .to_string()
+        })
         .collect()
 }
 
@@ -1087,7 +1081,9 @@ mod tests {
 
     #[test]
     fn is_error_response_detects_whitelist() {
-        assert!(is_error_response("RSS reader not yet whitelist! Plain request"));
+        assert!(is_error_response(
+            "RSS reader not yet whitelist! Plain request"
+        ));
         assert!(is_error_response("Access denied"));
         assert!(!is_error_response("<html><head><title>Nitter</title></head><body><div class='timeline-item'><div class='tweet-content'>This is a real tweet about Rust programming language</div></div></body></html>"));
     }

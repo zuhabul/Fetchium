@@ -21,6 +21,12 @@ Thumbs.db
 node_modules/
 npm/bin/hsx*
 
+# Next.js / Turbo
+.next/
+.turbo/
+apps/*/out/
+bun.lockb
+
 # Data
 *.db
 *.sqlite

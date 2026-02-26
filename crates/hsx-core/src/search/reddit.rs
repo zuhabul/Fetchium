@@ -43,17 +43,24 @@ struct RedditPost {
 /// Reddit search backend using the public JSON API.
 ///
 /// Reddit requires a descriptive `User-Agent` to avoid rate limiting.
-/// This backend builds its own `reqwest::Client` for that header.
+/// The client is built once at construction and reused across requests
+/// to take advantage of connection pooling and TLS session resumption.
 pub struct RedditBackend {
-    /// Stored so the struct field is used; requests use a fresh client for custom headers.
-    #[allow(dead_code)]
-    http: HttpClient,
+    /// Pre-built client with Reddit-specific User-Agent and connection pooling.
+    client: reqwest::Client,
 }
 
 impl RedditBackend {
     /// Create a new Reddit backend with the given HTTP client.
-    pub fn new(http: HttpClient) -> Self {
-        Self { http }
+    pub fn new(_http: HttpClient) -> Self {
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(15))
+            .user_agent("HyperSearchX:search-bot:v0.1 (research tool)")
+            .pool_max_idle_per_host(4)
+            .pool_idle_timeout(std::time::Duration::from_secs(90))
+            .build()
+            .unwrap_or_default();
+        Self { client }
     }
 }
 
@@ -70,20 +77,7 @@ impl SearchBackend for RedditBackend {
             urlencoding_encode(query)
         );
 
-        // Reddit requires a descriptive User-Agent header to avoid 429s.
-        let client = match reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(15))
-            .user_agent("HyperSearchX:search-bot:v0.1 (research tool)")
-            .build()
-        {
-            Ok(c) => c,
-            Err(e) => {
-                tracing::warn!("Reddit: failed to build client: {e}");
-                return Ok(vec![]);
-            }
-        };
-
-        let resp = match client.get(&url).send().await {
+        let resp = match self.client.get(&url).send().await {
             Ok(r) => r,
             Err(e) => {
                 tracing::warn!("Reddit request failed: {e}");

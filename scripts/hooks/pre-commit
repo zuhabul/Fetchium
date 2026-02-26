@@ -1,0 +1,34 @@
+#!/usr/bin/env sh
+# pre-commit hook — runs fast checks before each commit.
+# Installed by: sh scripts/setup-dev.sh
+set -e
+
+# Only run if Rust files changed
+RUST_CHANGED=$(git diff --cached --name-only | grep '\.rs$' | wc -l)
+CARGO_CHANGED=$(git diff --cached --name-only | grep 'Cargo' | wc -l)
+
+if [ "$RUST_CHANGED" -gt 0 ] || [ "$CARGO_CHANGED" -gt 0 ]; then
+  printf "Running pre-commit checks...\n"
+
+  # Format check
+  printf "  cargo fmt... "
+  if cargo fmt --all -- --check 2>/dev/null; then
+    printf "ok\n"
+  else
+    printf "FAIL\n"
+    printf "\nRun 'cargo fmt --all' to fix formatting.\n\n"
+    exit 1
+  fi
+
+  # Clippy — lib + bin only (test targets are checked by CI with --all-targets)
+  printf "  cargo clippy... "
+  if cargo clippy --workspace --lib --bins -- -D warnings 2>/dev/null 1>/dev/null; then
+    printf "ok\n"
+  else
+    printf "FAIL\n"
+    printf "\nFix clippy warnings before committing.\n\n"
+    exit 1
+  fi
+
+  printf "Pre-commit checks passed.\n"
+fi

@@ -215,7 +215,9 @@ async fn fetch_all_video_data(
     // Collect results; 30s global cap so the pipeline always terminates
     let mut analyses = Vec::new();
     for handle in handles {
-        match tokio::time::timeout(std::time::Duration::from_secs(HANDLE_TIMEOUT_SECS), handle).await {
+        match tokio::time::timeout(std::time::Duration::from_secs(HANDLE_TIMEOUT_SECS), handle)
+            .await
+        {
             Ok(Ok(Ok(analysis))) => analyses.push(analysis),
             Ok(Ok(Err(e))) => tracing::debug!("Video analysis failed: {e}"),
             Ok(Err(e)) => tracing::debug!("Video task panicked: {e}"),

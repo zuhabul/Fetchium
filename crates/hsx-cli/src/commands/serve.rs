@@ -20,12 +20,13 @@ pub async fn run(args: ServeArgs, config: &HsxConfig) -> anyhow::Result<()> {
                 "Starting HyperSearchX REST API on http://0.0.0.0:{}...",
                 args.port
             );
-            let state = std::sync::Arc::new(hsx_api::middleware::AppState::new(config.clone())?);
             let server_config = hsx_api::ApiServerConfig {
                 host: "0.0.0.0".into(),
                 port: args.port,
+                data_dir: config.data_dir(),
+                ..Default::default()
             };
-            hsx_api::start_api_server(server_config, state).await?;
+            hsx_api::start_api_server(server_config, config.clone()).await?;
         }
 
         ServerMode::Both => {
@@ -33,16 +34,17 @@ pub async fn run(args: ServeArgs, config: &HsxConfig) -> anyhow::Result<()> {
                 "Starting REST API on port {} and MCP on stdio...",
                 args.port
             );
-            // Run REST API in background, MCP on stdio
             let config_clone = config.clone();
+            let config2 = config.clone();
             let port = args.port;
-            let state = std::sync::Arc::new(hsx_api::middleware::AppState::new(config.clone())?);
             tokio::spawn(async move {
                 let server_config = hsx_api::ApiServerConfig {
                     host: "0.0.0.0".into(),
                     port,
+                    data_dir: config2.data_dir(),
+                    ..Default::default()
                 };
-                if let Err(e) = hsx_api::start_api_server(server_config, state).await {
+                if let Err(e) = hsx_api::start_api_server(server_config, config2).await {
                     eprintln!("REST API error: {e}");
                 }
             });

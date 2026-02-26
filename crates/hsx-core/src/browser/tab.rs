@@ -1,5 +1,9 @@
 //! Managed browser tab with auto-cleanup via semaphore permit (PRD §8.3).
 //!
+//! `navigate_and_wait(url, selector, timeout)` is the preferred navigation method
+//! for JS-rendered SERPs — it waits for `selector` to appear in the DOM (using
+//! chromiumoxide's `find_element`) rather than just sleeping, giving reliable HTML.
+//!
 //! When the `headless` feature is disabled, this module compiles as stubs.
 
 #[cfg(feature = "headless")]
@@ -38,6 +42,35 @@ mod headless_impl {
                 .await
                 .context("Navigation timed out")?
                 .context("Navigation failed")?;
+            Ok(())
+        }
+
+        /// Navigate and wait until `selector` is present in the DOM (JS-rendered),
+        /// timing out after `timeout_ms`. Returns Ok even if selector never appears
+        /// so callers can still extract partial content.
+        pub async fn navigate_and_wait(
+            &self,
+            url: &str,
+            selector: &str,
+            timeout_ms: u64,
+        ) -> anyhow::Result<()> {
+            tokio::time::timeout(Duration::from_millis(timeout_ms), self.page.goto(url))
+                .await
+                .context("Navigation timed out")?
+                .context("Navigation failed")?;
+
+            // Poll for the results selector to confirm JS has rendered
+            let wait_result = tokio::time::timeout(
+                Duration::from_millis(timeout_ms / 2),
+                self.page.find_element(selector),
+            )
+            .await;
+
+            if wait_result.is_err() {
+                tracing::debug!(
+                    "navigate_and_wait: selector {selector:?} not found within timeout"
+                );
+            }
             Ok(())
         }
 

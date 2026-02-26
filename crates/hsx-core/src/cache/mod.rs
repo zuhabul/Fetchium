@@ -83,20 +83,29 @@ impl MemoryCache {
         if !self.enabled {
             return;
         }
-        let json = match serde_json::to_value(value) {
-            Ok(v) => v,
+        // Single serialization pass: serialize to string for size check,
+        // then parse back to Value for storage. Avoids double-serialize.
+        let json_str = match serde_json::to_string(value) {
+            Ok(s) => s,
             Err(e) => {
                 debug!("Cache: failed to serialize for key {key}: {e}");
                 return;
             }
         };
 
-        // Check size before caching
-        let size = json.to_string().len();
+        let size = json_str.len();
         if size > MAX_ENTRY_BYTES {
             debug!("Cache: skipping oversized entry for {key} ({size} bytes)");
             return;
         }
+
+        let json = match serde_json::from_str(&json_str) {
+            Ok(v) => v,
+            Err(e) => {
+                debug!("Cache: failed to re-parse for key {key}: {e}");
+                return;
+            }
+        };
 
         let entry = CachedEntry {
             value: json,
@@ -154,19 +163,29 @@ pub struct CacheStats {
     pub enabled: bool,
 }
 
-/// Build a cache key for a fetch operation.
+/// Hash a string component for cache keys using SHA-256 truncated to 16 hex chars.
+/// Prevents cache key injection/collision attacks from user-controlled inputs.
+fn hash_component(input: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let hash = Sha256::digest(input.as_bytes());
+    format!("{:x}", hash)[..16].to_string()
+}
+
+/// Build a cache key for a fetch operation (collision-resistant).
 pub fn fetch_key(url: &str) -> String {
-    format!("fetch:{url}")
+    format!("fetch:{}", hash_component(url))
 }
 
-/// Build a cache key for a search operation.
+/// Build a cache key for a search operation (collision-resistant).
 pub fn search_key(query: &str, backend: &str, max_results: u32) -> String {
-    format!("search:{query}:{backend}:{max_results}")
+    let input = format!("{query}:{backend}:{max_results}");
+    format!("search:{}", hash_component(&input))
 }
 
-/// Build a cache key for a QATBE operation.
+/// Build a cache key for a QATBE operation (collision-resistant).
 pub fn qatbe_key(url: &str, query: &str, budget: u32) -> String {
-    format!("qatbe:{url}:{query}:{budget}")
+    let input = format!("{url}:{query}:{budget}");
+    format!("qatbe:{}", hash_component(&input))
 }
 
 /// Get current Unix timestamp in seconds.
@@ -229,14 +248,21 @@ mod tests {
 
     #[test]
     fn cache_key_builders() {
-        assert_eq!(
-            fetch_key("https://example.com"),
-            "fetch:https://example.com"
-        );
-        assert_eq!(search_key("rust", "ddg", 10), "search:rust:ddg:10");
-        assert_eq!(
-            qatbe_key("https://example.com", "rust", 4000),
-            "qatbe:https://example.com:rust:4000"
-        );
+        // Keys are now hashed for collision resistance
+        let fk = fetch_key("https://example.com");
+        assert!(fk.starts_with("fetch:"));
+        assert_eq!(fk.len(), "fetch:".len() + 16); // 16 hex chars
+
+        let sk = search_key("rust", "ddg", 10);
+        assert!(sk.starts_with("search:"));
+
+        let qk = qatbe_key("https://example.com", "rust", 4000);
+        assert!(qk.starts_with("qatbe:"));
+
+        // Same input → same key (deterministic)
+        assert_eq!(fetch_key("https://example.com"), fk);
+
+        // Different input → different key
+        assert_ne!(fetch_key("https://other.com"), fk);
     }
 }

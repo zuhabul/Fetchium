@@ -132,7 +132,7 @@ impl Default for YouTubeConfig {
         Self {
             invidious_instances: vec![
                 "https://invidious.nerdvpn.de".into(), // verified Feb 2026
-                "https://yewtu.be".into(),              // verified Feb 2026
+                "https://yewtu.be".into(),             // verified Feb 2026
             ],
             // Limit to 2 most reliable Piped instances. Fewer instances =
             // fewer orphaned retry tasks per video when they're unreachable.
@@ -297,6 +297,96 @@ impl Default for OutputConfig {
     }
 }
 
+// ─── Validation ──────────────────────────────────────────────────
+
+impl HsxConfig {
+    /// Validate all configuration values are within acceptable bounds.
+    /// Returns a list of warnings for non-fatal issues or an error for fatal ones.
+    pub fn validate(&self) -> Result<Vec<String>, String> {
+        let mut warnings = Vec::new();
+
+        // Search config bounds
+        if self.search.default_budget == 0 {
+            return Err("search.default_budget must be > 0".into());
+        }
+        if self.search.default_budget > 1_000_000 {
+            warnings.push(format!(
+                "search.default_budget={} is very high, may cause slow responses",
+                self.search.default_budget
+            ));
+        }
+        if self.search.max_concurrent == 0 {
+            return Err("search.max_concurrent must be > 0".into());
+        }
+        if self.search.max_concurrent > 100 {
+            warnings.push(format!(
+                "search.max_concurrent={} exceeds recommended maximum of 100",
+                self.search.max_concurrent
+            ));
+        }
+        if self.search.timeout_secs == 0 {
+            return Err("search.timeout_secs must be > 0".into());
+        }
+        if self.search.timeout_secs > 300 {
+            warnings.push(format!(
+                "search.timeout_secs={} is very high (>5min)",
+                self.search.timeout_secs
+            ));
+        }
+
+        // Fetch config bounds
+        if self.fetch.timeout_secs == 0 {
+            return Err("fetch.timeout_secs must be > 0".into());
+        }
+        if self.fetch.max_page_size == 0 {
+            return Err("fetch.max_page_size must be > 0".into());
+        }
+        if self.fetch.max_page_size > 500 * 1024 * 1024 {
+            warnings.push("fetch.max_page_size > 500MB is excessive".into());
+        }
+        if self.fetch.max_redirects > 50 {
+            warnings.push("fetch.max_redirects > 50 may indicate a redirect loop issue".into());
+        }
+
+        // Cache config bounds
+        if self.cache.enabled && self.cache.ttl_secs == 0 {
+            warnings.push("cache.ttl_secs=0 means entries expire immediately".into());
+        }
+
+        // Ranking config bounds
+        if !(0.0..=1.0).contains(&self.ranking.freshness_need) {
+            return Err(format!(
+                "ranking.freshness_need={} must be in [0.0, 1.0]",
+                self.ranking.freshness_need
+            ));
+        }
+        if self.ranking.simhash_threshold > 64 {
+            return Err(format!(
+                "ranking.simhash_threshold={} must be in [0, 64]",
+                self.ranking.simhash_threshold
+            ));
+        }
+
+        // AI config bounds
+        if self.ai.max_tokens == 0 {
+            return Err("ai.max_tokens must be > 0".into());
+        }
+
+        // General config bounds
+        if self.general.max_results == 0 {
+            return Err("general.max_results must be > 0".into());
+        }
+        if self.general.max_results > 10_000 {
+            warnings.push(format!(
+                "general.max_results={} is very high",
+                self.general.max_results
+            ));
+        }
+
+        Ok(warnings)
+    }
+}
+
 // ─── Loading ─────────────────────────────────────────────────────
 
 impl HsxConfig {
@@ -343,6 +433,19 @@ impl HsxConfig {
 
         // Layer 3: environment variable overrides
         config.apply_env_overrides();
+
+        // Layer 4: validation — warn on suspicious values, fail on invalid ones
+        match config.validate() {
+            Ok(warnings) => {
+                for w in warnings {
+                    tracing::warn!("Config warning: {w}");
+                }
+            }
+            Err(e) => {
+                tracing::error!("Config validation failed: {e} — using defaults");
+                return Self::default();
+            }
+        }
 
         config
     }

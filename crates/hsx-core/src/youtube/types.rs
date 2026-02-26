@@ -372,9 +372,16 @@ pub struct YouTubeSearchResult {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum YouTubeSearchSource {
+    /// YouTube's own Innertube API (most reliable, no third-party dependency).
+    Innertube,
+    /// Invidious privacy-respecting frontend instances.
     Invidious,
+    /// Piped privacy-respecting frontend instances.
     Piped,
+    /// yt-dlp subprocess.
     YtDlp,
+    /// DuckDuckGo site:youtube.com scraping (last resort fallback).
+    DuckDuckGo,
 }
 
 // ─── Pipeline ──────────────────────────────────────────────────
@@ -443,18 +450,18 @@ pub struct VideoAnalysis {
 /// inv.nadeko.net has API disabled; all others are defunct.
 pub const INVIDIOUS_INSTANCES: &[&str] = &[
     "https://invidious.nerdvpn.de", // Most reliable, uses IP rotation
-    "https://yewtu.be",              // Custom fork with YouTube workarounds
+    "https://yewtu.be",             // Custom fork with YouTube workarounds
 ];
 
 /// Piped API instance list (verified February 2026).
 ///
 /// Piped is more stable than Invidious since it uses a different proxying architecture.
 pub const PIPED_INSTANCES: &[&str] = &[
-    "https://pipedapi.kavin.rocks",       // Official instance, most reliable
+    "https://pipedapi.kavin.rocks", // Official instance, most reliable
     "https://pipedapi-libre.kavin.rocks", // Same operator, no CDN
-    "https://api.piped.yt",               // Germany, confirmed Feb 2026
-    "https://pipedapi.ducks.party",       // Netherlands, confirmed Feb 2026
-    "https://api.piped.private.coffee",   // Austria, confirmed Feb 2026
+    "https://api.piped.yt",         // Germany, confirmed Feb 2026
+    "https://pipedapi.ducks.party", // Netherlands, confirmed Feb 2026
+    "https://api.piped.private.coffee", // Austria, confirmed Feb 2026
 ];
 
 /// Agent-friendly YouTube result for JSON output (MCP/API).

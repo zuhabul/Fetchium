@@ -8,19 +8,20 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 rust-version = "1.75"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/hypersearchx/hypersearchx"
-description = "AI-native search engine for humans and agents"
+repository = "https://github.com/zuhabul/HyperSearchX"
+description = "AI-native federated search engine for humans and agents"
+
 
 [workspace.dependencies]
 # Async runtime
 tokio = { version = "1", features = ["full"] }
 
 # HTTP
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip", "brotli", "cookies", "stream", "blocking"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip", "brotli", "cookies", "stream", "blocking", "http2"] }
 
 # HTML parsing
 scraper = "0.21"
@@ -39,6 +40,7 @@ colored = "2"
 
 # Database
 rusqlite = { version = "0.32", features = ["bundled"] }
+rand = { version = "0.8", features = ["getrandom"] }
 
 # Full-text search
 tantivy = "0.22"
@@ -60,6 +62,7 @@ sysinfo = "0.32"
 
 # Utilities
 url = { version = "2", features = ["serde"] }
+base64 = "0.22"
 sha2 = "0.10"
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
@@ -106,7 +109,7 @@ ammonia = "4"
 # HTTP API server
 axum = { version = "0.7", features = ["json", "macros"] }
 tower = { version = "0.4" }
-tower-http = { version = "0.5", features = ["cors", "trace"] }
+tower-http = { version = "0.5", features = ["cors", "trace", "timeout", "limit", "request-id", "set-header"] }
 
 # Core library (internal)
 hsx-core = { path = "crates/hsx-core" }

@@ -71,6 +71,29 @@ pub async fn run(
     // ── Execute search ────────────────────────────────────────────────────
     let start = Instant::now();
     let http = HttpClient::new(config).context("Failed to build HTTP client")?;
+
+    // Use headless Chrome browser pool when compiled with --features headless.
+    // This avoids CAPTCHA for Google/Bing by using a real browser fingerprint.
+    #[cfg(feature = "headless")]
+    let orchestrator = {
+        use hsx_core::browser::pool::{BrowserPool, BrowserTier};
+        use std::sync::Arc;
+        let tier = match hsx_core::config::HsxConfig::detect_resource_tier() {
+            hsx_core::types::ResourceTier::Minimal => BrowserTier::Minimal,
+            hsx_core::types::ResourceTier::Standard => BrowserTier::Standard,
+            _ => BrowserTier::Performance,
+        };
+        let pool = Arc::new(BrowserPool::new(tier));
+        // Best-effort browser init — fall back to HTTP if Chrome isn't available
+        if pool.init().await.is_err() {
+            tracing::warn!("Headless Chrome init failed — falling back to HTTP scrapers");
+            SearchOrchestrator::new(http, orch_config.clone())
+        } else {
+            SearchOrchestrator::with_pool(http, orch_config.clone(), pool)
+        }
+    };
+
+    #[cfg(not(feature = "headless"))]
     let orchestrator = SearchOrchestrator::new(http, orch_config.clone());
 
     // Show spinner while searching (only when not quiet and not JSON output,

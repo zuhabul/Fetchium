@@ -1,0 +1,43 @@
+#!/usr/bin/env sh
+# commit-msg hook — validates Conventional Commits format.
+# Installed by: sh scripts/setup-dev.sh
+
+MSG_FILE="$1"
+MSG=$(cat "$MSG_FILE")
+
+# Patterns to skip
+SKIP_PATTERNS="^Merge |^Revert |^chore\(release\)|^chore(main)"
+if echo "$MSG" | grep -qE "$SKIP_PATTERNS"; then
+  exit 0
+fi
+
+# Conventional Commits pattern:
+#   type(scope)!: description
+#   type!: description
+#   type: description
+PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?(!)?:\s.+"
+
+if echo "$MSG" | grep -qE "$PATTERN"; then
+  exit 0
+fi
+
+# Fail with helpful message
+printf "\n"
+printf "✗  Commit rejected: does not follow Conventional Commits format.\n\n"
+printf "   Format:  <type>(<scope>): <description>\n\n"
+printf "   Types and version impact:\n"
+printf "   feat      → minor bump   (1.0.0 → 1.1.0)\n"
+printf "   fix       → patch bump   (1.0.0 → 1.0.1)\n"
+printf "   feat!     → MAJOR bump   (1.0.0 → 2.0.0)  ← BREAKING CHANGE\n"
+printf "   perf      → patch bump\n"
+printf "   docs      → no release\n"
+printf "   refactor  → no release\n"
+printf "   test      → no release\n"
+printf "   chore     → no release\n"
+printf "   ci        → no release\n\n"
+printf "   Examples:\n"
+printf "   feat: add YouTube search API\n"
+printf "   fix: handle rate limit retry correctly\n"
+printf "   feat(rank)!: redesign HyperFusion scoring (BREAKING)\n\n"
+printf "   Your message: %s\n\n" "$MSG"
+exit 1

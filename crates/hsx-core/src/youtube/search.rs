@@ -37,7 +37,7 @@ pub async fn search_youtube(
         tokio::spawn(async move {
             if let Ok(results) = search_innertube(&q, max_results, &http, per_src).await {
                 if !results.is_empty() {
-                    let _ = tx.send((results, YouTubeSearchSource::Invidious)).await;
+                    let _ = tx.send((results, YouTubeSearchSource::Innertube)).await;
                 }
             }
         });
@@ -94,7 +94,7 @@ pub async fn search_youtube(
         tokio::spawn(async move {
             if let Ok(results) = search_via_ddg(&q, max_results, &http).await {
                 if !results.is_empty() {
-                    let _ = tx.send((results, YouTubeSearchSource::YtDlp)).await;
+                    let _ = tx.send((results, YouTubeSearchSource::DuckDuckGo)).await;
                 }
             }
         });
@@ -242,8 +242,8 @@ fn parse_innertube_search_results(
     body: &str,
     max_results: usize,
 ) -> HsxResult<Vec<YouTubeSearchResult>> {
-    let v: Value =
-        serde_json::from_str(body).map_err(|e| HsxError::YouTube(format!("Innertube JSON: {e}")))?;
+    let v: Value = serde_json::from_str(body)
+        .map_err(|e| HsxError::YouTube(format!("Innertube JSON: {e}")))?;
 
     let mut results = Vec::new();
 
@@ -323,11 +323,7 @@ fn parse_innertube_search_results(
                 .and_then(|arr| arr.last()) // last = highest resolution
                 .and_then(|t| t["url"].as_str())
                 .map(String::from)
-                .or_else(|| {
-                    Some(format!(
-                        "https://i.ytimg.com/vi/{video_id}/mqdefault.jpg"
-                    ))
-                });
+                .or_else(|| Some(format!("https://i.ytimg.com/vi/{video_id}/mqdefault.jpg")));
 
             results.push(YouTubeSearchResult {
                 video_id,
@@ -347,10 +343,7 @@ fn parse_innertube_search_results(
 
 /// Parse duration text like "10:30" or "1:23:45" into seconds.
 fn parse_duration_text(s: &str) -> u64 {
-    let parts: Vec<u64> = s
-        .split(':')
-        .filter_map(|p| p.parse().ok())
-        .collect();
+    let parts: Vec<u64> = s.split(':').filter_map(|p| p.parse().ok()).collect();
     match parts.as_slice() {
         [m, s] => m * 60 + s,
         [h, m, s] => h * 3600 + m * 60 + s,
@@ -553,8 +546,7 @@ async fn search_via_ddg(
     http: &HttpClient,
 ) -> HsxResult<Vec<YouTubeSearchResult>> {
     let ddg_query = format!("site:youtube.com/watch {query}");
-    let encoded: String =
-        url::form_urlencoded::byte_serialize(ddg_query.as_bytes()).collect();
+    let encoded: String = url::form_urlencoded::byte_serialize(ddg_query.as_bytes()).collect();
 
     let body = tokio::time::timeout(Duration::from_secs(10), async {
         http.client()
@@ -584,7 +576,8 @@ fn parse_ddg_youtube_results(html: &str, max_results: usize) -> Vec<YouTubeSearc
     use scraper::{Html, Selector};
 
     let doc = Html::parse_document(html);
-    let result_sel = Selector::parse("div.result").unwrap_or_else(|_| Selector::parse("div").unwrap());
+    let result_sel =
+        Selector::parse("div.result").unwrap_or_else(|_| Selector::parse("div").unwrap());
     let title_sel = Selector::parse("a.result__a").ok();
     let snippet_sel = Selector::parse("a.result__snippet").ok();
 
@@ -621,9 +614,7 @@ fn parse_ddg_youtube_results(html: &str, max_results: usize) -> Vec<YouTubeSearc
             .map(|el| el.text().collect::<String>().trim().to_string())
             .unwrap_or_default();
 
-        let thumbnail = Some(format!(
-            "https://i.ytimg.com/vi/{video_id}/mqdefault.jpg"
-        ));
+        let thumbnail = Some(format!("https://i.ytimg.com/vi/{video_id}/mqdefault.jpg"));
 
         results.push(YouTubeSearchResult {
             video_id,
@@ -674,7 +665,11 @@ pub fn extract_yt_video_id(url: &str) -> String {
     // Regex-free: find v= in raw URL
     for part in decoded.split("v=") {
         let id: String = part.chars().take(11).collect::<String>();
-        if id.len() == 11 && id.chars().all(|c: char| c.is_alphanumeric() || c == '-' || c == '_') {
+        if id.len() == 11
+            && id
+                .chars()
+                .all(|c: char| c.is_alphanumeric() || c == '-' || c == '_')
+        {
             return id;
         }
     }

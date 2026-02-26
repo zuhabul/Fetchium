@@ -124,7 +124,11 @@ async fn fetch_via_ytdlp_universal(url: &str) -> HsxResult<EnhancedTranscript> {
             ))
         })?;
 
-    Ok(build_enhanced_transcript(url, entries, TranscriptSource::YtDlp))
+    Ok(build_enhanced_transcript(
+        url,
+        entries,
+        TranscriptSource::YtDlp,
+    ))
 }
 
 /// Invoke yt-dlp to download subtitle files (no video download).
@@ -169,7 +173,11 @@ async fn run_ytdlp_subs(
     )
     .await
     .map_err(|_| HsxError::YouTube("yt-dlp subtitle extraction timed out (15s)".into()))?
-    .map_err(|e| HsxError::YouTube(format!("yt-dlp not found — install via `pip install yt-dlp`: {e}")))?;
+    .map_err(|e| {
+        HsxError::YouTube(format!(
+            "yt-dlp not found — install via `pip install yt-dlp`: {e}"
+        ))
+    })?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -288,9 +296,7 @@ pub fn parse_vtt(content: &str) -> Vec<TranscriptEntry> {
             continue;
         }
 
-        let dur_ms = end_ms
-            .map(|e| e.saturating_sub(start_ms))
-            .unwrap_or(2000);
+        let dur_ms = end_ms.map(|e| e.saturating_sub(start_ms)).unwrap_or(2000);
 
         entries.push(TranscriptEntry {
             start_ms: start_ms as u32,
@@ -360,9 +366,7 @@ pub fn parse_srt(content: &str) -> Vec<TranscriptEntry> {
             continue;
         }
 
-        let dur_ms = end_ms
-            .map(|e| e.saturating_sub(start_ms))
-            .unwrap_or(2000);
+        let dur_ms = end_ms.map(|e| e.saturating_sub(start_ms)).unwrap_or(2000);
 
         entries.push(TranscriptEntry {
             start_ms: start_ms as u32,
@@ -613,8 +617,14 @@ mod tests {
     #[test]
     fn detect_platform_variants() {
         assert_eq!(detect_platform("https://vimeo.com/123"), "Vimeo");
-        assert_eq!(detect_platform("https://tiktok.com/@user/video/123"), "TikTok");
-        assert_eq!(detect_platform("https://twitter.com/user/status/123"), "Twitter/X");
+        assert_eq!(
+            detect_platform("https://tiktok.com/@user/video/123"),
+            "TikTok"
+        );
+        assert_eq!(
+            detect_platform("https://twitter.com/user/status/123"),
+            "Twitter/X"
+        );
         assert_eq!(detect_platform("https://twitch.tv/videos/123"), "Twitch");
         assert_eq!(detect_platform("https://example.com/video.mp4"), "Video");
     }
@@ -764,7 +774,9 @@ mod tests {
         ];
         let moments = detect_key_moments_uvtp(&entries);
         assert!(moments.len() >= 2);
-        assert!(moments.iter().any(|m| m.moment_type == MomentType::Conclusion));
+        assert!(moments
+            .iter()
+            .any(|m| m.moment_type == MomentType::Conclusion));
     }
 
     #[test]
@@ -783,7 +795,8 @@ mod tests {
                 speaker_id: None,
             },
         ];
-        let t = build_enhanced_transcript("https://vimeo.com/123", entries, TranscriptSource::YtDlp);
+        let t =
+            build_enhanced_transcript("https://vimeo.com/123", entries, TranscriptSource::YtDlp);
         assert_eq!(t.word_count, 4);
         assert_eq!(t.source, TranscriptSource::YtDlp);
         assert_eq!(t.speakers.len(), 2);

@@ -1105,10 +1105,14 @@ async fn call_gemini_cli(
                 tracing::warn!(
                     "GeminiCli: '{try_model}' capacity exhausted, retrying with '{CAPACITY_FALLBACK}'"
                 );
-                last_err = Some(HsxError::ExternalTool(format!("Gemini CLI error: {stderr}")));
+                last_err = Some(HsxError::ExternalTool(format!(
+                    "Gemini CLI error: {stderr}"
+                )));
                 continue;
             }
-            return Err(HsxError::ExternalTool(format!("Gemini CLI error: {stderr}")));
+            return Err(HsxError::ExternalTool(format!(
+                "Gemini CLI error: {stderr}"
+            )));
         }
 
         let content = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -1121,8 +1125,9 @@ async fn call_gemini_cli(
         });
     }
 
-    Err(last_err
-        .unwrap_or_else(|| HsxError::ExternalTool("GeminiCli: all models capacity-exhausted".into())))
+    Err(last_err.unwrap_or_else(|| {
+        HsxError::ExternalTool("GeminiCli: all models capacity-exhausted".into())
+    }))
 }
 
 // ─── Provider availability check ─────────────────────────────────────────────
