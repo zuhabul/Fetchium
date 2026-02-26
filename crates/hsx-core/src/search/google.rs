@@ -18,8 +18,8 @@ use crate::error::HsxResult;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
-#[cfg(feature = "headless")]
 use tracing::debug;
+#[cfg(feature = "headless")]
 use tracing::warn;
 
 /// Browser User-Agent matching Chrome 121 on Windows — reduces bot-detection.
@@ -143,7 +143,6 @@ impl GoogleBackend {
             rank += 1;
         }
 
-        #[cfg(feature = "headless")]
         debug!(
             "Google parse_serp: {} results from page {}",
             results.len(),
@@ -194,7 +193,7 @@ impl SearchBackend for GoogleBackend {
                         Ok(html) => {
                             let page_results = Self::parse_serp(&html, page);
                             if page_results.is_empty() && page == 0 {
-                                warn!(
+                                debug!(
                                     "Google: 0 results (CAPTCHA or bot detection) for {:?}",
                                     query
                                 );
@@ -203,16 +202,16 @@ impl SearchBackend for GoogleBackend {
                             all_results.extend(page_results);
                         }
                         Err(e) => {
-                            warn!("Google: body read error for {query:?}: {e}");
+                            debug!("Google: body read error for {query:?}: {e}");
                             break;
                         }
                     },
                     Ok(resp) => {
-                        warn!("Google: HTTP {} for {query:?}", resp.status());
+                        debug!("Google: HTTP {} for {query:?}", resp.status());
                         break;
                     }
                     Err(e) => {
-                        warn!("Google: request error for {query:?}: {e}");
+                        debug!("Google: request error for {query:?}: {e}");
                         break;
                     }
                 }
