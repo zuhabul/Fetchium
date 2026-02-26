@@ -13,7 +13,6 @@ interface Feature {
 
 const features: Feature[] = [
   { label: "Multi-source federation", description: "11+ simultaneous backends", category: "Search" },
-  { label: "Self-hostable (free, unlimited)", category: "Deployment" },
   { label: "Token budget control (QATBE)", category: "Intelligence" },
   { label: "5-layer content extraction (CEP)", category: "Extraction" },
   { label: "8-signal neural ranking", category: "Intelligence" },
@@ -41,7 +40,7 @@ const tools: Tool[] = [
     tagline: "The search API that thinks",
     highlight: true,
     data: [
-      "yes", "yes", "yes", "yes", "yes", "yes", "yes", "yes",
+      "yes", "yes", "yes", "yes", "yes", "yes", "yes",
       "yes", "yes", "yes", "yes", "yes", "< 200ms",
     ],
   },
@@ -50,7 +49,7 @@ const tools: Tool[] = [
     tagline: "Web scraping API",
     highlight: false,
     data: [
-      "no", "no", "no", "partial", "no", "no", "no", "no",
+      "no", "no", "partial", "no", "no", "no", "no",
       "no", "partial", "no", "no", "yes", "~800ms",
     ],
   },
@@ -59,7 +58,7 @@ const tools: Tool[] = [
     tagline: "Google SERP data",
     highlight: false,
     data: [
-      "partial", "no", "no", "no", "no", "no", "no", "no",
+      "partial", "no", "no", "no", "no", "no", "no",
       "partial", "no", "no", "no", "yes", "~400ms",
     ],
   },
@@ -68,7 +67,7 @@ const tools: Tool[] = [
     tagline: "AI answer engine",
     highlight: false,
     data: [
-      "partial", "no", "no", "partial", "partial", "partial", "no", "partial",
+      "partial", "no", "partial", "partial", "partial", "no", "partial",
       "no", "no", "no", "no", "partial", "~2000ms",
     ],
   },
@@ -77,7 +76,7 @@ const tools: Tool[] = [
     tagline: "Neural search",
     highlight: false,
     data: [
-      "partial", "no", "no", "no", "partial", "no", "no", "no",
+      "partial", "no", "no", "partial", "no", "no", "no",
       "no", "no", "no", "no", "no", "~300ms",
     ],
   },
@@ -139,13 +138,13 @@ export default function Comparison() {
             Honest Comparison
           </div>
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-slate-100">
-            We win{" "}
-            <span className="gradient-text">every row</span>
+            No other tool{" "}
+            <span className="gradient-text">comes close</span>
           </h2>
           <p className="mt-4 sm:mt-5 mx-auto max-w-2xl text-sm sm:text-lg text-slate-500">
-            HyperSearchX is the only tool that combines search federation, deep
-            extraction, intelligent ranking, and cross-session learning in a
-            single API.
+            HyperSearchX is the only API combining search federation, neural ranking,
+            deep content extraction, and cross-session AI learning — features competitors
+            don&apos;t offer at any price point.
           </p>
         </motion.div>
 
@@ -280,15 +279,22 @@ export default function Comparison() {
           transition={{ delay: 0.5, duration: 0.5 }}
           className="mt-6 sm:mt-8 overflow-hidden rounded-2xl border border-indigo-500/15 bg-gradient-to-r from-indigo-500/6 to-violet-500/6 p-4 sm:p-6 text-center"
         >
-          <p className="text-xs sm:text-[14px] text-slate-400">
-            <span className="font-semibold text-slate-100">
-              vs Firecrawl Pro ($599/mo):
-            </span>{" "}
-            Our Pro plan delivers a superset of features at{" "}
-            <span className="font-bold text-emerald-400">87% less cost</span>.
-            Federation, neural ranking, and cross-session learning that
-            Firecrawl doesn&apos;t offer at any price.
-          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-10">
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-emerald-400">87%</div>
+              <div className="text-[12px] sm:text-[13px] text-slate-500 mt-0.5">less cost vs Firecrawl Pro</div>
+            </div>
+            <div className="hidden sm:block w-px h-10 bg-white/10" />
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-indigo-300">7×</div>
+              <div className="text-[12px] sm:text-[13px] text-slate-500 mt-0.5">faster than Perplexity</div>
+            </div>
+            <div className="hidden sm:block w-px h-10 bg-white/10" />
+            <p className="text-[12px] sm:text-[13px] text-slate-400 max-w-xs text-center sm:text-left">
+              <span className="font-semibold text-slate-200">13 features</span> that Firecrawl, SerpAPI, Perplexity,
+              and Exa don&apos;t offer — even combined.
+            </p>
+          </div>
         </motion.div>
       </div>
     </section>

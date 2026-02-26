@@ -200,8 +200,8 @@ export default function Pricing() {
             <span className="gradient-text">pricing</span>
           </h2>
           <p className="mt-4 sm:mt-5 mx-auto max-w-xl text-sm sm:text-lg text-slate-500">
-            Start free. Upgrade when you need more. No surprise charges, no
-            vendor lock-in — self-host for free anytime.
+            Start free. Upgrade when you need more. No surprise charges,
+            no vendor lock-in, no hidden rate limits.
           </p>
 
           {/* Billing toggle */}
@@ -371,7 +371,7 @@ export default function Pricing() {
           })}
         </motion.div>
 
-        {/* Self-hosting note */}
+        {/* Value comparison note */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -379,31 +379,20 @@ export default function Pricing() {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="mt-10 flex flex-col items-center gap-3 text-center"
         >
-          <p className="text-[13px] text-slate-600">
-            Or{" "}
-            <Link
-              href="https://github.com/hypersearchx/hypersearchx"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-indigo-400 underline underline-offset-2 transition-colors hover:text-indigo-300"
-            >
-              self-host for free
-            </Link>{" "}
-            with no request limits, no API keys required, full source code.
-            MIT OR Apache-2.0 licensed.
-          </p>
-
-          {/* Value comparison */}
-          <div className="mt-2 inline-block rounded-xl border border-white/6 bg-white/2 px-5 py-3">
-            <span className="text-[13px] text-slate-400">
+          <div className="inline-block rounded-xl border border-indigo-500/15 bg-gradient-to-r from-indigo-500/5 to-violet-500/5 px-5 sm:px-8 py-4">
+            <p className="text-[13px] sm:text-[14px] text-slate-400">
               <span className="font-semibold text-slate-100">
                 vs Firecrawl Pro ($599/mo):
               </span>{" "}
-              Get more for{" "}
-              <span className="font-bold text-emerald-400">87% less cost</span>{" "}
-              with features Firecrawl doesn&apos;t offer at any price.
-            </span>
+              Our Pro plan ($79/mo) delivers a{" "}
+              <span className="font-bold text-emerald-400">superset of features at 87% less cost</span>.
+              {" "}Federation, neural ranking, deep research, and cross-session learning that Firecrawl doesn&apos;t offer at any price.
+            </p>
           </div>
+          <p className="text-[12px] text-slate-600 max-w-md">
+            All plans include all 17 algorithms, all 11 search backends, evidence graphs, and citations.
+            No feature gating — only scale.
+          </p>
         </motion.div>
       </div>
     </section>
