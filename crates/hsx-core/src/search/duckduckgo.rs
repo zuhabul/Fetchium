@@ -18,7 +18,7 @@ use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
 use scraper::{Html, Selector};
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 /// Full DDG HTML endpoint.
 const DDG_HTML_URL: &str = "https://html.duckduckgo.com/html/";
@@ -288,7 +288,7 @@ impl DuckDuckGoBackend {
                 match resp.text().await {
                     Ok(html) if !html.trim().is_empty() => {
                         if Self::is_captcha_page(&html) {
-                            warn!("DDG: CAPTCHA detected on full endpoint for {query:?}");
+                            debug!("DDG: CAPTCHA detected on full endpoint for {query:?}");
                             vec![]
                         } else {
                             let r = self.parse_results(&html, max_results);
@@ -300,11 +300,11 @@ impl DuckDuckGoBackend {
                 }
             }
             Ok(resp) => {
-                warn!("DDG full HTML: HTTP {} for {query:?}", resp.status());
+                debug!("DDG full HTML: HTTP {} for {query:?}", resp.status());
                 vec![]
             }
             Err(e) => {
-                warn!("DDG full HTML request failed: {e}");
+                debug!("DDG full HTML request failed: {e}");
                 vec![]
             }
         }
@@ -333,7 +333,7 @@ impl DuckDuckGoBackend {
                 match resp.text().await {
                     Ok(html) if !html.trim().is_empty() => {
                         if Self::is_captcha_page(&html) {
-                            warn!("DDG: CAPTCHA detected on lite endpoint for {query:?}");
+                            debug!("DDG: CAPTCHA detected on lite endpoint for {query:?}");
                             vec![]
                         } else {
                             let r = self.parse_lite_results(&html, max_results);
@@ -345,11 +345,11 @@ impl DuckDuckGoBackend {
                 }
             }
             Ok(resp) => {
-                warn!("DDG lite: HTTP {} for {query:?}", resp.status());
+                debug!("DDG lite: HTTP {} for {query:?}", resp.status());
                 vec![]
             }
             Err(e) => {
-                warn!("DDG lite request failed: {e}");
+                debug!("DDG lite request failed: {e}");
                 vec![]
             }
         }
@@ -394,7 +394,7 @@ impl SearchBackend for DuckDuckGoBackend {
             );
             Ok(lite)
         } else {
-            warn!("DDG: no results for {query:?} (CAPTCHA or rate-limited)");
+            debug!("DDG: no results for {query:?} (CAPTCHA or rate-limited)");
             Ok(Vec::new())
         }
     }

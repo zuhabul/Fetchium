@@ -39,6 +39,25 @@ pub async fn search_posts(
         }
     }
 
+    // Tier 0: Local SearXNG (most reliable — aggregates Google/Bing/DDG server-side)
+    if let Some(ref searxng_url) = config.searxng_url {
+        let site_q = format!("site:facebook.com {query}");
+        let encoded: String = url::form_urlencoded::byte_serialize(site_q.as_bytes()).collect();
+        let url = format!("{searxng_url}/search?q={encoded}&format=json&pageno=1&language=en-US");
+        let resp = tokio::time::timeout(
+            Duration::from_secs(config.timeout_secs),
+            http.fetch_text(&url),
+        )
+        .await;
+        if let Ok(Ok(body)) = resp {
+            let (posts, pages) = parse_searxng_facebook_results(&body, query, config.max_results);
+            if !posts.is_empty() || !pages.is_empty() {
+                tracing::info!("Facebook: {} results from local SearXNG", posts.len());
+                return Ok((posts, pages, FacebookDataSource::OpenGraph));
+            }
+        }
+    }
+
     // Tier 2: Reddit + HN in parallel (3-5s faster than sequential)
     let ((reddit_posts, reddit_pages), (hn_posts, _hn_pages)) = tokio::join!(
         search_via_reddit(query, config.max_results, http),

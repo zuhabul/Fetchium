@@ -21,8 +21,8 @@ use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
-#[cfg(feature = "headless")]
 use tracing::debug;
+#[cfg(feature = "headless")]
 use tracing::warn;
 
 /// Browser User-Agent — helps avoid bot-detection on Bing's CDN.
@@ -135,7 +135,6 @@ impl BingBackend {
             rank += 1;
         }
 
-        #[cfg(feature = "headless")]
         debug!(
             "Bing parse_serp: {} results from page {}",
             results.len(),
@@ -211,22 +210,22 @@ impl SearchBackend for BingBackend {
                         Ok(html) => {
                             let page_results = Self::parse_serp(&html, page);
                             if page_results.is_empty() && page == 0 {
-                                warn!("Bing: 0 results for {:?}", query);
+                                debug!("Bing: 0 results for {:?}", query);
                                 break;
                             }
                             all_results.extend(page_results);
                         }
                         Err(e) => {
-                            warn!("Bing: body read error: {e}");
+                            debug!("Bing: body read error: {e}");
                             break;
                         }
                     },
                     Ok(resp) => {
-                        warn!("Bing: HTTP {} for {query:?}", resp.status());
+                        debug!("Bing: HTTP {} for {query:?}", resp.status());
                         break;
                     }
                     Err(e) => {
-                        warn!("Bing: request error: {e}");
+                        debug!("Bing: request error: {e}");
                         break;
                     }
                 }

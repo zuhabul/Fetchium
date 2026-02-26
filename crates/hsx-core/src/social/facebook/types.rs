@@ -81,6 +81,7 @@ pub struct FacebookPipelineConfig {
     pub max_results: usize,
     pub graph_api_token: Option<String>, // optional — enables richer data
     pub timeout_secs: u64,
+    pub searxng_url: Option<String>, // local SearXNG for reliable site:facebook.com search
 }
 
 impl Default for FacebookPipelineConfig {
@@ -90,6 +91,7 @@ impl Default for FacebookPipelineConfig {
             max_results: 20,
             graph_api_token: None,
             timeout_secs: 15,
+            searxng_url: None,
         }
     }
 }
