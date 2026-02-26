@@ -100,7 +100,7 @@ export default function Navbar() {
 
           {/* Mobile hamburger */}
           <button
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-slate-400 transition-all hover:bg-white/5 hover:text-white md:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 text-slate-400 transition-all hover:bg-white/5 hover:text-white md:hidden"
             onClick={() => setOpen(!open)}
             aria-label="Toggle menu"
           >
@@ -176,7 +176,7 @@ export default function Navbar() {
                 href="https://app.hypersearchx.zuhabul.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] min-h-[44px]"
                 onClick={() => setOpen(false)}
               >
                 Get Started Free
