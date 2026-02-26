@@ -151,24 +151,24 @@ function StepCard({ step, index }: { step: Step; index: number }) {
           }}
         />
 
-        <div className="relative flex items-start gap-5">
+        <div className="relative flex items-start gap-3 sm:gap-5">
           {/* Step number + icon column */}
-          <div className="flex shrink-0 flex-col items-center gap-2">
+          <div className="flex shrink-0 flex-col items-center gap-1 sm:gap-2">
             {/* Large step number */}
             <span
-              className={`text-[11px] font-bold tracking-widest uppercase ${step.numberColor} opacity-60`}
+              className={`text-[10px] sm:text-[11px] font-bold tracking-widest uppercase ${step.numberColor} opacity-60`}
             >
               {String(step.number).padStart(2, "0")}
             </span>
             {/* Icon */}
             <div
-              className={`flex h-12 w-12 items-center justify-center rounded-xl border ${step.iconBg} transition-all duration-300 group-hover:scale-110`}
+              className={`flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl border ${step.iconBg} transition-all duration-300 group-hover:scale-110`}
               style={{
                 boxShadow: `0 0 20px ${step.glow.replace("0.3", "0")} group-hover:0 0 20px ${step.glow}`,
               }}
             >
               <Icon
-                className={`h-5 w-5`}
+                className={`h-4 w-4 sm:h-5 sm:w-5`}
                 style={{ color: step.glow.replace("rgba(", "rgb(").replace(/,[\d.]+\)$/, ")") }}
                 strokeWidth={1.75}
               />
@@ -178,17 +178,17 @@ function StepCard({ step, index }: { step: Step; index: number }) {
           {/* Content */}
           <div className="min-w-0 flex-1">
             <div className="mb-0.5 flex items-center justify-between gap-2">
-              <h3 className="text-[15px] font-semibold text-slate-100">
+              <h3 className="text-sm sm:text-[15px] font-semibold text-slate-100">
                 {step.title}
               </h3>
-              <span className="shrink-0 rounded-full border border-white/8 bg-white/4 px-2.5 py-0.5 font-mono text-[10px] text-slate-500">
+              <span className="shrink-0 rounded-full border border-white/8 bg-white/4 px-2 py-0.5 font-mono text-[10px] sm:text-[11px] text-slate-500">
                 {step.detail}
               </span>
             </div>
-            <div className="mb-2.5 text-[11px] font-medium text-slate-600 tracking-wide uppercase">
+            <div className="mb-2 text-[10px] sm:text-[11px] font-medium text-slate-600 tracking-wide uppercase">
               {step.subtitle}
             </div>
-            <p className="text-[13.5px] leading-relaxed text-slate-500 group-hover:text-slate-400 transition-colors duration-300">
+            <p className="text-xs sm:text-[13.5px] leading-relaxed text-slate-500 group-hover:text-slate-400 transition-colors duration-300">
               {step.description}
             </p>
           </div>
@@ -212,9 +212,16 @@ function PipelineDiagram() {
   ];
 
   return (
+    <div className="mb-16">
+      <div className="sm:hidden text-center text-[11px] text-slate-600 mb-2 flex items-center justify-center gap-1.5">
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+        Swipe to see pipeline
+      </div>
     <div
       ref={ref}
-      className="mb-16 flex items-center justify-center gap-0 overflow-x-auto pb-2"
+      className="flex items-center justify-center gap-0 overflow-x-auto pb-2 px-2"
     >
       {labels.map((l, i) => (
         <div key={l.label} className="flex items-center">
@@ -250,12 +257,13 @@ function PipelineDiagram() {
         </div>
       ))}
     </div>
+    </div>
   );
 }
 
 export default function HowItWorks() {
   return (
-    <section className="relative overflow-hidden py-28 px-4">
+    <section className="relative overflow-hidden py-16 sm:py-28 px-4">
       {/* Background */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute right-0 top-0 h-[500px] w-[600px] rounded-full bg-violet-500/4 blur-[120px]" />
@@ -265,21 +273,21 @@ export default function HowItWorks() {
       <div className="relative mx-auto max-w-4xl">
         {/* Header */}
         <motion.div
-          className="mb-14 text-center"
+          className="mb-10 sm:mb-14 text-center"
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-500/25 bg-violet-500/8 px-4 py-1.5 text-xs font-medium text-violet-300">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-500/25 bg-violet-500/8 px-3 sm:px-4 py-1.5 text-xs font-medium text-violet-300">
             <Sparkles className="h-3.5 w-3.5" />
             Pipeline Architecture
           </div>
-          <h2 className="text-4xl font-bold tracking-tight text-slate-100 sm:text-5xl">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-slate-100">
             How it{" "}
             <span className="gradient-text">works</span>
           </h2>
-          <p className="mt-5 mx-auto max-w-xl text-lg text-slate-500">
+          <p className="mt-4 sm:mt-5 mx-auto max-w-xl text-sm sm:text-lg text-slate-500">
             Six stages. Under 200ms. Every result traced back to its source with
             an evidence graph.
           </p>
@@ -301,25 +309,23 @@ export default function HowItWorks() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="mt-10 overflow-hidden rounded-2xl border border-indigo-500/20 bg-gradient-to-r from-indigo-500/8 to-violet-500/8 p-6"
+          className="mt-8 sm:mt-10 overflow-hidden rounded-2xl border border-indigo-500/20 bg-gradient-to-r from-indigo-500/8 to-violet-500/8 p-4 sm:p-6"
         >
-          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="mb-1 text-[15px] font-semibold text-slate-100">
-                Self-host the full pipeline for free
+              <div className="mb-1 text-sm sm:text-[15px] font-semibold text-slate-100">
+                Run the full pipeline on your own server
               </div>
-              <div className="text-[13px] text-slate-500">
-                MIT licensed Rust binary. No rate limits. No API keys required
+              <div className="text-xs sm:text-[13px] text-slate-500">
+                Rust binary, Docker Compose stack. No request limits. No API keys required
                 when using SearXNG backend.
               </div>
             </div>
             <a
-              href="https://github.com/hypersearchx/hypersearchx"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex shrink-0 items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-5 py-2.5 text-sm font-semibold text-indigo-300 transition-all hover:bg-indigo-500/20 hover:text-indigo-200"
+              href="/docs/self-hosting/docker"
+              className="group flex shrink-0 items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-indigo-300 transition-all hover:bg-indigo-500/20 hover:text-indigo-200 w-full sm:w-auto justify-center"
             >
-              View on GitHub
+              Self-hosting guide
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </a>
           </div>

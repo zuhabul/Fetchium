@@ -147,28 +147,37 @@ code, pre {
 .token-url { color: #80cbc4; }
 
 /* ─── Docs ─── */
-.docs-content h1 { @apply text-3xl font-bold mb-6 mt-0 gradient-text; }
-.docs-content h2 { @apply text-xl font-semibold mb-4 mt-10 pb-3 border-b border-white/[0.07] text-slate-100; }
-.docs-content h3 { @apply text-lg font-semibold mb-3 mt-7 text-slate-200; }
-.docs-content p { @apply text-slate-400 leading-7 mb-4 text-[15px]; }
+.docs-content h1 { @apply text-2xl sm:text-3xl font-bold mb-6 mt-0 gradient-text leading-tight; }
+.docs-content h2 { @apply text-lg sm:text-xl font-semibold mb-4 mt-10 pb-3 border-b border-white/[0.07] text-slate-100; }
+.docs-content h3 { @apply text-base sm:text-lg font-semibold mb-3 mt-7 text-slate-200; }
+.docs-content p { @apply text-slate-400 leading-7 mb-4 text-[14px] sm:text-[15px]; }
 .docs-content ul { @apply list-none space-y-2 mb-4; }
-.docs-content ul li { @apply flex gap-2 text-slate-400 text-[15px]; }
+.docs-content ul li { @apply flex gap-2 text-slate-400 text-[14px] sm:text-[15px]; }
 .docs-content ul li::before { content: '—'; @apply text-indigo-500 flex-shrink-0; }
-.docs-content ol { @apply list-decimal list-inside space-y-2 mb-4 text-slate-400 text-[15px]; }
+.docs-content ol { @apply list-decimal list-inside space-y-2 mb-4 text-slate-400 text-[14px] sm:text-[15px]; }
 .docs-content code:not(pre code) {
-  @apply bg-indigo-500/10 text-indigo-300 px-1.5 py-0.5 rounded-md text-[13px] font-mono border border-indigo-500/20;
+  @apply bg-indigo-500/10 text-indigo-300 px-1.5 py-0.5 rounded-md text-[12px] sm:text-[13px] font-mono border border-indigo-500/20;
 }
 .docs-content pre {
-  @apply bg-[#0a0c14] border border-white/[0.07] rounded-2xl mb-5 overflow-x-auto;
+  @apply bg-[#0a0c14] border border-white/[0.07] rounded-xl sm:rounded-2xl mb-5 overflow-x-auto;
 }
 .docs-content a { @apply text-indigo-400 hover:text-indigo-300 transition-colors; }
-.docs-content table { @apply w-full border-collapse mb-6 text-sm; }
+/* Tables: block + overflow-x-auto for mobile horizontal scroll */
+.docs-content table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+}
 .docs-content thead tr { @apply border-b border-white/[0.07]; }
-.docs-content th { @apply text-left py-3 px-4 text-slate-300 font-medium; }
-.docs-content td { @apply py-3 px-4 border-b border-white/[0.04] text-slate-400; }
+.docs-content th { @apply text-left py-2.5 sm:py-3 px-3 sm:px-4 text-slate-300 font-medium whitespace-nowrap; }
+.docs-content td { @apply py-2.5 sm:py-3 px-3 sm:px-4 border-b border-white/[0.04] text-slate-400 text-[13px] sm:text-sm; }
 .docs-content tr:hover td { @apply bg-white/[0.02]; }
 .docs-content .callout {
-  @apply border border-indigo-500/25 bg-indigo-500/5 rounded-xl p-4 mb-4 text-indigo-200 text-[14px];
+  @apply border border-indigo-500/25 bg-indigo-500/5 rounded-xl p-3 sm:p-4 mb-4 text-indigo-200 text-[13px] sm:text-[14px];
 }
 
 /* ─── Noise texture ─── */
