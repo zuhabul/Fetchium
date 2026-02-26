@@ -1,0 +1,59 @@
+version: "3.9"
+
+# HyperSearchX production stack
+# Usage:
+#   cp .env.example .env && nano .env
+#   docker compose -f infra/docker-compose.yml up -d
+
+services:
+  # ─── Self-hosted SearXNG (free, unlimited search aggregation) ────────────────
+  searxng:
+    image: searxng/searxng:latest
+    container_name: hsx-searxng
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4040:8080"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:4040/
+    networks:
+      - hsx-internal
+
+  # ─── HyperSearchX REST API ───────────────────────────────────────────────────
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    container_name: hsx-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - hsx-data:/data
+    environment:
+      - HSX_API_HOST=0.0.0.0
+      - HSX_API_PORT=3000
+      - HSX_DATA_DIR=/data
+      - SEARXNG_URL=http://searxng:8080
+      # Copy from .env:
+      - HSX_ADMIN_SECRET=${HSX_ADMIN_SECRET}
+      - BRAVE_API_KEY=${BRAVE_API_KEY:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+    depends_on:
+      - searxng
+    networks:
+      - hsx-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  hsx-internal:
+    driver: bridge
+
+volumes:
+  hsx-data:
