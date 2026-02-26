@@ -23,6 +23,7 @@ use tracing::debug;
 use tracing::warn;
 
 /// Browser User-Agent matching Chrome 121 on Windows — reduces bot-detection.
+#[cfg(not(feature = "headless"))]
 const BROWSER_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
     AppleWebKit/537.36 (KHTML, like Gecko) \
     Chrome/121.0.0.0 Safari/537.36";
@@ -143,7 +144,11 @@ impl GoogleBackend {
         }
 
         #[cfg(feature = "headless")]
-        debug!("Google parse_serp: {} results from page {}", results.len(), page);
+        debug!(
+            "Google parse_serp: {} results from page {}",
+            results.len(),
+            page
+        );
 
         results
     }
@@ -185,25 +190,23 @@ impl SearchBackend for GoogleBackend {
                     .send()
                     .await
                 {
-                    Ok(resp) if resp.status().is_success() => {
-                        match resp.text().await {
-                            Ok(html) => {
-                                let page_results = Self::parse_serp(&html, page);
-                                if page_results.is_empty() && page == 0 {
-                                    warn!(
-                                        "Google: 0 results (CAPTCHA or bot detection) for {:?}",
-                                        query
-                                    );
-                                    break;
-                                }
-                                all_results.extend(page_results);
-                            }
-                            Err(e) => {
-                                warn!("Google: body read error for {query:?}: {e}");
+                    Ok(resp) if resp.status().is_success() => match resp.text().await {
+                        Ok(html) => {
+                            let page_results = Self::parse_serp(&html, page);
+                            if page_results.is_empty() && page == 0 {
+                                warn!(
+                                    "Google: 0 results (CAPTCHA or bot detection) for {:?}",
+                                    query
+                                );
                                 break;
                             }
+                            all_results.extend(page_results);
                         }
-                    }
+                        Err(e) => {
+                            warn!("Google: body read error for {query:?}: {e}");
+                            break;
+                        }
+                    },
                     Ok(resp) => {
                         warn!("Google: HTTP {} for {query:?}", resp.status());
                         break;
@@ -239,18 +242,16 @@ impl SearchBackend for GoogleBackend {
                             tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
                         }
 
-                        match tab.navigate(&url, 15_000).await {
-                            Ok(_) => {
-                                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-                                match tab.content().await {
-                                    Ok(html) => {
-                                        all_results.extend(Self::parse_serp(&html, page));
-                                    }
-                                    Err(e) => {
-                                        warn!("Google content error page {page}: {e}");
-                                    }
+                        // Wait for Google organic results to render (JS-heavy SERP)
+                        match tab.navigate_and_wait(&url, "div.g", 15_000).await {
+                            Ok(_) => match tab.content().await {
+                                Ok(html) => {
+                                    all_results.extend(Self::parse_serp(&html, page));
                                 }
-                            }
+                                Err(e) => {
+                                    warn!("Google content error page {page}: {e}");
+                                }
+                            },
                             Err(e) => {
                                 warn!("Google navigate error page {page}: {e}");
                             }

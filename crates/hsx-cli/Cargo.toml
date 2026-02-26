@@ -4,7 +4,31 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
 description = "HyperSearchX CLI — AI-native search for humans and agents"
+
+# cargo-binstall: `cargo binstall hsx` downloads a pre-built binary instead of compiling.
+# Maps platform names to GitHub Release artifact filenames.
+[package.metadata.binstall]
+pkg-url = "https://github.com/zuhabul/HyperSearchX/releases/download/v{ version }/hsx-{ target-family }-{ target-arch }.tar.gz"
+bin-dir = "hsx{ binary-ext }"
+pkg-fmt = "tgz"
+
+[package.metadata.binstall.overrides."x86_64-pc-windows-msvc"]
+pkg-url = "https://github.com/zuhabul/HyperSearchX/releases/download/v{ version }/hsx-win-x64.zip"
+pkg-fmt = "zip"
+
+[package.metadata.binstall.overrides."x86_64-unknown-linux-gnu"]
+pkg-url = "https://github.com/zuhabul/HyperSearchX/releases/download/v{ version }/hsx-linux-x64.tar.gz"
+
+[package.metadata.binstall.overrides."aarch64-unknown-linux-gnu"]
+pkg-url = "https://github.com/zuhabul/HyperSearchX/releases/download/v{ version }/hsx-linux-arm64.tar.gz"
+
+[package.metadata.binstall.overrides."x86_64-apple-darwin"]
+pkg-url = "https://github.com/zuhabul/HyperSearchX/releases/download/v{ version }/hsx-darwin-x64.tar.gz"
+
+[package.metadata.binstall.overrides."aarch64-apple-darwin"]
+pkg-url = "https://github.com/zuhabul/HyperSearchX/releases/download/v{ version }/hsx-darwin-arm64.tar.gz"
 
 [[bin]]
 name = "hsx"
@@ -53,6 +77,11 @@ sha2.workspace = true
 ratatui.workspace = true
 crossterm.workspace = true
 clap_complete.workspace = true
+
+[features]
+# Enable headless Chromium browser pool for CAPTCHA-resistant Google/Bing search.
+# Requires Chrome/Chromium to be installed. Build with: cargo build --features headless
+headless = ["hsx-core/headless"]
 
 [dev-dependencies]
 assert_cmd.workspace = true

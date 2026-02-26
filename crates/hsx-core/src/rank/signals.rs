@@ -5,7 +5,7 @@
 
 use crate::types::ResultItem;
 use chrono::Datelike;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use tracing::trace;
 
 /// Context maintained across scoring all results in a batch.
@@ -18,6 +18,11 @@ pub struct ScoringContext {
     pub seen_domains: HashSet<String>,
     /// All snippets/titles from the result set (for consensus scoring).
     pub all_text: Vec<String>,
+    /// URL → index into `all_text` for zero-copy per-result text lookup.
+    ///
+    /// Avoids repeated `format!("{} {}", title, snippet).to_lowercase()` in every
+    /// signal function (BM25, semantic, consensus). Pre-computed once in `new()`.
+    pub result_text_index: HashMap<String, usize>,
     /// Pre-computed query embedding (populated when `embeddings` feature is enabled).
     #[cfg(feature = "embeddings")]
     pub query_embedding: Option<Vec<f32>>,
@@ -66,9 +71,16 @@ impl ScoringContext {
             .map(|t| t.to_string())
             .collect();
 
-        let all_text = results
+        let all_text: Vec<String> = results
             .iter()
             .map(|r| format!("{} {}", r.title, r.snippet).to_lowercase())
+            .collect();
+
+        // Build URL→index map for O(1) zero-copy text lookup in signal functions.
+        let result_text_index: HashMap<String, usize> = results
+            .iter()
+            .enumerate()
+            .map(|(i, r)| (r.url.clone(), i))
             .collect();
 
         // Lazily compute query embedding when embeddings feature is enabled
@@ -104,6 +116,7 @@ impl ScoringContext {
             query_terms,
             seen_domains: HashSet::new(),
             all_text,
+            result_text_index,
             query_embedding,
             result_embeddings,
         }
@@ -123,7 +136,14 @@ pub fn bm25_score(result: &ResultItem, ctx: &ScoringContext) -> f64 {
         return 0.0;
     }
 
-    let text = format!("{} {}", result.title, result.snippet).to_lowercase();
+    // Use pre-computed lowercased text from context index (zero-copy).
+    let owned;
+    let text: &str = if let Some(&idx) = ctx.result_text_index.get(&result.url) {
+        &ctx.all_text[idx]
+    } else {
+        owned = format!("{} {}", result.title, result.snippet).to_lowercase();
+        &owned
+    };
     let words: Vec<&str> = text.split_whitespace().collect();
     let doc_len = words.len() as f64;
 
@@ -177,7 +197,14 @@ fn jaccard_semantic(result: &ResultItem, ctx: &ScoringContext) -> f64 {
         return 0.5;
     }
 
-    let text = format!("{} {}", result.title, result.snippet).to_lowercase();
+    // Use pre-computed lowercased text from context index (zero-copy).
+    let owned;
+    let text: &str = if let Some(&idx) = ctx.result_text_index.get(&result.url) {
+        &ctx.all_text[idx]
+    } else {
+        owned = format!("{} {}", result.title, result.snippet).to_lowercase();
+        &owned
+    };
     let doc_terms: HashSet<&str> = text.split_whitespace().collect();
     let query_set: HashSet<&str> = ctx.query_terms.iter().map(|s| s.as_str()).collect();
 
@@ -267,6 +294,14 @@ pub fn authority_score(result: &ResultItem) -> f64 {
     (base + citation_boost).min(1.0)
 }
 
+/// Zero-allocation subdomain check — avoids `format!(".{domain}")` heap allocation.
+#[inline]
+fn domain_ends_with_dot(host: &str, domain: &str) -> bool {
+    host.len() > domain.len()
+        && host.ends_with(domain)
+        && host.as_bytes()[host.len() - domain.len() - 1] == b'.'
+}
+
 fn domain_tier_score(domain: &str) -> f64 {
     const HIGH_AUTHORITY: &[&str] = &[
         "wikipedia.org",
@@ -295,7 +330,7 @@ fn domain_tier_score(domain: &str) -> f64 {
 
     if HIGH_AUTHORITY
         .iter()
-        .any(|h| domain == *h || domain.ends_with(&format!(".{h}")))
+        .any(|h| domain == *h || domain_ends_with_dot(domain, h))
     {
         return 0.9;
     }
@@ -304,7 +339,7 @@ fn domain_tier_score(domain: &str) -> f64 {
     }
     if MEDIUM_AUTHORITY
         .iter()
-        .any(|m| domain == *m || domain.ends_with(&format!(".{m}")))
+        .any(|m| domain == *m || domain_ends_with_dot(domain, m))
     {
         return 0.7;
     }
@@ -411,7 +446,14 @@ pub fn consensus_score(result: &ResultItem, ctx: &ScoringContext) -> f64 {
         return 0.5;
     }
 
-    let my_text = format!("{} {}", result.title, result.snippet).to_lowercase();
+    // Use pre-computed lowercased text from context index (zero-copy).
+    let owned;
+    let my_text: &str = if let Some(&idx) = ctx.result_text_index.get(&result.url) {
+        &ctx.all_text[idx]
+    } else {
+        owned = format!("{} {}", result.title, result.snippet).to_lowercase();
+        &owned
+    };
     let my_terms: HashSet<&str> = my_text.split_whitespace().collect();
 
     if my_terms.is_empty() {
@@ -425,7 +467,7 @@ pub fn consensus_score(result: &ResultItem, ctx: &ScoringContext) -> f64 {
     let others = ctx
         .all_text
         .iter()
-        .filter(|t| **t != my_text.as_str())
+        .filter(|t| t.as_str() != my_text)
         .count();
 
     if others == 0 {
@@ -433,7 +475,7 @@ pub fn consensus_score(result: &ResultItem, ctx: &ScoringContext) -> f64 {
     }
 
     for other_text in &ctx.all_text {
-        if other_text.as_str() == my_text.as_str() {
+        if other_text.as_str() == my_text {
             continue;
         }
         let other_terms: HashSet<&str> = other_text.split_whitespace().collect();

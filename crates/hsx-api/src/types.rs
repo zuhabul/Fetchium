@@ -28,10 +28,42 @@ pub struct ApiError {
 #[derive(Debug, Deserialize)]
 pub struct SearchRequest {
     pub query: String,
+    /// Token budget: 100–10,000 (default 2,000)
     pub token_budget: Option<usize>,
+    /// Detail tier: key_facts | summary | detailed | complete
     pub tier: Option<String>,
+    /// Max sources to fetch: 1–20 (default 10)
     pub max_sources: Option<usize>,
     pub validate: Option<bool>,
+}
+
+impl SearchRequest {
+    /// Validate and apply bounds to all fields.
+    pub fn validated(self) -> Result<Self, &'static str> {
+        if self.query.is_empty() {
+            return Err("query cannot be empty");
+        }
+        if self.query.len() > 500 {
+            return Err("query must be at most 500 characters");
+        }
+        if let Some(b) = self.token_budget {
+            if !(100..=10_000).contains(&b) {
+                return Err("token_budget must be between 100 and 10,000");
+            }
+        }
+        if let Some(s) = self.max_sources {
+            if !(1..=20).contains(&s) {
+                return Err("max_sources must be between 1 and 20");
+            }
+        }
+        if let Some(ref t) = self.tier {
+            let valid = ["key_facts", "summary", "detailed", "complete"];
+            if !valid.contains(&t.as_str()) {
+                return Err("tier must be: key_facts | summary | detailed | complete");
+            }
+        }
+        Ok(self)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -54,8 +86,33 @@ pub struct SearchResultItem {
 pub struct FetchRequest {
     pub url: String,
     pub query: Option<String>,
+    /// Token budget: 100–10,000 (default 2,000)
     pub token_budget: Option<usize>,
+    /// Format: markdown | text | html (default markdown)
     pub format: Option<String>,
+}
+
+impl FetchRequest {
+    pub fn validated(self) -> Result<Self, &'static str> {
+        if self.url.is_empty() {
+            return Err("url cannot be empty");
+        }
+        if self.url.len() > 2048 {
+            return Err("url must be at most 2,048 characters");
+        }
+        if let Some(b) = self.token_budget {
+            if !(100..=10_000).contains(&b) {
+                return Err("token_budget must be between 100 and 10,000");
+            }
+        }
+        if let Some(ref f) = self.format {
+            let valid = ["markdown", "text", "html"];
+            if !valid.contains(&f.as_str()) {
+                return Err("format must be: markdown | text | html");
+            }
+        }
+        Ok(self)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -73,11 +130,43 @@ pub struct FetchResponse {
 #[derive(Debug, Deserialize)]
 pub struct ResearchRequest {
     pub query: String,
+    /// Token budget: 1,000–50,000 (default 10,000)
     pub token_budget: Option<usize>,
+    /// Max sources: 1–20 (default 10)
     pub max_sources: Option<usize>,
+    /// Depth: quick | standard | deep (default standard)
     pub depth: Option<String>,
     pub strict_evidence: Option<bool>,
+    /// Citation style: apa | mla | chicago | ieee (default apa)
     pub citation_style: Option<String>,
+}
+
+impl ResearchRequest {
+    pub fn validated(self) -> Result<Self, &'static str> {
+        if self.query.is_empty() {
+            return Err("query cannot be empty");
+        }
+        if self.query.len() > 500 {
+            return Err("query must be at most 500 characters");
+        }
+        if let Some(b) = self.token_budget {
+            if !(1_000..=50_000).contains(&b) {
+                return Err("token_budget must be between 1,000 and 50,000");
+            }
+        }
+        if let Some(s) = self.max_sources {
+            if !(1..=20).contains(&s) {
+                return Err("max_sources must be between 1 and 20");
+            }
+        }
+        if let Some(ref d) = self.depth {
+            let valid = ["quick", "standard", "deep"];
+            if !valid.contains(&d.as_str()) {
+                return Err("depth must be: quick | standard | deep");
+            }
+        }
+        Ok(self)
+    }
 }
 
 #[derive(Debug, Serialize)]

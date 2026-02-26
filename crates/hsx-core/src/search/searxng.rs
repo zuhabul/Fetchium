@@ -1,7 +1,18 @@
-//! SearXNG meta-search backend — JSON API with multi-instance fallback.
+//! SearXNG meta-search backend — JSON API with local-first + public fallback.
 //!
-//! Public instances often disable JSON; we try each in order and return empty
-//! on total failure (the FallbackChain handles degraded quality gracefully).
+//! ## Priority order
+//! 1. **`SEARXNG_URL` env var** — your self-hosted instance (unlimited, zero latency)
+//! 2. **`http://localhost:4040`** — default local Docker container (`~/searxng-local/`)
+//! 3. **Public instances** — community fallbacks when local is unavailable
+//!
+//! ## Self-hosting (fully free, unlimited)
+//! ```bash
+//! cd ~/searxng-local && docker compose up -d
+//! # SearXNG now available at http://localhost:4040
+//! # Queries local instance first — no rate limits, no CAPTCHA, no API keys
+//! ```
+//!
+//! Set `SEARXNG_URL=http://localhost:4040` to make this the exclusive source.
 
 use crate::error::HsxResult;
 use crate::http::HttpClient;
@@ -9,20 +20,21 @@ use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
 use serde::Deserialize;
+#[allow(unused_imports)]
+use tracing::info;
 use tracing::{debug, warn};
 
-/// Public SearXNG instances with JSON API enabled (verified early 2026).
+/// Public SearXNG fallback instances (used only when local instance is unavailable).
 ///
-/// Listed from most-to-least reliable. The backend tries each in order and
-/// returns on the first successful JSON parse. Instances with Cloudflare or
-/// disabled JSON APIs are excluded.
-const SEARXNG_INSTANCES: &[&str] = &[
-    "https://paulgo.io",           // Community, JSON API confirmed, no CF
-    "https://search.inetol.net",   // EU/DE, stable, JSON API confirmed
-    "https://searxng.site",        // US, stable uptime
-    "https://priv.au",             // AU, low latency Asia-Pacific
-    "https://searx.be",            // Historical; occasionally offline or CF-blocked
-    "https://search.sapti.me",     // Intermittent; kept as last resort
+/// The local instance at localhost:4040 is always tried first.
+/// Public instances have JSON API confirmed as of early 2026.
+const PUBLIC_SEARXNG_INSTANCES: &[&str] = &[
+    "https://paulgo.io",         // Community, JSON API confirmed, no CF
+    "https://search.inetol.net", // EU/DE, stable, JSON API confirmed
+    "https://searxng.site",      // US, stable uptime
+    "https://priv.au",           // AU, low latency Asia-Pacific
+    "https://searx.be",          // Historical; occasionally offline or CF-blocked
+    "https://search.sapti.me",   // Intermittent; kept as last resort
 ];
 
 #[derive(Debug, Deserialize)]
@@ -44,17 +56,81 @@ struct SearxResult {
 
 /// SearXNG meta-search backend.
 ///
-/// Uses the JSON search API (`/search?format=json`). Rotates through multiple
-/// public instances for reliability. Returns empty results when all instances
-/// fail — the FallbackChain will try the next backend.
+/// Query priority:
+/// 1. `SEARXNG_URL` environment variable (your self-hosted instance)
+/// 2. `http://localhost:4040` (default local Docker container)
+/// 3. Public community instances (fallback only)
+///
+/// Self-hosted SearXNG is the recommended configuration: it aggregates Google,
+/// Bing, Brave, DuckDuckGo and more — all in one request, no CAPTCHA, no limits.
 pub struct SearxngBackend {
     http: HttpClient,
+    /// Custom instance URL from SEARXNG_URL env var (takes priority).
+    custom_url: Option<String>,
 }
 
 impl SearxngBackend {
-    /// Create a new SearXNG backend using the default public instance list.
+    /// Create a new SearXNG backend.
+    ///
+    /// Reads `SEARXNG_URL` from the environment. If set, that instance is used
+    /// exclusively. If not set, tries localhost:4040 then public instances.
     pub fn new(http: HttpClient) -> Self {
-        Self { http }
+        let custom_url = std::env::var("SEARXNG_URL").ok();
+        if let Some(ref url) = custom_url {
+            info!("SearXNG: using custom instance from SEARXNG_URL: {url}");
+        }
+        Self { http, custom_url }
+    }
+
+    /// Build the ordered instance list to try.
+    ///
+    /// Order: custom env var → localhost:4040 → public fallbacks
+    fn instance_list(&self) -> Vec<&str> {
+        let mut list: Vec<&str> = Vec::new();
+
+        // 1. Custom env var instance (highest priority)
+        if let Some(ref url) = self.custom_url {
+            list.push(url.as_str());
+            return list; // Env var = exclusive — don't fall through to others
+        }
+
+        // 2. Local Docker instance (always try first when no env override)
+        list.push("http://localhost:4040");
+
+        // 3. Public fallbacks (only used when local is down)
+        list.extend_from_slice(PUBLIC_SEARXNG_INSTANCES);
+        list
+    }
+
+    /// Parse a SearXNG JSON response body into ResultItems.
+    fn parse_response(body: &str, max_results: usize) -> Option<Vec<ResultItem>> {
+        match serde_json::from_str::<SearxResponse>(body) {
+            Ok(resp) => {
+                let results = resp
+                    .results
+                    .into_iter()
+                    .take(max_results)
+                    .enumerate()
+                    .filter_map(|(i, r)| {
+                        if r.url.starts_with("http") {
+                            Some(ResultItem {
+                                title: r.title,
+                                url: r.url,
+                                snippet: r.content.unwrap_or_default(),
+                                rank: (i + 1) as u32,
+                                backend: BackendId::Searxng,
+                                score: r.score,
+                                published_date: r.published_date,
+                            })
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>();
+                Some(results)
+            }
+            Err(_) => None, // HTML response — JSON disabled on this instance
+        }
     }
 }
 
@@ -65,8 +141,11 @@ impl SearchBackend for SearxngBackend {
     }
 
     async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
-        // Try each instance in order; return on first success
-        for instance in SEARXNG_INSTANCES {
+        let instances = self.instance_list();
+        let is_local_first = self.custom_url.is_none();
+
+        for (i, instance) in instances.iter().enumerate() {
+            let is_local = instance.contains("localhost") || instance.contains("127.0.0.1");
             let url = format!(
                 "{}/search?q={}&format=json&pageno=1&language=en",
                 instance,
@@ -75,47 +154,27 @@ impl SearchBackend for SearxngBackend {
 
             match self.http.fetch_text(&url).await {
                 Ok(body) => {
-                    match serde_json::from_str::<SearxResponse>(&body) {
-                        Ok(resp) => {
-                            let results = resp
-                                .results
-                                .into_iter()
-                                .take(max_results as usize)
-                                .enumerate()
-                                .filter_map(|(i, r)| {
-                                    if r.url.starts_with("http") {
-                                        Some(ResultItem {
-                                            title: r.title,
-                                            url: r.url,
-                                            snippet: r.content.unwrap_or_default(),
-                                            rank: (i + 1) as u32,
-                                            backend: BackendId::Searxng,
-                                            score: r.score,
-                                            published_date: r.published_date,
-                                        })
-                                    } else {
-                                        None
-                                    }
-                                })
-                                .collect::<Vec<_>>();
+                    if let Some(results) = Self::parse_response(&body, max_results as usize) {
+                        if is_local && is_local_first && i == 0 {
+                            info!("SearXNG local ({}): {} results ✓", instance, results.len());
+                        } else {
                             debug!("SearXNG {}: {} results", instance, results.len());
-                            return Ok(results);
                         }
-                        Err(e) => {
-                            warn!("SearXNG {instance} JSON parse error: {e}");
-                            // Instance may have returned HTML (JSON disabled) — try next
-                            continue;
-                        }
+                        return Ok(results);
                     }
+                    warn!("SearXNG {instance}: JSON parse failed (HTML response? JSON disabled)");
                 }
                 Err(e) => {
-                    warn!("SearXNG {instance} request failed: {e}");
-                    continue;
+                    if is_local {
+                        // Local instance down — silently fall through to public
+                        debug!("SearXNG local unavailable, falling back to public instances: {e}");
+                    } else {
+                        warn!("SearXNG {instance} request failed: {e}");
+                    }
                 }
             }
         }
 
-        // All instances failed — soft fail with empty results
         warn!("SearXNG: all instances exhausted for query {:?}", query);
         Ok(vec![])
     }
@@ -133,94 +192,84 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_searx_response() {
+    fn parse_response_basic() {
         let json = r#"{"results":[{"url":"https://example.com","title":"Example","content":"A test page"}]}"#;
-        let resp: SearxResponse = serde_json::from_str(json).unwrap();
-        assert_eq!(resp.results.len(), 1);
-        assert_eq!(resp.results[0].title, "Example");
+        let results = SearxngBackend::parse_response(json, 10).unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title, "Example");
+        assert_eq!(results[0].url, "https://example.com");
+        assert_eq!(results[0].snippet, "A test page");
     }
 
     #[test]
-    fn parse_searx_response_with_score() {
-        let json = r#"{"results":[{"url":"https://example.com","title":"Example","content":"A test page","score":0.95,"publishedDate":"2024-01-01"}]}"#;
-        let resp: SearxResponse = serde_json::from_str(json).unwrap();
-        assert_eq!(resp.results[0].score, Some(0.95));
-        assert_eq!(
-            resp.results[0].published_date.as_deref(),
-            Some("2024-01-01")
-        );
+    fn parse_response_with_score_and_date() {
+        let json = r#"{"results":[{"url":"https://example.com","title":"Example","content":"test","score":0.95,"publishedDate":"2024-01-01"}]}"#;
+        let results = SearxngBackend::parse_response(json, 10).unwrap();
+        assert_eq!(results[0].score, Some(0.95));
+        assert_eq!(results[0].published_date.as_deref(), Some("2024-01-01"));
     }
 
     #[test]
-    fn urlencoding_spaces() {
-        let encoded = urlencoding_encode("hello world");
-        // form_urlencoded encodes spaces as '+'
-        assert!(
-            encoded.contains('+') || encoded.contains("%20"),
-            "Expected '+' or '%20' in {:?}",
-            encoded
-        );
-    }
-
-    #[test]
-    fn filters_non_http_urls() {
+    fn parse_response_filters_non_http() {
         let json = r#"{"results":[
             {"url":"https://good.com","title":"Good","content":"ok"},
             {"url":"javascript:void(0)","title":"Bad","content":"bad"}
         ]}"#;
-        let resp: SearxResponse = serde_json::from_str(json).unwrap();
-        let items: Vec<ResultItem> = resp
-            .results
-            .into_iter()
-            .filter_map(|r| {
-                if r.url.starts_with("http") {
-                    Some(ResultItem {
-                        title: r.title,
-                        url: r.url,
-                        snippet: r.content.unwrap_or_default(),
-                        rank: 1,
-                        backend: BackendId::Searxng,
-                        score: None,
-                        published_date: None,
-                    })
-                } else {
-                    None
-                }
-            })
-            .collect();
-        assert_eq!(items.len(), 1);
-        assert_eq!(items[0].url, "https://good.com");
+        let results = SearxngBackend::parse_response(json, 10).unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].url, "https://good.com");
     }
 
     #[test]
-    fn max_results_respected() {
+    fn parse_response_max_results() {
         let json = r#"{"results":[
             {"url":"https://a.com","title":"A","content":"a"},
             {"url":"https://b.com","title":"B","content":"b"},
             {"url":"https://c.com","title":"C","content":"c"}
         ]}"#;
-        let resp: SearxResponse = serde_json::from_str(json).unwrap();
-        let results: Vec<ResultItem> = resp
-            .results
-            .into_iter()
-            .take(2)
-            .enumerate()
-            .filter_map(|(i, r)| {
-                if r.url.starts_with("http") {
-                    Some(ResultItem {
-                        title: r.title,
-                        url: r.url,
-                        snippet: r.content.unwrap_or_default(),
-                        rank: (i + 1) as u32,
-                        backend: BackendId::Searxng,
-                        score: None,
-                        published_date: None,
-                    })
-                } else {
-                    None
-                }
-            })
-            .collect();
+        let results = SearxngBackend::parse_response(json, 2).unwrap();
         assert_eq!(results.len(), 2);
+    }
+
+    #[test]
+    fn parse_response_html_returns_none() {
+        // HTML response (JSON disabled on that instance) → None
+        let html = "<html><body>Not a JSON response</body></html>";
+        assert!(SearxngBackend::parse_response(html, 10).is_none());
+    }
+
+    #[test]
+    fn instance_list_local_first_by_default() {
+        // Without env var, localhost:4040 should be first
+        std::env::remove_var("SEARXNG_URL");
+        let backend = SearxngBackend {
+            http: crate::http::HttpClient::new(&crate::config::HsxConfig::default()).unwrap(),
+            custom_url: None,
+        };
+        let instances = backend.instance_list();
+        assert_eq!(instances[0], "http://localhost:4040");
+        assert!(instances.len() > 1, "Should include public fallbacks");
+    }
+
+    #[test]
+    fn instance_list_custom_url_exclusive() {
+        // With custom_url set, only that instance should be returned
+        let backend = SearxngBackend {
+            http: crate::http::HttpClient::new(&crate::config::HsxConfig::default()).unwrap(),
+            custom_url: Some("http://my-searxng.example.com".to_string()),
+        };
+        let instances = backend.instance_list();
+        assert_eq!(instances.len(), 1);
+        assert_eq!(instances[0], "http://my-searxng.example.com");
+    }
+
+    #[test]
+    fn urlencoding_spaces() {
+        let encoded = urlencoding_encode("hello world");
+        assert!(
+            encoded.contains('+') || encoded.contains("%20"),
+            "Expected '+' or '%20' in {:?}",
+            encoded
+        );
     }
 }

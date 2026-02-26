@@ -39,24 +39,41 @@ struct SoQuestion {
 ///
 /// Searches for questions whose titles match the query. The `withbody` filter
 /// includes `body_markdown` for richer snippets (counts toward quota).
+/// The client is built once and reused to enable connection pooling and
+/// avoid repeated TLS handshakes (StackExchange always returns gzip).
 pub struct StackOverflowBackend {
-    /// Stored so the struct field is used; requests use a fresh client for gzip support.
-    #[allow(dead_code)]
-    http: HttpClient,
+    /// Pre-built client with gzip support and connection pooling.
+    client: reqwest::Client,
     api_key: Option<String>,
 }
 
 impl StackOverflowBackend {
     /// Create a new StackOverflow backend. Reads `STACKEXCHANGE_KEY` from the environment.
-    pub fn new(http: HttpClient) -> Self {
+    pub fn new(_http: HttpClient) -> Self {
         let api_key = std::env::var("STACKEXCHANGE_KEY").ok();
-        Self { http, api_key }
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(15))
+            .user_agent("HyperSearchX/0.1")
+            .gzip(true)
+            .pool_max_idle_per_host(4)
+            .pool_idle_timeout(std::time::Duration::from_secs(90))
+            .build()
+            .unwrap_or_default();
+        Self { client, api_key }
     }
 
     /// Create a StackOverflow backend with an explicit API key.
-    pub fn with_key(http: HttpClient, api_key: impl Into<String>) -> Self {
+    pub fn with_key(_http: HttpClient, api_key: impl Into<String>) -> Self {
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(15))
+            .user_agent("HyperSearchX/0.1")
+            .gzip(true)
+            .pool_max_idle_per_host(4)
+            .pool_idle_timeout(std::time::Duration::from_secs(90))
+            .build()
+            .unwrap_or_default();
         Self {
-            http,
+            client,
             api_key: Some(api_key.into()),
         }
     }
@@ -79,21 +96,8 @@ impl SearchBackend for StackOverflowBackend {
             url.push_str(&format!("&key={key}"));
         }
 
-        // Build a client with explicit gzip support (StackExchange always gzips responses)
-        let client = match reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(15))
-            .user_agent("HyperSearchX/0.1")
-            .gzip(true)
-            .build()
-        {
-            Ok(c) => c,
-            Err(e) => {
-                tracing::warn!("StackOverflow: failed to build client: {e}");
-                return Ok(vec![]);
-            }
-        };
-
-        let resp = match client
+        let resp = match self
+            .client
             .get(&url)
             .header("Accept-Encoding", "gzip")
             .send()

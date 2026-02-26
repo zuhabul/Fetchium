@@ -1,0 +1,50 @@
+name: Conventional Commits
+
+# Enforces conventional commit format on PR titles.
+# Since most merges are squash-merged, the PR title becomes the commit message
+# that release-please uses to determine the next semantic version.
+#
+# Commit types and their version impact:
+#   feat:     minor bump  (1.0.0 → 1.1.0)
+#   fix:      patch bump  (1.0.0 → 1.0.1)
+#   feat!:    major bump  (1.0.0 → 2.0.0)  ← BREAKING CHANGE
+#   docs:     no release
+#   chore:    no release
+#   refactor: no release
+#   perf:     patch bump
+#   test:     no release
+#   ci:       no release
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  lint-pr-title:
+    name: Validate PR title (Conventional Commits)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          requireScope: false
+          subjectPattern: ^.{1,100}$
+          subjectPatternError: |
+            The subject "{subject}" is too long or empty.
+            Please keep the description under 100 characters.
+          ignoreLabels: |
+            release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -17,6 +17,8 @@ use url::Url;
 const MAX_RETRIES: u32 = 3;
 /// Base delay for exponential backoff (milliseconds).
 const BASE_DELAY_MS: u64 = 500;
+/// Maximum backoff delay cap (30 seconds) to prevent excessive waits.
+const MAX_BACKOFF_MS: u64 = 30_000;
 /// Maximum response body size (10 MB).
 const _MAX_BODY_SIZE: u64 = 10 * 1024 * 1024;
 
@@ -110,14 +112,15 @@ impl HttpClient {
     }
 
     /// Calculate backoff delay with jitter for retry attempt.
+    /// Capped at MAX_BACKOFF_MS to prevent excessive waits on high retry counts.
     fn backoff_delay(attempt: u32) -> Duration {
-        let base = BASE_DELAY_MS * 2u64.pow(attempt);
+        let base = BASE_DELAY_MS.saturating_mul(2u64.saturating_pow(attempt));
         let jitter = (std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
             .subsec_nanos()
             % 500) as u64;
-        Duration::from_millis(base + jitter)
+        Duration::from_millis(base.saturating_add(jitter).min(MAX_BACKOFF_MS))
     }
 
     /// Whether a status code is retryable.

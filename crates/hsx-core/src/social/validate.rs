@@ -43,12 +43,12 @@ pub enum ValidationFlag {
 /// Per-post validation result.
 #[derive(Debug, Clone)]
 pub struct PostValidation {
-    pub relevance: f64,      // 0-1 word-overlap relevance to query
-    pub authenticity: f64,   // 0-1 content + account quality
-    pub credibility: f64,    // 0-1 platform weight × engagement legitimacy
-    pub quality_score: f64,  // 0-1 composite (weighted average)
+    pub relevance: f64,     // 0-1 word-overlap relevance to query
+    pub authenticity: f64,  // 0-1 content + account quality
+    pub credibility: f64,   // 0-1 platform weight × engagement legitimacy
+    pub quality_score: f64, // 0-1 composite (weighted average)
     pub flags: Vec<ValidationFlag>,
-    pub passes: bool,        // true if quality_score ≥ threshold
+    pub passes: bool, // true if quality_score ≥ threshold
 }
 
 /// Summary stats from validating a batch of posts.
@@ -202,7 +202,9 @@ pub fn compute_relevance(content: &str, query: &str) -> f64 {
         .iter()
         .filter(|qw| {
             // Exact match or prefix match (e.g. "rust" matches "rustlang")
-            content_words.iter().any(|cw| cw.contains(*qw) || qw.contains(cw))
+            content_words
+                .iter()
+                .any(|cw| cw.contains(*qw) || qw.contains(cw))
         })
         .count();
 
@@ -242,9 +244,8 @@ fn compute_authenticity(post: &SocialPost, flags: &mut Vec<ValidationFlag>) -> f
     // Excessive caps penalty (>40% uppercase chars = shouting/spam)
     let alpha_chars: Vec<char> = content.chars().filter(|c| c.is_alphabetic()).collect();
     if !alpha_chars.is_empty() {
-        let caps_ratio =
-            alpha_chars.iter().filter(|c| c.is_uppercase()).count() as f64
-                / alpha_chars.len() as f64;
+        let caps_ratio = alpha_chars.iter().filter(|c| c.is_uppercase()).count() as f64
+            / alpha_chars.len() as f64;
         if caps_ratio > 0.55 {
             flags.push(ValidationFlag::ExcessiveCaps);
             score -= 0.20;
@@ -252,7 +253,8 @@ fn compute_authenticity(post: &SocialPost, flags: &mut Vec<ValidationFlag>) -> f
     }
 
     // Spam patterns: repeated punctuation, URL-only content
-    let has_spam = content.contains("!!!") || content.contains("$$$")
+    let has_spam = content.contains("!!!")
+        || content.contains("$$$")
         || content.contains("click here")
         || content.contains("buy now")
         || content.contains("limited offer")
@@ -315,12 +317,12 @@ fn compute_engagement_legitimacy(eng: &EngagementMetrics, platform: SocialPlatfo
 
     // Expected ratios (platform-specific)
     let (expected_share_ratio, expected_comment_ratio) = match platform {
-        SocialPlatform::Twitter => (0.15, 0.08),   // retweets common
-        SocialPlatform::Reddit => (0.02, 0.25),    // comments high relative to score
-        SocialPlatform::TikTok => (0.05, 0.03),   // shares moderate
+        SocialPlatform::Twitter => (0.15, 0.08), // retweets common
+        SocialPlatform::Reddit => (0.02, 0.25),  // comments high relative to score
+        SocialPlatform::TikTok => (0.05, 0.03),  // shares moderate
         SocialPlatform::HackerNews => (0.00, 0.40), // no shares, lots of comments
-        SocialPlatform::YouTube => (0.03, 0.02),   // shares low, comments moderate
-        SocialPlatform::Facebook => (0.08, 0.05),  // shares common
+        SocialPlatform::YouTube => (0.03, 0.02), // shares low, comments moderate
+        SocialPlatform::Facebook => (0.08, 0.05), // shares common
     };
 
     let mut score = 1.0f64;
@@ -445,24 +447,98 @@ fn looks_like_bot_username(username: &str) -> bool {
 fn is_stopword(word: &str) -> bool {
     matches!(
         word,
-        "the" | "and" | "for" | "are" | "but" | "not" | "you" | "all" | "can" | "her" | "was"
-            | "one" | "our" | "out" | "day" | "get" | "has" | "him" | "his" | "how" | "its"
-            | "may" | "new" | "now" | "old" | "see" | "two" | "way" | "who" | "boy" | "did"
-            | "she" | "use" | "yes" | "yet" | "any" | "far" | "few" | "got" | "let" | "off"
-            | "put" | "say" | "set" | "try" | "also" | "back" | "from" | "have" | "here"
-            | "just" | "know" | "like" | "look" | "make" | "more" | "much" | "need" | "only"
-            | "over" | "same" | "take" | "than" | "that" | "them" | "then" | "they" | "this"
-            | "time" | "very" | "well" | "when" | "will" | "with" | "been" | "your"
+        "the"
+            | "and"
+            | "for"
+            | "are"
+            | "but"
+            | "not"
+            | "you"
+            | "all"
+            | "can"
+            | "her"
+            | "was"
+            | "one"
+            | "our"
+            | "out"
+            | "day"
+            | "get"
+            | "has"
+            | "him"
+            | "his"
+            | "how"
+            | "its"
+            | "may"
+            | "new"
+            | "now"
+            | "old"
+            | "see"
+            | "two"
+            | "way"
+            | "who"
+            | "boy"
+            | "did"
+            | "she"
+            | "use"
+            | "yes"
+            | "yet"
+            | "any"
+            | "far"
+            | "few"
+            | "got"
+            | "let"
+            | "off"
+            | "put"
+            | "say"
+            | "set"
+            | "try"
+            | "also"
+            | "back"
+            | "from"
+            | "have"
+            | "here"
+            | "just"
+            | "know"
+            | "like"
+            | "look"
+            | "make"
+            | "more"
+            | "much"
+            | "need"
+            | "only"
+            | "over"
+            | "same"
+            | "take"
+            | "than"
+            | "that"
+            | "them"
+            | "then"
+            | "they"
+            | "this"
+            | "time"
+            | "very"
+            | "well"
+            | "when"
+            | "will"
+            | "with"
+            | "been"
+            | "your"
     )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::social::types::{EngagementMetrics, SocialPost, MediaAttachment};
+    use crate::social::types::{EngagementMetrics, MediaAttachment, SocialPost};
 
     fn make_post(platform: SocialPlatform, content: &str, author: &str) -> SocialPost {
-        let mut eng = EngagementMetrics { likes: 500, shares: 50, comments: 30, views: None, score: 0.0 };
+        let mut eng = EngagementMetrics {
+            likes: 500,
+            shares: 50,
+            comments: 30,
+            views: None,
+            score: 0.0,
+        };
         eng.compute_score();
         SocialPost {
             platform,
@@ -515,8 +591,15 @@ mod tests {
             "spambot123456",
         );
         let v = validate_post(&post, "rust programming");
-        assert!(v.flags.contains(&ValidationFlag::ExcessiveHashtags) || v.flags.contains(&ValidationFlag::SpamPatterns));
-        assert!(v.quality_score < 0.4, "spam should have low quality: {}", v.quality_score);
+        assert!(
+            v.flags.contains(&ValidationFlag::ExcessiveHashtags)
+                || v.flags.contains(&ValidationFlag::SpamPatterns)
+        );
+        assert!(
+            v.quality_score < 0.4,
+            "spam should have low quality: {}",
+            v.quality_score
+        );
     }
 
     #[test]
@@ -528,10 +611,10 @@ mod tests {
 
     #[test]
     fn bot_username_detection() {
-        assert!(looks_like_bot_username("user12345678"));  // 8 consecutive digits
-        assert!(looks_like_bot_username("brtxkrz"));       // no vowels, >5 chars
-        assert!(!looks_like_bot_username("rustacean"));    // normal
-        assert!(!looks_like_bot_username("alice42"));      // normal with some digits
+        assert!(looks_like_bot_username("user12345678")); // 8 consecutive digits
+        assert!(looks_like_bot_username("brtxkrz")); // no vowels, >5 chars
+        assert!(!looks_like_bot_username("rustacean")); // normal
+        assert!(!looks_like_bot_username("alice42")); // normal with some digits
     }
 
     #[test]
@@ -551,13 +634,22 @@ mod tests {
         assert!(filtered.len() <= 2);
         // The spam post should be filtered out or ranked last
         if filtered.len() == 2 {
-            assert!(filtered[0].author != "bot99999999", "spam should be ranked last");
+            assert!(
+                filtered[0].author != "bot99999999",
+                "spam should be ranked last"
+            );
         }
     }
 
     #[test]
     fn engagement_legit_zero_is_neutral() {
-        let eng = EngagementMetrics { likes: 0, shares: 0, comments: 0, views: None, score: 0.0 };
+        let eng = EngagementMetrics {
+            likes: 0,
+            shares: 0,
+            comments: 0,
+            views: None,
+            score: 0.0,
+        };
         let legit = compute_engagement_legitimacy(&eng, SocialPlatform::Reddit);
         assert!((legit - 0.6).abs() < 0.1);
     }
@@ -578,11 +670,22 @@ mod tests {
     #[test]
     fn cross_validate_boost_increases_authenticity() {
         let mut posts = vec![
-            make_post(SocialPlatform::Reddit, "Rust memory safety ownership borrow checker guarantees thread safety", "user1"),
-            make_post(SocialPlatform::HackerNews, "Rust memory safety ownership borrow checker guarantees thread safe", "user2"),
+            make_post(
+                SocialPlatform::Reddit,
+                "Rust memory safety ownership borrow checker guarantees thread safety",
+                "user1",
+            ),
+            make_post(
+                SocialPlatform::HackerNews,
+                "Rust memory safety ownership borrow checker guarantees thread safe",
+                "user2",
+            ),
         ];
         let before = posts[0].authenticity;
         cross_validate_boost(&mut posts);
-        assert!(posts[0].authenticity >= before, "cross-platform confirmation should boost authenticity");
+        assert!(
+            posts[0].authenticity >= before,
+            "cross-platform confirmation should boost authenticity"
+        );
     }
 }

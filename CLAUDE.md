@@ -122,3 +122,107 @@ The PRD (§8) defines 17 novel algorithms that don't exist in other tools:
 ## Adding New Dependencies
 
 All shared dependencies go in the **workspace** `Cargo.toml` under `[workspace.dependencies]`, then reference them with `.workspace = true` in each crate's `Cargo.toml`. Never add a version number directly in a crate's `Cargo.toml` for anything already in the workspace.
+
+---
+
+## Version Control & Release Pipeline
+
+### CRITICAL — Read before making any changes
+
+This project uses **fully automated semantic versioning** via [release-please](https://github.com/googleapis/release-please).
+
+**All version bumping, tagging, changelog generation, and publishing is automatic.**
+
+### Conventional Commits — REQUIRED
+
+Every commit to `main` MUST follow the [Conventional Commits](https://www.conventionalcommits.org/) format. This is enforced by a PR title lint check in CI and a local git hook.
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer: BREAKING CHANGE: ...]
+```
+
+**Types and their version impact:**
+
+| Type | Version bump | Example |
+|------|-------------|---------|
+| `feat` | **minor** (1.0.0 → 1.1.0) | `feat: add cross-lingual query expansion` |
+| `fix` | **patch** (1.0.0 → 1.0.1) | `fix: handle empty query gracefully` |
+| `feat!` or `BREAKING CHANGE:` | **MAJOR** (1.0.0 → 2.0.0) | `feat!: redesign config file format` |
+| `perf` | **patch** | `perf: cache BM25 term frequencies` |
+| `docs` | no release | `docs: update rate limit table` |
+| `refactor` | no release | `refactor: extract snippet logic` |
+| `chore` | no release | `chore: update dependencies` |
+| `test` | no release | `test: add fuzzing for URL parser` |
+| `ci` | no release | `ci: fix Windows build step` |
+
+### Rules for AI coding agents
+
+1. **NEVER manually edit the `version` field** in `Cargo.toml` — release-please does this automatically.
+2. **NEVER manually create git tags** — release-please creates them when the Release PR is merged.
+3. **NEVER run `npm publish` manually** — the release workflow does this automatically.
+4. **ALWAYS write commit messages in Conventional Commits format** — this is the only way to trigger version bumps.
+5. When adding a **new public-facing feature**, use `feat:` — this ensures a minor version bump.
+6. When **fixing a bug**, use `fix:` — this ensures a patch version bump.
+7. When making a **breaking API change**, use `feat!:` or add `BREAKING CHANGE:` in the footer.
+8. The `chore:`, `refactor:`, `docs:`, `test:`, `ci:` types do NOT trigger a release — use them for non-user-facing changes.
+
+### How the pipeline works
+
+```
+You commit feat: or fix: → push to main
+        ↓
+release-please opens/updates a "Release PR"
+(title: "chore(main): release 1.2.0")
+        ↓
+Team merges the Release PR
+        ↓
+release-please creates:
+  - git tag v1.2.0
+  - GitHub Release with changelog
+        ↓
+release.yml workflow fires:
+  ├─ Build: Linux x64/arm64, macOS x64/arm64, Windows x64
+  ├─ Attach .tar.gz/.zip + SHA256 to GitHub Release
+  ├─ Publish npm package (hypersearchx @ 1.2.0)
+  ├─ Update Homebrew formula (zuhabul/homebrew-hsx)
+  └─ Summary posted to GitHub Actions
+```
+
+### Setting up locally (one-time, for humans)
+
+```bash
+sh scripts/setup-dev.sh   # installs commit-msg and pre-commit git hooks
+```
+
+### Distribution channels (all automated)
+
+| Channel | Install command | Updated automatically |
+|---------|----------------|----------------------|
+| GitHub Releases | Direct download | ✅ On every release |
+| Shell installer | `curl -sSf https://install.hypersearchx.zuhabul.com \| sh` | ✅ Points to latest |
+| npm | `npm install -g hypersearchx` | ✅ Via npm publish |
+| npx | `npx hypersearchx` | ✅ Via npm publish |
+| Homebrew | `brew install zuhabul/tap/hsx` | ✅ Via tap PR |
+| cargo-binstall | `cargo binstall hsx` | ✅ Metadata in Cargo.toml |
+
+### Required GitHub Secrets
+
+These must be set in the repository Settings → Secrets → Actions:
+
+| Secret | Purpose |
+|--------|---------|
+| `NPM_TOKEN` | Publish to npmjs.com — generate at npmjs.com → Access Tokens |
+| `HOMEBREW_TAP_TOKEN` | Push to `zuhabul/homebrew-hsx` repo — GitHub PAT with `repo` scope |
+| `CARGO_REGISTRY_TOKEN` | Publish to crates.io (optional) — generate at crates.io |
+
+### One-time setup checklist
+
+- [ ] Create GitHub repository `zuhabul/homebrew-hsx` with a `Formula/` directory
+- [ ] Add `NPM_TOKEN` secret (npmjs.com → Access Tokens → Granular token for `hypersearchx`)
+- [ ] Add `HOMEBREW_TAP_TOKEN` secret (GitHub PAT with `repo` scope on `zuhabul/homebrew-hsx`)
+- [ ] Enable GitHub Pages for rustdoc (repo Settings → Pages → Source: GitHub Actions)
+- [ ] First release: merge a `Release PR` created by release-please, or push a `v1.0.0` tag manually

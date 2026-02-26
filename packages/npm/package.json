@@ -1,0 +1,36 @@
+{
+  "name": "hypersearchx",
+  "version": "1.0.0",
+  "description": "HyperSearchX CLI — AI-native federated search. Federated multi-backend search with neural ranking, token-budgeted extraction, and a full research pipeline.",
+  "keywords": [
+    "search",
+    "ai",
+    "cli",
+    "federated-search",
+    "rag",
+    "rust",
+    "hypersearchx",
+    "hsx"
+  ],
+  "homepage": "https://hypersearchx.zuhabul.com",
+  "bugs": "https://github.com/zuhabul/HyperSearchX/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zuhabul/HyperSearchX.git"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "hsx": "bin/hsx.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "files": [
+    "bin/hsx.js",
+    "install.js",
+    "README.md"
+  ]
+}

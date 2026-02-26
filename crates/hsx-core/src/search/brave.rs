@@ -36,24 +36,38 @@ struct BraveResult {
 ///
 /// Requires the `BRAVE_API_KEY` environment variable. Free tier allows
 /// 2000 requests per month. Returns empty results without a key.
+/// The client is built once and reused for connection pooling efficiency.
 pub struct BraveBackend {
-    /// Stored so the struct field is used; actual requests use a fresh client for custom headers.
-    #[allow(dead_code)]
-    http: HttpClient,
+    /// Pre-built client with connection pooling.
+    client: reqwest::Client,
     api_key: Option<String>,
 }
 
 impl BraveBackend {
     /// Create a new Brave backend. Reads `BRAVE_API_KEY` from the environment.
-    pub fn new(http: HttpClient) -> Self {
+    pub fn new(_http: HttpClient) -> Self {
         let api_key = std::env::var("BRAVE_API_KEY").ok();
-        Self { http, api_key }
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(15))
+            .user_agent("HyperSearchX/0.1")
+            .pool_max_idle_per_host(4)
+            .pool_idle_timeout(std::time::Duration::from_secs(90))
+            .build()
+            .unwrap_or_default();
+        Self { client, api_key }
     }
 
     /// Create a Brave backend with an explicit API key (for testing or config injection).
-    pub fn with_key(http: HttpClient, api_key: impl Into<String>) -> Self {
+    pub fn with_key(_http: HttpClient, api_key: impl Into<String>) -> Self {
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(15))
+            .user_agent("HyperSearchX/0.1")
+            .pool_max_idle_per_host(4)
+            .pool_idle_timeout(std::time::Duration::from_secs(90))
+            .build()
+            .unwrap_or_default();
         Self {
-            http,
+            client,
             api_key: Some(api_key.into()),
         }
     }
@@ -77,21 +91,8 @@ impl SearchBackend for BraveBackend {
             urlencoding_encode(query)
         );
 
-        // Brave requires a subscription token header — build a dedicated client
-        // since HttpClient doesn't expose per-request custom headers.
-        let client = match reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(15))
-            .user_agent("HyperSearchX/0.1")
-            .build()
-        {
-            Ok(c) => c,
-            Err(e) => {
-                tracing::warn!("Brave: failed to build client: {e}");
-                return Ok(vec![]);
-            }
-        };
-
-        let resp = match client
+        let resp = match self
+            .client
             .get(&url)
             .header("Accept", "application/json")
             .header("Accept-Encoding", "gzip")

@@ -5,6 +5,14 @@
 //! - Standard:    1 browser, 4 tabs  (~500 MB)
 //! - Performance: 2 browsers, 8 tabs (~1 GB)
 //!
+//! ## Chrome binary detection (Ubuntu 24.04 snap)
+//! **Snap Chromium (Ubuntu 24.04)**: Uses `.user_data_dir()` per-instance to avoid
+//! Chrome's `SingletonLock` error (without it, only the 1st instance can launch).
+//!
+//! ## Graceful init
+//! `init()` logs individual browser failures but only errors if ALL instances fail.
+//! This lets snap Chromium work even when only 1 of N instances launches.
+//!
 //! Only compiled when the `headless` feature is enabled.
 
 #[cfg(not(feature = "headless"))]
@@ -80,35 +88,74 @@ mod headless_impl {
             let count = self.tier.browser_count();
             info!("BrowserPool: launching {} Chromium instance(s)", count);
 
+            // Locate Chrome/Chromium binary — check known paths in order
+            let chrome_path: std::path::PathBuf = [
+                "/usr/bin/chromium-browser",
+                "/usr/bin/chromium",
+                "/usr/bin/google-chrome",
+                "/usr/bin/google-chrome-stable",
+                "/snap/bin/chromium",
+            ]
+            .iter()
+            .map(std::path::Path::new)
+            .find(|p| p.exists())
+            .map(|p| p.to_path_buf())
+            .ok_or_else(|| anyhow::anyhow!(
+                "No Chrome/Chromium binary found. Install with: sudo apt-get install chromium-browser"
+            ))?;
+            info!("BrowserPool: using Chrome at {}", chrome_path.display());
+
             for i in 0..count {
+                // Each browser instance needs its own user-data-dir to avoid
+                // Chrome's SingletonLock preventing multiple simultaneous instances.
+                let user_data_dir =
+                    std::env::temp_dir().join(format!("hsx-chrome-{}-{}", std::process::id(), i));
+
                 let config = BrowserConfig::builder()
+                    .chrome_executable(&chrome_path)
+                    .user_data_dir(&user_data_dir)
                     .arg("--no-sandbox")
                     .arg("--disable-gpu")
                     .arg("--disable-dev-shm-usage")
                     .arg("--disable-extensions")
                     .arg("--disable-background-networking")
                     .arg("--disable-sync")
-                    .arg("--headless")
+                    .arg("--headless=new")
+                    .arg("--disable-blink-features=AutomationControlled")
+                    .arg("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36")
                     .build()
                     .map_err(|e| anyhow::anyhow!("BrowserConfig error: {e}"))?;
 
-                let (browser, handler) = Browser::launch(config)
-                    .await
-                    .map_err(|e| anyhow::anyhow!("Failed to launch browser {i}: {e}"))?;
+                match Browser::launch(config).await {
+                    Ok((browser, handler)) => {
+                        // Spawn the event handler loop in the background
+                        tokio::spawn(async move {
+                            use tokio_stream::StreamExt;
+                            let mut handler = handler;
+                            while handler.next().await.is_some() {}
+                        });
+                        self.browsers.lock().push(Arc::new(browser));
+                        debug!("BrowserPool: browser {} launched", i);
+                    }
+                    Err(e) => {
+                        // Log but keep going — if at least one browser launched, pool is usable
+                        tracing::warn!("BrowserPool: browser {} failed to launch: {e}", i);
+                    }
+                }
+            }
 
-                // Spawn the event handler loop in the background
-                tokio::spawn(async move {
-                    use tokio_stream::StreamExt;
-                    let mut handler = handler;
-                    while handler.next().await.is_some() {}
-                });
-
-                self.browsers.lock().push(Arc::new(browser));
-                debug!("BrowserPool: browser {} launched", i);
+            let launched = self.browsers.lock().len();
+            if launched == 0 {
+                return Err(anyhow::anyhow!(
+                    "BrowserPool: all {} browser instance(s) failed to launch",
+                    count
+                ));
             }
 
             info!(
-                "BrowserPool: ready ({} tabs available)",
+                "BrowserPool: ready ({}/{} browsers, {} tab slots)",
+                launched,
+                count,
                 self.tier.tab_limit()
             );
             Ok(())

@@ -791,10 +791,7 @@ mod tests {
             "gemini-2.5-flash"
         );
         // "flash" is not a known Anthropic alias — passed through as literal
-        assert_eq!(
-            entry.resolve_model(ProviderKind::Anthropic),
-            "flash"
-        );
+        assert_eq!(entry.resolve_model(ProviderKind::Anthropic), "flash");
 
         // "haiku" → full Anthropic model ID
         entry.model = Some("haiku".into());
@@ -826,7 +823,10 @@ mod tests {
         for slug in ProviderKind::all_slugs() {
             let kind = ProviderKind::from_slug(slug).unwrap();
             let default = ModelRegistry::default_model(kind);
-            assert!(!default.is_empty(), "Provider {slug} has empty default model");
+            assert!(
+                !default.is_empty(),
+                "Provider {slug} has empty default model"
+            );
             // Default must appear in models_for() list
             let listed = ModelRegistry::models_for(kind)
                 .iter()

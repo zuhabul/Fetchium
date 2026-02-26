@@ -4,24 +4,34 @@
 //! Phase 2: 10 additional backends (HTTP + headless Chromium).
 //!
 //! ## HTTP backends (no feature flag required):
-//! - DuckDuckGo, SearXNG, Wikipedia, Brave, HackerNews, ArXiv, GitHub, Reddit, StackOverflow
+//! - SearXNG (self-hosted localhost:4040 — aggregates 9+ engines), DuckDuckGo, Wikipedia,
+//!   Brave, HackerNews, ArXiv, GitHub, Reddit, StackOverflow
 //!
 //! ## Headless backends (`--features headless`):
 //! - Google, Bing, Google Scholar
+//!
+//! ## SearXNG Self-Hosted (Primary — free, unlimited, CAPTCHA-free)
+//! Run `cd ~/searxng-local && docker compose up -d` to start the local aggregator.
+//! Set `SEARXNG_URL=http://localhost:4040` to use exclusively.
 
 // HTTP backends (always available)
 pub mod arxiv;
+pub mod backend_selector;
 pub mod brave;
 pub mod dedup;
 pub mod duckduckgo;
 pub mod fallback;
 pub mod github;
 pub mod hackernews;
+pub mod latency;
 pub mod orchestrator;
 pub mod reddit;
 pub mod searxng;
 pub mod stackoverflow;
 pub mod wikipedia;
+
+pub use backend_selector::{AbsConfig, AdaptiveBackendSelector, BackendSelection};
+pub use latency::{LatencyConfig, LatencyPredictor, LatencyStats};
 
 // Headless backends (compiled unconditionally; return empty results without `headless` feature)
 pub mod bing;

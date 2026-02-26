@@ -9,19 +9,24 @@
 //! Uses `chromiumoxide` BrowserPool for fully JS-rendered results.
 //!
 //! ## Selectors
-//! `li.b_algo`       — organic result container
-//! `li.b_algo h2 a`  — title + URL (href is the real destination, no redirect)
-//! `.b_algoSlug`     — snippet text
+//!
+//! - `li.b_algo` — organic result container
+//! - `li.b_algo h2 a` — title + URL
+//!   - Non-headless: direct URLs (starts with https://real-site.com)
+//!   - Headless: bing.com/ck/a?...&u=a1BASE64 redirect → decoded via decode_bing_redirect()
+//! - `.b_algoSlug` — snippet text
 
 use crate::error::HsxResult;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 #[cfg(feature = "headless")]
 use tracing::debug;
 use tracing::warn;
 
 /// Browser User-Agent — helps avoid bot-detection on Bing's CDN.
+#[cfg(not(feature = "headless"))]
 const BROWSER_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
     AppleWebKit/537.36 (KHTML, like Gecko) \
     Chrome/121.0.0.0 Safari/537.36";
@@ -73,6 +78,8 @@ impl BingBackend {
         //      <p class="b_algoSlug">Snippet text…</p>
         //    </div>
         //  </li>
+        //
+        // In headless mode, Bing wraps links via bing.com/ck/a?...&u=a1BASE64URL
         let container_sel = Selector::parse("li.b_algo").unwrap();
         let title_sel = Selector::parse("h2 a").unwrap();
         let snippet_sel = Selector::parse("p.b_algoSlug, .b_caption p, p").unwrap();
@@ -90,14 +97,21 @@ impl BingBackend {
                 continue;
             }
 
-            // Bing uses real destination URLs in the href (no redirect wrapper).
-            let url = title_elem
+            let raw_href = title_elem
                 .value()
                 .attr("href")
                 .filter(|h| h.starts_with("http"))
-                .filter(|h| !h.contains("bing.com"))
-                .map(|s| s.to_string())
                 .unwrap_or_default();
+
+            // Headless Bing wraps destinations in /ck/a?...&u=a1<base64url>
+            // Decode the real URL if present, otherwise use the href directly.
+            let url = if raw_href.contains("bing.com/ck/a") {
+                decode_bing_redirect(raw_href)
+            } else if !raw_href.is_empty() && !raw_href.contains("bing.com") {
+                raw_href.to_string()
+            } else {
+                String::new()
+            };
 
             if url.is_empty() {
                 continue;
@@ -122,10 +136,40 @@ impl BingBackend {
         }
 
         #[cfg(feature = "headless")]
-        debug!("Bing parse_serp: {} results from page {}", results.len(), page);
+        debug!(
+            "Bing parse_serp: {} results from page {}",
+            results.len(),
+            page
+        );
 
         results
     }
+}
+
+/// Decode Bing's `/ck/a?...&u=a1<base64url>` redirect to the real destination URL.
+///
+/// Bing headless mode wraps all SERP links through a click-tracker. The `u` query
+/// parameter contains `a1` + standard base64 of the real URL.
+fn decode_bing_redirect(href: &str) -> String {
+    // Extract the `u` query parameter value
+    let u_val = href
+        .split('&')
+        .find(|seg| seg.starts_with("u=a1"))
+        .map(|seg| &seg[4..]); // strip "u=a1"
+
+    if let Some(b64) = u_val {
+        // URL-safe base64: replace '-' with '+' and '_' with '/'
+        let normalized = b64.replace('-', "+").replace('_', "/");
+        // Decode and convert to UTF-8
+        if let Ok(bytes) = BASE64.decode(normalized.as_bytes()) {
+            if let Ok(url) = String::from_utf8(bytes) {
+                if url.starts_with("http") {
+                    return url;
+                }
+            }
+        }
+    }
+    String::new()
 }
 
 #[async_trait]
@@ -163,22 +207,20 @@ impl SearchBackend for BingBackend {
                     .send()
                     .await
                 {
-                    Ok(resp) if resp.status().is_success() => {
-                        match resp.text().await {
-                            Ok(html) => {
-                                let page_results = Self::parse_serp(&html, page);
-                                if page_results.is_empty() && page == 0 {
-                                    warn!("Bing: 0 results for {:?}", query);
-                                    break;
-                                }
-                                all_results.extend(page_results);
-                            }
-                            Err(e) => {
-                                warn!("Bing: body read error: {e}");
+                    Ok(resp) if resp.status().is_success() => match resp.text().await {
+                        Ok(html) => {
+                            let page_results = Self::parse_serp(&html, page);
+                            if page_results.is_empty() && page == 0 {
+                                warn!("Bing: 0 results for {:?}", query);
                                 break;
                             }
+                            all_results.extend(page_results);
                         }
-                    }
+                        Err(e) => {
+                            warn!("Bing: body read error: {e}");
+                            break;
+                        }
+                    },
                     Ok(resp) => {
                         warn!("Bing: HTTP {} for {query:?}", resp.status());
                         break;
@@ -207,9 +249,9 @@ impl SearchBackend for BingBackend {
                         if page > 0 {
                             tokio::time::sleep(std::time::Duration::from_millis(300)).await;
                         }
-                        match tab.navigate(&url, 12_000).await {
+                        // Wait for Bing organic results to render (JS-heavy SERP)
+                        match tab.navigate_and_wait(&url, "li.b_algo", 12_000).await {
                             Ok(_) => {
-                                tokio::time::sleep(std::time::Duration::from_millis(400)).await;
                                 if let Ok(html) = tab.content().await {
                                     all_results.extend(Self::parse_serp(&html, page));
                                 }

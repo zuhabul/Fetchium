@@ -19,3 +19,11 @@ tracing.workspace = true
 anyhow.workspace = true
 uuid.workspace = true
 chrono.workspace = true
+rusqlite.workspace = true
+sha2.workspace = true
+parking_lot.workspace = true
+rand.workspace = true
+dirs.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
