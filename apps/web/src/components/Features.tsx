@@ -9,16 +9,16 @@ import {
   FlaskConical,
   ShieldCheck,
   Youtube,
-  Lock,
   Cpu,
+  GitBranch,
 } from "lucide-react";
 
 const features = [
   {
     icon: Globe,
-    title: "Multi-Source Federation",
+    title: "11-Backend Search Federation",
     description:
-      "11 backends in a single query: SearXNG, Brave, GitHub, Reddit, HackerNews, StackOverflow, YouTube, Wikipedia, ArXiv, Bing, and DuckDuckGo. Fan-out parallelism with adaptive backend selection.",
+      "Fan out a single query across SearXNG, Brave, GitHub, Reddit, HackerNews, StackOverflow, YouTube, Wikipedia, ArXiv, Bing, and DuckDuckGo — simultaneously. Adaptive Backend Selector picks the right mix per query intent. No other search API comes close.",
     badge: "Unique",
     accent: "from-indigo-500/20 to-indigo-600/5",
     iconBg: "bg-indigo-500/10",
@@ -28,7 +28,7 @@ const features = [
     icon: Brain,
     title: "HyperFusion Neural Ranking",
     description:
-      "8-signal ranking: BM25 + semantic similarity + temporal decay + authority scoring + evidence density + source diversity + content depth + cross-source consensus. Smarter than anything else.",
+      "8-signal ranking engine: BM25 lexical match + semantic similarity + temporal decay + domain authority + evidence density + source diversity + content depth + cross-source consensus. Results are measurably better than single-signal ranking — every time.",
     badge: "Novel",
     accent: "from-violet-500/20 to-violet-600/5",
     iconBg: "bg-violet-500/10",
@@ -36,9 +36,9 @@ const features = [
   },
   {
     icon: Layers,
-    title: "5-Layer CEP Extraction",
+    title: "5-Layer CEP Content Extraction",
     description:
-      "Content Extraction Protocol cascades: CSS selectors → Readability → Headless JS → PDF parsing → Screenshot OCR. Extracts clean content from any page including JS-rendered SPAs.",
+      "Content Extraction Protocol: CSS selectors → Readability algorithm → Headless JS rendering → PDF parsing → Screenshot OCR. Every page — SPAs, paywalled content, PDFs — returns clean, structured text. Zero pages escape extraction.",
     badge: "Novel",
     accent: "from-blue-500/20 to-blue-600/5",
     iconBg: "bg-blue-500/10",
@@ -46,9 +46,9 @@ const features = [
   },
   {
     icon: Coins,
-    title: "Adaptive Token Budget",
+    title: "QATBE Token Budget Control",
     description:
-      "QATBE algorithm scores segments with BM25 then uses greedy knapsack packing to fit maximum relevant content into your LLM context window. Configurable per-request budgets.",
+      "Query-Aware Token-Budgeted Extraction scores every content segment with BM25 then solves a greedy knapsack to pack maximum relevance into your exact LLM context window. You always get the most useful content — not just the first N characters.",
     badge: "Novel",
     accent: "from-amber-500/20 to-amber-600/5",
     iconBg: "bg-amber-500/10",
@@ -58,7 +58,7 @@ const features = [
     icon: FlaskConical,
     title: "Deep Research Pipeline",
     description:
-      "Multi-agent research swarm (AMRS) with 4 specialist agent types communicating over tokio channels. Full evidence graphs with APA/IEEE/BibTeX citations auto-generated for every result.",
+      "AMRS multi-agent research swarm: 4 specialist agent types communicate over async channels, synthesise findings, and generate full evidence graphs with every claim traced to a source. Auto-generate citations in APA, IEEE, BibTeX, or Chicago.",
     badge: "Novel",
     accent: "from-emerald-500/20 to-emerald-600/5",
     iconBg: "bg-emerald-500/10",
@@ -66,9 +66,9 @@ const features = [
   },
   {
     icon: ShieldCheck,
-    title: "Rate Limiting & Quotas",
+    title: "Production Resilience",
     description:
-      "Built-in circuit breakers, bulkhead isolation, adaptive rate limiting, and latency prediction across all 11 backends. Automatic failover and retry-and-refine with 5-checkpoint self-correction.",
+      "Circuit breakers, bulkhead isolation, adaptive rate limiting, and latency prediction across all backends. Automatic failover, retry-and-refine with 5-checkpoint self-correction, and 99.9% uptime SLA on Pro and Enterprise plans.",
     badge: "Production",
     accent: "from-cyan-500/20 to-cyan-600/5",
     iconBg: "bg-cyan-500/10",
@@ -76,20 +76,20 @@ const features = [
   },
   {
     icon: Youtube,
-    title: "YouTube & Social Search",
+    title: "YouTube & Social Intelligence",
     description:
-      "VideoFusion ranking for YouTube with transcript extraction, comment analysis, and teaching quality scoring. Dedicated Reddit, HackerNews, and StackOverflow backends with community signal weighting.",
+      "VideoFusion ranking for YouTube: transcript extraction, comment sentiment, teaching quality scoring. Native Reddit, HackerNews, and StackOverflow backends with community signal weighting. Social search no other API provides.",
     badge: "Novel",
     accent: "from-red-500/20 to-red-600/5",
     iconBg: "bg-red-500/10",
     iconColor: "text-red-400",
   },
   {
-    icon: Lock,
-    title: "Privacy-First Architecture",
+    icon: GitBranch,
+    title: "PIE Cross-Session Learning",
     description:
-      "Self-hostable with zero telemetry. All queries processed locally when self-hosted. Optional anonymous search mode routes through SearXNG with no API keys required. MIT licensed.",
-    badge: "Unique",
+      "Persistent Intelligence Engine tracks source trust, failure patterns, and query predictions across sessions via SQLite. HyperSearchX gets smarter with every query your application makes — improving result quality automatically over time.",
+    badge: "Novel",
     accent: "from-pink-500/20 to-pink-600/5",
     iconBg: "bg-pink-500/10",
     iconColor: "text-pink-400",
@@ -98,7 +98,7 @@ const features = [
     icon: Cpu,
     title: "MCP Protocol Native",
     description:
-      "First-class Model Context Protocol support. Expose all 17 algorithms as MCP tools to Claude, GPT-4, and any LLM. Structured outputs ready for AI consumption with schema validation.",
+      "First-class Model Context Protocol support. Expose all 17 algorithms as MCP tools to Claude, GPT-4, and any LLM with tool use. Structured, schema-validated outputs are AI-consumption-ready out of the box — no post-processing needed.",
     badge: "Unique",
     accent: "from-teal-500/20 to-teal-600/5",
     iconBg: "bg-teal-500/10",
@@ -139,7 +139,7 @@ const cardVariants = {
 
 export default function Features() {
   return (
-    <section id="features" className="relative py-28 px-4 overflow-hidden">
+    <section id="features" className="relative py-16 sm:py-28 px-4 overflow-hidden">
       {/* Background accent */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/4 top-0 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-indigo-500/5 blur-[120px]" />
@@ -149,23 +149,23 @@ export default function Features() {
       <div className="relative mx-auto max-w-7xl">
         {/* Section header */}
         <motion.div
-          className="mb-20 text-center"
+          className="mb-12 sm:mb-20 text-center"
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-500/25 bg-indigo-500/8 px-4 py-1.5 text-xs font-medium text-indigo-300">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-500/25 bg-indigo-500/8 px-3 sm:px-4 py-1.5 text-xs font-medium text-indigo-300">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-400" />
             17 Novel Algorithms
           </div>
-          <h2 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight text-slate-100 sm:text-5xl">
-            Everything you need to{" "}
-            <span className="gradient-text">build with search</span>
+          <h2 className="mx-auto max-w-3xl text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-slate-100">
+            Capabilities no other{" "}
+            <span className="gradient-text">search API has</span>
           </h2>
-          <p className="mt-5 mx-auto max-w-2xl text-lg text-slate-500">
-            Built from scratch to solve gaps that existing search APIs ignore. Every algorithm
-            designed for real production AI workloads.
+          <p className="mt-4 sm:mt-5 mx-auto max-w-2xl text-sm sm:text-lg text-slate-500">
+            Every algorithm was designed from scratch to solve a real gap in the
+            AI search stack — not a wrapper around an existing tool.
           </p>
         </motion.div>
 
@@ -224,7 +224,7 @@ export default function Features() {
 
         {/* Bottom stats row */}
         <motion.div
-          className="mt-16 grid grid-cols-2 gap-4 sm:grid-cols-4"
+          className="mt-10 sm:mt-16 grid grid-cols-2 gap-3 sm:gap-4"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -238,9 +238,9 @@ export default function Features() {
           ].map((stat) => (
             <div
               key={stat.label}
-              className="glass-card rounded-2xl p-5 text-center"
+              className="glass-card rounded-xl p-4 sm:p-5 text-center"
             >
-              <div className="text-3xl font-bold tracking-tight text-slate-100">
+              <div className="text-xl sm:text-3xl font-bold tracking-tight text-slate-100">
                 {stat.value}
               </div>
               <div className="mt-1 text-xs font-medium text-slate-500">

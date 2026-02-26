@@ -314,18 +314,18 @@ export default function HowItWorks() {
           <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="mb-1 text-sm sm:text-[15px] font-semibold text-slate-100">
-                Run the full pipeline on your own server
+                Start building in 2 minutes
               </div>
               <div className="text-xs sm:text-[13px] text-slate-500">
-                Rust binary, Docker Compose stack. No request limits. No API keys required
-                when using SearXNG backend.
+                Get an API key, make your first search call, get back ranked results with
+                extracted content and evidence graphs. Free plan — no credit card required.
               </div>
             </div>
             <a
-              href="/docs/self-hosting/docker"
-              className="group flex shrink-0 items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-indigo-300 transition-all hover:bg-indigo-500/20 hover:text-indigo-200 w-full sm:w-auto justify-center"
+              href="https://app.hypersearchx.zuhabul.com"
+              className="group flex shrink-0 items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-indigo-300 transition-all hover:bg-indigo-500/20 hover:text-indigo-200 w-full sm:w-auto justify-center min-h-[44px]"
             >
-              Self-hosting guide
+              Get API Key Free
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </a>
           </div>

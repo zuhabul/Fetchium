@@ -17,7 +17,7 @@ const nav: Record<string, { label: string; href: string }[]> = {
     { label: "API Reference", href: "/docs/api" },
     { label: "TypeScript SDK", href: "https://www.npmjs.com/package/@hypersearchx/sdk" },
     { label: "Python SDK", href: "https://pypi.org/project/hypersearchx" },
-    { label: "Self-hosting Guide", href: "/docs/self-hosting" },
+    { label: "Algorithm Docs", href: "/docs/algorithms" },
   ],
   Company: [
     { label: "About", href: "/about" },
@@ -79,8 +79,8 @@ export default function Footer() {
             </Link>
 
             <p className="mt-4 max-w-[220px] text-[12px] sm:text-[13px] leading-relaxed text-slate-500">
-              The search API that thinks. 17 novel algorithms. Open-source,
-              self-hostable, MIT licensed.
+              The search API that thinks. 17 novel algorithms. 11 federated
+              backends. AI-ready context in under 200ms.
             </p>
 
             {/* Status indicator */}
