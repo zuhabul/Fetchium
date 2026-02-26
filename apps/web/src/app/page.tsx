@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
+import TrustBar from "@/components/TrustBar";
 import Features from "@/components/Features";
 import HowItWorks from "@/components/HowItWorks";
 import CodeDemo from "@/components/CodeDemo";
@@ -12,6 +13,7 @@ export default function Home() {
     <main className="min-h-screen bg-surface">
       <Navbar />
       <Hero />
+      <TrustBar />
       <Features />
       <HowItWorks />
       <CodeDemo />
