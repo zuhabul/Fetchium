@@ -31,7 +31,7 @@ export default function CodeBlock({ code, language = "bash", filename }: Props) 
           {!filename && <span className="text-[11px] text-slate-600 uppercase tracking-wider font-semibold">{language}</span>}
         </div>
         <button onClick={copy}
-          className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 transition-colors bg-white/5 hover:bg-white/8 rounded-md px-2 py-1">
+          className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 transition-colors bg-white/5 hover:bg-white/8 rounded-md px-2.5 py-1.5 min-h-[32px]">
           <AnimatePresence mode="wait" initial={false}>
             {copied
               ? <motion.span key="check" initial={{ opacity:0, scale:0.8 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0 }} className="flex items-center gap-1 text-emerald-400">
@@ -44,7 +44,7 @@ export default function CodeBlock({ code, language = "bash", filename }: Props) 
           </AnimatePresence>
         </button>
       </div>
-      <pre className="p-4 overflow-x-auto text-[13px] leading-6 font-mono text-slate-300">
+      <pre className="p-3 sm:p-4 overflow-x-auto text-[12px] sm:text-[13px] leading-6 font-mono text-slate-300">
         <code>{code}</code>
       </pre>
     </div>

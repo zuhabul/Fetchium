@@ -176,7 +176,7 @@ export default function Pricing() {
   const [annual, setAnnual] = useState(false);
 
   return (
-    <section id="pricing" className="relative overflow-hidden py-28 px-4">
+    <section id="pricing" className="relative overflow-hidden py-16 sm:py-28 px-4">
       {/* Background */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-1/2 h-[700px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/4 blur-[150px]" />
@@ -185,7 +185,7 @@ export default function Pricing() {
       <div className="relative mx-auto max-w-7xl">
         {/* Header */}
         <motion.div
-          className="mb-14 text-center"
+          className="mb-10 sm:mb-14 text-center"
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
@@ -195,20 +195,20 @@ export default function Pricing() {
             <Zap className="h-3.5 w-3.5" strokeWidth={2.5} />
             Transparent Pricing
           </div>
-          <h2 className="text-4xl font-bold tracking-tight text-slate-100 sm:text-5xl">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-slate-100">
             Simple, transparent{" "}
             <span className="gradient-text">pricing</span>
           </h2>
-          <p className="mt-5 mx-auto max-w-xl text-lg text-slate-500">
+          <p className="mt-4 sm:mt-5 mx-auto max-w-xl text-sm sm:text-lg text-slate-500">
             Start free. Upgrade when you need more. No surprise charges, no
             vendor lock-in — self-host for free anytime.
           </p>
 
           {/* Billing toggle */}
-          <div className="mt-8 inline-flex items-center gap-3 rounded-xl border border-white/8 bg-white/3 p-1">
+          <div className="mt-8 inline-flex items-center gap-2 sm:gap-3 rounded-xl border border-white/8 bg-white/3 p-1">
             <button
               onClick={() => setAnnual(false)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
+              className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 min-h-[44px] ${
                 !annual
                   ? "bg-white/10 text-white shadow-sm"
                   : "text-slate-500 hover:text-slate-300"
@@ -218,7 +218,7 @@ export default function Pricing() {
             </button>
             <button
               onClick={() => setAnnual(true)}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 min-h-[44px] ${
                 annual
                   ? "bg-white/10 text-white shadow-sm"
                   : "text-slate-500 hover:text-slate-300"
@@ -356,7 +356,7 @@ export default function Pricing() {
                     href={plan.href(annual)}
                     target={plan.name === "Enterprise" ? undefined : "_blank"}
                     rel="noopener noreferrer"
-                    className={`group/btn flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold transition-all duration-200 ${
+                    className={`group/btn flex items-center justify-center gap-2 rounded-xl py-3 text-[13px] font-semibold transition-all duration-200 min-h-[44px] ${
                       plan.highlight
                         ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)]"
                         : "border border-white/10 bg-white/4 text-slate-300 hover:bg-white/8 hover:text-white"
