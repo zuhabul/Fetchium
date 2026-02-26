@@ -121,9 +121,25 @@ pub async fn extract_with_l3(
 
 /// Determine whether a URL likely needs headless rendering.
 ///
-/// Heuristics: known SPA frameworks, JavaScript-first domains, etc.
+/// Uses proper domain parsing instead of substring matching to avoid
+/// Zero-allocation subdomain check: returns true if `host` is exactly `domain`
+/// or ends with `.<domain>`. Avoids `format!(".{domain}")` heap allocation.
+#[inline]
+fn host_ends_with_dot(host: &str, domain: &str) -> bool {
+    host.len() > domain.len()
+        && host.ends_with(domain)
+        && host.as_bytes()[host.len() - domain.len() - 1] == b'.'
+}
+
+/// false positives (e.g. "not-twitter.com" won't match "twitter.com").
 pub fn likely_needs_headless(url: &str) -> bool {
-    let url_lower = url.to_lowercase();
+    let host = match url::Url::parse(url) {
+        Ok(parsed) => match parsed.host_str() {
+            Some(h) => h.to_lowercase(),
+            None => return false,
+        },
+        Err(_) => return false,
+    };
     // Known SPA/JS-heavy domains
     const JS_HEAVY_DOMAINS: &[&str] = &[
         "twitter.com",
@@ -136,7 +152,9 @@ pub fn likely_needs_headless(url: &str) -> bool {
         "vercel.app",
         "figma.com",
     ];
-    JS_HEAVY_DOMAINS.iter().any(|d| url_lower.contains(d))
+    JS_HEAVY_DOMAINS
+        .iter()
+        .any(|d| host == *d || host_ends_with_dot(&host, d))
 }
 
 /// Predict the best CEP layer for a given URL (stub for Phase 5 ML classifier).

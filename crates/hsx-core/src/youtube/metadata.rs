@@ -351,14 +351,10 @@ fn parse_innertube_player_metadata(json_str: &str, video_id: &str) -> HsxResult<
         .and_then(|arr| arr.last())
         .and_then(|t| t["url"].as_str())
         .map(String::from)
-        .or_else(|| {
-            Some(format!(
-                "https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
-            ))
-        });
+        .or_else(|| Some(format!("https://i.ytimg.com/vi/{video_id}/hqdefault.jpg")));
 
-    let is_live = vd["isLive"].as_bool().unwrap_or(false)
-        || vd["isLiveContent"].as_bool().unwrap_or(false);
+    let is_live =
+        vd["isLive"].as_bool().unwrap_or(false) || vd["isLiveContent"].as_bool().unwrap_or(false);
 
     Ok(VideoMetadata {
         video_id: video_id.to_string(),
@@ -406,10 +402,14 @@ async fn fetch_metadata_oembed_direct(
     .await
     .map_err(|_| HsxError::YouTube(format!("oEmbed timeout for {video_id}")))??;
 
-    let v: serde_json::Value = serde_json::from_str(&body)
-        .map_err(|e| HsxError::YouTube(format!("oEmbed JSON: {e}")))?;
+    let v: serde_json::Value =
+        serde_json::from_str(&body).map_err(|e| HsxError::YouTube(format!("oEmbed JSON: {e}")))?;
 
-    let title = v["title"].as_str().filter(|s| !s.is_empty()).unwrap_or("").to_string();
+    let title = v["title"]
+        .as_str()
+        .filter(|s| !s.is_empty())
+        .unwrap_or("")
+        .to_string();
     let author = v["author_name"].as_str().unwrap_or("").to_string();
 
     if title.is_empty() {
@@ -435,13 +435,10 @@ async fn fetch_metadata_oembed_direct(
         keywords: vec![],
         chapters: vec![],
         links: vec![],
-        thumbnail_url: Some(format!(
-            "https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
-        )),
+        thumbnail_url: Some(format!("https://i.ytimg.com/vi/{video_id}/hqdefault.jpg")),
         is_live: false,
     })
 }
-
 
 /// Parse Invidious `/api/v1/videos/{id}` JSON into VideoMetadata.
 fn parse_invidious_video(json_str: &str, video_id: &str) -> HsxResult<VideoMetadata> {

@@ -108,9 +108,19 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
     // HTTP-mode backends work with zero setup; headless ones need Chrome/Chromium.
     let configured_backends = &config.search.backends;
     let headless_backends = ["google_scholar"];
-    let http_backends = ["duckduckgo", "google", "bing", "searxng", "wikipedia",
-                         "hackernews", "arxiv", "github", "reddit", "stackoverflow",
-                         "brave"];
+    let http_backends = [
+        "duckduckgo",
+        "google",
+        "bing",
+        "searxng",
+        "wikipedia",
+        "hackernews",
+        "arxiv",
+        "github",
+        "reddit",
+        "stackoverflow",
+        "brave",
+    ];
 
     for backend in configured_backends {
         let b = backend.to_lowercase();

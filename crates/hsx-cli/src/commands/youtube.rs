@@ -123,15 +123,25 @@ async fn run_transcript(
         };
         println!("{}", format!("{platform} Transcript").bold());
         println!("URL: {}", args.url.dimmed());
-        println!("Language: {} | Source: {:?}", transcript.language, transcript.source);
-        println!("Quality: {} ({:.0}%)", quality_stars, transcript.quality_score * 100.0);
-        println!("Words: {} | Speakers: {} | Key moments: {}\n",
-            transcript.word_count, transcript.speakers.len(), transcript.key_moments.len());
+        println!(
+            "Language: {} | Source: {:?}",
+            transcript.language, transcript.source
+        );
+        println!(
+            "Quality: {} ({:.0}%)",
+            quality_stars,
+            transcript.quality_score * 100.0
+        );
+        println!(
+            "Words: {} | Speakers: {} | Key moments: {}\n",
+            transcript.word_count,
+            transcript.speakers.len(),
+            transcript.key_moments.len()
+        );
 
         if args.chapters {
             // Try to get chapters from YouTube metadata (only works for YouTube)
-            let maybe_video_id =
-                hsx_core::multimodal::video::extract_video_id(&args.url).ok();
+            let maybe_video_id = hsx_core::multimodal::video::extract_video_id(&args.url).ok();
             let chapters_shown = if let Some(ref vid) = maybe_video_id {
                 if let Ok(meta) =
                     hsx_core::youtube::metadata::fetch_metadata(vid, http, config).await

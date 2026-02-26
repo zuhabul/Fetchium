@@ -63,13 +63,9 @@ pub async fn search_posts(
     }
 
     // Tier 4: DDG/SearxNG site:facebook.com search (often CAPTCHA-blocked)
-    let (posts, pages) = search_ddg_facebook_with_snippets(
-        query,
-        config.max_results,
-        http,
-        config.timeout_secs,
-    )
-    .await;
+    let (posts, pages) =
+        search_ddg_facebook_with_snippets(query, config.max_results, http, config.timeout_secs)
+            .await;
 
     let source = if posts.is_empty() && pages.is_empty() {
         FacebookDataSource::DdgSearch
@@ -159,11 +155,8 @@ async fn search_ddg_facebook_with_snippets(
 
     for instance in &searxng_instances {
         let url = format!("{instance}/search?q={encoded_q}&format=json&pageno=1&language=en");
-        let resp = tokio::time::timeout(
-            Duration::from_secs(timeout_secs),
-            http.fetch_text(&url),
-        )
-        .await;
+        let resp =
+            tokio::time::timeout(Duration::from_secs(timeout_secs), http.fetch_text(&url)).await;
         if let Ok(Ok(body)) = resp {
             let (posts, pages) = parse_searxng_facebook_results(&body, query, max);
             if !posts.is_empty() || !pages.is_empty() {
@@ -236,7 +229,10 @@ fn parse_searxng_facebook_results(
         if !raw_url.contains("facebook.com") {
             continue;
         }
-        if raw_url.contains("/login") || raw_url.contains("/signin") || raw_url.contains("l.facebook.com") {
+        if raw_url.contains("/login")
+            || raw_url.contains("/signin")
+            || raw_url.contains("l.facebook.com")
+        {
             continue;
         }
         let title = item["title"].as_str().unwrap_or("").to_string();
@@ -274,7 +270,11 @@ fn parse_searxng_facebook_results(
         } else {
             pages.push(FacebookPage {
                 id: extract_fb_id(&raw_url),
-                name: if title.is_empty() { extract_fb_page_name_from_url(&raw_url) } else { title },
+                name: if title.is_empty() {
+                    extract_fb_page_name_from_url(&raw_url)
+                } else {
+                    title
+                },
                 url: raw_url,
                 followers: None,
                 likes: None,
@@ -328,7 +328,10 @@ fn parse_ddg_facebook_snippets(
         }
 
         // Skip login/auth pages
-        if raw_url.contains("/login") || raw_url.contains("/signin") || raw_url.contains("l.facebook.com") {
+        if raw_url.contains("/login")
+            || raw_url.contains("/signin")
+            || raw_url.contains("l.facebook.com")
+        {
             continue;
         }
 
@@ -378,7 +381,11 @@ fn parse_ddg_facebook_snippets(
             // It's a page or group
             pages.push(FacebookPage {
                 id: extract_fb_id(&raw_url),
-                name: if title.is_empty() { extract_fb_page_name_from_url(&raw_url) } else { title },
+                name: if title.is_empty() {
+                    extract_fb_page_name_from_url(&raw_url)
+                } else {
+                    title
+                },
                 url: raw_url,
                 followers: None,
                 likes: None,
@@ -400,13 +407,8 @@ fn extract_fb_page_name_from_url(url: &str) -> String {
         .trim_start_matches("http://")
         .trim_start_matches("www.facebook.com/")
         .trim_start_matches("facebook.com/");
-    trimmed
-        .split('/')
-        .next()
-        .unwrap_or("")
-        .to_string()
+    trimmed.split('/').next().unwrap_or("").to_string()
 }
-
 
 /// Parse DDG HTML to find `facebook.com` URLs in search results.
 fn extract_facebook_urls_from_ddg_html(html: &str, max: usize) -> Vec<String> {

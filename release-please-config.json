@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "rust",
+  "packages": {
+    ".": {
+      "release-type": "rust",
+      "changelog-path": "CHANGELOG.md",
+      "bump-patch-for-minor-pre-major": false,
+      "draft": false,
+      "prerelease": false,
+      "include-component-in-tag": false,
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "packages/npm/package.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    }
+  },
+  "pull-request-title-pattern": "chore(main): release ${version}",
+  "commit-message": "chore(release): release ${version}",
+  "separate-pull-requests": false,
+  "group-pull-request-title-pattern": "chore(main): release ${version}"
+}

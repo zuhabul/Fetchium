@@ -1784,9 +1784,21 @@ fn show_models(provider_slug: Option<&str>) -> anyhow::Result<()> {
         println!();
     }
 
-    println!("  {} Set a model:  {}", "→".dimmed(), "hsx provider set gemini_cli --model gemini-3-flash-preview".cyan());
-    println!("  {} Use an alias: {}", "→".dimmed(), "hsx provider set anthropic --model haiku".cyan());
-    println!("  {} Reset to default: {}", "→".dimmed(), "hsx provider set gemini_cli --model \"\"".cyan());
+    println!(
+        "  {} Set a model:  {}",
+        "→".dimmed(),
+        "hsx provider set gemini_cli --model gemini-3-flash-preview".cyan()
+    );
+    println!(
+        "  {} Use an alias: {}",
+        "→".dimmed(),
+        "hsx provider set anthropic --model haiku".cyan()
+    );
+    println!(
+        "  {} Reset to default: {}",
+        "→".dimmed(),
+        "hsx provider set gemini_cli --model \"\"".cyan()
+    );
 
     Ok(())
 }

@@ -4,9 +4,28 @@
 //! Phase 2: HyperFusion 8-signal ranking.
 //! Phase 5: Semantic/embedding-based ranking.
 
+pub mod answer;
 pub mod bm25;
+pub mod cluster;
+pub mod diversity;
+pub mod evidence;
 pub mod fusion;
+pub mod quality;
 pub mod signals;
+pub mod snippet;
+pub mod spre;
+pub mod temporal;
+pub mod trust;
+
+pub use answer::{extract_answers, is_answerable_query, AnswerConfig, ExtractedAnswer};
+pub use cluster::{cluster_results, ClusterConfig, ResultCluster};
+pub use diversity::{diversity_score, mmr_rerank, DiversityConfig};
+pub use evidence::{apply_evidence_boost, build_evidence_graph, EvidenceConfig, EvidenceGraph};
+pub use quality::{assess_quality, ConfidenceLevel, QualityAssessment};
+pub use snippet::{extract_best_snippets, highlight_terms, ScoredSnippet, SnippetConfig};
+pub use spre::{SpreConfig, SpreRanker, SpreSnapshot};
+pub use temporal::{apply_temporal_decay, decay_factor, TemporalConfig};
+pub use trust::{DomainCategory, DomainTrust, TrustConfig, TrustDatabase};
 
 use crate::types::ResultItem;
 pub use bm25::{Bm25Scorer, ScoredResult, ScoringDocument};

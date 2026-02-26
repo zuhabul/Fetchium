@@ -36,7 +36,8 @@ pub async fn fetch_transcript(
     http: &HttpClient,
     config: &crate::config::HsxConfig,
 ) -> HsxResult<EnhancedTranscript> {
-    let (tx, mut rx) = tokio::sync::mpsc::channel::<(Vec<TranscriptEntry>, TranscriptSource, String)>(8);
+    let (tx, mut rx) =
+        tokio::sync::mpsc::channel::<(Vec<TranscriptEntry>, TranscriptSource, String)>(8);
 
     let per_src = Duration::from_secs(config.youtube.timeout_secs.max(10));
 
@@ -52,7 +53,9 @@ pub async fn fetch_transcript(
         tokio::spawn(async move {
             if let Ok((entries, lang)) = fetch_via_watch_page(&vid, &http, per_src).await {
                 if !entries.is_empty() {
-                    let _ = tx.send((entries, TranscriptSource::YouTubeTimedtext, lang)).await;
+                    let _ = tx
+                        .send((entries, TranscriptSource::YouTubeTimedtext, lang))
+                        .await;
                 }
             }
         });
@@ -67,7 +70,9 @@ pub async fn fetch_transcript(
         tokio::spawn(async move {
             if let Ok((entries, lang)) = fetch_via_android_innertube(&vid, &http, per_src).await {
                 if !entries.is_empty() {
-                    let _ = tx.send((entries, TranscriptSource::YouTubeTimedtext, lang)).await;
+                    let _ = tx
+                        .send((entries, TranscriptSource::YouTubeTimedtext, lang))
+                        .await;
                 }
             }
         });
@@ -82,7 +87,9 @@ pub async fn fetch_transcript(
         tokio::spawn(async move {
             if let Ok((entries, lang)) = fetch_via_tvhtml5(&vid, &http, per_src).await {
                 if !entries.is_empty() {
-                    let _ = tx.send((entries, TranscriptSource::YouTubeTimedtext, lang)).await;
+                    let _ = tx
+                        .send((entries, TranscriptSource::YouTubeTimedtext, lang))
+                        .await;
                 }
             }
         });
@@ -97,7 +104,9 @@ pub async fn fetch_transcript(
         tokio::spawn(async move {
             if let Ok(entries) = fetch_invidious_captions_fast(&vid, &inst, &http, per_src).await {
                 if !entries.is_empty() {
-                    let _ = tx.send((entries, TranscriptSource::Invidious, "en".to_string())).await;
+                    let _ = tx
+                        .send((entries, TranscriptSource::Invidious, "en".to_string()))
+                        .await;
                 }
             }
         });
@@ -112,7 +121,9 @@ pub async fn fetch_transcript(
         tokio::spawn(async move {
             if let Ok(entries) = fetch_piped_captions_fast(&vid, &inst, &http, per_src).await {
                 if !entries.is_empty() {
-                    let _ = tx.send((entries, TranscriptSource::Piped, "en".to_string())).await;
+                    let _ = tx
+                        .send((entries, TranscriptSource::Piped, "en".to_string()))
+                        .await;
                 }
             }
         });
@@ -121,11 +132,8 @@ pub async fn fetch_transcript(
     drop(tx);
 
     // Wait for first result from any parallel source within the global cap.
-    let parallel_result = tokio::time::timeout(
-        Duration::from_secs(TRANSCRIPT_TIMEOUT_SECS),
-        rx.recv(),
-    )
-    .await;
+    let parallel_result =
+        tokio::time::timeout(Duration::from_secs(TRANSCRIPT_TIMEOUT_SECS), rx.recv()).await;
 
     if let Ok(Some((entries, source, lang))) = parallel_result {
         return Ok(enhance_transcript(video_id, entries, source, lang));
@@ -138,7 +146,12 @@ pub async fn fetch_transcript(
     // Requires: `yt-dlp` + `whisper` (pip install yt-dlp openai-whisper).
     if let Ok((entries, lang)) = fetch_via_whisper(video_id).await {
         if !entries.is_empty() {
-            return Ok(enhance_transcript(video_id, entries, TranscriptSource::YtDlp, lang));
+            return Ok(enhance_transcript(
+                video_id,
+                entries,
+                TranscriptSource::YtDlp,
+                lang,
+            ));
         }
     }
 
@@ -165,9 +178,7 @@ const INNERTUBE_API_KEY: &str = "***REMOVED***";
 /// but should be excluded from readable output and quality scoring.
 fn is_noise_text(text: &str) -> bool {
     static NOISE_RE: once_cell::sync::Lazy<regex::Regex> =
-        once_cell::sync::Lazy::new(|| {
-            regex::Regex::new(r"^(\s*\[[^\]]*\]\s*)+$").unwrap()
-        });
+        once_cell::sync::Lazy::new(|| regex::Regex::new(r"^(\s*\[[^\]]*\]\s*)+$").unwrap());
     let t = text.trim();
     t.is_empty() || NOISE_RE.is_match(t)
 }
@@ -268,8 +279,7 @@ async fn fetch_via_watch_page(
     .await
     .map_err(|_| HsxError::YouTube("Watch page request timed out".into()))??;
 
-    let api_key = extract_innertube_api_key(&html)
-        .unwrap_or_else(|| INNERTUBE_API_KEY.to_string());
+    let api_key = extract_innertube_api_key(&html).unwrap_or_else(|| INNERTUBE_API_KEY.to_string());
 
     fetch_innertube_with_client(
         video_id,
@@ -360,9 +370,8 @@ async fn fetch_innertube_with_client(
     client_version: &str,
     user_agent: &str,
 ) -> HsxResult<(Vec<TranscriptEntry>, String)> {
-    let innertube_url = format!(
-        "https://www.youtube.com/youtubei/v1/player?key={api_key}&prettyPrint=false"
-    );
+    let innertube_url =
+        format!("https://www.youtube.com/youtubei/v1/player?key={api_key}&prettyPrint=false");
     let body = serde_json::json!({
         "context": {
             "client": {
@@ -390,9 +399,7 @@ async fn fetch_innertube_with_client(
             .map_err(HsxError::Network)
     })
     .await
-    .map_err(|_| {
-        HsxError::YouTube(format!("Innertube ({client_name}) request timed out"))
-    })??;
+    .map_err(|_| HsxError::YouTube(format!("Innertube ({client_name}) request timed out")))??;
 
     let v: serde_json::Value = serde_json::from_str(&response_text)
         .map_err(|e| HsxError::YouTube(format!("Innertube JSON parse: {e}")))?;
@@ -412,12 +419,18 @@ async fn fetch_innertube_with_client(
         let selected = tracks
             .iter()
             .find(|t| {
-                t["languageCode"].as_str().map(|c| c.starts_with("en")).unwrap_or(false)
+                t["languageCode"]
+                    .as_str()
+                    .map(|c| c.starts_with("en"))
+                    .unwrap_or(false)
                     && t["kind"].as_str().map(|k| k != "asr").unwrap_or(true)
             })
             .or_else(|| {
                 tracks.iter().find(|t| {
-                    t["languageCode"].as_str().map(|c| c.starts_with("en")).unwrap_or(false)
+                    t["languageCode"]
+                        .as_str()
+                        .map(|c| c.starts_with("en"))
+                        .unwrap_or(false)
                 })
             })
             .or_else(|| {
@@ -429,7 +442,10 @@ async fn fetch_innertube_with_client(
             .or_else(|| tracks.first())
             .ok_or_else(|| HsxError::YouTube("No caption tracks available".into()))?;
 
-        let lang = selected["languageCode"].as_str().unwrap_or("und").to_string();
+        let lang = selected["languageCode"]
+            .as_str()
+            .unwrap_or("und")
+            .to_string();
         let url = selected["baseUrl"]
             .as_str()
             .ok_or_else(|| HsxError::YouTube("No baseUrl in caption track".into()))?
@@ -450,14 +466,19 @@ async fn fetch_innertube_with_client(
     if quality < 0.4 && language_code.starts_with("en") {
         // Try to find a manual caption track in the video's native language.
         let native = tracks.iter().find(|t| {
-            let is_non_english =
-                t["languageCode"].as_str().map(|c| !c.starts_with("en")).unwrap_or(false);
+            let is_non_english = t["languageCode"]
+                .as_str()
+                .map(|c| !c.starts_with("en"))
+                .unwrap_or(false);
             let is_manual = t["kind"].as_str().map(|k| k != "asr").unwrap_or(true);
             is_non_english && is_manual && t["baseUrl"].as_str().is_some()
         });
 
         if let Some(native_track) = native {
-            let native_lang = native_track["languageCode"].as_str().unwrap_or("und").to_string();
+            let native_lang = native_track["languageCode"]
+                .as_str()
+                .unwrap_or("und")
+                .to_string();
             let native_url = native_track["baseUrl"]
                 .as_str()
                 .unwrap_or("")
@@ -476,11 +497,17 @@ async fn fetch_innertube_with_client(
 
         // If no manual native track, also try ASR in any other language.
         let asr_native = tracks.iter().find(|t| {
-            t["languageCode"].as_str().map(|c| !c.starts_with("en")).unwrap_or(false)
+            t["languageCode"]
+                .as_str()
+                .map(|c| !c.starts_with("en"))
+                .unwrap_or(false)
                 && t["baseUrl"].as_str().is_some()
         });
         if let Some(asr_track) = asr_native {
-            let asr_lang = asr_track["languageCode"].as_str().unwrap_or("und").to_string();
+            let asr_lang = asr_track["languageCode"]
+                .as_str()
+                .unwrap_or("und")
+                .to_string();
             let asr_url = asr_track["baseUrl"]
                 .as_str()
                 .unwrap_or("")
@@ -582,8 +609,8 @@ async fn fetch_piped_captions_fast(
         .await
         .map_err(|_| HsxError::YouTube("Piped stream timeout".into()))??;
 
-    let v: serde_json::Value = serde_json::from_str(&body)
-        .map_err(|e| HsxError::YouTube(format!("Piped parse: {e}")))?;
+    let v: serde_json::Value =
+        serde_json::from_str(&body).map_err(|e| HsxError::YouTube(format!("Piped parse: {e}")))?;
 
     let subtitles = v["subtitles"]
         .as_array()
@@ -627,7 +654,11 @@ async fn fetch_via_whisper(video_id: &str) -> HsxResult<(Vec<TranscriptEntry>, S
     use tokio::process::Command;
 
     // Check that both tools are available before starting heavy work.
-    let ytdlp_ok = Command::new("yt-dlp").arg("--version").output().await.is_ok();
+    let ytdlp_ok = Command::new("yt-dlp")
+        .arg("--version")
+        .output()
+        .await
+        .is_ok();
     let whisper_ok = Command::new("whisper").arg("--help").output().await.is_ok();
 
     if !ytdlp_ok || !whisper_ok {
@@ -649,11 +680,14 @@ async fn fetch_via_whisper(video_id: &str) -> HsxResult<(Vec<TranscriptEntry>, S
         Command::new("yt-dlp")
             .args([
                 "-x",
-                "--audio-format", "wav",
-                "--audio-quality", "0",
+                "--audio-format",
+                "wav",
+                "--audio-quality",
+                "0",
                 "--no-playlist",
                 "--quiet",
-                "--output", &audio_template,
+                "--output",
+                &audio_template,
                 &format!("https://www.youtube.com/watch?v={video_id}"),
             ])
             .output(),
@@ -678,10 +712,14 @@ async fn fetch_via_whisper(video_id: &str) -> HsxResult<(Vec<TranscriptEntry>, S
         Command::new("whisper")
             .args([
                 audio_wav.to_str().unwrap_or("audio.wav"),
-                "--model", "base",
-                "--output_format", "json",
-                "--output_dir", tmp_dir.to_str().unwrap_or("/tmp"),
-                "--fp16", "False",
+                "--model",
+                "base",
+                "--output_format",
+                "json",
+                "--output_dir",
+                tmp_dir.to_str().unwrap_or("/tmp"),
+                "--fp16",
+                "False",
                 // No --language flag: Whisper auto-detects any of 99 languages
                 // (English, Bengali, Hindi, Spanish, etc.) from audio content.
             ])
@@ -711,7 +749,6 @@ async fn fetch_via_whisper(video_id: &str) -> HsxResult<(Vec<TranscriptEntry>, S
 
     parse_whisper_json(&json_content)
 }
-
 
 /// Parse Whisper's JSON output into transcript entries plus detected language.
 ///
@@ -749,7 +786,9 @@ fn parse_whisper_json(json: &str) -> HsxResult<(Vec<TranscriptEntry>, String)> {
         .collect();
 
     if entries.is_empty() {
-        return Err(HsxError::YouTube("Whisper produced no transcript segments".into()));
+        return Err(HsxError::YouTube(
+            "Whisper produced no transcript segments".into(),
+        ));
     }
 
     Ok((entries, language_code))
@@ -815,7 +854,9 @@ fn parse_timedtext_xml(xml: &str) -> HsxResult<Vec<TranscriptEntry>> {
     }
 
     if entries.is_empty() {
-        return Err(HsxError::YouTube("No transcript entries parsed from XML".into()));
+        return Err(HsxError::YouTube(
+            "No transcript entries parsed from XML".into(),
+        ));
     }
 
     Ok(entries)
@@ -1054,7 +1095,10 @@ mod tests {
     fn extract_innertube_api_key_basic() {
         let html = r#"<script>var _yt_cfg = {"INNERTUBE_API_KEY":"***REMOVED***"};</script>"#;
         let key = extract_innertube_api_key(html);
-        assert_eq!(key.as_deref(), Some("***REMOVED***"));
+        assert_eq!(
+            key.as_deref(),
+            Some("***REMOVED***")
+        );
     }
 
     #[test]
@@ -1137,7 +1181,12 @@ mod tests {
                 speaker_id: None,
             },
         ];
-        let transcript = enhance_transcript("test123", entries, TranscriptSource::YouTubeTimedtext, "en".to_string());
+        let transcript = enhance_transcript(
+            "test123",
+            entries,
+            TranscriptSource::YouTubeTimedtext,
+            "en".to_string(),
+        );
         assert_eq!(transcript.video_id, "test123");
         assert_eq!(transcript.language, "en");
         assert_eq!(transcript.word_count, 2);

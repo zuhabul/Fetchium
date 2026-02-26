@@ -34,7 +34,9 @@ pub use credentials::{
 pub use ollama::OllamaClient;
 pub use pipeline::run_ai_pipeline;
 pub use provider_client::{chat_with_fallback, check_provider, ChatResult, ProviderStatus};
-pub use providers::{ModelCapability, ModelInfo, ModelRegistry, ProviderEntry, ProviderKind, ProvidersConfig};
+pub use providers::{
+    ModelCapability, ModelInfo, ModelRegistry, ProviderEntry, ProviderKind, ProvidersConfig,
+};
 pub use router::{route_model, select_model};
 pub use sandwich::{assemble_context, sandwich_layout};
 pub use setup::{

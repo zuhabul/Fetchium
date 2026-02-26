@@ -1,0 +1,7 @@
+# Exclude downloaded binaries from the published package.
+# The correct binary is downloaded at install time by install.js.
+bin/hsx
+bin/hsx.exe
+*.tar.gz
+*.zip
+*.sha256

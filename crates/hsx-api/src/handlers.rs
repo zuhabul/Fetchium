@@ -1,13 +1,13 @@
 //! REST API request handlers (PRD §9).
 
-use crate::middleware::AppState;
+use crate::handlers_auth::record_usage_async;
+use crate::middleware::{AppState, AuthenticatedKey};
 use crate::types::*;
 use axum::{extract::State, http::StatusCode, Json};
 use hsx_core::citation::types::CitationStyle;
 use hsx_core::research::pipeline::ResearchPipeline;
 use hsx_core::research::ResearchConfig;
 use hsx_core::validate::types::ValidationMode;
-use std::sync::Arc;
 use std::time::Instant;
 
 type ApiResult<T> = Result<Json<T>, (StatusCode, Json<ApiError>)>;
@@ -31,11 +31,16 @@ pub async fn health_check() -> Json<serde_json::Value> {
     }))
 }
 
-/// POST /api/search — multi-backend search pipeline.
+/// POST /v1/search — multi-backend search pipeline.
 pub async fn search(
-    State(state): State<Arc<AppState>>,
+    AuthenticatedKey(key): AuthenticatedKey,
+    State(state): State<AppState>,
     Json(req): Json<SearchRequest>,
 ) -> ApiResult<SearchResponse> {
+    let req = req
+        .validated()
+        .map_err(|e| api_err(StatusCode::BAD_REQUEST, "invalid_request", e.to_string()))?;
+    let start = Instant::now();
     let max_sources = req.max_sources.unwrap_or(10) as u32;
     let tier = req.tier.as_deref().unwrap_or("summary");
     let token_budget = req.token_budget.unwrap_or(2000);
@@ -58,9 +63,6 @@ pub async fn search(
         )
     })?;
 
-    // Deserialize back into SearchResponse or just return Json(result_json)
-    // Note: since our SearchResponse type strictly maps, we can just return Json(result_json) if we change the return type.
-    // For now, let's deserialize it to ensure the API contract matches:
     let response: SearchResponse = serde_json::from_value(result_json).map_err(|e| {
         api_err(
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -69,14 +71,27 @@ pub async fn search(
         )
     })?;
 
+    record_usage_async(
+        state,
+        key.id,
+        "/v1/search",
+        200,
+        response.meta.tokens_used as u64,
+        start,
+    );
     Ok(Json(response))
 }
 
-/// POST /api/fetch — fetch and extract a URL.
+/// POST /v1/scrape — fetch and extract a URL.
 pub async fn fetch(
-    State(state): State<Arc<AppState>>,
+    AuthenticatedKey(key): AuthenticatedKey,
+    State(state): State<AppState>,
     Json(req): Json<FetchRequest>,
 ) -> ApiResult<FetchResponse> {
+    let req = req
+        .validated()
+        .map_err(|e| api_err(StatusCode::BAD_REQUEST, "invalid_request", e.to_string()))?;
+    let start = Instant::now();
     let budget = req.token_budget.unwrap_or(3000);
     let format = req.format.as_deref().unwrap_or("markdown");
 
@@ -93,14 +108,26 @@ pub async fn fetch(
         )
     })?;
 
+    record_usage_async(
+        state,
+        key.id,
+        "/v1/scrape",
+        200,
+        response.tokens as u64,
+        start,
+    );
     Ok(Json(response))
 }
 
-/// POST /api/research — full multi-source research pipeline.
+/// POST /v1/research — full multi-source research pipeline.
 pub async fn research(
-    State(state): State<Arc<AppState>>,
+    AuthenticatedKey(key): AuthenticatedKey,
+    State(state): State<AppState>,
     Json(req): Json<ResearchRequest>,
 ) -> ApiResult<ResearchResponse> {
+    let req = req
+        .validated()
+        .map_err(|e| api_err(StatusCode::BAD_REQUEST, "invalid_request", e.to_string()))?;
     let start = Instant::now();
 
     let citation_style = match req.citation_style.as_deref() {
@@ -149,11 +176,12 @@ pub async fn research(
         })
         .collect();
 
-    Ok(Json(ResearchResponse {
+    let tokens_used = req.token_budget.unwrap_or(4000);
+    let response = ResearchResponse {
         meta: ResponseMeta {
             query: report.query,
             tier: "detailed".into(),
-            tokens_used: req.token_budget.unwrap_or(4000),
+            tokens_used,
             sources_count: report.meta.sources_fetched,
             duration_ms,
             result_id: uuid::Uuid::new_v4().to_string(),
@@ -162,14 +190,25 @@ pub async fn research(
         reference_section: report.reference_section,
         sources,
         confidence: report.meta.overall_confidence,
-    }))
+    };
+    record_usage_async(
+        state,
+        key.id,
+        "/v1/research",
+        200,
+        tokens_used as u64,
+        start,
+    );
+    Ok(Json(response))
 }
 
-/// POST /api/youtube/search — YouTube video search with VideoFusion ranking.
+/// POST /v1/youtube/search — YouTube video search with VideoFusion ranking.
 pub async fn youtube_search(
-    State(state): State<Arc<AppState>>,
+    AuthenticatedKey(key): AuthenticatedKey,
+    State(state): State<AppState>,
     Json(req): Json<crate::types::YouTubeSearchRequest>,
 ) -> ApiResult<serde_json::Value> {
+    let start = Instant::now();
     let pipeline_config = hsx_core::youtube::types::YouTubePipelineConfig {
         query: req.query,
         max_videos: req.max_results.unwrap_or(5),
@@ -201,14 +240,17 @@ pub async fn youtube_search(
         )
     })?;
 
+    record_usage_async(state, key.id, "/v1/youtube/search", 200, 0, start);
     Ok(Json(json))
 }
 
-/// POST /api/youtube/analyze — single YouTube video deep analysis.
+/// POST /v1/youtube/analyze — single YouTube video deep analysis.
 pub async fn youtube_analyze(
-    State(state): State<Arc<AppState>>,
+    AuthenticatedKey(key): AuthenticatedKey,
+    State(state): State<AppState>,
     Json(req): Json<crate::types::YouTubeAnalyzeRequest>,
 ) -> ApiResult<serde_json::Value> {
+    let start = Instant::now();
     let result = hsx_core::youtube::pipeline::analyze_single_video(
         &req.url,
         &state.config,
@@ -234,14 +276,17 @@ pub async fn youtube_analyze(
         )
     })?;
 
+    record_usage_async(state, key.id, "/v1/youtube/analyze", 200, 0, start);
     Ok(Json(json))
 }
 
-/// POST /api/social/research — unified cross-platform social research.
+/// POST /v1/social/research — unified cross-platform social research.
 pub async fn social_research(
-    State(state): State<Arc<AppState>>,
+    AuthenticatedKey(key): AuthenticatedKey,
+    State(state): State<AppState>,
     Json(req): Json<crate::types::SocialResearchRequest>,
 ) -> ApiResult<serde_json::Value> {
+    let start = Instant::now();
     use hsx_core::social::types::{SocialPipelineConfig, SocialPlatform};
 
     let platforms = req
@@ -297,14 +342,17 @@ pub async fn social_research(
             e.to_string(),
         )
     })?;
+    record_usage_async(state, key.id, "/v1/social/research", 200, 0, start);
     Ok(Json(json))
 }
 
-/// POST /api/social/reddit — Reddit search.
+/// POST /v1/social/reddit — Reddit search.
 pub async fn reddit_search(
-    State(state): State<Arc<AppState>>,
+    AuthenticatedKey(key): AuthenticatedKey,
+    State(state): State<AppState>,
     Json(req): Json<crate::types::RedditSearchRequest>,
 ) -> ApiResult<serde_json::Value> {
+    let start = Instant::now();
     use hsx_core::social::reddit::{pipeline as rd, types::RedditPipelineConfig};
 
     let cfg = RedditPipelineConfig {
@@ -331,14 +379,17 @@ pub async fn reddit_search(
             e.to_string(),
         )
     })?;
+    record_usage_async(state, key.id, "/v1/social/reddit", 200, 0, start);
     Ok(Json(json))
 }
 
-/// GET /api/social/hackernews — HackerNews search.
+/// POST /v1/social/hackernews — HackerNews search.
 pub async fn hackernews_search(
-    State(state): State<Arc<AppState>>,
+    AuthenticatedKey(key): AuthenticatedKey,
+    State(state): State<AppState>,
     Json(req): Json<crate::types::HackerNewsSearchRequest>,
 ) -> ApiResult<serde_json::Value> {
+    let start = Instant::now();
     let stories = hsx_core::social::hackernews::search_stories(
         &req.query,
         req.max_results.unwrap_or(20),
@@ -361,14 +412,17 @@ pub async fn hackernews_search(
             e.to_string(),
         )
     })?;
+    record_usage_async(state, key.id, "/v1/social/hackernews", 200, 0, start);
     Ok(Json(json))
 }
 
-/// POST /api/estimate — heuristic token cost estimation.
+/// POST /v1/estimate — heuristic token cost estimation.
 pub async fn estimate(
-    State(state): State<Arc<AppState>>,
+    AuthenticatedKey(key): AuthenticatedKey,
+    State(state): State<AppState>,
     Json(req): Json<EstimateRequest>,
 ) -> ApiResult<EstimateResponse> {
+    let start = Instant::now();
     let html = state
         .http
         .fetch_text(&req.url)
@@ -378,11 +432,13 @@ pub async fn estimate(
     let raw_tokens = hsx_core::extract::layer1::estimate_tokens(&html) as usize;
     let estimated_tokens = raw_tokens / 4; // post-extraction estimate
 
-    Ok(Json(EstimateResponse {
+    let response = EstimateResponse {
         url: req.url,
         estimated_tokens,
         estimated_relevant_tokens: estimated_tokens / 2,
         extraction_layer: 1,
         content_type: "text/html".into(),
-    }))
+    };
+    record_usage_async(state, key.id, "/v1/estimate", 200, 0, start);
+    Ok(Json(response))
 }

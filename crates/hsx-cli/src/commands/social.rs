@@ -88,7 +88,15 @@ pub async fn run(args: SocialArgs, config: &HsxConfig, format: Format) -> Result
         .await?;
     }
     if args.youtube {
-        run_youtube_social(args.query.clone(), args.max, args.deep, config, &http, format).await?;
+        run_youtube_social(
+            args.query.clone(),
+            args.max,
+            args.deep,
+            config,
+            &http,
+            format,
+        )
+        .await?;
     }
 
     Ok(())
@@ -278,7 +286,9 @@ async fn run_youtube_social(
 
     let spinner = indicatif::ProgressBar::new_spinner();
     if deep {
-        spinner.set_message(format!("Searching YouTube (deep mode: fetching transcripts) for '{query}'..."));
+        spinner.set_message(format!(
+            "Searching YouTube (deep mode: fetching transcripts) for '{query}'..."
+        ));
     } else {
         spinner.set_message(format!("Searching YouTube for '{query}'..."));
     }
@@ -301,13 +311,12 @@ async fn run_youtube_social(
             if matches!(format, Format::Json) {
                 println!("{}", serde_json::to_string_pretty(&r)?);
             } else {
-                println!("{} — {} results\n", "YouTube".bold().red(), r.rankings.len());
-                for (ranking, analysis) in r
-                    .rankings
-                    .iter()
-                    .take(max)
-                    .zip(r.videos.iter())
-                {
+                println!(
+                    "{} — {} results\n",
+                    "YouTube".bold().red(),
+                    r.rankings.len()
+                );
+                for (ranking, analysis) in r.rankings.iter().take(max).zip(r.videos.iter()) {
                     println!(
                         "  {} {} (score: {:.2})",
                         "▸".cyan(),

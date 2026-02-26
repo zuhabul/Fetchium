@@ -816,7 +816,7 @@ pub enum IndexAction {
     Add {
         url: String,
         /// Query context for QATBE extraction
-        #[arg(short, long)]
+        #[arg(short = 'Q', long)]
         query: Option<String>,
     },
     /// Search the local index

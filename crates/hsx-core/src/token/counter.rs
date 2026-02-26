@@ -75,11 +75,20 @@ impl TokenBudget {
     }
 
     /// How full the budget is (0.0 to 1.0+).
+    /// Returns 0.0 for a zero-token budget (no budget allocated = no utilization).
     pub fn utilization(&self) -> f64 {
         if self.total == 0 {
-            return 1.0;
+            return 0.0;
         }
         self.used as f64 / self.total as f64
+    }
+
+    /// Force-consume tokens with overflow protection.
+    /// Returns the actual number of tokens consumed (may be less if u32 would overflow).
+    pub fn consume_checked(&mut self, tokens: u32) -> u32 {
+        let actual = self.used.saturating_add(tokens) - self.used;
+        self.used = self.used.saturating_add(tokens);
+        actual
     }
 }
 

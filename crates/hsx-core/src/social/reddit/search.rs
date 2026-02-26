@@ -84,7 +84,11 @@ async fn search_via_pullpush(
             config.max_posts
         )
     } else {
-        let sr = config.subreddits.first().map(|s| s.trim_start_matches("r/")).unwrap_or("");
+        let sr = config
+            .subreddits
+            .first()
+            .map(|s| s.trim_start_matches("r/"))
+            .unwrap_or("");
         format!(
             "https://api.pullpush.io/reddit/search/submission/?q={encoded}&subreddit={sr}&size={}&sort=score",
             config.max_posts
@@ -100,9 +104,7 @@ async fn search_via_pullpush(
     )
     .await
     {
-        Ok(Ok(r)) if r.status().is_success() => {
-            r.text().await.unwrap_or_default()
-        }
+        Ok(Ok(r)) if r.status().is_success() => r.text().await.unwrap_or_default(),
         _ => return Ok(Vec::new()),
     };
 
@@ -126,10 +128,7 @@ async fn search_via_pullpush(
     if !config.subreddits.is_empty() {
         // subreddit-specific: trust all results
     } else {
-        let query_words: Vec<&str> = query
-            .split_whitespace()
-            .filter(|w| w.len() >= 3)
-            .collect();
+        let query_words: Vec<&str> = query.split_whitespace().filter(|w| w.len() >= 3).collect();
         if !query_words.is_empty() {
             posts.retain(|p| {
                 let text = format!("{} {}", p.title, p.selftext).to_lowercase();
@@ -179,11 +178,17 @@ fn parse_ddg_reddit_results(html: &str, max: usize) -> Vec<RedditPost> {
 
     let mut posts = Vec::new();
     for result in doc.select(&result_sel) {
-        if posts.len() >= max { break; }
+        if posts.len() >= max {
+            break;
+        }
         let classes = result.value().attr("class").unwrap_or("");
-        if classes.contains("result--ad") { continue; }
+        if classes.contains("result--ad") {
+            continue;
+        }
 
-        let href = result.select(&link_sel).next()
+        let href = result
+            .select(&link_sel)
+            .next()
             .and_then(|a| a.value().attr("href"))
             .unwrap_or("");
 
@@ -204,25 +209,35 @@ fn parse_ddg_reddit_results(html: &str, max: usize) -> Vec<RedditPost> {
             continue;
         };
 
-        if !raw_url.contains("reddit.com/r/") { continue; }
+        if !raw_url.contains("reddit.com/r/") {
+            continue;
+        }
 
-        let snippet = result.select(&snippet_sel).next()
+        let snippet = result
+            .select(&snippet_sel)
+            .next()
             .map(|e| e.text().collect::<String>().trim().to_string())
             .unwrap_or_default();
 
         // Extract subreddit from URL
-        let subreddit = raw_url.split("/r/").nth(1)
+        let subreddit = raw_url
+            .split("/r/")
+            .nth(1)
             .and_then(|s| s.split('/').next())
             .unwrap_or("reddit")
             .to_string();
 
         // Extract title from URL path
-        let title = raw_url.split("/comments/").nth(1)
+        let title = raw_url
+            .split("/comments/")
+            .nth(1)
             .and_then(|s| s.split('/').nth(1))
             .map(|s| s.replace('_', " "))
             .unwrap_or_else(|| snippet.chars().take(80).collect());
 
-        let id = raw_url.split("/comments/").nth(1)
+        let id = raw_url
+            .split("/comments/")
+            .nth(1)
             .and_then(|s| s.split('/').next())
             .unwrap_or("ddg")
             .to_string();
@@ -252,7 +267,9 @@ fn parse_ddg_reddit_results(html: &str, max: usize) -> Vec<RedditPost> {
 /// Parse a PullPush API submission entry.
 fn parse_pullpush_post(d: &serde_json::Value) -> Option<RedditPost> {
     let title = d["title"].as_str()?.to_string();
-    if title.is_empty() { return None; }
+    if title.is_empty() {
+        return None;
+    }
 
     let id = d["id"].as_str().unwrap_or("").to_string();
     let subreddit = d["subreddit"].as_str().unwrap_or("").to_string();
@@ -268,7 +285,12 @@ fn parse_pullpush_post(d: &serde_json::Value) -> Option<RedditPost> {
         url,
         permalink,
         title,
-        selftext: d["selftext"].as_str().unwrap_or("").chars().take(500).collect(),
+        selftext: d["selftext"]
+            .as_str()
+            .unwrap_or("")
+            .chars()
+            .take(500)
+            .collect(),
         author: d["author"].as_str().unwrap_or("[deleted]").to_string(),
         subreddit,
         score: d["score"].as_i64().unwrap_or(0),
@@ -303,7 +325,10 @@ pub async fn fetch_subreddit_posts(
     .await
     .map_err(|_| HsxError::Internal("Request timeout".into()))?
     .map_err(|e| HsxError::Search(e.to_string()))?;
-    let body = resp.text().await.map_err(|e| HsxError::Search(e.to_string()))?;
+    let body = resp
+        .text()
+        .await
+        .map_err(|e| HsxError::Search(e.to_string()))?;
     parse_reddit_listing(&body)
 }
 
@@ -405,7 +430,10 @@ pub async fn fetch_subreddit_info(
     .await
     .map_err(|_| HsxError::Internal("Request timeout".into()))?
     .map_err(|e| HsxError::Search(e.to_string()))?;
-    let body = resp.text().await.map_err(|e| HsxError::Search(e.to_string()))?;
+    let body = resp
+        .text()
+        .await
+        .map_err(|e| HsxError::Search(e.to_string()))?;
 
     let v: Value = serde_json::from_str(&body)
         .map_err(|e| HsxError::Internal(format!("Reddit about JSON: {e}")))?;

@@ -263,41 +263,21 @@ impl DuckDuckGoBackend {
 
         String::new()
     }
-}
 
-#[async_trait]
-impl SearchBackend for DuckDuckGoBackend {
-    fn id(&self) -> BackendId {
-        BackendId::DuckDuckGo
-    }
+    /// Fetch results from the full DDG HTML endpoint.
+    async fn try_full(&self, query: &str, max_results: u32) -> Vec<ResultItem> {
+        let form: &[(&str, &str)] = &[("q", query), ("b", ""), ("s", "0"), ("kl", ""), ("df", "")];
 
-    fn requires_headless(&self) -> bool {
-        false
-    }
-
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
-        info!("DDG search: query={query:?}, max={max_results}");
-
-        if query.trim().is_empty() {
-            return Ok(Vec::new());
-        }
-
-        // ── Attempt 1: Full HTML endpoint ────────────────────────────────────
-        let form: &[(&str, &str)] = &[
-            ("q", query),
-            ("b", ""),
-            ("s", "0"),
-            ("kl", ""),
-            ("df", ""),
-        ];
-
-        let results = match self
+        match self
             .client
             .client()
             .post(DDG_HTML_URL)
             .form(form)
             .header("User-Agent", BROWSER_UA)
-            .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+            .header(
+                "Accept",
+                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            )
             .header("Accept-Language", "en-US,en;q=0.9")
             .header("Referer", "https://duckduckgo.com/")
             .header("Cache-Control", "no-cache")
@@ -307,7 +287,6 @@ impl SearchBackend for DuckDuckGoBackend {
             Ok(resp) if resp.status().is_success() || resp.status().as_u16() == 202 => {
                 match resp.text().await {
                     Ok(html) if !html.trim().is_empty() => {
-                        // Detect CAPTCHA / bot-detection page before parsing
                         if Self::is_captcha_page(&html) {
                             warn!("DDG: CAPTCHA detected on full endpoint for {query:?}");
                             vec![]
@@ -328,30 +307,23 @@ impl SearchBackend for DuckDuckGoBackend {
                 warn!("DDG full HTML request failed: {e}");
                 vec![]
             }
-        };
-
-        if !results.is_empty() {
-            info!("DDG: {} results for {query:?}", results.len());
-            return Ok(results);
         }
+    }
 
-        // ── Attempt 2: Lite endpoint fallback ────────────────────────────────
-        debug!("DDG: full HTML returned no results for {query:?}, trying lite endpoint");
+    /// Fetch results from the DDG lite endpoint.
+    async fn try_lite(&self, query: &str, max_results: u32) -> Vec<ResultItem> {
+        let lite_form: &[(&str, &str)] = &[("q", query), ("s", "0"), ("o", "json"), ("dc", "1")];
 
-        let lite_form: &[(&str, &str)] = &[
-            ("q", query),
-            ("s", "0"),
-            ("o", "json"),
-            ("dc", "1"),
-        ];
-
-        let lite_results = match self
+        match self
             .client
             .client()
             .post(DDG_LITE_URL)
             .form(lite_form)
             .header("User-Agent", BROWSER_UA)
-            .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+            .header(
+                "Accept",
+                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            )
             .header("Accept-Language", "en-US,en;q=0.9")
             .header("Referer", "https://duckduckgo.com/")
             .send()
@@ -380,15 +352,51 @@ impl SearchBackend for DuckDuckGoBackend {
                 warn!("DDG lite request failed: {e}");
                 vec![]
             }
-        };
+        }
+    }
+}
 
-        if lite_results.is_empty() {
-            warn!("DDG: no results for {query:?} (CAPTCHA or rate-limited)");
-        } else {
-            info!("DDG lite: {} results for {query:?}", lite_results.len());
+#[async_trait]
+impl SearchBackend for DuckDuckGoBackend {
+    fn id(&self) -> BackendId {
+        BackendId::DuckDuckGo
+    }
+
+    fn requires_headless(&self) -> bool {
+        false
+    }
+
+    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+        info!("DDG search: query={query:?}, max={max_results}");
+
+        if query.trim().is_empty() {
+            return Ok(Vec::new());
         }
 
-        Ok(lite_results)
+        // Race both endpoints in parallel — saves ~500ms vs sequential fallback.
+        // Full HTML endpoint returns richer snippets; lite is simpler but more bot-tolerant.
+        // Both are fired simultaneously; we prefer full results when non-empty.
+        let (full, lite) = tokio::join!(
+            self.try_full(query, max_results),
+            self.try_lite(query, max_results),
+        );
+
+        if !full.is_empty() {
+            info!(
+                "DDG: {} results via full endpoint for {query:?}",
+                full.len()
+            );
+            Ok(full)
+        } else if !lite.is_empty() {
+            info!(
+                "DDG: {} results via lite endpoint for {query:?}",
+                lite.len()
+            );
+            Ok(lite)
+        } else {
+            warn!("DDG: no results for {query:?} (CAPTCHA or rate-limited)");
+            Ok(Vec::new())
+        }
     }
 }
 

@@ -36,24 +36,38 @@ struct GhRepo {
 ///
 /// Uses the GitHub REST API v3. Set `GITHUB_TOKEN` for higher rate limits
 /// (30 req/min authenticated vs 10 req/min unauthenticated).
+/// The client is built once and reused for connection pooling.
 pub struct GithubBackend {
-    /// Stored so the struct field is used; requests use a fresh client for custom headers.
-    #[allow(dead_code)]
-    http: HttpClient,
+    /// Pre-built client with GitHub-required headers and connection pooling.
+    client: reqwest::Client,
     token: Option<String>,
 }
 
 impl GithubBackend {
     /// Create a new GitHub backend. Reads `GITHUB_TOKEN` from the environment.
-    pub fn new(http: HttpClient) -> Self {
+    pub fn new(_http: HttpClient) -> Self {
         let token = std::env::var("GITHUB_TOKEN").ok();
-        Self { http, token }
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(15))
+            .user_agent("HyperSearchX/0.1")
+            .pool_max_idle_per_host(4)
+            .pool_idle_timeout(std::time::Duration::from_secs(90))
+            .build()
+            .unwrap_or_default();
+        Self { client, token }
     }
 
     /// Create a GitHub backend with an explicit token (for testing or config injection).
-    pub fn with_token(http: HttpClient, token: impl Into<String>) -> Self {
+    pub fn with_token(_http: HttpClient, token: impl Into<String>) -> Self {
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(15))
+            .user_agent("HyperSearchX/0.1")
+            .pool_max_idle_per_host(4)
+            .pool_idle_timeout(std::time::Duration::from_secs(90))
+            .build()
+            .unwrap_or_default();
         Self {
-            http,
+            client,
             token: Some(token.into()),
         }
     }
@@ -72,21 +86,8 @@ impl SearchBackend for GithubBackend {
             urlencoding_encode(query)
         );
 
-        // GitHub API requires User-Agent and recommends the Accept header.
-        // We also optionally attach an auth token for higher rate limits.
-        let client = match reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(15))
-            .user_agent("HyperSearchX/0.1")
-            .build()
-        {
-            Ok(c) => c,
-            Err(e) => {
-                tracing::warn!("GitHub: failed to build client: {e}");
-                return Ok(vec![]);
-            }
-        };
-
-        let mut req = client
+        let mut req = self
+            .client
             .get(&url)
             .header("Accept", "application/vnd.github+json")
             .header("X-GitHub-Api-Version", "2022-11-28");

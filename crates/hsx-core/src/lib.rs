@@ -123,6 +123,12 @@ pub mod query;
 // Phase 6+
 pub mod intelligence;
 
+// Resilience layer — circuit breakers, adaptive rate limiting, bulkhead isolation
+pub mod resilience;
+
+// Telemetry — pipeline observability, metrics, health monitoring
+pub mod telemetry;
+
 // Phase 7+
 pub mod collab;
 pub mod domain;

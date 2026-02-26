@@ -54,6 +54,7 @@ sysinfo.workspace = true
 
 # Utilities
 url.workspace = true
+base64.workspace = true
 sha2.workspace = true
 uuid.workspace = true
 chrono.workspace = true
@@ -70,7 +71,7 @@ aes-gcm.workspace = true
 argon2.workspace = true
 
 # Optional: Headless browser
-chromiumoxide = { version = "0.7", optional = true, default-features = false, features = ["tokio-runtime"] }
+chromiumoxide = { version = "0.9", optional = true }
 
 # Optional: Embeddings (fastembed wraps ort v2, handles model download + tokenisation)
 fastembed = { version = "4", optional = true }

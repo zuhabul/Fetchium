@@ -96,9 +96,7 @@ async fn search_via_tikwm(
     http: &HttpClient,
 ) -> HsxResult<Vec<TikTokVideo>> {
     let encoded: String = url::form_urlencoded::byte_serialize(query.as_bytes()).collect();
-    let url = format!(
-        "https://www.tikwm.com/api/feed/search?keywords={encoded}&count={max}"
-    );
+    let url = format!("https://www.tikwm.com/api/feed/search?keywords={encoded}&count={max}");
 
     let body = match tokio::time::timeout(
         Duration::from_secs(10),
@@ -147,7 +145,9 @@ fn parse_tikwm_response(json_str: &str, max: usize) -> HsxResult<Vec<TikTokVideo
             video_id
         };
 
-        let author_unique = item["author"]["unique_id"].as_str().unwrap_or("tiktok_user");
+        let author_unique = item["author"]["unique_id"]
+            .as_str()
+            .unwrap_or("tiktok_user");
         let author_nick = item["author"]["nickname"]
             .as_str()
             .unwrap_or(author_unique)
@@ -214,15 +214,40 @@ fn format_unix_ts(ts: u64) -> String {
     let mut year = 1970u64;
     let mut remaining = days_since_epoch;
     loop {
-        let days_in_year = if year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) { 366 } else { 365 };
-        if remaining < days_in_year { break; }
+        let days_in_year = if year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) {
+            366
+        } else {
+            365
+        };
+        if remaining < days_in_year {
+            break;
+        }
         remaining -= days_in_year;
         year += 1;
     }
-    let months = [31u64, if year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let months = [
+        31u64,
+        if year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) {
+            29
+        } else {
+            28
+        },
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
+    ];
     let mut month = 1u64;
     for &days_in_month in &months {
-        if remaining < days_in_month { break; }
+        if remaining < days_in_month {
+            break;
+        }
         remaining -= days_in_month;
         month += 1;
     }
@@ -296,23 +321,35 @@ fn parse_ddg_tiktok_results(html: &str, max: usize) -> Vec<TikTokVideo> {
     let mut videos = Vec::new();
 
     for result in doc.select(&result_sel) {
-        if videos.len() >= max { break; }
+        if videos.len() >= max {
+            break;
+        }
 
         let classes = result.value().attr("class").unwrap_or("");
-        if classes.contains("result--ad") { continue; }
+        if classes.contains("result--ad") {
+            continue;
+        }
 
-        let href = result.select(&link_sel).next()
+        let href = result
+            .select(&link_sel)
+            .next()
             .and_then(|a| a.value().attr("href"))
             .unwrap_or("");
 
         let raw_url = resolve_ddg_url(href);
-        if !is_tiktok_video_url(&raw_url) { continue; }
+        if !is_tiktok_video_url(&raw_url) {
+            continue;
+        }
 
-        let snippet = result.select(&snippet_sel).next()
+        let snippet = result
+            .select(&snippet_sel)
+            .next()
             .map(|e| e.text().collect::<String>().trim().to_string())
             .unwrap_or_default();
 
-        if snippet.is_empty() { continue; }
+        if snippet.is_empty() {
+            continue;
+        }
 
         let (mut username, video_id) = extract_tiktok_id_and_author(&raw_url);
 
@@ -371,7 +408,10 @@ fn extract_username_from_snippet(snippet: &str) -> String {
     // Pattern 2: "@username" anywhere in text
     for word in snippet.split_whitespace() {
         if let Some(stripped) = word.strip_prefix('@') {
-            let clean: String = stripped.chars().take_while(|c| c.is_alphanumeric() || *c == '_').collect();
+            let clean: String = stripped
+                .chars()
+                .take_while(|c| c.is_alphanumeric() || *c == '_')
+                .collect();
             if clean.len() >= 2 {
                 return clean;
             }
@@ -479,11 +519,15 @@ fn is_tiktok_video_url(url: &str) -> bool {
 
 fn extract_tiktok_id_and_author(url: &str) -> (String, String) {
     // https://www.tiktok.com/@username/video/1234567890
-    let username = url.split("/@").nth(1)
+    let username = url
+        .split("/@")
+        .nth(1)
         .and_then(|s| s.split('/').next())
         .unwrap_or("")
         .to_string();
-    let video_id = url.split("/video/").nth(1)
+    let video_id = url
+        .split("/video/")
+        .nth(1)
         .and_then(|s| s.split('?').next())
         .unwrap_or("")
         .to_string();
@@ -491,7 +535,9 @@ fn extract_tiktok_id_and_author(url: &str) -> (String, String) {
 }
 
 fn resolve_ddg_url(href: &str) -> String {
-    if href.is_empty() { return String::new(); }
+    if href.is_empty() {
+        return String::new();
+    }
     if href.contains("uddg=") {
         let qs_start = href.find('?').map(|i| i + 1).unwrap_or(0);
         for (k, v) in url::form_urlencoded::parse(&href.as_bytes()[qs_start..]) {
@@ -501,7 +547,8 @@ fn resolve_ddg_url(href: &str) -> String {
         }
     }
     if (href.starts_with("https://") || href.starts_with("http://"))
-        && !href.contains("duckduckgo.com") {
+        && !href.contains("duckduckgo.com")
+    {
         return href.to_string();
     }
     String::new()
