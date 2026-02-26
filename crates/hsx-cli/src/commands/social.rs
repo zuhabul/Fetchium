@@ -120,6 +120,7 @@ async fn run_twitter(
         query: query.clone(),
         max_tweets: max,
         fetch_trends: trends,
+        searxng_url: config.search.searxng_url.clone(),
         ..Default::default()
     };
 
@@ -384,6 +385,7 @@ async fn run_facebook(
         max_results: max,
         graph_api_token: graph_token.clone(),
         timeout_secs: 20,
+        searxng_url: config.search.searxng_url.clone(),
     };
 
     let result = fb_pipeline::run_facebook_pipeline(&cfg, http).await;

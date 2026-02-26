@@ -20,6 +20,7 @@ const DDG_HTML_URL: &str = "https://html.duckduckgo.com/html/";
 
 /// Search Twitter/X tweets using a parallel multi-tier approach.
 ///
+/// ## Tier 0 (best): Local SearXNG site:x.com (aggregates Google/Bing/DDG server-side)
 /// ## Tier 1 (parallel): Reddit API + HackerNews Algolia (free, reliable APIs)
 /// ## Tier 2 (fallback): Nitter HTML scraping (all instances in parallel)
 /// ## Tier 3 (fallback): DDG site:x.com search (often CAPTCHA-blocked)
@@ -29,6 +30,15 @@ pub async fn search_tweets(
     config: &TwitterPipelineConfig,
     http: &HttpClient,
 ) -> HsxResult<Vec<Tweet>> {
+    // ── Tier 0: Local SearXNG (fastest, most reliable when available) ───
+    if let Some(ref searxng_url) = config.searxng_url {
+        let tweets = search_via_searxng(query, max, searxng_url, http, config.timeout_secs).await;
+        if !tweets.is_empty() {
+            tracing::info!("Twitter: {} results from local SearXNG", tweets.len());
+            return Ok(tweets);
+        }
+    }
+
     // ── Tier 1: Reddit + HN in parallel (3-5s faster than sequential) ──
     let (reddit_tweets, hn_tweets) = tokio::join!(
         search_via_reddit(query, max, http),
@@ -66,6 +76,85 @@ pub async fn search_tweets(
     }
 
     Ok(Vec::new())
+}
+
+/// Search Twitter/X via local SearXNG JSON API with `site:x.com` query.
+///
+/// SearXNG aggregates Google, Bing, and DDG results server-side — bypasses
+/// per-IP bot detection. Returns snippets from indexed tweets.
+async fn search_via_searxng(
+    query: &str,
+    max: usize,
+    searxng_url: &str,
+    http: &HttpClient,
+    timeout_secs: u64,
+) -> Vec<Tweet> {
+    let site_q = format!("site:x.com {query}");
+    let encoded: String = url::form_urlencoded::byte_serialize(site_q.as_bytes()).collect();
+    let url = format!("{searxng_url}/search?q={encoded}&format=json&pageno=1&language=en-US");
+
+    let resp = tokio::time::timeout(Duration::from_secs(timeout_secs), http.fetch_text(&url)).await;
+    let body = match resp {
+        Ok(Ok(b)) => b,
+        _ => return Vec::new(),
+    };
+
+    let v: serde_json::Value = match serde_json::from_str(&body) {
+        Ok(v) => v,
+        Err(_) => return Vec::new(),
+    };
+    let results = match v["results"].as_array() {
+        Some(a) => a,
+        None => return Vec::new(),
+    };
+
+    let mut tweets = Vec::new();
+    for (i, item) in results.iter().take(max).enumerate() {
+        let raw_url = item["url"].as_str().unwrap_or("").to_string();
+        if !raw_url.contains("x.com") && !raw_url.contains("twitter.com") {
+            continue;
+        }
+        let title = item["title"].as_str().unwrap_or("").to_string();
+        let snippet = item["content"].as_str().unwrap_or("").to_string();
+        let text = if snippet.is_empty() {
+            title.clone()
+        } else {
+            snippet
+        };
+
+        let (username, tweet_id) = extract_twitter_id_and_author(&raw_url);
+        let hashtags = extract_hashtags(&text);
+        let mentions = extract_mentions(&text);
+        tweets.push(Tweet {
+            id: if tweet_id.is_empty() {
+                format!("searxng-{i}")
+            } else {
+                tweet_id
+            },
+            url: raw_url,
+            author: TwitterUser {
+                username: username.clone(),
+                display_name: username,
+                followers: None,
+                following: None,
+                verified: false,
+                bio: String::new(),
+            },
+            text,
+            published: String::new(),
+            likes: 0,
+            retweets: 0,
+            replies: 0,
+            views: None,
+            hashtags,
+            mentions,
+            media_urls: Vec::new(),
+            is_reply: false,
+            is_retweet: false,
+            quoted_tweet: None,
+        });
+    }
+    tweets
 }
 
 /// Search Reddit for Twitter/X content using a dual-phase approach.

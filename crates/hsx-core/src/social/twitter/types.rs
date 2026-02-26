@@ -91,6 +91,7 @@ pub struct TwitterPipelineConfig {
     pub analyze_sentiment: bool,
     pub nitter_instances: Vec<String>,
     pub timeout_secs: u64,
+    pub searxng_url: Option<String>, // local SearXNG for reliable site:x.com search
 }
 
 impl Default for TwitterPipelineConfig {
@@ -110,6 +111,7 @@ impl Default for TwitterPipelineConfig {
                 // nitter.poast.org and nitter.privacydev.net removed (503/timeout Feb 2026)
             ],
             timeout_secs: 10, // shorter timeout — DDG is Tier 1, nitter is fallback
+            searxng_url: None,
         }
     }
 }

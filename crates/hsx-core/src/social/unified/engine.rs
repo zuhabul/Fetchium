@@ -65,6 +65,7 @@ pub async fn run_social_pipeline(
                     query: query.clone(),
                     max_tweets: max,
                     fetch_trends: cfg.include_trends,
+                    searxng_url: hsx_cfg.search.searxng_url.clone(),
                     ..Default::default()
                 };
                 Some(twitter_pipeline::run_twitter_pipeline(&cfg_tw, hsx_cfg, http).await)
@@ -126,6 +127,7 @@ pub async fn run_social_pipeline(
                     max_results: max,
                     graph_api_token: None,
                     timeout_secs: cfg.timeout_secs,
+                    searxng_url: hsx_cfg.search.searxng_url.clone(),
                 };
                 Some(fb_pipeline::run_facebook_pipeline(&cfg_fb, http).await)
             } else {

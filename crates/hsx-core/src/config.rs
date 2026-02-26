@@ -226,17 +226,16 @@ impl Default for GeneralConfig {
 impl Default for SearchConfig {
     fn default() -> Self {
         Self {
-            // Multi-backend default: API-first for reliability, scrapers as bonus.
-            // Wikipedia/HN/Reddit/SO/Arxiv use stable JSON APIs (no CAPTCHAs).
-            // DDG/Google/Bing are scrapers — may get CAPTCHA-blocked.
+            // Default backends: stable API/meta-search sources only.
+            // SearXNG covers Google, Bing, DDG internally — no per-server CAPTCHAs.
+            // Wikipedia/HN/Reddit/SO/Arxiv/GitHub use public APIs (no rate limiting).
+            // Direct Bing/DDG/Google scrapers excluded — they CAPTCHA-block server IPs.
             backends: vec![
+                "searxng".into(),
                 "wikipedia".into(),
                 "hackernews".into(),
                 "reddit".into(),
                 "stackoverflow".into(),
-                "duckduckgo".into(),
-                "google".into(),
-                "bing".into(),
                 "arxiv".into(),
                 "github".into(),
             ],
@@ -244,7 +243,7 @@ impl Default for SearchConfig {
             default_tier: PdsTier::Summary,
             max_concurrent: 10,
             timeout_secs: 30,
-            searxng_url: None,
+            searxng_url: Some("***REMOVED***".into()),
         }
     }
 }

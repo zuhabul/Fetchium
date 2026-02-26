@@ -25,6 +25,7 @@ async fn main() -> anyhow::Result<()> {
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| filter.into()),
         )
         .with_target(false)
+        .with_writer(std::io::stderr) // logs → stderr so stdout stays clean for JSON/piping
         .init();
 
     // Load config
