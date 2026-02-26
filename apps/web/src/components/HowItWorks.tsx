@@ -1,0 +1,330 @@
+"use client";
+
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
+import {
+  Search,
+  Globe,
+  Brain,
+  Layers,
+  Coins,
+  Sparkles,
+  ArrowRight,
+} from "lucide-react";
+
+interface Step {
+  number: number;
+  icon: React.ElementType;
+  title: string;
+  subtitle: string;
+  description: string;
+  detail: string;
+  color: string;
+  glow: string;
+  iconBg: string;
+  borderColor: string;
+  numberColor: string;
+}
+
+const steps: Step[] = [
+  {
+    number: 1,
+    icon: Search,
+    title: "Query Analysis",
+    subtitle: "QFD + QCE + QXE",
+    description:
+      "Your query is fingerprinted, classified by intent, scored for complexity, and expanded with semantic variants. The system chooses the optimal backend mix before a single network call is made.",
+    detail: "~2ms",
+    color: "from-indigo-500 to-indigo-600",
+    glow: "rgba(99,102,241,0.35)",
+    iconBg: "bg-indigo-500/15 border-indigo-500/25",
+    borderColor: "border-indigo-500/30",
+    numberColor: "text-indigo-400",
+  },
+  {
+    number: 2,
+    icon: Globe,
+    title: "Multi-Backend Federation",
+    subtitle: "ABS + Resilience Layer",
+    description:
+      "The Adaptive Backend Selector fans your query across up to 11 sources in parallel — SearXNG, Brave, GitHub, Reddit, StackOverflow, YouTube, and more. Circuit breakers handle backend failures invisibly.",
+    detail: "~120ms",
+    color: "from-blue-500 to-blue-600",
+    glow: "rgba(59,130,246,0.3)",
+    iconBg: "bg-blue-500/15 border-blue-500/25",
+    borderColor: "border-blue-500/30",
+    numberColor: "text-blue-400",
+  },
+  {
+    number: 3,
+    icon: Brain,
+    title: "HyperFusion Ranking",
+    subtitle: "8-Signal Neural Ranking",
+    description:
+      "Results are scored on 8 signals: BM25 lexical match, semantic similarity, temporal freshness, domain authority, evidence density, source diversity, content depth, and cross-source consensus.",
+    detail: "~18ms",
+    color: "from-violet-500 to-violet-600",
+    glow: "rgba(139,92,246,0.3)",
+    iconBg: "bg-violet-500/15 border-violet-500/25",
+    borderColor: "border-violet-500/30",
+    numberColor: "text-violet-400",
+  },
+  {
+    number: 4,
+    icon: Layers,
+    title: "CEP Content Extraction",
+    subtitle: "5-Layer Cascade",
+    description:
+      "Top-ranked URLs are deep-extracted via the Content Extraction Protocol: CSS selectors → Readability algorithm → Headless JS rendering → PDF parsing → Screenshot OCR. Zero pages escape clean extraction.",
+    detail: "~40ms",
+    color: "from-cyan-500 to-cyan-600",
+    glow: "rgba(6,182,212,0.3)",
+    iconBg: "bg-cyan-500/15 border-cyan-500/25",
+    borderColor: "border-cyan-500/30",
+    numberColor: "text-cyan-400",
+  },
+  {
+    number: 5,
+    icon: Coins,
+    title: "Token Budget Control",
+    subtitle: "QATBE Algorithm",
+    description:
+      "Extracted content is segmented, BM25-scored for query relevance, then packed into your token budget via greedy knapsack. You always get the most relevant content that fits your LLM context window.",
+    detail: "~5ms",
+    color: "from-amber-500 to-amber-600",
+    glow: "rgba(245,158,11,0.3)",
+    iconBg: "bg-amber-500/15 border-amber-500/25",
+    borderColor: "border-amber-500/30",
+    numberColor: "text-amber-400",
+  },
+  {
+    number: 6,
+    icon: Sparkles,
+    title: "AI-Ready Response",
+    subtitle: "Evidence Graph + Citations",
+    description:
+      "The final response includes ranked results, extracted content within your budget, an evidence graph tracing every claim to a source, and auto-generated citations in APA, IEEE, BibTeX, or Chicago format.",
+    detail: "Total < 200ms",
+    color: "from-emerald-500 to-emerald-600",
+    glow: "rgba(16,185,129,0.3)",
+    iconBg: "bg-emerald-500/15 border-emerald-500/25",
+    borderColor: "border-emerald-500/30",
+    numberColor: "text-emerald-400",
+  },
+];
+
+function StepCard({ step, index }: { step: Step; index: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-60px" });
+  const Icon = step.icon;
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 32, scale: 0.96 }}
+      animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
+      transition={{
+        delay: index * 0.1,
+        duration: 0.55,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      className="group relative"
+    >
+      {/* Connector line (hidden on last item) */}
+      {index < steps.length - 1 && (
+        <div className="absolute left-6 top-[52px] hidden h-[calc(100%+1.25rem)] w-px bg-gradient-to-b from-white/10 to-transparent lg:block" />
+      )}
+
+      <div
+        className={`glass-card relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:border-[${step.borderColor}]`}
+        style={
+          {
+            "--glow-color": step.glow,
+          } as React.CSSProperties
+        }
+      >
+        {/* Inner glow on hover */}
+        <div
+          className="absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          style={{
+            background: `radial-gradient(ellipse at 30% 30%, ${step.glow.replace("0.3", "0.08")}, transparent 70%)`,
+          }}
+        />
+
+        <div className="relative flex items-start gap-5">
+          {/* Step number + icon column */}
+          <div className="flex shrink-0 flex-col items-center gap-2">
+            {/* Large step number */}
+            <span
+              className={`text-[11px] font-bold tracking-widest uppercase ${step.numberColor} opacity-60`}
+            >
+              {String(step.number).padStart(2, "0")}
+            </span>
+            {/* Icon */}
+            <div
+              className={`flex h-12 w-12 items-center justify-center rounded-xl border ${step.iconBg} transition-all duration-300 group-hover:scale-110`}
+              style={{
+                boxShadow: `0 0 20px ${step.glow.replace("0.3", "0")} group-hover:0 0 20px ${step.glow}`,
+              }}
+            >
+              <Icon
+                className={`h-5 w-5`}
+                style={{ color: step.glow.replace("rgba(", "rgb(").replace(/,[\d.]+\)$/, ")") }}
+                strokeWidth={1.75}
+              />
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="min-w-0 flex-1">
+            <div className="mb-0.5 flex items-center justify-between gap-2">
+              <h3 className="text-[15px] font-semibold text-slate-100">
+                {step.title}
+              </h3>
+              <span className="shrink-0 rounded-full border border-white/8 bg-white/4 px-2.5 py-0.5 font-mono text-[10px] text-slate-500">
+                {step.detail}
+              </span>
+            </div>
+            <div className="mb-2.5 text-[11px] font-medium text-slate-600 tracking-wide uppercase">
+              {step.subtitle}
+            </div>
+            <p className="text-[13.5px] leading-relaxed text-slate-500 group-hover:text-slate-400 transition-colors duration-300">
+              {step.description}
+            </p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function PipelineDiagram() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true });
+
+  const labels = [
+    { label: "Query", color: "bg-indigo-500" },
+    { label: "Federation", color: "bg-blue-500" },
+    { label: "Ranking", color: "bg-violet-500" },
+    { label: "Extraction", color: "bg-cyan-500" },
+    { label: "Token Budget", color: "bg-amber-500" },
+    { label: "Response", color: "bg-emerald-500" },
+  ];
+
+  return (
+    <div
+      ref={ref}
+      className="mb-16 flex items-center justify-center gap-0 overflow-x-auto pb-2"
+    >
+      {labels.map((l, i) => (
+        <div key={l.label} className="flex items-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={inView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ delay: 0.2 + i * 0.08, duration: 0.4 }}
+            className="flex flex-col items-center gap-2"
+          >
+            <div
+              className={`h-2.5 w-2.5 rounded-full ${l.color} shadow-lg`}
+              style={{ boxShadow: `0 0 8px currentColor` }}
+            />
+            <span className="whitespace-nowrap text-[11px] font-medium text-slate-500">
+              {l.label}
+            </span>
+          </motion.div>
+          {i < labels.length - 1 && (
+            <motion.div
+              initial={{ opacity: 0, scaleX: 0 }}
+              animate={inView ? { opacity: 1, scaleX: 1 } : {}}
+              style={{ transformOrigin: "left" }}
+              transition={{
+                delay: 0.25 + i * 0.08,
+                duration: 0.3,
+              }}
+              className="mx-2 flex items-center"
+            >
+              <div className="h-px w-8 bg-gradient-to-r from-white/15 to-white/5" />
+              <ArrowRight className="h-3 w-3 text-slate-700" />
+            </motion.div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function HowItWorks() {
+  return (
+    <section className="relative overflow-hidden py-28 px-4">
+      {/* Background */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute right-0 top-0 h-[500px] w-[600px] rounded-full bg-violet-500/4 blur-[120px]" />
+        <div className="absolute bottom-0 left-0 h-[400px] w-[500px] rounded-full bg-indigo-500/4 blur-[100px]" />
+      </div>
+
+      <div className="relative mx-auto max-w-4xl">
+        {/* Header */}
+        <motion.div
+          className="mb-14 text-center"
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-500/25 bg-violet-500/8 px-4 py-1.5 text-xs font-medium text-violet-300">
+            <Sparkles className="h-3.5 w-3.5" />
+            Pipeline Architecture
+          </div>
+          <h2 className="text-4xl font-bold tracking-tight text-slate-100 sm:text-5xl">
+            How it{" "}
+            <span className="gradient-text">works</span>
+          </h2>
+          <p className="mt-5 mx-auto max-w-xl text-lg text-slate-500">
+            Six stages. Under 200ms. Every result traced back to its source with
+            an evidence graph.
+          </p>
+        </motion.div>
+
+        {/* Horizontal pipeline diagram */}
+        <PipelineDiagram />
+
+        {/* Steps */}
+        <div className="space-y-4">
+          {steps.map((step, i) => (
+            <StepCard key={step.number} step={step} index={i} />
+          ))}
+        </div>
+
+        {/* Bottom callout */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-10 overflow-hidden rounded-2xl border border-indigo-500/20 bg-gradient-to-r from-indigo-500/8 to-violet-500/8 p-6"
+        >
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="mb-1 text-[15px] font-semibold text-slate-100">
+                Self-host the full pipeline for free
+              </div>
+              <div className="text-[13px] text-slate-500">
+                MIT licensed Rust binary. No rate limits. No API keys required
+                when using SearXNG backend.
+              </div>
+            </div>
+            <a
+              href="https://github.com/hypersearchx/hypersearchx"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex shrink-0 items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-5 py-2.5 text-sm font-semibold text-indigo-300 transition-all hover:bg-indigo-500/20 hover:text-indigo-200"
+            >
+              View on GitHub
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </a>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}

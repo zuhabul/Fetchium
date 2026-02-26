@@ -1,0 +1,112 @@
+# SearXNG settings for HyperSearchX local instance
+# Optimized for JSON API access with maximum engine coverage
+
+use_default_settings: true
+
+general:
+  instance_name: "HyperSearchX Local"
+  privacypolicy_url: false
+  donation_url: false
+  contact_url: false
+  enable_metrics: false
+
+server:
+  # Generate: openssl rand -hex 32
+  secret_key: "hsx-searxng-local-secret-key-replace-in-prod-7f8d92a1b3e4c5d6"
+  limiter: false
+  image_proxy: false
+  http_protocol_version: "1.0"
+  method: "GET"
+
+ui:
+  static_use_hash: true
+  default_locale: "en"
+  query_in_title: false
+  infinite_scroll: false
+  default_theme: simple
+  center_alignment: false
+  results_on_new_tab: false
+  simple_style: ""
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  autocomplete_min: 4
+  default_lang: "en"
+  ban_time_on_fail: 5
+  max_ban_time_on_fail: 120
+  suspended_times:
+    SearxEngineAccessDenied: 86400
+    SearxEngineCaptcha: 86400
+    SearxEngineTooManyRequests: 3600
+    cf_SearxEngineCaptcha: 1296000
+    cf_SearxEngineAccessDenied: 86400
+    recaptcha_SearxEngineCaptcha: 604800
+  formats:
+    - html
+    - json
+
+# Override engines to enable the most reliable ones
+engines:
+  - name: google
+    engine: google
+    shortcut: g
+    disabled: false
+    timeout: 6.0
+    proxies: {}
+
+  - name: bing
+    engine: bing
+    shortcut: b
+    disabled: false
+    timeout: 6.0
+
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: d
+    disabled: false
+    timeout: 6.0
+
+  - name: brave
+    engine: brave
+    shortcut: br
+    disabled: false
+    timeout: 6.0
+
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: w
+    disabled: false
+    timeout: 6.0
+
+  - name: stackoverflow
+    engine: stackoverflow
+    shortcut: so
+    disabled: false
+    timeout: 6.0
+
+  - name: github
+    engine: github
+    shortcut: gh
+    disabled: false
+    timeout: 6.0
+
+  - name: arxiv
+    engine: arxiv
+    shortcut: arx
+    disabled: false
+    timeout: 8.0
+
+  - name: reddit
+    engine: reddit
+    shortcut: re
+    disabled: false
+    timeout: 6.0
+
+outgoing:
+  request_timeout: 6.0
+  max_request_timeout: 10.0
+  useragent_suffix: ""
+  pool_connections: 100
+  pool_maxsize: 20
+  enable_http2: true

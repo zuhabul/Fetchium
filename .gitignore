@@ -26,6 +26,8 @@ npm/bin/hsx*
 .turbo/
 apps/*/out/
 bun.lockb
+bun.lock
+*.tsbuildinfo
 
 # Data
 *.db
