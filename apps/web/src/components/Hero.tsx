@@ -6,13 +6,15 @@ import dynamic from "next/dynamic";
 
 const NeuralCanvas = dynamic(() => import("./NeuralCanvas"), { ssr: false });
 
-// ── Single short words only — no wrapping, no layout shift ──────────────────
 const WORDS = ["thinks.", "learns.", "ranks.", "extracts.", "reasons."];
 
 /**
- * Slot-machine word rotator.
- * Words scroll vertically inside a fixed-height overflow:hidden container.
- * Parent layout NEVER shifts — container dimensions are completely stable.
+ * Slot-machine word rotator — zero layout shift, zero clipping.
+ *
+ * Technique: an invisible spacer span containing the WIDEST word forces the
+ * container to exactly the right width. Animated words use absolute inset-0
+ * + justify-center so they are always centred inside that fixed box.
+ * overflow:hidden clips only vertical overflow (the incoming/outgoing slide).
  */
 function WordRotator() {
   const [idx, setIdx] = useState(0);
@@ -20,21 +22,25 @@ function WordRotator() {
     const t = setInterval(() => setIdx(i => (i + 1) % WORDS.length), 2400);
     return () => clearInterval(t);
   }, []);
+
+  // Widest word sets the permanent container width — "extracts." is longest
+  const widest = WORDS.reduce((a, b) => (a.length >= b.length ? a : b));
+
   return (
     <span
       className="relative inline-block overflow-hidden"
-      style={{
-        // Fix height to exactly one line so no reflow ever occurs
-        height: "1.15em",
-        verticalAlign: "bottom",
-        // Width large enough for the longest word ("extracts.")
-        minWidth: "4.2ch",
-      }}
+      style={{ height: "1.15em", verticalAlign: "bottom" }}
     >
+      {/* Invisible spacer: sets container width to the widest word, always */}
+      <span aria-hidden className="invisible select-none whitespace-nowrap">
+        {widest}
+      </span>
+
+      {/* Animated words: absolutely fill the spacer-sized container */}
       <AnimatePresence mode="wait" initial={false}>
         <motion.span
           key={WORDS[idx]}
-          className="absolute inset-0 flex items-center gradient-text-purple whitespace-nowrap"
+          className="absolute inset-0 flex items-center justify-center gradient-text-purple whitespace-nowrap"
           initial={{ y: "110%" }}
           animate={{ y: "0%" }}
           exit={{ y: "-110%" }}
