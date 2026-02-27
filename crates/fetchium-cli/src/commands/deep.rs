@@ -29,6 +29,9 @@ pub async fn run(args: DeepArgs, config: &HsxConfig) -> anyhow::Result<()> {
     if args.max_agents > 0 {
         amrs_config.max_agents = args.max_agents as usize;
     }
+    if let Some(timeout) = args.timeout {
+        amrs_config.timeout_secs = timeout;
+    }
 
     let result = if args.tree_of_thoughts {
         spinner.set_message("ToTR: Decomposing query...");

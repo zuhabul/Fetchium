@@ -9,6 +9,7 @@ use crate::research::amrs::channel::{
 };
 use async_trait::async_trait;
 use sha2::{Digest, Sha256};
+use std::time::Duration;
 
 /// Fetches URLs and extracts content using the CEP pipeline.
 pub struct ExtractAgent {
@@ -42,22 +43,36 @@ impl Agent for ExtractAgent {
         while let Some(msg) = rx.recv().await {
             match msg {
                 AgentMessage::SpawnExtract { urls, query: _ } => {
-                    let _ = tx
+                    if tx
                         .send(AgentMessage::ProgressUpdate {
                             agent_type: AgentType::Extract,
                             message: format!("Extracting {} URLs...", urls.len()),
                             progress: 0.0,
                         })
-                        .await;
+                        .await
+                        .is_err()
+                    {
+                        break; // coordinator gone
+                    }
 
                     let mut sources = Vec::new();
                     let mut handles = Vec::new();
+                    let total = urls.len();
 
                     for url in urls {
                         let client = self.http_client.clone();
                         handles.push(tokio::spawn(async move {
-                            let html = client.fetch_text(&url).await.unwrap_or_default();
-                            (url, html)
+                            // Per-URL timeout to prevent hanging on unresponsive servers
+                            match tokio::time::timeout(
+                                Duration::from_secs(8),
+                                client.fetch_text(&url),
+                            )
+                            .await
+                            {
+                                Ok(Ok(html)) => (url, html),
+                                Ok(Err(_)) => (url, String::new()),
+                                Err(_) => (url, String::new()),
+                            }
                         }));
                     }
 
@@ -75,16 +90,26 @@ impl Agent for ExtractAgent {
                             }
                         }
 
-                        let _ = tx
+                        if tx
                             .send(AgentMessage::ProgressUpdate {
                                 agent_type: AgentType::Extract,
-                                message: format!("Extracted {} sources", i + 1),
-                                progress: (i + 1) as f64 / 10.0,
+                                message: format!("Extracted {}/{} sources", i + 1, total),
+                                progress: (i + 1) as f64 / total.max(1) as f64,
                             })
-                            .await;
+                            .await
+                            .is_err()
+                        {
+                            break; // coordinator gone
+                        }
                     }
 
-                    let _ = tx.send(AgentMessage::ExtractComplete { sources }).await;
+                    if tx
+                        .send(AgentMessage::ExtractComplete { sources })
+                        .await
+                        .is_err()
+                    {
+                        break; // coordinator gone
+                    }
                 }
                 AgentMessage::Shutdown => break,
                 _ => {}
