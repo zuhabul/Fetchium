@@ -56,7 +56,8 @@ pub async fn chat_with_fallback(
 
     let mut last_error: Option<HsxError> = None;
 
-    for kind in &chain {
+    let chain_len = chain.len();
+    for (idx, kind) in chain.iter().enumerate() {
         match call_provider(
             *kind,
             messages,
@@ -70,7 +71,13 @@ pub async fn chat_with_fallback(
         {
             Ok(result) => return Ok(result),
             Err(e) => {
-                tracing::warn!("Provider {} failed: {}", kind.slug(), e);
+                // Downgrade per-provider failures to DEBUG when a fallback exists.
+                // Only WARN when the entire chain is exhausted (no more fallbacks).
+                if idx + 1 < chain_len {
+                    tracing::debug!("Provider {} failed (trying next): {}", kind.slug(), e);
+                } else {
+                    tracing::warn!("All AI providers exhausted. Last error: {}", e);
+                }
                 last_error = Some(e);
             }
         }
@@ -220,9 +227,12 @@ async fn call_provider(
         }
 
         ProviderKind::Antigravity => {
-            // Refresh the antigravity Google OAuth access token on every call
-            // (short-lived tokens, no local caching needed)
-            let (access_token, project_id) = get_antigravity_token().ok_or_else(|| {
+            // Refresh the antigravity Google OAuth access token on every call.
+            // refresh_antigravity_token uses reqwest::blocking — must run in spawn_blocking.
+            let token_result = tokio::task::spawn_blocking(get_antigravity_token)
+                .await
+                .unwrap_or(None);
+            let (access_token, project_id) = token_result.ok_or_else(|| {
                 HsxError::AiUnavailable(
                     "Antigravity: no OpenCode account found.\n  \
                      Install OpenCode and add an account: https://opencode.ai\n  \

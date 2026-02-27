@@ -353,12 +353,12 @@ pub struct AntigravityAccount {
     /// Google Cloud project ID for quota routing.
     #[serde(default)]
     pub project_id: Option<String>,
-    /// ISO 8601 timestamp when this account was added.
+    /// Timestamp when this account was added (string ISO 8601 or integer epoch ms).
     #[serde(default)]
-    pub added_at: Option<String>,
-    /// ISO 8601 timestamp when this account was last used.
+    pub added_at: Option<serde_json::Value>,
+    /// Timestamp when this account was last used (string ISO 8601 or integer epoch ms).
     #[serde(default)]
-    pub last_used: Option<String>,
+    pub last_used: Option<serde_json::Value>,
     /// Device fingerprint headers injected into requests.
     #[serde(default)]
     pub fingerprint: Option<serde_json::Value>,
