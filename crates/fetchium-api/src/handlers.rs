@@ -152,6 +152,7 @@ pub async fn research(
         trace_sources: false,
         trust_verify: false,
         max_rar_loops: 2,
+        ai_synthesis: true,
     };
 
     let report = ResearchPipeline::execute(&rc, &state.config, &state.http)

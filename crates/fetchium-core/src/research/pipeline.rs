@@ -34,6 +34,86 @@ use std::time::Instant;
 pub struct ResearchPipeline;
 
 impl ResearchPipeline {
+    /// Synthesize a research report using AI with numbered source context.
+    ///
+    /// Uses a oneshot channel + tokio::task::spawn_local pattern to keep
+    /// the parent future Send-safe (required by axum handlers).
+    /// Falls back to empty string on failure.
+    async fn synthesize_with_ai(
+        query: &str,
+        sources: &[SourceMeta],
+        citations: &[crate::citation::types::FormattedCitation],
+        hsx_config: &HsxConfig,
+    ) -> String {
+        use crate::ai::types::{AiConfig, ChatMessage};
+
+        let ai_config = AiConfig::from_hsx_config(hsx_config);
+        if ai_config.providers.fallback_chain.is_empty() && ai_config.default_model.is_none() {
+            return String::new();
+        }
+
+        // Build numbered source context
+        let mut source_context = String::new();
+        for (i, (meta, citation)) in sources.iter().zip(citations.iter()).enumerate() {
+            source_context.push_str(&format!(
+                "[{}] {} — {} {}\n",
+                i + 1,
+                meta.title,
+                meta.url,
+                citation.inline_marker,
+            ));
+        }
+
+        let system_prompt = crate::ai::prompt::research_synthesis_prompt(query, sources.len());
+
+        let messages = vec![
+            ChatMessage {
+                role: "system".into(),
+                content: system_prompt,
+            },
+            ChatMessage {
+                role: "user".into(),
+                content: format!("SOURCES:\n{}\n\nSynthesize a report now.", source_context),
+            },
+        ];
+
+        let providers = ai_config.providers.clone();
+
+        // Use a oneshot channel to bridge across the Send boundary.
+        // The non-Send part (dyn FnMut) is confined to a spawn_blocking thread.
+        let (tx, rx) = tokio::sync::oneshot::channel::<String>();
+
+        let ai_config_owned = ai_config;
+        std::thread::spawn(move || {
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+            let result = rt.block_on(async move {
+                let mut noop = |_: &str| {};
+                match tokio::time::timeout(
+                    std::time::Duration::from_secs(30),
+                    crate::ai::provider_client::chat_with_fallback(
+                        &messages,
+                        None,
+                        &ai_config_owned,
+                        &providers,
+                        false,
+                        &mut noop,
+                    ),
+                )
+                .await
+                {
+                    Ok(Ok(result)) => result.content,
+                    _ => String::new(),
+                }
+            });
+            let _ = tx.send(result);
+        });
+
+        rx.await.unwrap_or_default()
+    }
+
     /// Execute the full research pipeline from a configuration.
     ///
     /// The orchestrator, extractor, and ranker are injected via the config and client.
@@ -227,14 +307,31 @@ impl ResearchPipeline {
             source_metas.push(meta.clone());
 
             let citation = formatter.format(&meta, idx + 1);
-            if !synthesis.is_empty() {
-                synthesis.push(' ');
-            }
-            synthesis.push_str(&format!(
-                "Information from {} was analyzed {}.",
-                meta.title, citation.inline_marker
-            ));
             formatted_citations.push(citation);
+        }
+
+        // AI Synthesis: replace placeholder with real AI report
+        if config.ai_synthesis && !source_metas.is_empty() {
+            synthesis = Self::synthesize_with_ai(
+                &config.query,
+                &source_metas,
+                &formatted_citations,
+                hsx_config,
+            )
+            .await;
+        }
+
+        // Fallback: if AI synthesis failed or was disabled, use listing format
+        if synthesis.is_empty() {
+            for (idx, meta) in source_metas.iter().enumerate() {
+                if !synthesis.is_empty() {
+                    synthesis.push(' ');
+                }
+                synthesis.push_str(&format!(
+                    "Information from {} was analyzed {}.",
+                    meta.title, formatted_citations[idx].inline_marker
+                ));
+            }
         }
 
         let reference_section = formatter.format_references(&source_metas);
