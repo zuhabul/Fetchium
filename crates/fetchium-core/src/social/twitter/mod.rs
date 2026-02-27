@@ -9,8 +9,12 @@
 //! ```
 
 pub mod analysis;
+pub mod oembed;
 pub mod pipeline;
+pub mod realtime;
 pub mod search;
+pub mod sentiment;
+pub mod trends;
 pub mod types;
 
 pub use types::*;
