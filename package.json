@@ -1,5 +1,5 @@
 {
-  "name": "hypersearchx",
+  "name": "fetchium",
   "private": true,
   "workspaces": [
     "apps/*",
