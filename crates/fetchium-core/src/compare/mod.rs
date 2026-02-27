@@ -81,9 +81,9 @@ pub fn build_comparison(
     let mut cells = Vec::new();
 
     for (item, summary, sources) in item_data {
-        // Extract a value for each dimension from the summary via keyword search
+        // Extract a value for each dimension — BM25-scored with item awareness
         for dim in &dimensions {
-            let value = extract_dimension_value(summary, dim);
+            let value = extract_dimension_value(summary, dim, item);
             cells.push(ComparisonCell {
                 item: item.clone(),
                 dimension: dim.clone(),
@@ -104,13 +104,78 @@ pub fn build_comparison(
     }
 }
 
-/// Extract a value for a dimension from a text summary.
-fn extract_dimension_value(summary: &str, dimension: &str) -> String {
-    let dim_lower = dimension.to_lowercase();
-    let words: Vec<&str> = summary.split_whitespace().collect();
+/// Extract a value for a dimension from a text summary using BM25 scoring.
+///
+/// 1. Split text into sentences
+/// 2. Filter to sentences that mention the item (case-insensitive)
+/// 3. Score each with BM25 against "{item} {dimension}"
+/// 4. Return highest-scoring sentence (truncated to 120 chars)
+/// 5. Falls back to "Insufficient data" instead of garbage
+fn extract_dimension_value(summary: &str, dimension: &str, item: &str) -> String {
+    if summary.trim().is_empty() {
+        return "Insufficient data".to_string();
+    }
 
-    // Find sentences containing keywords related to the dimension
-    let keywords: &[&str] = match dim_lower.as_str() {
+    let item_lower = item.to_lowercase();
+    let dim_lower = dimension.to_lowercase();
+    let bm25_query = format!("{} {}", item, dimension);
+
+    // Split into sentences (handle multiple delimiters)
+    let sentences: Vec<&str> = summary
+        .split(['.', '!', '?'])
+        .map(|s| s.trim())
+        .filter(|s| s.len() > 15) // skip very short fragments
+        .collect();
+
+    if sentences.is_empty() {
+        return "Insufficient data".to_string();
+    }
+
+    // Score sentences: prefer those mentioning the item AND relevant to dimension
+    let mut scored: Vec<(f64, &str)> = sentences
+        .iter()
+        .map(|&sentence| {
+            let lower = sentence.to_lowercase();
+            let mut score = crate::rank::bm25_score(sentence, &bm25_query);
+
+            // Bonus for mentioning the item directly
+            if lower.contains(&item_lower) {
+                score += 0.5;
+            }
+
+            // Bonus for dimension-related keywords
+            let keywords = dimension_keywords(&dim_lower);
+            for kw in keywords {
+                if lower.contains(kw) {
+                    score += 0.3;
+                }
+            }
+
+            (score, sentence)
+        })
+        .collect();
+
+    scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+
+    // Take best scoring sentence
+    if let Some((score, best)) = scored.first() {
+        if *score < 0.1 {
+            return "Insufficient data".to_string();
+        }
+        let truncated: String = best.chars().take(120).collect();
+        if best.len() > 120 {
+            format!("{}…", truncated.trim_end())
+        } else {
+            truncated
+        }
+    } else {
+        "Insufficient data".to_string()
+    }
+}
+
+/// Return dimension-specific keywords for scoring boosts.
+fn dimension_keywords(dim_lower: &str) -> &'static [&'static str] {
+    match dim_lower {
         "performance" => &[
             "fast",
             "slow",
@@ -118,6 +183,8 @@ fn extract_dimension_value(summary: &str, dimension: &str) -> String {
             "benchmark",
             "performance",
             "throughput",
+            "latency",
+            "efficient",
         ],
         "learning curve" => &[
             "easy",
@@ -126,6 +193,8 @@ fn extract_dimension_value(summary: &str, dimension: &str) -> String {
             "beginner",
             "learn",
             "learning",
+            "intuitive",
+            "documentation",
         ],
         "ecosystem" => &[
             "libraries",
@@ -134,39 +203,162 @@ fn extract_dimension_value(summary: &str, dimension: &str) -> String {
             "crate",
             "ecosystem",
             "plugins",
+            "tools",
+            "framework",
         ],
-        "community" => &["community", "users", "popular", "adoption", "developers"],
-        "production readiness" => &["stable", "production", "enterprise", "mature", "ready"],
-        "license" => &["mit", "apache", "gpl", "bsd", "license", "open source"],
-        "key use case" => &["use", "application", "web", "server", "mobile", "cli"],
+        "community" => &[
+            "community",
+            "users",
+            "popular",
+            "adoption",
+            "developers",
+            "contributors",
+            "active",
+        ],
+        "production readiness" => &[
+            "stable",
+            "production",
+            "enterprise",
+            "mature",
+            "ready",
+            "reliable",
+            "battle-tested",
+        ],
+        "license" => &[
+            "mit",
+            "apache",
+            "gpl",
+            "bsd",
+            "license",
+            "open source",
+            "proprietary",
+        ],
+        "key use case" => &[
+            "use case",
+            "application",
+            "web",
+            "server",
+            "mobile",
+            "cli",
+            "ideal for",
+            "best for",
+        ],
         _ => &[],
-    };
+    }
+}
 
-    // Find best matching sentence
-    let sentences: Vec<&str> = summary.split('.').collect();
-    for sentence in &sentences {
-        let lower = sentence.to_lowercase();
-        if keywords.iter().any(|kw| lower.contains(kw)) {
-            let trimmed = sentence.trim();
-            if !trimmed.is_empty() && trimmed.len() > 10 {
-                // Truncate to ~80 chars
-                let truncated: String = trimmed.chars().take(80).collect();
-                return if trimmed.len() > 80 {
-                    format!("{}…", truncated.trim_end())
-                } else {
-                    truncated
-                };
+/// Configuration for AI-powered comparison.
+#[derive(Debug, Clone, Default)]
+pub struct AiCompareConfig {
+    /// Whether to use AI for dimension extraction.
+    pub use_ai: bool,
+    /// Optional model override.
+    pub model: Option<String>,
+}
+
+/// Build a comparison using AI to extract dimension values.
+pub async fn build_comparison_ai(
+    query: &ComparisonQuery,
+    item_data: &[(String, String, Vec<String>)],
+    hsx_config: &crate::config::HsxConfig,
+) -> ComparisonResult {
+    use crate::ai::types::{AiConfig, ChatMessage};
+
+    let items: Vec<String> = query.items.clone();
+    let dimensions: Vec<String> = STANDARD_DIMENSIONS.iter().map(|s| s.to_string()).collect();
+    let mut cells = Vec::new();
+    let ai_config = AiConfig::from_hsx_config(hsx_config);
+    let providers = ai_config.providers.clone();
+
+    for (item, summary, sources) in item_data {
+        let snippet: String = summary.chars().take(3000).collect();
+        let dim_list = dimensions.join(", ");
+
+        let prompt = format!(
+            "Based on the following information about \"{item}\", provide a brief (1-2 sentence) assessment for each dimension.\n\n\
+             SOURCE TEXT:\n{snippet}\n\n\
+             DIMENSIONS: {dim_list}\n\n\
+             Respond in this exact format (one line per dimension):\n\
+             Performance: ...\n\
+             Learning Curve: ...\n\
+             Ecosystem: ...\n\
+             Community: ...\n\
+             Production Readiness: ...\n\
+             License: ...\n\
+             Key Use Case: ...\n\n\
+             Be specific and concise. If information is insufficient, say \"Insufficient data\"."
+        );
+
+        let messages = vec![
+            ChatMessage {
+                role: "system".into(),
+                content: "You are a technical comparison assistant. Extract factual dimension values from source text.".into(),
+            },
+            ChatMessage {
+                role: "user".into(),
+                content: prompt,
+            },
+        ];
+
+        let mut noop = |_: &str| {};
+        let ai_result = crate::ai::provider_client::chat_with_fallback(
+            &messages, None, &ai_config, &providers, false, &mut noop,
+        )
+        .await;
+
+        match ai_result {
+            Ok(result) => {
+                // Parse AI response into dimension values
+                for dim in &dimensions {
+                    let value = parse_ai_dimension(&result.content, dim);
+                    cells.push(ComparisonCell {
+                        item: item.clone(),
+                        dimension: dim.clone(),
+                        value,
+                        sources: sources.clone(),
+                    });
+                }
+            }
+            Err(_) => {
+                // Fall back to BM25 extraction
+                for dim in &dimensions {
+                    let value = extract_dimension_value(summary, dim, item);
+                    cells.push(ComparisonCell {
+                        item: item.clone(),
+                        dimension: dim.clone(),
+                        value,
+                        sources: sources.clone(),
+                    });
+                }
             }
         }
     }
 
-    // Fallback: grab first N words from the summary
-    let snippet: String = words.iter().take(12).cloned().collect::<Vec<_>>().join(" ");
-    if snippet.is_empty() {
-        "N/A".to_string()
-    } else {
-        format!("{snippet}…")
+    let markdown_table = render_markdown_table(&items, &dimensions, &cells);
+
+    ComparisonResult {
+        raw_query: query.raw_query.clone(),
+        items,
+        dimensions,
+        cells,
+        markdown_table,
     }
+}
+
+/// Parse an AI response to extract the value for a specific dimension.
+fn parse_ai_dimension(response: &str, dimension: &str) -> String {
+    let dim_prefix = format!("{}:", dimension);
+    let dim_prefix_lower = dim_prefix.to_lowercase();
+    for line in response.lines() {
+        let line_lower = line.to_lowercase().trim().to_string();
+        if line_lower.starts_with(&dim_prefix_lower) {
+            let value = line[dim_prefix.len()..].trim().to_string();
+            if !value.is_empty() {
+                return value;
+            }
+        }
+    }
+    "Insufficient data".to_string()
 }
 
 /// Render a markdown comparison table.
@@ -262,8 +454,8 @@ mod tests {
     fn extract_dimension_value_finds_relevant_sentence() {
         let summary =
             "Rust is blazingly fast. Learning Rust has a steep learning curve for beginners.";
-        let val = extract_dimension_value(summary, "Learning Curve");
+        let val = extract_dimension_value(summary, "Learning Curve", "Rust");
         assert!(!val.is_empty());
-        assert_ne!(val, "N/A");
+        assert_ne!(val, "Insufficient data");
     }
 }
