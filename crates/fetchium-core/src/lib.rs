@@ -120,6 +120,9 @@ pub mod export;
 pub mod monitor;
 pub mod query;
 
+// Summarization pipeline
+pub mod summarize;
+
 // Phase 6+
 pub mod intelligence;
 
