@@ -28,6 +28,8 @@ pub struct ResearchConfig {
     pub trace_sources: bool,
     pub trust_verify: bool,
     pub max_rar_loops: usize,
+    /// Use AI to synthesize the report (default: true). Disable with --no-ai.
+    pub ai_synthesis: bool,
 }
 
 impl Default for ResearchConfig {
@@ -43,6 +45,7 @@ impl Default for ResearchConfig {
             trace_sources: false,
             trust_verify: false,
             max_rar_loops: 3,
+            ai_synthesis: true,
         }
     }
 }

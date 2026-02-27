@@ -1,4 +1,4 @@
-//! `hsx research` — multi-source research with citations (Mode B).
+//! `fetchium research` — multi-source research with citations (Mode B).
 
 use crate::cli::ResearchArgs;
 use fetchium_core::citation::types::CitationStyle as CoreCitationStyle;
@@ -6,8 +6,12 @@ use fetchium_core::config::HsxConfig;
 use fetchium_core::research::pipeline::ResearchPipeline;
 use fetchium_core::research::ResearchConfig;
 use fetchium_core::validate::types::ValidationMode;
+use indicatif::{ProgressBar, ProgressStyle};
+use std::time::{Duration, Instant};
 
 pub async fn run(args: ResearchArgs, config_obj: &HsxConfig) -> anyhow::Result<()> {
+    let start = Instant::now();
+
     let citation_style = match args.citations {
         crate::cli::CitationStyle::Apa => CoreCitationStyle::Apa,
         crate::cli::CitationStyle::Mla => CoreCitationStyle::Mla,
@@ -30,12 +34,22 @@ pub async fn run(args: ResearchArgs, config_obj: &HsxConfig) -> anyhow::Result<(
         trace_sources: args.trace_sources,
         trust_verify: args.trust_verify,
         max_rar_loops: 3,
+        ai_synthesis: !args.no_ai,
     };
 
-    println!("Researching: {} ...", args.query);
+    let spinner = ProgressBar::new_spinner();
+    spinner.set_style(
+        ProgressStyle::default_spinner()
+            .template("{spinner:.cyan} [{elapsed_precise}] {msg}")
+            .unwrap(),
+    );
+    spinner.set_message(format!("Researching: {}...", args.query));
+    spinner.enable_steady_tick(Duration::from_millis(100));
 
     let http_client = fetchium_core::http::client::HttpClient::new(config_obj)?;
     let report = ResearchPipeline::execute(&config, config_obj, &http_client).await?;
+
+    spinner.finish_and_clear();
 
     // Format output
     let output = format_report(&report, &args);
@@ -60,6 +74,9 @@ pub async fn run(args: ResearchArgs, config_obj: &HsxConfig) -> anyhow::Result<(
             eprintln!("Evidence graph written to {graph_path}");
         }
     }
+
+    let elapsed = start.elapsed();
+    eprintln!("\nCompleted in {:.1}s", elapsed.as_secs_f64());
 
     Ok(())
 }
