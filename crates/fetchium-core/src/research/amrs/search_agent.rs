@@ -9,6 +9,7 @@ use crate::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
 use crate::types::ResultItem;
 use async_trait::async_trait;
 use std::collections::HashSet;
+use std::time::Duration;
 
 /// Executes search queries and discovers multi-hop follow-ups.
 pub struct SearchAgent {
@@ -56,22 +57,39 @@ impl Agent for SearchAgent {
         while let Some(msg) = rx.recv().await {
             match msg {
                 AgentMessage::SpawnSearch { query, depth } => {
-                    let _ = tx
+                    if tx
                         .send(AgentMessage::ProgressUpdate {
                             agent_type: AgentType::Search,
                             message: format!("Searching: {}", &query),
                             progress: 0.0,
                         })
-                        .await;
+                        .await
+                        .is_err()
+                    {
+                        break; // coordinator gone
+                    }
 
                     let orch_config = OrchestratorConfig::from_hsx_config(&self.hsx_config, 10);
                     let orchestrator =
                         SearchOrchestrator::new(self.http_client.clone(), orch_config);
 
-                    let results = orchestrator
-                        .search(&query, Some(10))
-                        .await
-                        .unwrap_or_default();
+                    // Timeout on search to prevent hanging on unresponsive backends
+                    let results = match tokio::time::timeout(
+                        Duration::from_secs(30),
+                        orchestrator.search(&query, Some(10)),
+                    )
+                    .await
+                    {
+                        Ok(Ok(r)) => r,
+                        Ok(Err(e)) => {
+                            tracing::warn!("Search failed for '{}': {}", query, e);
+                            Vec::new()
+                        }
+                        Err(_) => {
+                            tracing::warn!("Search timed out for '{}'", query);
+                            Vec::new()
+                        }
+                    };
 
                     let follow_ups = if depth > 0 {
                         self.detect_follow_ups(&query, &results)
@@ -79,13 +97,17 @@ impl Agent for SearchAgent {
                         Vec::new()
                     };
 
-                    let _ = tx
+                    if tx
                         .send(AgentMessage::SearchComplete {
                             sub_query: query,
                             results,
                             follow_up_queries: follow_ups,
                         })
-                        .await;
+                        .await
+                        .is_err()
+                    {
+                        break; // coordinator gone
+                    }
                 }
                 AgentMessage::Shutdown => break,
                 _ => {}

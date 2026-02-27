@@ -21,6 +21,7 @@ use crate::config::HsxConfig;
 use crate::error::HsxError;
 use crate::http::client::HttpClient;
 use crate::types::ResourceTier;
+use std::time::Duration;
 use tokio::sync::mpsc;
 
 use agent::Agent;
@@ -40,6 +41,8 @@ pub struct AmrsConfig {
     pub max_agents: usize,
     /// Channel buffer size
     pub channel_buffer: usize,
+    /// Global timeout for the entire run() in seconds
+    pub timeout_secs: u64,
 }
 
 impl AmrsConfig {
@@ -50,21 +53,25 @@ impl AmrsConfig {
                 max_depth: 1,
                 max_agents: 1,
                 channel_buffer: 32,
+                timeout_secs: 60,
             },
             ResourceTier::Standard => Self {
                 max_depth: 2,
                 max_agents: 4,
                 channel_buffer: 64,
+                timeout_secs: 60,
             },
             ResourceTier::Performance => Self {
                 max_depth: 3,
                 max_agents: 8,
                 channel_buffer: 128,
+                timeout_secs: 120,
             },
             ResourceTier::Server => Self {
                 max_depth: 5,
                 max_agents: 16,
                 channel_buffer: 256,
+                timeout_secs: 300,
             },
         }
     }
@@ -76,6 +83,7 @@ impl Default for AmrsConfig {
             max_depth: 2,
             max_agents: 4,
             channel_buffer: 64,
+            timeout_secs: 60,
         }
     }
 }
@@ -117,7 +125,25 @@ impl Coordinator {
     /// 3. ExtractAgent fetches and extracts all discovered URLs
     /// 4. VerifyAgent cross-validates sources and finds contradictions
     /// 5. SynthesizeAgent builds the final report + evidence graph
+    /// 6. Optional: enhance report with AI synthesis
     pub async fn run(&mut self, query: &str) -> Result<DeepResearchResult, HsxError> {
+        let global_timeout = Duration::from_secs(self.config.timeout_secs);
+        match tokio::time::timeout(global_timeout, self.run_inner(query)).await {
+            Ok(result) => result,
+            Err(_) => Err(HsxError::OperationTimeout {
+                operation: "deep research".into(),
+                timeout_ms: self.config.timeout_secs * 1000,
+                suggestion: format!(
+                    "Deep research timed out after {}s. Try --timeout with a higher value.",
+                    self.config.timeout_secs
+                ),
+            }),
+        }
+    }
+
+    /// Inner implementation wrapped by the global timeout.
+    async fn run_inner(&mut self, query: &str) -> Result<DeepResearchResult, HsxError> {
+        let phase_timeout = Duration::from_secs(self.config.timeout_secs / 2);
         let mut audit: Vec<AuditEntry> = Vec::new();
         let decomposition = decompose_query(query, self.config.max_depth);
 
@@ -144,7 +170,6 @@ impl Coordinator {
             let coordinator_tx = coord_tx.clone();
             let agent = SearchAgent::new(self.http_client.clone(), self.hsx_config.clone());
 
-            // Send task to the agent
             agent_tx
                 .send(AgentMessage::SpawnSearch {
                     query: node.query.clone(),
@@ -158,34 +183,47 @@ impl Coordinator {
                 let _ = agent.run(agent_rx, coordinator_tx).await;
             });
         }
-        drop(coord_tx); // Drop extra sender so recv returns None when all agents are done
+        drop(coord_tx);
 
         let mut received = 0;
-        while let Some(msg) = coord_rx.recv().await {
-            match msg {
-                AgentMessage::SearchComplete {
-                    sub_query, results, ..
-                } => {
-                    audit.push(AuditEntry {
-                        timestamp: chrono::Utc::now(),
-                        agent: AgentType::Search,
-                        action: "search_complete".into(),
-                        detail: format!("sub_query='{}' results={}", sub_query, results.len()),
-                    });
-                    all_results.extend(results);
-                    received += 1;
-                    if received >= pending {
-                        break;
+        let search_deadline = tokio::time::Instant::now() + phase_timeout;
+        loop {
+            match tokio::time::timeout_at(search_deadline, coord_rx.recv()).await {
+                Ok(Some(msg)) => match msg {
+                    AgentMessage::SearchComplete {
+                        sub_query, results, ..
+                    } => {
+                        audit.push(AuditEntry {
+                            timestamp: chrono::Utc::now(),
+                            agent: AgentType::Search,
+                            action: "search_complete".into(),
+                            detail: format!("sub_query='{}' results={}", sub_query, results.len()),
+                        });
+                        all_results.extend(results);
+                        received += 1;
+                        if received >= pending {
+                            break;
+                        }
                     }
+                    AgentMessage::ProgressUpdate {
+                        agent_type,
+                        message,
+                        ..
+                    } => {
+                        tracing::debug!(?agent_type, %message, "Agent progress");
+                    }
+                    _ => {}
+                },
+                Ok(None) => break, // channel closed
+                Err(_) => {
+                    tracing::warn!(
+                        "Search phase timed out after {:?} ({}/{} agents responded)",
+                        phase_timeout,
+                        received,
+                        pending
+                    );
+                    break;
                 }
-                AgentMessage::ProgressUpdate {
-                    agent_type,
-                    message,
-                    ..
-                } => {
-                    tracing::debug!(?agent_type, %message, "Agent progress");
-                }
-                _ => {}
             }
         }
 
@@ -211,10 +249,19 @@ impl Coordinator {
         drop(coord_tx2);
 
         let mut extracted_sources: Vec<AmrsSource> = Vec::new();
-        while let Some(msg) = coord_rx2.recv().await {
-            if let AgentMessage::ExtractComplete { sources } = msg {
-                extracted_sources = sources;
-                break;
+        match tokio::time::timeout(phase_timeout, async {
+            while let Some(msg) = coord_rx2.recv().await {
+                if let AgentMessage::ExtractComplete { sources } = msg {
+                    return sources;
+                }
+            }
+            Vec::new()
+        })
+        .await
+        {
+            Ok(sources) => extracted_sources = sources,
+            Err(_) => {
+                tracing::warn!("Extract phase timed out after {:?}", phase_timeout);
             }
         }
 
@@ -247,15 +294,26 @@ impl Coordinator {
 
         let mut all_findings: Vec<AmrsFinding> = Vec::new();
         let mut all_contradictions: Vec<AmrsContradiction> = Vec::new();
-        while let Some(msg) = coord_rx3.recv().await {
-            if let AgentMessage::VerifyComplete {
-                findings,
-                contradictions,
-            } = msg
-            {
+        match tokio::time::timeout(phase_timeout, async {
+            while let Some(msg) = coord_rx3.recv().await {
+                if let AgentMessage::VerifyComplete {
+                    findings,
+                    contradictions,
+                } = msg
+                {
+                    return (findings, contradictions);
+                }
+            }
+            (Vec::new(), Vec::new())
+        })
+        .await
+        {
+            Ok((findings, contradictions)) => {
                 all_findings = findings;
                 all_contradictions = contradictions;
-                break;
+            }
+            Err(_) => {
+                tracing::warn!("Verify phase timed out after {:?}", phase_timeout);
             }
         }
 
@@ -292,16 +350,38 @@ impl Coordinator {
         drop(coord_tx4);
 
         let mut report = String::new();
-        while let Some(msg) = coord_rx4.recv().await {
-            if let AgentMessage::SynthesisComplete {
-                report: r,
-                audit_entries,
-            } = msg
-            {
-                report = r;
-                audit.extend(audit_entries);
-                break;
+        match tokio::time::timeout(phase_timeout, async {
+            while let Some(msg) = coord_rx4.recv().await {
+                if let AgentMessage::SynthesisComplete {
+                    report: r,
+                    audit_entries,
+                } = msg
+                {
+                    return Some((r, audit_entries));
+                }
             }
+            None
+        })
+        .await
+        {
+            Ok(Some((r, entries))) => {
+                report = r;
+                audit.extend(entries);
+            }
+            Ok(None) => {
+                tracing::warn!("Synthesize phase returned no report");
+            }
+            Err(_) => {
+                tracing::warn!("Synthesize phase timed out after {:?}", phase_timeout);
+            }
+        }
+
+        // ── Phase 5: AI Enhancement (optional) ──────────────────────
+        let enhanced_report = self
+            .enhance_report_with_ai(query, &report, &extracted_sources)
+            .await;
+        if !enhanced_report.is_empty() {
+            report = enhanced_report;
         }
 
         // ── Build Evidence Graph ─────────────────────────────────────
@@ -324,6 +404,77 @@ impl Coordinator {
             claims_verified,
             depth_reached: self.config.max_depth,
         })
+    }
+
+    /// Enhance the heuristic report using AI synthesis.
+    /// Falls back to the original report if AI is unavailable.
+    async fn enhance_report_with_ai(
+        &self,
+        query: &str,
+        heuristic_report: &str,
+        sources: &[AmrsSource],
+    ) -> String {
+        use crate::ai::types::{AiConfig, ChatMessage};
+
+        if sources.is_empty() {
+            return String::new();
+        }
+
+        let ai_config = AiConfig::from_hsx_config(&self.hsx_config);
+        if ai_config.providers.fallback_chain.is_empty() && ai_config.default_model.is_none() {
+            return String::new();
+        }
+
+        // Build numbered source context
+        let mut context = String::new();
+        for (i, source) in sources.iter().enumerate().take(10) {
+            let snippet: String = source.content.chars().take(1500).collect();
+            context.push_str(&format!(
+                "[{}] {} ({})\n{}\n\n",
+                i + 1,
+                source.title,
+                source.url,
+                snippet,
+            ));
+        }
+
+        let user_prompt = format!(
+            "QUERY: \"{query}\"\n\n\
+             SOURCES:\n{context}\n\
+             HEURISTIC ANALYSIS:\n{heuristic_report}\n\n\
+             Write a thorough, well-structured report with:\n\
+             1. An executive summary (2-3 sentences)\n\
+             2. Key findings with [N] source citations\n\
+             3. Analysis of agreements and contradictions between sources\n\
+             4. Conclusion with confidence assessment\n\n\
+             Use markdown formatting. Cite every claim with [N]."
+        );
+
+        let messages = vec![
+            ChatMessage {
+                role: "system".into(),
+                content: "You are a deep research analyst for Fetchium. Synthesize comprehensive, well-cited reports from provided sources.".into(),
+            },
+            ChatMessage {
+                role: "user".into(),
+                content: user_prompt,
+            },
+        ];
+
+        let providers = ai_config.providers.clone();
+        let mut noop = |_: &str| {};
+
+        match tokio::time::timeout(
+            Duration::from_secs(30),
+            crate::ai::provider_client::chat_with_fallback(
+                &messages, None, &ai_config, &providers, false, &mut noop,
+            ),
+        )
+        .await
+        {
+            Ok(Ok(result)) => result.content,
+            _ => String::new(), // fall back to heuristic report
+        }
     }
 }
 
