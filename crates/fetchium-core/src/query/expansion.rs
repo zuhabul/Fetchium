@@ -1,14 +1,16 @@
-//! Query Expansion Engine (QXE) — automatic synonym and acronym expansion.
+//! Query Expansion Engine (QXE) — automatic synonym, acronym, and perspective expansion.
 //!
-//! Novel algorithm: Expand queries with synonyms, related terms, and acronym
-//! expansions to improve recall without sacrificing precision.
+//! Two expansion modes:
+//! 1. **Lexical** (`expand_query`): Synonym/acronym substitution for technical terms.
+//!    "JS frameworks" → "JavaScript frameworks", "k8s" → "kubernetes"
+//! 2. **Perspective** (`ai_perspective_expand`): AI-generated domain-specific sub-queries.
+//!    "who created the world" → ["Big Bang cosmology universe origin", "religious creation myths", ...]
 //!
-//! - "JS frameworks" → also searches "JavaScript frameworks"
-//! - "ML models" → "machine learning models"
-//! - "k8s deployment" → "kubernetes deployment"
-//!
-//! Uses a compact, hand-curated dictionary optimized for technical queries.
-//! Expansion is controlled to prevent query drift.
+//! Perspective expansion is the high-impact path for ambiguous/multi-domain queries.
+//! It ensures all relevant angles (scientific, religious, philosophical, historical) are covered.
+
+use crate::ai::provider_client::chat_with_fallback;
+use crate::ai::types::{AiConfig, ChatMessage};
 
 /// An expanded query with its variants.
 #[derive(Debug, Clone)]
@@ -244,6 +246,65 @@ pub fn should_expand(query: &str) -> bool {
     }
 
     false
+}
+
+/// Generate perspective-aware sub-queries using AI.
+///
+/// For ambiguous or multi-domain queries, generates 3-4 domain-specific sub-queries
+/// that cover the main interpretive angles (scientific, religious, philosophical,
+/// historical, technical, etc.). Returns the original query if AI is unavailable.
+///
+/// ## Example
+/// Query: "who created the world"
+/// Perspectives: ["Big Bang cosmology universe origin scientific",
+///                "Earth geological formation history",
+///                "religious creation myths major world religions",
+///                "philosophical cosmological argument origin creation"]
+pub async fn ai_perspective_expand(query: &str, ai_config: &AiConfig) -> Vec<String> {
+    let system = "You are a search query expansion expert. Given a user query, output 3 specific sub-queries covering different perspectives or domains. Rules: each sub-query covers a DIFFERENT angle (scientific, religious, philosophical, technical, historical, etc.); use domain-specific terminology; output ONLY the sub-queries, one per line, no numbering or labels; do NOT repeat the original query; keep each under 10 words.";
+    let messages = vec![
+        ChatMessage {
+            role: "system".into(),
+            content: system.to_string(),
+        },
+        ChatMessage {
+            role: "user".into(),
+            content: format!("Query: {query}\nSub-queries:"),
+        },
+    ];
+
+    let providers = ai_config.providers.clone();
+    let ai_cfg = ai_config.clone();
+
+    // Thread isolation: ai_config contains non-Send elements via dyn FnMut
+    let (tx, rx) = tokio::sync::oneshot::channel::<Vec<String>>();
+    std::thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let result = rt.block_on(async move {
+            let mut noop = |_: &str| {};
+            match tokio::time::timeout(
+                std::time::Duration::from_secs(6),
+                chat_with_fallback(&messages, None, &ai_cfg, &providers, false, &mut noop),
+            )
+            .await
+            {
+                Ok(Ok(resp)) => resp
+                    .content
+                    .lines()
+                    .map(|l| l.trim().to_string())
+                    .filter(|l| !l.is_empty() && l.len() > 5)
+                    .take(4)
+                    .collect::<Vec<_>>(),
+                _ => vec![],
+            }
+        });
+        let _ = tx.send(result);
+    });
+
+    rx.await.unwrap_or_default()
 }
 
 #[cfg(test)]

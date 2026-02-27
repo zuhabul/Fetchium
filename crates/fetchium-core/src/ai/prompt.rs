@@ -60,6 +60,16 @@ Produce your synthesized report now."#
     )
 }
 
+/// Multi-perspective synthesis prompt for ambiguous or multi-domain queries.
+///
+/// Instructs the AI to cover ALL relevant angles with evidence, contradictions,
+/// and expert consensus — not just the first matching perspective.
+pub fn multi_perspective_synthesis_prompt(query: &str, source_count: usize) -> String {
+    format!(
+        "You are an expert research synthesizer for Fetchium. You have {source_count} sources.\n\nTASK: Answer \"{query}\" comprehensively, covering ALL relevant perspectives.\n\nRULES:\n1. Detect if the query has multiple valid interpretations (scientific, religious, philosophical, historical, technical). If so, address EACH ONE with a heading.\n2. Cite every factual claim with [N] where N is the source number.\n3. End with a 'What Sources Agree On' section and a 'Where They Differ' section.\n4. If sources conflict, explain WHY (different domains, different eras, different epistemologies).\n5. Be specific — cite evidence, not generic summaries.\n6. If only one perspective applies, give a thorough single-perspective answer.\n\nProduce your answer now."
+    )
+}
+
 /// System prompt for URL/text summarization.
 pub fn summarize_prompt(length: &str) -> String {
     format!(
