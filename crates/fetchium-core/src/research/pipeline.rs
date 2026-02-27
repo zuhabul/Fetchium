@@ -61,8 +61,8 @@ impl ResearchPipeline {
                 .get(i)
                 .map(|t| {
                     let trimmed = t.trim();
-                    let chars: String = trimmed.chars().take(600).collect();
-                    if trimmed.chars().count() > 600 {
+                    let chars: String = trimmed.chars().take(1000).collect();
+                    if trimmed.chars().count() > 1000 {
                         format!("{}...", chars)
                     } else {
                         chars
@@ -203,6 +203,9 @@ impl ResearchPipeline {
             .collect();
 
         if !query_keywords.is_empty() {
+            // For multi-word queries require 2+ keyword hits to reject off-topic pages.
+            // e.g. "Google Gemini Wikipedia" matches "software" but not "llms"+"engineering".
+            let required_hits = if query_keywords.len() <= 2 { 1 } else { 2 };
             extracted_sources.retain(|(_, ext)| {
                 let title_lc = ext.title.to_lowercase();
                 let text_snippet: String = ext
@@ -211,9 +214,13 @@ impl ResearchPipeline {
                     .take(1500)
                     .collect::<String>()
                     .to_lowercase();
-                query_keywords
+                let hits = query_keywords
                     .iter()
-                    .any(|kw| title_lc.contains(kw.as_str()) || text_snippet.contains(kw.as_str()))
+                    .filter(|kw| {
+                        title_lc.contains(kw.as_str()) || text_snippet.contains(kw.as_str())
+                    })
+                    .count();
+                hits >= required_hits
             });
         }
 
@@ -341,10 +348,18 @@ impl ResearchPipeline {
 
         for (idx, (item, ext)) in extracted_sources.into_iter().enumerate() {
             extracted_texts.push(ext.text.clone());
+            // Use extracted author, or fall back to domain name (e.g. "arxiv.org", "sei.cmu.edu")
+            // to avoid "Unknown" appearing in every citation.
+            let author = ext.metadata.author.or_else(|| {
+                url::Url::parse(&item.url).ok().and_then(|u| {
+                    u.host_str()
+                        .map(|h| h.trim_start_matches("www.").to_string())
+                })
+            });
             let meta = SourceMeta {
                 url: item.url.clone(),
                 title: ext.title.clone(),
-                author: ext.metadata.author,
+                author,
                 publisher: None,
                 published_date: ext.metadata.published_date.or_else(|| Some("2026".into())),
                 accessed_date: chrono::Utc::now().to_rfc3339(),
