@@ -43,6 +43,7 @@ impl ResearchPipeline {
         query: &str,
         sources: &[SourceMeta],
         citations: &[crate::citation::types::FormattedCitation],
+        extracted_texts: &[String],
         hsx_config: &HsxConfig,
     ) -> String {
         use crate::ai::types::{AiConfig, ChatMessage};
@@ -52,15 +53,28 @@ impl ResearchPipeline {
             return String::new();
         }
 
-        // Build numbered source context
+        // Build numbered source context with actual content excerpts (max 600 chars each).
+        // This gives the AI real evidence to synthesize from, not just titles.
         let mut source_context = String::new();
-        for (i, (meta, citation)) in sources.iter().zip(citations.iter()).enumerate() {
+        for (i, (meta, _citation)) in sources.iter().zip(citations.iter()).enumerate() {
+            let excerpt = extracted_texts
+                .get(i)
+                .map(|t| {
+                    let trimmed = t.trim();
+                    let chars: String = trimmed.chars().take(600).collect();
+                    if trimmed.chars().count() > 600 {
+                        format!("{}...", chars)
+                    } else {
+                        chars
+                    }
+                })
+                .unwrap_or_default();
             source_context.push_str(&format!(
-                "[{}] {} — {} {}\n",
+                "[{}] {}\n{}\n{}\n\n",
                 i + 1,
                 meta.title,
                 meta.url,
-                citation.inline_marker,
+                excerpt,
             ));
         }
 
@@ -174,6 +188,35 @@ impl ResearchPipeline {
             }
         }
 
+        // Filter irrelevant sources — require at least one query keyword in title/content.
+        // Prevents off-topic pages (e.g. "Oracle Corporation Wikipedia") from polluting results
+        // when querying something like "Impact of LLMs on software engineering jobs".
+        let query_keywords: Vec<String> = config
+            .query
+            .split_whitespace()
+            .map(|w| {
+                w.to_lowercase()
+                    .trim_matches(|c: char| !c.is_alphanumeric())
+                    .to_string()
+            })
+            .filter(|w| w.len() > 3)
+            .collect();
+
+        if !query_keywords.is_empty() {
+            extracted_sources.retain(|(_, ext)| {
+                let title_lc = ext.title.to_lowercase();
+                let text_snippet: String = ext
+                    .text
+                    .chars()
+                    .take(1500)
+                    .collect::<String>()
+                    .to_lowercase();
+                query_keywords
+                    .iter()
+                    .any(|kw| title_lc.contains(kw.as_str()) || text_snippet.contains(kw.as_str()))
+            });
+        }
+
         let sources_fetched = extracted_sources.len();
 
         // Intelligence layer: ACS validation
@@ -276,6 +319,7 @@ impl ResearchPipeline {
         let mut synthesis = String::new();
         let mut formatted_citations = Vec::new();
         let mut source_metas = Vec::new();
+        let mut extracted_texts: Vec<String> = Vec::new();
 
         // SGT: capture source data before consuming extracted_sources
         let sgt_hops: Vec<(String, String, String)> = if config.trace_sources {
@@ -296,6 +340,7 @@ impl ResearchPipeline {
         };
 
         for (idx, (item, ext)) in extracted_sources.into_iter().enumerate() {
+            extracted_texts.push(ext.text.clone());
             let meta = SourceMeta {
                 url: item.url.clone(),
                 title: ext.title.clone(),
@@ -316,21 +361,49 @@ impl ResearchPipeline {
                 &config.query,
                 &source_metas,
                 &formatted_citations,
+                &extracted_texts,
                 hsx_config,
             )
             .await;
         }
 
-        // Fallback: if AI synthesis failed or was disabled, use listing format
+        // Fallback: if AI synthesis failed or is disabled, show content excerpts
         if synthesis.is_empty() {
-            for (idx, meta) in source_metas.iter().enumerate() {
-                if !synthesis.is_empty() {
-                    synthesis.push(' ');
+            if source_metas.is_empty() {
+                synthesis = format!("No sources found for: **{}**", config.query);
+            } else {
+                let mut fb = format!(
+                    "*AI synthesis unavailable. Showing source excerpts for: **{}***\n\n",
+                    config.query
+                );
+                for (idx, meta) in source_metas.iter().enumerate() {
+                    let snippet = extracted_texts
+                        .get(idx)
+                        .map(|t| {
+                            let words: Vec<&str> = t.split_whitespace().take(60).collect();
+                            words.join(" ")
+                        })
+                        .unwrap_or_default();
+                    let marker = &formatted_citations[idx].inline_marker;
+                    if !snippet.is_empty() {
+                        fb.push_str(&format!(
+                            "**[{}] {}** {}\n{}\n\n",
+                            idx + 1,
+                            meta.title,
+                            marker,
+                            snippet,
+                        ));
+                    } else {
+                        fb.push_str(&format!(
+                            "**[{}] {}** {} — {}\n\n",
+                            idx + 1,
+                            meta.title,
+                            marker,
+                            meta.url,
+                        ));
+                    }
                 }
-                synthesis.push_str(&format!(
-                    "Information from {} was analyzed {}.",
-                    meta.title, formatted_citations[idx].inline_marker
-                ));
+                synthesis = fb;
             }
         }
 
