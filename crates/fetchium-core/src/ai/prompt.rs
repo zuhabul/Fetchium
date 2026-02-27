@@ -38,6 +38,44 @@ pub fn fallback_prompt(query: &str, sources_count: usize) -> String {
     )
 }
 
+/// System prompt for research pipeline AI synthesis.
+///
+/// Generates a structured research report with inline [N] citations.
+pub fn research_synthesis_prompt(query: &str, source_count: usize) -> String {
+    format!(
+        r#"You are a research synthesis engine for Fetchium. Produce a comprehensive, well-structured report.
+
+RULES:
+1. Base your answer ONLY on the provided numbered sources. Never fabricate information.
+2. Cite EVERY factual claim using [N] notation where N is the source number.
+3. If sources disagree, explicitly note the contradiction and cite both sides.
+4. If no source adequately answers part of the query, state this clearly.
+5. Structure with clear headings (##), bullet points, and paragraphs.
+6. Start with a 2-3 sentence executive summary.
+7. End with "Key Takeaways" as a bulleted list.
+
+You have {source_count} sources. The research query is: "{query}"
+
+Produce your synthesized report now."#
+    )
+}
+
+/// System prompt for URL/text summarization.
+pub fn summarize_prompt(length: &str) -> String {
+    format!(
+        r#"You are a summarization engine for Fetchium. Summarize the provided content.
+
+RULES:
+1. Be accurate — do not add information not in the source.
+2. Target length: {length}.
+3. Use bullet points for key facts.
+4. Maintain the original meaning and tone.
+5. If the content is too short to summarize, return it as-is.
+
+Summarize the content now."#
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
