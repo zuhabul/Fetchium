@@ -149,6 +149,32 @@ pub enum Commands {
     ///   fetchium setup --check        # verify all dependencies are present
     ///   fetchium setup                # check + download anything missing
     Setup(SetupArgs),
+
+    /// Twitter/X Intelligence — search, trends, sentiment, monitor, fetch
+    #[command(name = "twitter")]
+    Twitter(TwitterArgs),
+
+    /// Reddit Intelligence — search, hot, top, research, fetch
+    #[command(name = "reddit")]
+    Reddit(RedditArgs),
+
+    /// Hacker News Intelligence — search, top, new, fetch
+    #[command(name = "hackernews", alias = "hn")]
+    Hackernews(HackernewsArgs),
+
+    /// Facebook Intelligence — search, fetch
+    #[command(name = "facebook", alias = "fb")]
+    Facebook(FacebookArgs),
+
+    /// TikTok Intelligence — search, trends, fetch
+    #[command(name = "tiktok")]
+    Tiktok(TiktokArgs),
+
+    /// Transcribe audio/video from any URL
+    Transcribe(TranscribeArgs),
+
+    /// AI-powered URL/text summarization
+    Summarize(SummarizeArgs),
 }
 
 // ─── Search ──────────────────────────────────────────────────────
@@ -238,6 +264,10 @@ pub struct ResearchArgs {
     #[arg(long, default_value = "10")]
     pub max_sources: usize,
 
+    /// Disable AI synthesis (use heuristic listing instead)
+    #[arg(long)]
+    pub no_ai: bool,
+
     /// Output file
     #[arg(short, long)]
     pub output: Option<String>,
@@ -310,6 +340,10 @@ pub struct DeepArgs {
     /// Token budget for the research session
     #[arg(long, default_value = "20000")]
     pub budget: usize,
+
+    /// Global timeout in seconds (default: auto based on resource tier)
+    #[arg(long)]
+    pub timeout: Option<u64>,
 }
 
 // ─── Agent Commands ──────────────────────────────────────────────
@@ -503,6 +537,14 @@ pub struct CompareArgs {
     /// Output file
     #[arg(short, long)]
     pub output: Option<String>,
+
+    /// Use AI for dimension extraction (more accurate, requires AI provider)
+    #[arg(long)]
+    pub ai: bool,
+
+    /// Override model for AI comparison
+    #[arg(long)]
+    pub model: Option<String>,
 }
 
 // ─── Monitor ─────────────────────────────────────────────────────
@@ -882,4 +924,244 @@ pub enum IndexAction {
     Stats,
     /// Clear the index
     Clear,
+}
+
+// ─── Twitter ─────────────────────────────────────────────────────
+
+#[derive(Debug, Parser)]
+pub struct TwitterArgs {
+    #[command(subcommand)]
+    pub action: TwitterAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum TwitterAction {
+    /// Search Twitter/X for tweets matching a query
+    Search {
+        /// Search query
+        query: String,
+        /// Maximum number of tweets
+        #[arg(short = 'n', long, default_value = "20")]
+        max: usize,
+    },
+    /// Fetch trending topics on Twitter/X
+    Trends {
+        /// Country code (e.g. us, uk, worldwide)
+        #[arg(default_value = "us")]
+        country: String,
+    },
+    /// Analyze sentiment of tweets matching a query
+    Sentiment {
+        /// Search query
+        query: String,
+        /// Maximum tweets to analyze
+        #[arg(short = 'n', long, default_value = "50")]
+        max: usize,
+    },
+    /// Fetch a single tweet by URL (via oEmbed)
+    Fetch {
+        /// Tweet URL (https://x.com/user/status/...)
+        url: String,
+    },
+    /// Monitor Twitter/X for new tweets matching a query (realtime)
+    Monitor {
+        /// Search query
+        query: String,
+        /// Poll interval in seconds
+        #[arg(long, default_value = "120")]
+        interval: u64,
+    },
+    /// Deep Twitter research (delegates to social pipeline)
+    Research {
+        /// Research query
+        query: String,
+        /// Maximum tweets
+        #[arg(short = 'n', long, default_value = "50")]
+        max: usize,
+    },
+    /// Fetch profile info for a Twitter user
+    Profile {
+        /// Twitter username (without @)
+        username: String,
+    },
+}
+
+// ─── Reddit ──────────────────────────────────────────────────────
+
+#[derive(Debug, Parser)]
+pub struct RedditArgs {
+    #[command(subcommand)]
+    pub action: RedditAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum RedditAction {
+    /// Search Reddit posts
+    Search {
+        /// Search query
+        query: String,
+        /// Maximum results
+        #[arg(short = 'n', long, default_value = "20")]
+        max: usize,
+        /// Subreddits to search (comma-separated)
+        #[arg(long, value_delimiter = ',')]
+        subreddits: Vec<String>,
+    },
+    /// Deep Reddit research (delegates to social pipeline)
+    Research {
+        /// Research query
+        query: String,
+        /// Maximum posts
+        #[arg(short = 'n', long, default_value = "50")]
+        max: usize,
+    },
+    /// Fetch hot posts from a subreddit
+    Hot {
+        /// Subreddit name (without r/)
+        subreddit: String,
+        /// Maximum posts
+        #[arg(short = 'n', long, default_value = "25")]
+        max: usize,
+    },
+    /// Fetch top posts from a subreddit
+    Top {
+        /// Subreddit name (without r/)
+        subreddit: String,
+        /// Time period (day, week, month, year, all)
+        #[arg(long, default_value = "week")]
+        period: String,
+        /// Maximum posts
+        #[arg(short = 'n', long, default_value = "25")]
+        max: usize,
+    },
+    /// Fetch a Reddit post by URL
+    Fetch {
+        /// Reddit post URL
+        url: String,
+    },
+}
+
+// ─── HackerNews ──────────────────────────────────────────────────
+
+#[derive(Debug, Parser)]
+pub struct HackernewsArgs {
+    #[command(subcommand)]
+    pub action: HackernewsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum HackernewsAction {
+    /// Search Hacker News stories (via Algolia)
+    Search {
+        /// Search query
+        query: String,
+        /// Maximum results
+        #[arg(short = 'n', long, default_value = "20")]
+        max: usize,
+    },
+    /// Deep HN research (delegates to social pipeline)
+    Research {
+        /// Research query
+        query: String,
+        /// Maximum stories
+        #[arg(short = 'n', long, default_value = "50")]
+        max: usize,
+    },
+    /// Fetch HN top stories
+    Top {
+        /// Maximum stories
+        #[arg(short = 'n', long, default_value = "30")]
+        max: usize,
+    },
+    /// Fetch HN newest stories
+    New {
+        /// Maximum stories
+        #[arg(short = 'n', long, default_value = "30")]
+        max: usize,
+    },
+    /// Fetch a HN story by URL or ID
+    Fetch {
+        /// HN story URL or numeric ID
+        url: String,
+    },
+}
+
+// ─── Facebook ────────────────────────────────────────────────────
+
+#[derive(Debug, Parser)]
+pub struct FacebookArgs {
+    #[command(subcommand)]
+    pub action: FacebookAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum FacebookAction {
+    /// Search Facebook (via social pipeline)
+    Search {
+        /// Search query
+        query: String,
+        /// Maximum results
+        #[arg(short = 'n', long, default_value = "20")]
+        max: usize,
+    },
+    /// Fetch a Facebook page/post by URL
+    Fetch {
+        /// Facebook URL
+        url: String,
+    },
+}
+
+// ─── TikTok ──────────────────────────────────────────────────────
+
+#[derive(Debug, Parser)]
+pub struct TiktokArgs {
+    #[command(subcommand)]
+    pub action: TiktokAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum TiktokAction {
+    /// Search TikTok videos
+    Search {
+        /// Search query
+        query: String,
+        /// Maximum results
+        #[arg(short = 'n', long, default_value = "20")]
+        max: usize,
+    },
+    /// Fetch TikTok trending content
+    Trends {
+        /// Maximum results
+        #[arg(short = 'n', long, default_value = "25")]
+        max: usize,
+    },
+    /// Fetch a TikTok page by URL
+    Fetch {
+        /// TikTok URL
+        url: String,
+    },
+}
+
+// ─── Transcribe ──────────────────────────────────────────────────
+
+#[derive(Debug, Parser)]
+pub struct TranscribeArgs {
+    /// URL of the audio/video to transcribe
+    pub url: String,
+
+    /// Align transcript to video chapters (YouTube only)
+    #[arg(long)]
+    pub chapters: bool,
+}
+
+// ─── Summarize ───────────────────────────────────────────────────
+
+#[derive(Debug, Parser)]
+pub struct SummarizeArgs {
+    /// URL or raw text to summarize
+    pub input: String,
+
+    /// Summary length: short, medium, long
+    #[arg(short, long)]
+    pub length: Option<String>,
 }
