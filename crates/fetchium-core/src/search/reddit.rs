@@ -54,7 +54,8 @@ impl RedditBackend {
     /// Create a new Reddit backend with the given HTTP client.
     pub fn new(_http: HttpClient) -> Self {
         let client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(15))
+            .timeout(std::time::Duration::from_secs(5))
+            .connect_timeout(std::time::Duration::from_secs(3))
             .user_agent("Fetchium:search-bot:v0.1 (research tool)")
             .pool_max_idle_per_host(4)
             .pool_idle_timeout(std::time::Duration::from_secs(90))
