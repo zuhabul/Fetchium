@@ -10,17 +10,21 @@
 use crate::cli::{Format, SearchArgs};
 use anyhow::Context;
 use colored::Colorize;
+use fetchium_core::ai::prompt::multi_perspective_synthesis_prompt;
 use fetchium_core::ai::provider_client::chat_with_fallback;
 use fetchium_core::ai::types::{AiConfig, ChatMessage};
 use fetchium_core::cache::{search_key, MemoryCache};
 use fetchium_core::config::HsxConfig;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::output::{format_search_json, format_search_markdown};
+use fetchium_core::query::expansion::ai_perspective_expand;
 use fetchium_core::rank::detect_intent;
 use fetchium_core::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
-use fetchium_core::types::{PdsTier, ResourceTier, SearchMeta, SearchMode, SearchResult};
+use fetchium_core::types::{
+    BackendId, PdsTier, ResourceTier, SearchMeta, SearchMode, SearchResult,
+};
 use indicatif::{ProgressBar, ProgressStyle};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::time::Instant;
 use tracing::info;
 
@@ -71,6 +75,19 @@ pub async fn run(
         return Ok(());
     }
 
+    // ── Perspective Expansion (AI sub-query fan-out) ──────────────────────
+    // For multi-domain queries (scientific, religious, philosophical, etc.),
+    // generate 3-4 perspective-specific sub-queries to cover all angles.
+    // Runs concurrently with a 6s timeout; gracefully skips if AI unavailable.
+    let ai_config_for_expand = AiConfig::from_hsx_config(config);
+    let has_ai = !ai_config_for_expand.providers.fallback_chain.is_empty()
+        || ai_config_for_expand.default_model.is_some();
+    let perspective_queries: Vec<String> = if has_ai {
+        ai_perspective_expand(query, &ai_config_for_expand).await
+    } else {
+        vec![]
+    };
+
     // ── Execute search ────────────────────────────────────────────────────
     let start = Instant::now();
     let http = HttpClient::new(config).context("Failed to build HTTP client")?;
@@ -115,10 +132,56 @@ pub async fn run(
         None
     };
 
-    let items = orchestrator
+    // Search the original query
+    let mut items = orchestrator
         .search(query, Some(max_results))
         .await
         .with_context(|| format!("Search failed for query: {query:?}"))?;
+
+    // Fan-out: search each perspective sub-query in parallel and merge results.
+    // Each sub-query fetches up to 5 additional results; deduplicate by URL.
+    if !perspective_queries.is_empty() {
+        if let Some(ref pb) = pb {
+            pb.set_message(format!(
+                "Expanding {} perspectives...",
+                perspective_queries.len()
+            ));
+        }
+        let mut seen_urls: HashSet<String> = items.iter().map(|r| r.url.clone()).collect();
+
+        // Run all perspective searches concurrently
+        let orchestrator2 = SearchOrchestrator::new(
+            HttpClient::new(config).context("Failed to build HTTP client for expansion")?,
+            orch_config.clone(),
+        );
+        let orchestrator2 = std::sync::Arc::new(orchestrator2);
+        let mut handles = Vec::new();
+        for pq in &perspective_queries {
+            let orch = orchestrator2.clone();
+            let pq = pq.clone();
+            handles.push(tokio::spawn(async move {
+                orch.search(&pq, Some(5)).await.unwrap_or_default()
+            }));
+        }
+        for handle in handles {
+            if let Ok(results) = handle.await {
+                for mut r in results {
+                    if seen_urls.insert(r.url.clone()) {
+                        r.backend = BackendId::Searxng; // Tag as perspective-expanded result
+                        items.push(r);
+                    }
+                }
+            }
+        }
+
+        // Re-rank the merged set by relevance to original query
+        items = fetchium_core::rank::rerank(items, query);
+        items.truncate(max_results as usize);
+        items
+            .iter_mut()
+            .enumerate()
+            .for_each(|(i, r)| r.rank = (i + 1) as u32);
+    }
 
     let duration_ms = start.elapsed().as_millis() as u64;
     info!(
@@ -211,33 +274,39 @@ pub async fn run(
         );
     }
 
-    // ── AI synthesis banner (Opinion/Factual/Comparison) ──────────────────
-    // Run a quick AI synthesis for queries that benefit from a direct answer.
-    // Skip for JSON output (machine-readable) and empty result sets.
+    // ── AI synthesis banner ───────────────────────────────────────────────
+    // Run multi-perspective synthesis for queries that benefit from a direct answer.
+    // Covers Opinion, Factual, Informational, Comparison — skips Code/HowTo.
+    // Uses multi-perspective prompt when perspectives were expanded.
     if !quiet && format != Format::Json && !result.items.is_empty() {
         let intent = detect_intent(query);
         use fetchium_core::rank::QueryIntent;
-        let should_synthesize = matches!(
-            intent,
-            QueryIntent::Opinion | QueryIntent::Factual | QueryIntent::Comparison
-        );
+        let should_synthesize = !matches!(intent, QueryIntent::Code | QueryIntent::HowTo);
         if should_synthesize {
             let ai_config = AiConfig::from_hsx_config(config);
             let has_ai =
                 !ai_config.providers.fallback_chain.is_empty() || ai_config.default_model.is_some();
             if has_ai {
-                // Build context from top-5 results (title + snippet)
+                // Build rich context from top-8 results (title + full snippet)
                 let context = result
                     .items
                     .iter()
-                    .take(5)
+                    .take(8)
                     .enumerate()
-                    .map(|(i, r)| format!("[{}] {}: {}", i + 1, r.title, r.snippet))
+                    .map(|(i, r)| format!("[{}] {}\nURL: {}\n{}", i + 1, r.title, r.url, r.snippet))
                     .collect::<Vec<_>>()
-                    .join("\n");
+                    .join("\n\n");
 
-                let system = "You are a search assistant. Based ONLY on the provided sources, give a concise 2-3 sentence direct answer to the query. Cite sources with [N]. Be specific, not generic.".to_string();
-                let user_msg = format!("Query: {query}\n\nSources:\n{context}\n\nAnswer:");
+                // Use multi-perspective prompt when perspectives were expanded
+                let (system, user_msg) = if !perspective_queries.is_empty() {
+                    let sys = multi_perspective_synthesis_prompt(query, result.items.len().min(8));
+                    let user = format!("Sources:\n{context}");
+                    (sys, user)
+                } else {
+                    let sys = "You are a search assistant. Based ONLY on the provided sources, give a thorough answer to the query. Cover multiple perspectives if applicable. Cite every claim with [N]. Be specific, not generic.".to_string();
+                    let user = format!("Query: {query}\n\nSources:\n{context}\n\nAnswer:");
+                    (sys, user)
+                };
                 let messages = vec![
                     ChatMessage {
                         role: "system".into(),
