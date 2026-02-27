@@ -8,25 +8,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Check all crates compile (fast, no linking)
 cargo check
 
-# Build the hsx binary
-cargo build -p hsx-cli
+# Build the fetchium binary
+cargo build -p fetchium-cli
 
 # Build optimized release binary
-cargo build -p hsx-cli --release
+cargo build -p fetchium-cli --release
 
 # Run the binary
-./target/debug/hsx --help
-./target/debug/hsx doctor
+./target/debug/fetchium --help
+./target/debug/fetchium doctor
 
 # Run all tests
 cargo test
 
 # Run tests for a specific crate
-cargo test -p hsx-core
-cargo test -p hsx-cli
+cargo test -p fetchium-core
+cargo test -p fetchium-cli
 
 # Run a single test by name
-cargo test -p hsx-core extract::layer1::tests::extract_simple_page
+cargo test -p fetchium-core extract::layer1::tests::extract_simple_page
 
 # Lint (zero warnings policy — treat warnings as errors in CI)
 cargo clippy -- -D warnings
@@ -48,26 +48,26 @@ export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
 
 ## Architecture Overview
 
-HyperSearchX is a Cargo workspace with 4 crates:
+Fetchium is a Cargo workspace with 4 crates:
 
 | Crate | Role |
 |-------|------|
-| `hsx-core` | All algorithms: search, extract, rank, validate, cache, AI, intelligence |
-| `hsx-cli` | The `hsx` binary — clap derive CLI, delegates everything to hsx-core |
-| `hsx-mcp` | MCP server (Phase 4) — exposes hsx-core as Model Context Protocol tools |
-| `hsx-api` | REST API server via axum (Phase 4) |
+| `fetchium-core` | All algorithms: search, extract, rank, validate, cache, AI, intelligence |
+| `fetchium-cli` | The `fetchium` binary — clap derive CLI, delegates everything to fetchium-core |
+| `fetchium-mcp` | MCP server (Phase 4) — exposes fetchium-core as Model Context Protocol tools |
+| `fetchium-api` | REST API server via axum (Phase 4) |
 
-**Data flow:** `CLI command → HsxConfig → hsx-core pipeline → formatted output`
+**Data flow:** `CLI command → HsxConfig → fetchium-core pipeline → formatted output`
 
-The CLI (`hsx-cli/src/main.rs`) parses args, loads config, then dispatches to one file per command in `crates/hsx-cli/src/commands/`. Each command calls into `hsx-core` modules.
+The CLI (`fetchium-cli/src/main.rs`) parses args, loads config, then dispatches to one file per command in `crates/fetchium-cli/src/commands/`. Each command calls into `fetchium-core` modules.
 
-## hsx-core Module Map
+## fetchium-core Module Map
 
 Most modules are currently stubs awaiting Phase 1+ implementation. Implemented:
 
 - `types.rs` — All shared data types (PRD §43): `AgentSearchResult`, `SearchResult`, `ResultItem`, `Segment`, `Finding`, `Source`, `EvidenceGraph`, `CepLayer`, `PdsTier`, `ResourceTier`, `BackendId`, etc.
 - `error.rs` — `HsxError`, `StructuredError`, `ErrorKind` (19 variants), `HsxResult<T>`
-- `config.rs` — `HsxConfig` loaded from `~/.hypersearchx/config.toml` with env var overrides; includes `detect_resource_tier()` and `data_dir()`
+- `config.rs` — `HsxConfig` loaded from `~/.fetchium/config.toml` with env var overrides; includes `detect_resource_tier()` and `data_dir()`
 - `http/client.rs` — `HttpClient` stub (reqwest with pooling/retries)
 - `resource/mod.rs` — `detect_tier()` delegating to `HsxConfig::detect_resource_tier()`
 
@@ -79,7 +79,7 @@ search/ → extract/ → rank/ → token/ → validate/ → citation/ → output
 ```
 Advanced: `ai/`, `intelligence/`, `cache/`, `index/`, `plugin/`, `privacy/`, `collab/`, `domain/`
 
-## Optional Feature Flags (hsx-core)
+## Optional Feature Flags (fetchium-core)
 
 Heavy optional dependencies are gated behind features:
 
@@ -91,7 +91,7 @@ Heavy optional dependencies are gated behind features:
 | `mcp` | `rmcp` | Phase 4 |
 | `llama` | `llama-cpp-2` | Phase 4 |
 
-Build with a feature: `cargo build -p hsx-core --features headless`
+Build with a feature: `cargo build -p fetchium-core --features headless`
 
 ## Task Planning System
 
@@ -187,8 +187,8 @@ release-please creates:
 release.yml workflow fires:
   ├─ Build: Linux x64/arm64, macOS x64/arm64, Windows x64
   ├─ Attach .tar.gz/.zip + SHA256 to GitHub Release
-  ├─ Publish npm package (hypersearchx @ 1.2.0)
-  ├─ Update Homebrew formula (zuhabul/homebrew-hsx)
+  ├─ Publish npm package (fetchium @ 1.2.0)
+  ├─ Update Homebrew formula (zuhabul/homebrew-fetchium)
   └─ Summary posted to GitHub Actions
 ```
 
@@ -203,11 +203,11 @@ sh scripts/setup-dev.sh   # installs commit-msg and pre-commit git hooks
 | Channel | Install command | Updated automatically |
 |---------|----------------|----------------------|
 | GitHub Releases | Direct download | ✅ On every release |
-| Shell installer | `curl -sSf https://install.hypersearchx.zuhabul.com \| sh` | ✅ Points to latest |
-| npm | `npm install -g hypersearchx` | ✅ Via npm publish |
-| npx | `npx hypersearchx` | ✅ Via npm publish |
-| Homebrew | `brew install zuhabul/tap/hsx` | ✅ Via tap PR |
-| cargo-binstall | `cargo binstall hsx` | ✅ Metadata in Cargo.toml |
+| Shell installer | `curl -sSf https://install.fetchium.dev \| sh` | ✅ Points to latest |
+| npm | `npm install -g fetchium` | ✅ Via npm publish |
+| npx | `npx fetchium` | ✅ Via npm publish |
+| Homebrew | `brew install zuhabul/tap/fetchium` | ✅ Via tap PR |
+| cargo-binstall | `cargo binstall fetchium` | ✅ Metadata in Cargo.toml |
 
 ### Required GitHub Secrets
 
@@ -216,13 +216,13 @@ These must be set in the repository Settings → Secrets → Actions:
 | Secret | Purpose |
 |--------|---------|
 | `NPM_TOKEN` | Publish to npmjs.com — generate at npmjs.com → Access Tokens |
-| `HOMEBREW_TAP_TOKEN` | Push to `zuhabul/homebrew-hsx` repo — GitHub PAT with `repo` scope |
+| `HOMEBREW_TAP_TOKEN` | Push to `zuhabul/homebrew-fetchium` repo — GitHub PAT with `repo` scope |
 | `CARGO_REGISTRY_TOKEN` | Publish to crates.io (optional) — generate at crates.io |
 
 ### One-time setup checklist
 
-- [ ] Create GitHub repository `zuhabul/homebrew-hsx` with a `Formula/` directory
-- [ ] Add `NPM_TOKEN` secret (npmjs.com → Access Tokens → Granular token for `hypersearchx`)
-- [ ] Add `HOMEBREW_TAP_TOKEN` secret (GitHub PAT with `repo` scope on `zuhabul/homebrew-hsx`)
+- [ ] Create GitHub repository `zuhabul/homebrew-fetchium` with a `Formula/` directory
+- [ ] Add `NPM_TOKEN` secret (npmjs.com → Access Tokens → Granular token for `fetchium`)
+- [ ] Add `HOMEBREW_TAP_TOKEN` secret (GitHub PAT with `repo` scope on `zuhabul/homebrew-fetchium`)
 - [ ] Enable GitHub Pages for rustdoc (repo Settings → Pages → Source: GitHub Actions)
 - [ ] First release: merge a `Release PR` created by release-please, or push a `v1.0.0` tag manually
