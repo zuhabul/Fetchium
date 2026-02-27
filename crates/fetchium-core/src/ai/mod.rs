@@ -10,7 +10,7 @@
 //! | Antigravity   | OAuth (opencode-antgrav.)   | antigravity-gemini-3-flash       |
 //! | Anthropic     | API key or Claude Code OAuth| claude-haiku-4-5-20251001        |
 //! | OpenAI        | API key or Codex CLI OAuth  | gpt-4o-mini                      |
-//! | Gemini        | API key or Gemini CLI OAuth | gemini-2.5-flash                 |
+//! | Gemini        | API key or Gemini CLI OAuth | gemini-3-flash-preview           |
 //! | OpenRouter    | API key                     | google/gemini-2.5-flash          |
 //! | Ollama        | local (no key)              | qwen3:8b                         |
 //!

@@ -73,11 +73,11 @@ impl ModelRegistry {
     pub fn default_model(kind: ProviderKind) -> &'static str {
         match kind {
             ProviderKind::GeminiCli => "gemini-3-flash-preview", // Gemini 3 Flash — thinking-capable
-            ProviderKind::Gemini => "gemini-2.5-flash",          // Stable REST API model
+            ProviderKind::Gemini => "gemini-3-flash-preview",    // Gemini 3 Flash (latest)
             ProviderKind::Anthropic => "claude-haiku-4-5-20251001", // Fast, affordable
             ProviderKind::OpenAi => "gpt-4o-mini",               // Fast, affordable
             ProviderKind::Ollama => "qwen3:8b",                  // Good local default
-            ProviderKind::OpenRouter => "google/gemini-2.5-flash", // Via OpenRouter proxy
+            ProviderKind::OpenRouter => "google/gemini-2.5-flash", // Via OpenRouter (2.5 Flash still most stable there)
             ProviderKind::Antigravity => "antigravity-gemini-3-flash", // Free via OpenCode
         }
     }
@@ -86,7 +86,7 @@ impl ModelRegistry {
     pub fn fast_model(kind: ProviderKind) -> &'static str {
         match kind {
             ProviderKind::GeminiCli => "gemini-3-flash-preview", // Thinking-capable for fast mode override
-            ProviderKind::Gemini => "gemini-2.5-flash",
+            ProviderKind::Gemini => "gemini-3-flash-preview",
             ProviderKind::Anthropic => "claude-haiku-4-5-20251001",
             ProviderKind::OpenAi => "gpt-4o-mini",
             ProviderKind::Ollama => "qwen3:0.6b",
@@ -133,16 +133,16 @@ impl ModelRegistry {
             ],
             ProviderKind::Gemini => &[
                 ModelInfo {
-                    id: "gemini-2.5-flash",
-                    capability: ModelCapability::Standard,
-                    aliases: &["flash", "flash25"],
-                    note: "Gemini 2.5 Flash — recommended REST API model (default)",
-                },
-                ModelInfo {
                     id: "gemini-3-flash-preview",
                     capability: ModelCapability::Standard,
-                    aliases: &["flash3", "g3flash", "gemini3flash"],
-                    note: "Gemini 3 Flash Preview — latest generation (experimental)",
+                    aliases: &["flash3", "g3flash", "gemini3flash", "flash"],
+                    note: "Gemini 3 Flash Preview — latest generation (default)",
+                },
+                ModelInfo {
+                    id: "gemini-2.5-flash",
+                    capability: ModelCapability::Standard,
+                    aliases: &["flash25", "flash2.5"],
+                    note: "Gemini 2.5 Flash — previous generation stable model",
                 },
                 ModelInfo {
                     id: "gemini-2.5-pro",
@@ -812,7 +812,7 @@ mod tests {
         let entry = ProviderEntry::default();
         assert_eq!(
             entry.resolve_model(ProviderKind::Gemini),
-            "gemini-2.5-flash"
+            "gemini-3-flash-preview"
         );
         // GeminiCli now defaults to gemini-3-flash-preview (Gemini 3 Flash)
         assert_eq!(
@@ -832,10 +832,10 @@ mod tests {
             entry.resolve_model(ProviderKind::GeminiCli),
             "gemini-3-flash-preview"
         );
-        // "flash" → gemini-2.5-flash for Gemini REST
+        // "flash" → gemini-3-flash-preview for Gemini REST (now added as alias)
         assert_eq!(
             entry.resolve_model(ProviderKind::Gemini),
-            "gemini-2.5-flash"
+            "gemini-3-flash-preview"
         );
         // "flash" is not a known Anthropic alias — passed through as literal
         assert_eq!(entry.resolve_model(ProviderKind::Anthropic), "flash");
