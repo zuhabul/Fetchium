@@ -1,6 +1,6 @@
 #![no_main]
 // Fuzz TLS enforcement / URL parsing. Must NEVER panic regardless of input.
-use hsx_core::http::tls::enforce_tls;
+use fetchium_core::http::tls::enforce_tls;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {

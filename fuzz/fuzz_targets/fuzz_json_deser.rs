@@ -1,6 +1,6 @@
 #![no_main]
 // Fuzz JSON deserialization of core types. Must NEVER panic.
-use hsx_core::types::{ResultItem, Segment};
+use fetchium_core::types::{ResultItem, Segment};
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
