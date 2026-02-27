@@ -145,7 +145,18 @@ fn intent_affinity(intent: &QueryIntent, backend: &BackendId) -> f64 {
             BackendId::DuckDuckGo => 0.60,
             _ => 0.35,
         },
-        // HowTo, DeepAnalysis, Opinion — use all backends roughly equally
+        QueryIntent::Opinion => match backend {
+            BackendId::Reddit => 0.90,
+            BackendId::HackerNews => 0.85,
+            BackendId::StackOverflow => 0.80,
+            BackendId::DuckDuckGo => 0.70,
+            BackendId::Google => 0.65,
+            BackendId::Brave => 0.60,
+            BackendId::Wikipedia => 0.40,
+            BackendId::Arxiv => 0.15,
+            _ => 0.50,
+        },
+        // HowTo, DeepAnalysis — use all backends roughly equally
         _ => match backend {
             BackendId::DuckDuckGo => 0.70,
             BackendId::Google => 0.70,
