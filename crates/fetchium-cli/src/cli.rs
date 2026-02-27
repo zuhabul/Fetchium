@@ -150,8 +150,8 @@ pub enum Commands {
     ///   fetchium setup                # check + download anything missing
     Setup(SetupArgs),
 
-    /// Twitter/X Intelligence — search, trends, sentiment, monitor, fetch
-    #[command(name = "twitter")]
+    /// X (Twitter) Intelligence — search, trends, sentiment, monitor, fetch
+    #[command(name = "twitter", alias = "x", alias = "tw")]
     Twitter(TwitterArgs),
 
     /// Reddit Intelligence — search, hot, top, research, fetch
@@ -209,11 +209,11 @@ pub struct FetchArgs {
     pub url: String,
 
     /// Token budget
-    #[arg(short, long, default_value = "4000")]
+    #[arg(short, long, default_value = "8000")]
     pub budget: u32,
 
     /// PDS tier
-    #[arg(short, long, default_value = "summary")]
+    #[arg(short, long, default_value = "detailed")]
     pub tier: Tier,
 
     /// Extract with query context (QATBE)
@@ -824,24 +824,31 @@ pub struct YtCompareArgs {
 /// Arguments for `fetchium social`.
 ///
 /// Quick usage:
-///   fetchium social "AI tools"                     # unified search (all platforms)
-///   fetchium social "AI tools" --twitter           # Twitter only
-///   fetchium social "AI tools" --hackernews        # Hacker News only
-///   fetchium social "AI tools" --reddit --tiktok   # Reddit + TikTok
-///   fetchium social "AI tools" --unified --ideas   # Unified + content ideas
-///   fetchium social "AI tools" --reddit --subreddits r/ML,r/AI  # Reddit with subreddits
+///   fetchium social "AI tools"                            # unified (all platforms)
+///   fetchium social twitter "GPT-5 release"               # X/Twitter shorthand
+///   fetchium social reddit "mechanical keyboards"          # Reddit shorthand
+///   fetchium social hn "Show HN: my project"              # Hacker News shorthand
+///   fetchium social "AI tools" --twitter                  # Twitter flag style
+///   fetchium social "AI tools" --reddit --tiktok          # Reddit + TikTok
+///   fetchium social "AI tools" --unified --ideas          # Unified + content ideas
+///   fetchium social "AI tools" --reddit --subreddits r/ML,r/AI
 #[derive(Debug, Parser)]
 pub struct SocialArgs {
-    /// Search query (e.g. "AI tools", "rust programming", "#coding")
+    /// Platform (x/twitter/reddit/hn/hackernews/facebook/tiktok/youtube) or search query
+    #[arg(value_name = "PLATFORM_OR_QUERY")]
     pub query: String,
+
+    /// Search query — provide this when first arg is a platform name
+    #[arg(value_name = "QUERY")]
+    pub extra_query: Option<String>,
 
     // ── Platform selection ──────────────────────────────────────
     /// Search all platforms simultaneously (default when no platform flag given)
     #[arg(long)]
     pub unified: bool,
 
-    /// Search Twitter/X (via Nitter instances + DDG site:x.com)
-    #[arg(long)]
+    /// Search X/Twitter (via Nitter instances + DDG site:x.com)
+    #[arg(long, alias = "x")]
     pub twitter: bool,
 
     /// Search Reddit posts and communities

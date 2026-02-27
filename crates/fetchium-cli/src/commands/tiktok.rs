@@ -15,6 +15,7 @@ pub async fn run(args: TiktokArgs, config: &HsxConfig, format: Format) -> Result
         crate::cli::TiktokAction::Search { query, max } => {
             let social_args = crate::cli::SocialArgs {
                 query,
+                extra_query: None,
                 unified: false,
                 twitter: false,
                 reddit: false,
@@ -35,6 +36,7 @@ pub async fn run(args: TiktokArgs, config: &HsxConfig, format: Format) -> Result
         crate::cli::TiktokAction::Trends { max } => {
             let social_args = crate::cli::SocialArgs {
                 query: String::new(),
+                extra_query: None,
                 unified: false,
                 twitter: false,
                 reddit: false,
