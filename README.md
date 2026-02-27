@@ -16,7 +16,7 @@
 
 <br/>
 
-[![Tests](https://img.shields.io/badge/tests-941%20passing-brightgreen?style=flat-square&logo=rust)](https://github.com/zuhabul/Fetchium)
+[![Tests](https://img.shields.io/badge/tests-904%20passing-brightgreen?style=flat-square&logo=rust)](https://github.com/zuhabul/Fetchium)
 [![Rust](https://img.shields.io/badge/rust-1.75%2B-orange?style=flat-square&logo=rust)](https://rustup.rs)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue?style=flat-square)](LICENSE)
 [![Binary](https://img.shields.io/badge/binary-single%20static-purple?style=flat-square)](https://github.com/zuhabul/Fetchium/releases)
@@ -87,8 +87,8 @@ cargo build -p fetchium-cli --release
 # Web search — federated across multiple backends
 fetchium search "best Rust async runtimes 2025"
 
-# Fetch and extract a single URL (clean text, Markdown, or JSON)
-fetchium fetch https://example.com --format markdown
+# Fetch and extract a URL (8000 tokens, detailed tier)
+fetchium fetch https://example.com
 
 # AI-powered answer with citations
 fetchium ai "What causes northern lights?"
@@ -96,9 +96,22 @@ fetchium ai "What causes northern lights?"
 # Deep multi-step research report
 fetchium research "Impact of LLMs on software engineering jobs"
 
-# Social media intelligence
-fetchium social reddit "rust programming tips"
+# Summarize any URL or text
+fetchium summarize https://docs.rs/tokio/latest/tokio/
+fetchium summarize "long article text here..."
+
+# Transcribe YouTube / any audio URL
+fetchium transcribe https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+# Social media intelligence — platform commands
+fetchium x search "GPT-5 release"                # X (Twitter)
+fetchium reddit search "rust programming tips"    # Reddit
+fetchium hn top                                   # Hacker News top stories
+fetchium youtube transcript https://youtube.com/watch?v=...
+
+# Social shorthand (platform as first arg)
 fetchium social twitter "AI news today"
+fetchium social reddit "mechanical keyboards"
 
 # Check environment health
 fetchium doctor
@@ -235,21 +248,25 @@ Backend selection is automatic via ABS (Adaptive Backend Selector) based on quer
 
 ## Social Media Intelligence
 
+Each platform has both a dedicated top-level command and a shorthand via `fetchium social`:
+
 ```bash
-# Reddit — threads + top comments + sentiment
-fetchium social reddit "best mechanical keyboards 2025"
+# Per-platform commands (recommended):
+fetchium x search "GPT-5 release"
+fetchium reddit search "best mechanical keyboards 2025"
+fetchium hn search "Show HN: my new project"
+fetchium tiktok search "rust tutorial"
+fetchium facebook search "local tech events"
+fetchium youtube search "rust tutorial"
 
-# Twitter/X — recent posts via SearXNG (site:x.com)
+# Social shorthand (platform as first arg):
 fetchium social twitter "GPT-5 release"
-
-# Hacker News — stories + discussion
+fetchium social reddit "best mechanical keyboards 2025"
 fetchium social hn "Show HN: my new project"
 
-# TikTok — video metadata via tikwm
-fetchium social tiktok "rust tutorial"
-
-# Facebook — public posts via SearXNG (site:facebook.com)
-fetchium social facebook "local events"
+# Social unified (all platforms at once):
+fetchium social "AI tools 2025" --unified
+fetchium social "AI tools 2025" --reddit --hackernews
 ```
 
 Output includes: posts, scores/engagement, sentiment (positive/negative/neutral), topics, and a unified `SocialInsight` summary.
@@ -274,97 +291,237 @@ Data stored at `~/.fetchium/intelligence.db`. Fully local, never transmitted.
 ```
 fetchium [OPTIONS] <COMMAND>
 
-Commands:
-  search      Federated web search across multiple backends
-  fetch       Extract content from a URL (text, markdown, JSON)
-  ai          AI-powered answer with source citations
-  research    Deep multi-step research report
-  social      Social media search and analysis
-  serve       Start REST API or MCP server
-  provider    Manage AI provider credentials
-  setup       Install Chrome for Testing, configure SearXNG
-  doctor      Check environment health (backends, AI, Chrome)
-  config      Show or edit configuration
+Core Commands:
+  search        Federated web search across multiple backends
+  fetch         Extract content from a URL (text, markdown, JSON)
+  view          Alias for fetch
+  ai            AI-powered answer with source citations
+  research      Deep multi-step research report with citations
+  deep          Deep multi-agent research swarm (AMRS)
+  compare       Side-by-side comparison ("Rust vs Go")
+  summarize     AI-powered summarization of any URL or text
+  transcribe    Transcribe audio/video from any URL
 
-Options:
-  -o, --output <FORMAT>   Output format: text, json, markdown [default: text]
-  -q, --quiet             Suppress progress output
-  -v, --verbose           Enable debug logging
-      --fast              Skip full-page fetch (snippets only)
-      --headless          Force headless Chrome for JS rendering
-  -h, --help              Print help
-  -V, --version           Print version
+Platform Commands:
+  x / twitter   X (Twitter) intelligence — search, trends, sentiment, monitor
+  reddit        Reddit intelligence — search, hot, top, fetch
+  hackernews    Hacker News intelligence — search, top, new, fetch  (alias: hn)
+  facebook      Facebook intelligence — search, fetch               (alias: fb)
+  tiktok        TikTok intelligence — search, trends, fetch
+  youtube       YouTube intelligence — search, analyze, transcript, research
+  social        Unified multi-platform social search
+
+System:
+  serve         Start REST API or MCP server
+  provider      Manage AI provider credentials
+  setup         Install Chrome for Testing, configure SearXNG
+  doctor        Check environment health (backends, AI, Chrome)
+  config        Show or edit configuration
+  cache         Manage the result cache
+
+Global Options:
+  -f, --format <FMT>    Output format: markdown, json, text [default: markdown]
+  -q, --quiet           Suppress progress output
+  -v, --verbose         Enable debug logging
+      --no-cache        Skip cache for this request
+  -h, --help            Print help
+  -V, --version         Print version
 ```
 
-### Complete Command Reference
+### Core Commands
 
 #### `fetchium search`
 
 ```bash
-fetchium search "query" [OPTIONS]
-
-Options:
-  -n, --num <N>           Number of results [default: 10]
-  -b, --backend <ID>      Force a specific backend
-      --no-cache          Skip cache lookup
-  -o, --output json       Output as JSON
+fetchium search "best Rust async runtimes 2025"
+fetchium search "query" -n 20                    # 20 results
+fetchium search "query" -f json                  # JSON output
+fetchium search "query" --trust-verify           # trust/adversarial scoring
 ```
 
-#### `fetchium fetch`
+#### `fetchium fetch` / `fetchium view`
 
 ```bash
-fetchium fetch <URL> [OPTIONS]
-
-Options:
-  -f, --format <FMT>      Output format: text, markdown, json [default: text]
-      --headless          Use Chrome for JS-rendered pages
-      --pdf               Force PDF extraction mode
-      --budget <TOKENS>   Token budget for QATBE extraction [default: 4096]
+fetchium fetch https://example.com               # extract full page (8000 tokens, detailed)
+fetchium fetch https://example.com --budget 4000 # custom token budget
+fetchium fetch https://example.com --query "AI"  # QATBE query-aware extraction
+fetchium fetch https://example.com -f json       # JSON segments output
 ```
 
 #### `fetchium ai`
 
 ```bash
-fetchium ai "question" [OPTIONS]
-
-Options:
-      --fast              Snippets only, no full-page fetch (~10s)
-  -p, --provider <NAME>   Override AI provider: gemini, openai, anthropic, ollama
-      --model <MODEL>     Override model name
-      --no-citations      Skip source citation output
+fetchium ai "What causes northern lights?"
+fetchium ai "query" --model flash3               # override model
+fetchium ai "query" --fast                       # snippet-only context (faster)
+fetchium ai "query" --no-stream                  # wait for full response
 ```
 
 #### `fetchium research`
 
 ```bash
-fetchium research "topic" [OPTIONS]
-
-Options:
-      --depth <1-5>       Research depth (agents, rounds) [default: 3]
-      --format <FMT>      report, markdown, json [default: report]
-      --time-limit <SEC>  Max wall time [default: 120]
+fetchium research "Impact of LLMs on software engineering"
+fetchium research "query" --max-sources 15       # fetch more sources
+fetchium research "query" --no-ai                # heuristic listing (no AI)
+fetchium research "query" -o report.md           # save to file
 ```
+
+#### `fetchium deep`
+
+```bash
+fetchium deep "Rust web frameworks 2026"         # multi-agent research swarm
+fetchium deep "query" --timeout 60               # 60-second timeout
+```
+
+#### `fetchium compare`
+
+```bash
+fetchium compare "Rust vs Go"
+fetchium compare "React vs Vue vs Svelte"
+fetchium compare "query" --ai                    # AI-powered comparison table
+```
+
+#### `fetchium summarize`
+
+```bash
+fetchium summarize https://docs.rs/tokio/latest/tokio/
+fetchium summarize "long text to summarize here..."
+fetchium summarize <URL> --length short          # ~100 words
+fetchium summarize <URL> --length long           # ~700 words
+```
+
+#### `fetchium transcribe`
+
+```bash
+fetchium transcribe https://www.youtube.com/watch?v=...    # YouTube transcript
+fetchium transcribe https://any-url.com/podcast.mp3        # generic URL
+fetchium transcribe <youtube-url> --chapters               # align to chapters
+```
+
+---
+
+### Platform Commands
+
+#### `fetchium x` / `fetchium twitter`
+
+```bash
+# Aliases: fetchium x, fetchium twitter, fetchium tw
+fetchium x search "GPT-5 release"               # search tweets
+fetchium x search "query" -n 30                 # 30 tweets
+fetchium x trends                                # trending in US
+fetchium x trends --country uk                  # trending in UK
+fetchium x sentiment "AI tools"                  # sentiment analysis
+fetchium x fetch https://x.com/user/status/...  # fetch single tweet (oEmbed)
+fetchium x monitor "AI news" --interval 120     # realtime monitor (every 2 min)
+fetchium x profile elonmusk                      # user profile + recent tweets
+fetchium x research "query"                      # deep research via X
+```
+
+#### `fetchium reddit`
+
+```bash
+fetchium reddit search "best mechanical keyboards 2025"
+fetchium reddit search "query" --subreddits r/rust,r/webdev
+fetchium reddit hot rust                         # hot posts in r/rust
+fetchium reddit top rust --period week           # top posts this week
+fetchium reddit top rust --period month -n 50
+fetchium reddit fetch https://reddit.com/r/...   # fetch post + comments
+fetchium reddit research "query"                 # deep research via Reddit
+```
+
+#### `fetchium hackernews` / `fetchium hn`
+
+```bash
+fetchium hn search "llm benchmarks 2025"
+fetchium hn top                                  # top stories right now
+fetchium hn top -n 30                            # top 30 stories
+fetchium hn new                                  # newest stories
+fetchium hn fetch https://news.ycombinator.com/item?id=12345
+fetchium hn research "startup funding trends"
+```
+
+#### `fetchium youtube`
+
+```bash
+fetchium youtube search "rust tutorial"
+fetchium youtube search "query" -n 20
+fetchium youtube transcript https://www.youtube.com/watch?v=...
+fetchium youtube transcript <url> --chapters     # with chapter alignment
+fetchium youtube analyze https://www.youtube.com/watch?v=...
+fetchium youtube analyze <url> --transcript --comments
+fetchium youtube research "machine learning 2025"
+fetchium youtube research "query" --max-videos 10 --fact-check
+fetchium youtube compare <url1> <url2>           # compare 2 videos
+```
+
+#### `fetchium facebook` / `fetchium fb`
+
+```bash
+fetchium facebook search "tech events Bangladesh"
+fetchium facebook fetch https://facebook.com/...
+```
+
+#### `fetchium tiktok`
+
+```bash
+fetchium tiktok search "coding tips"
+fetchium tiktok trends                           # trending hashtags/sounds
+fetchium tiktok fetch https://tiktok.com/...
+```
+
+#### `fetchium social` (unified multi-platform)
+
+```bash
+# Platform shorthand (NEW — first arg can be platform name):
+fetchium social twitter "GPT-5 release"
+fetchium social reddit "best mechanical keyboards"
+fetchium social hn "Show HN: my new project"
+fetchium social facebook "local tech events"
+fetchium social tiktok "coding tips"
+fetchium social youtube "rust tutorial"
+
+# Flag style (also works):
+fetchium social "AI tools" --twitter
+fetchium social "AI tools" --reddit
+fetchium social "AI tools" --hackernews
+fetchium social "AI tools" --reddit --tiktok        # multi-platform
+fetchium social "AI tools" --unified --ideas         # all platforms + content ideas
+fetchium social "query" --reddit --subreddits r/ML,r/AI
+
+# Options:
+#  -n, --max <N>     posts per platform [default: 50]
+#  --trends          also fetch Twitter trending topics
+#  --deep            deep analysis mode
+#  --ideas           generate 20 viral content ideas
+```
+
+### System Commands
 
 #### `fetchium serve`
 
 ```bash
-fetchium serve [OPTIONS]
+fetchium serve --mode rest --port 3050           # REST API
+fetchium serve --mode mcp                        # MCP server for AI agents
+```
 
-Options:
-      --mode <MODE>       rest or mcp [default: rest]
-      --port <PORT>       Bind port [default: 3050]
-      --host <HOST>       Bind address [default: 127.0.0.1]
+#### `fetchium provider`
+
+```bash
+fetchium provider list                           # show configured providers
+fetchium provider setup                          # interactive setup wizard
+fetchium provider set gemini --key AIza...
+fetchium provider set gemini --model flash3      # use gemini-3-flash-preview
+fetchium provider set openai --key sk-...
+fetchium provider set anthropic --key sk-ant-...
+fetchium provider set ollama --model qwen3:8b
 ```
 
 #### `fetchium setup`
 
 ```bash
-fetchium setup [OPTIONS]
-
-Options:
-      --headless          Download Chrome for Testing (~200MB)
-      --searxng           Pull and start SearXNG Docker container on port 4040
-      --check             Show environment status without installing anything
+fetchium setup                                   # check + download anything missing
+fetchium setup --headless                        # download Chrome for Testing (~200MB)
+fetchium setup --check                           # check only, no downloads
 ```
 
 ---
@@ -477,7 +634,7 @@ url = "***REMOVED***"
 
 [ai]
 default_provider = "gemini"
-default_model = "gemini-2.5-flash"
+default_model = "gemini-3-flash-preview"
 
 [headless]
 chrome_path = ""   # leave empty to use fetchium-managed Chrome
