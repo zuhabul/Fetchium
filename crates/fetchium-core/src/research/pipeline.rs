@@ -19,6 +19,56 @@ use crate::validate::rar::{RarEngine, RarState};
 use crate::validate::temporal::{SourceFreshness, TemporalValidator};
 use std::time::Instant;
 
+/// Extract the top `n` most query-relevant sentences from a block of text.
+///
+/// Used as a fallback synthesizer when AI is unavailable. Scores each sentence by
+/// how many query keywords it contains, returns highest-scoring sentences joined
+/// into a readable paragraph (≤ 200 chars each, ≥ 30 chars to exclude noise).
+fn extract_key_sentences(text: &str, query_keywords: &[String], n: usize) -> String {
+    if text.is_empty() {
+        return String::new();
+    }
+    // Sentence split: ". " or "\n" boundaries, trim whitespace.
+    let sentences: Vec<&str> = text
+        .split('\n')
+        .flat_map(|line| line.split(". "))
+        .map(|s| s.trim())
+        .filter(|s| s.len() >= 30 && s.len() <= 300)
+        .collect();
+
+    if sentences.is_empty() {
+        // Nothing usable — return first 150 chars as a snippet.
+        return text.chars().take(150).collect();
+    }
+
+    // Score by keyword overlap.
+    let mut scored: Vec<(usize, &str)> = sentences
+        .iter()
+        .map(|s| {
+            let sl = s.to_lowercase();
+            let score = query_keywords
+                .iter()
+                .filter(|kw| sl.contains(kw.as_str()))
+                .count();
+            (score, *s)
+        })
+        .filter(|(score, _)| *score > 0)
+        .collect();
+
+    if scored.is_empty() {
+        // No keyword hits at all — just return first sentence.
+        return sentences.first().copied().unwrap_or("").to_string();
+    }
+
+    scored.sort_by(|a, b| b.0.cmp(&a.0));
+    scored.truncate(n);
+    scored
+        .iter()
+        .map(|(_, s)| *s)
+        .collect::<Vec<_>>()
+        .join(". ")
+}
+
 /// Research pipeline orchestrator.
 ///
 /// Steps (PRD SS10 Mode B):
@@ -106,7 +156,7 @@ impl ResearchPipeline {
             let result = rt.block_on(async move {
                 let mut noop = |_: &str| {};
                 match tokio::time::timeout(
-                    std::time::Duration::from_secs(30),
+                    std::time::Duration::from_secs(90),
                     crate::ai::provider_client::chat_with_fallback(
                         &messages,
                         None,
@@ -169,8 +219,13 @@ impl ResearchPipeline {
         }
 
         // Step 3-4: Fetch Content + Extract
+        // For ArXiv /abs/ URLs, fetch the /html/ version for actual paper text
+        // (the abstract page contains only metadata; /html/ has the full paper).
         let mut fetch_tasks = Vec::new();
-        for item in search_results {
+        for mut item in search_results {
+            if item.url.contains("arxiv.org/abs/") {
+                item.url = item.url.replace("arxiv.org/abs/", "arxiv.org/html/");
+            }
             let client = http_client.clone();
             fetch_tasks.push(tokio::spawn(async move {
                 let html = client.fetch_text(&item.url).await.unwrap_or_default();
@@ -188,9 +243,44 @@ impl ResearchPipeline {
             }
         }
 
-        // Filter irrelevant sources — require at least one query keyword in title/content.
-        // Prevents off-topic pages (e.g. "Oracle Corporation Wikipedia") from polluting results
-        // when querying something like "Impact of LLMs on software engineering jobs".
+        // ── Source relevance filter ──────────────────────────────────────────────
+        // Problem: "software" + "engineering" appear in every CS paper, so
+        // a simple 2-keyword filter lets in "Cognitive Biases in Software Engineering"
+        // or "Heroes on Software Development" for a query about "LLMs + jobs".
+        //
+        // Solution: split query keywords into:
+        //   • generic_domain — common tech/academic words (not discriminating)
+        //   • distinctive     — rare, query-specific words (must appear in source)
+        //
+        // A source is kept only when at least one DISTINCTIVE keyword appears
+        // in the title or the first 400 chars of extracted text.
+        // Fallback: if no distinctive keywords can be identified, use 2-hit rule.
+        const GENERIC_DOMAIN_WORDS: &[&str] = &[
+            "software",
+            "engineering",
+            "development",
+            "system",
+            "technology",
+            "computer",
+            "application",
+            "research",
+            "study",
+            "analysis",
+            "paper",
+            "using",
+            "based",
+            "approach",
+            "model",
+            "large",
+            "deep",
+            "data",
+            "work",
+            "show",
+            "2024",
+            "2025",
+            "2026",
+        ];
+
         let query_keywords: Vec<String> = config
             .query
             .split_whitespace()
@@ -202,26 +292,46 @@ impl ResearchPipeline {
             .filter(|w| w.len() > 3)
             .collect();
 
+        let distinctive_keywords: Vec<&String> = query_keywords
+            .iter()
+            .filter(|w| !GENERIC_DOMAIN_WORDS.contains(&w.as_str()))
+            .collect();
+
         if !query_keywords.is_empty() {
-            // For multi-word queries require 2+ keyword hits to reject off-topic pages.
-            // e.g. "Google Gemini Wikipedia" matches "software" but not "llms"+"engineering".
-            let required_hits = if query_keywords.len() <= 2 { 1 } else { 2 };
-            extracted_sources.retain(|(_, ext)| {
-                let title_lc = ext.title.to_lowercase();
-                let text_snippet: String = ext
-                    .text
-                    .chars()
-                    .take(1500)
-                    .collect::<String>()
-                    .to_lowercase();
-                let hits = query_keywords
-                    .iter()
-                    .filter(|kw| {
-                        title_lc.contains(kw.as_str()) || text_snippet.contains(kw.as_str())
-                    })
-                    .count();
-                hits >= required_hits
-            });
+            if !distinctive_keywords.is_empty() {
+                // Strict mode: at least one distinctive keyword in title or opening text.
+                extracted_sources.retain(|(_, ext)| {
+                    let title_lc = ext.title.to_lowercase();
+                    let text_head: String = ext
+                        .text
+                        .chars()
+                        .take(400)
+                        .collect::<String>()
+                        .to_lowercase();
+                    let combined = format!("{} {}", title_lc, text_head);
+                    distinctive_keywords
+                        .iter()
+                        .any(|kw| combined.contains(kw.as_str()))
+                });
+            } else {
+                // Fallback: all keywords are generic — require 2 keyword hits in content.
+                extracted_sources.retain(|(_, ext)| {
+                    let title_lc = ext.title.to_lowercase();
+                    let text_snippet: String = ext
+                        .text
+                        .chars()
+                        .take(1500)
+                        .collect::<String>()
+                        .to_lowercase();
+                    let hits = query_keywords
+                        .iter()
+                        .filter(|kw| {
+                            title_lc.contains(kw.as_str()) || text_snippet.contains(kw.as_str())
+                        })
+                        .count();
+                    hits >= 2
+                });
+            }
         }
 
         let sources_fetched = extracted_sources.len();
@@ -382,42 +492,48 @@ impl ResearchPipeline {
             .await;
         }
 
-        // Fallback: if AI synthesis failed or is disabled, show content excerpts
+        // Fallback: extractive synthesis when AI is unavailable.
+        // Instead of raw text dumps, score each sentence by query keyword relevance
+        // and surface the top 3 per source — giving a real information extract.
         if synthesis.is_empty() {
             if source_metas.is_empty() {
-                synthesis = format!("No sources found for: **{}**", config.query);
+                synthesis = format!("No sources found for: **{}**\n\nTry broadening your query or checking your SearXNG connection.", config.query);
             } else {
-                let mut fb = format!(
-                    "*AI synthesis unavailable. Showing source excerpts for: **{}***\n\n",
-                    config.query
-                );
+                let mut fb = String::new();
+                fb.push_str("> *Note: AI synthesis unavailable — showing extractive key-sentence summary.*\n\n");
+
+                // Build a grouped synthesis: key findings per source
+                fb.push_str(&format!("## What Sources Say About: {}\n\n", config.query));
+
+                let all_keywords: Vec<String> = config
+                    .query
+                    .split_whitespace()
+                    .map(|w| {
+                        w.to_lowercase()
+                            .trim_matches(|c: char| !c.is_alphanumeric())
+                            .to_string()
+                    })
+                    .filter(|w| w.len() > 3)
+                    .collect();
+
                 for (idx, meta) in source_metas.iter().enumerate() {
-                    let snippet = extracted_texts
-                        .get(idx)
-                        .map(|t| {
-                            let words: Vec<&str> = t.split_whitespace().take(60).collect();
-                            words.join(" ")
-                        })
-                        .unwrap_or_default();
+                    let text = extracted_texts.get(idx).map(|s| s.as_str()).unwrap_or("");
+                    let key_sentences = extract_key_sentences(text, &all_keywords, 3);
                     let marker = &formatted_citations[idx].inline_marker;
-                    if !snippet.is_empty() {
-                        fb.push_str(&format!(
-                            "**[{}] {}** {}\n{}\n\n",
-                            idx + 1,
-                            meta.title,
-                            marker,
-                            snippet,
-                        ));
+
+                    fb.push_str(&format!("### [{}] {}\n", idx + 1, meta.title));
+                    fb.push_str(&format!("*{}*\n\n", meta.url));
+                    if key_sentences.is_empty() {
+                        // Nothing scored — show first 120 chars
+                        let preview: String = text.chars().take(120).collect();
+                        if !preview.is_empty() {
+                            fb.push_str(&format!("{} {}\n\n", preview, marker));
+                        }
                     } else {
-                        fb.push_str(&format!(
-                            "**[{}] {}** {} — {}\n\n",
-                            idx + 1,
-                            meta.title,
-                            marker,
-                            meta.url,
-                        ));
+                        fb.push_str(&format!("{} {}\n\n", key_sentences, marker));
                     }
                 }
+
                 synthesis = fb;
             }
         }
