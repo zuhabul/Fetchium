@@ -87,6 +87,13 @@ async fn main() -> anyhow::Result<()> {
         Commands::Social(args) => commands::social::run(args, &config, format).await,
         Commands::Provider { action } => commands::provider::run(action, &config).await,
         Commands::Setup(args) => commands::setup::run(args, &config).await,
+        Commands::Twitter(args) => commands::twitter::run(args, &config, format).await,
+        Commands::Reddit(args) => commands::reddit::run(args, &config, format).await,
+        Commands::Hackernews(args) => commands::hackernews::run(args, &config, format).await,
+        Commands::Facebook(args) => commands::facebook::run(args, &config, format).await,
+        Commands::Tiktok(args) => commands::tiktok::run(args, &config, format).await,
+        Commands::Transcribe(args) => commands::transcribe::run(args, &config).await,
+        Commands::Summarize(args) => commands::summarize::run(args, &config).await,
     };
 
     // Global timing footer (shown for all commands when --time flag is set)
