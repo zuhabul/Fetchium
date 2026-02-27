@@ -1,4 +1,4 @@
-# HyperSearchX — Commercial Launch Task Checklist
+# Fetchium — Commercial Launch Task Checklist
 ## Complete product-to-market execution plan
 
 > **Engine Status**: 100% complete (44K LoC, 883 tests, 17/17 algorithms, 20/20 systems, 26 CLI commands)
@@ -126,7 +126,7 @@
 ## PHASE C: LANDING PAGE
 **Goal**: World-class developer-focused marketing site
 **Stack**: Next.js 15 + Tailwind + Framer Motion
-**Hosting**: Vercel or `hypersearchx.server.zuhabul.com` (traefik)
+**Hosting**: Vercel or `fetchium.server.zuhabul.com` (traefik)
 
 ### C1: Project Setup 🔴
 - [x] `apps/web/package.json` (Next.js 15, Tailwind, framer-motion, lucide-react)
@@ -138,7 +138,7 @@
 - [x] **Navbar** — responsive, mobile menu, Get API Key CTA
 - [x] **Hero section** — headline, subheadline, stats, CTA buttons, quick install
 - [x] **Feature grid** — 9 cards: federation, CEP, HyperFusion, PIE, evidence, monitoring, YouTube, token budget, resilience
-- [x] **Comparison table** — HyperSearchX vs Firecrawl vs Tavily vs Exa (15 features)
+- [x] **Comparison table** — Fetchium vs Firecrawl vs Tavily vs Exa (15 features)
 - [x] **Code examples** — TypeScript / Python / curl tabs with copy button
 - [x] **Pricing section** — 4-tier cards with feature lists
 - [x] **Footer** — 4-column nav, GitHub/Twitter links
@@ -147,9 +147,9 @@
 - [x] Dedicated /pricing page
 
 ### C4: Comparison Pages 🟡 (SEO goldmines)
-- [x] `/compare/firecrawl` — "HyperSearchX vs Firecrawl"
-- [ ] `/compare/tavily` — "HyperSearchX vs Tavily"
-- [ ] `/compare/exa` — "HyperSearchX vs Exa"
+- [x] `/compare/firecrawl` — "Fetchium vs Firecrawl"
+- [ ] `/compare/tavily` — "Fetchium vs Tavily"
+- [ ] `/compare/exa` — "Fetchium vs Exa"
 - [ ] `/alternatives/firecrawl` — "Best Firecrawl alternatives"
 - [ ] Each page: feature matrix, use case guide, migration instructions
 
@@ -248,10 +248,10 @@
 ---
 
 ## PHASE F: JAVASCRIPT/TYPESCRIPT SDK
-**Goal**: npm-publishable SDK (`@hypersearchx/sdk`)
+**Goal**: npm-publishable SDK (`@fetchium/sdk`)
 
 ### F1: Package Setup 🔴
-- [ ] `packages/sdk-js/package.json` (`@hypersearchx/sdk`)
+- [ ] `packages/sdk-js/package.json` (`@fetchium/sdk`)
 - [ ] TypeScript source + types export
 - [ ] Build: tsup (ESM + CJS + `.d.ts`)
 - [ ] Package: `npm publish --access public`
@@ -259,7 +259,7 @@
 
 ### F2: Client Implementation 🔴
 ```typescript
-class HyperSearchX {
+class Fetchium {
   constructor(config: { apiKey: string; baseUrl?: string })
 
   // Core methods
@@ -290,25 +290,25 @@ class HyperSearchX {
 ---
 
 ## PHASE G: PYTHON SDK
-**Goal**: PyPI-publishable SDK (`hypersearchx`)
+**Goal**: PyPI-publishable SDK (`fetchium`)
 
 ### G1: Package Setup 🔴
 - [ ] `packages/sdk-python/pyproject.toml`
-- [ ] `pip install hypersearchx`
+- [ ] `pip install fetchium`
 - [ ] Python 3.9+, type hints throughout
 - [ ] Sync client (httpx) + async client (httpx async)
 - [ ] Pydantic v2 models for all types
 
 ### G2: Implementation 🔴
 ```python
-from hypersearchx import HyperSearchX
+from fetchium import Fetchium
 
 # Sync
-hsx = HyperSearchX(api_key="hsx_...")
+hsx = Fetchium(api_key="hsx_...")
 results = hsx.search("rust async programming")
 
 # Async
-async with HyperSearchX(api_key="hsx_...") as hsx:
+async with Fetchium(api_key="hsx_...") as hsx:
     results = await hsx.search("rust async programming")
 ```
 - [ ] All endpoints matching JS SDK
@@ -376,7 +376,7 @@ async with HyperSearchX(api_key="hsx_...") as hsx:
     searxng:     # port 4040 (already running)
   ```
 - [ ] `infra/docker-compose.prod.yml` — production stack (volumes, resource limits)
-- [ ] `infra/nginx/hypersearchx.conf` — reverse proxy + SSL
+- [ ] `infra/nginx/fetchium.conf` — reverse proxy + SSL
 - [ ] Health checks on all containers
 - [ ] Volume mounts for PostgreSQL data persistence
 - [ ] `.env.example` with all required environment variables
@@ -399,8 +399,8 @@ async with HyperSearchX(api_key="hsx_...") as hsx:
 
 ### I3: Traefik Integration 🔴
 - [ ] Add `hsx-api` to `/etc/traefik/dynamic/services.yml`:
-  - `api.hypersearchx.server.zuhabul.com` → `localhost:8000`
-  - `hypersearchx.server.zuhabul.com` → Next.js app
+  - `api.fetchium.server.zuhabul.com` → `localhost:8000`
+  - `fetchium.server.zuhabul.com` → Next.js app
 - [ ] SSL certificate auto-provisioning
 - [ ] Authelia bypass for API endpoints (public)
 - [ ] Rate limit headers passthrough
@@ -442,22 +442,22 @@ async with HyperSearchX(api_key="hsx_...") as hsx:
 
 ### J2: Community 🟡
 - [ ] Discord server setup (channels: #general, #api, #self-hosting, #show-and-tell)
-- [ ] Twitter/X `@hypersearchx` account
+- [ ] Twitter/X `@fetchium` account
 - [ ] Dev.to blog connected to GitHub (auto-post)
 
 ### J3: Pre-Launch Content 🔴
-- [ ] Blog post 1: "Why we built HyperSearchX: Firecrawl isn't enough"
-- [ ] Blog post 2: "HyperSearchX benchmarks vs Firecrawl, Tavily, Exa"
-- [ ] Blog post 3: "How to build a RAG pipeline with HyperSearchX"
+- [ ] Blog post 1: "Why we built Fetchium: Firecrawl isn't enough"
+- [ ] Blog post 2: "Fetchium benchmarks vs Firecrawl, Tavily, Exa"
+- [ ] Blog post 3: "How to build a RAG pipeline with Fetchium"
 - [ ] Blog post 4: "Running your own unlimited search API for free"
 - [ ] Record demo video (screen capture, voice-over): 5 min max
 
 ### J4: Launch Day 🔴
 - [ ] Hacker News "Show HN" post (Tuesday-Thursday 9am ET for max visibility)
-  - Title: "Show HN: HyperSearchX – open-source Firecrawl alternative, 11 backends, 8-signal ranking"
+  - Title: "Show HN: Fetchium – open-source Firecrawl alternative, 11 backends, 8-signal ranking"
 - [ ] Product Hunt launch (same day, cross-post community)
 - [ ] Post to r/MachineLearning, r/LocalLLaMA, r/rust, r/programming
-- [ ] Tweet from @hypersearchx with demo video
+- [ ] Tweet from @fetchium with demo video
 - [ ] Email beta waitlist users (early access)
 
 ### J5: Post-Launch 🟡
@@ -526,7 +526,7 @@ async with HyperSearchX(api_key="hsx_...") as hsx:
 
 ```bash
 # API Server
-HSX_DATABASE_URL=postgresql://hsx:password@localhost:5432/hypersearchx
+HSX_DATABASE_URL=postgresql://hsx:password@localhost:5432/fetchium
 HSX_REDIS_URL=redis://localhost:6379
 HSX_JWT_SECRET=<64-char random hex>
 HSX_API_KEY_PREFIX=hsx_
@@ -543,7 +543,7 @@ SMTP_HOST=smtp.postmarkapp.com
 SMTP_PORT=587
 SMTP_USER=...
 SMTP_PASS=...
-FROM_EMAIL=noreply@hypersearchx.com
+FROM_EMAIL=noreply@fetchium.com
 
 # Search backends
 BRAVE_API_KEY=...
@@ -560,12 +560,12 @@ RUST_LOG=info
 
 # Next.js (dashboard)
 NEXTAUTH_SECRET=<32-char random>
-NEXTAUTH_URL=https://app.hypersearchx.com
+NEXTAUTH_URL=https://app.fetchium.com
 GITHUB_CLIENT_ID=...
 GITHUB_CLIENT_SECRET=...
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-NEXT_PUBLIC_API_URL=https://api.hypersearchx.com
+NEXT_PUBLIC_API_URL=https://api.fetchium.com
 ```
 
 ---

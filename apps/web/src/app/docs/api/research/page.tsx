@@ -42,8 +42,8 @@ export default function ResearchApiReference() {
 
       <h2>Example request</h2>
 
-      <CodeBlock language="bash" filename="research.sh" code={`curl -X POST https://api.hypersearchx.zuhabul.com/v1/research \\
-  -H "Authorization: Bearer hsx_your_key" \\
+      <CodeBlock language="bash" filename="research.sh" code={`curl -X POST https://api.fetchium.com/v1/research \\
+  -H "Authorization: Bearer fetchium_your_key" \\
   -H "Content-Type: application/json" \\
   -d '{
     "query": "Compare vector databases for production use: pgvector vs Pinecone vs Weaviate vs Qdrant",
@@ -144,10 +144,10 @@ export default function ResearchApiReference() {
 
       <h2>TypeScript example with streaming</h2>
       <CodeBlock language="typescript" filename="research.ts" code={`async function research(query: string) {
-  const res = await fetch("https://api.hypersearchx.zuhabul.com/v1/research", {
+  const res = await fetch("https://api.fetchium.com/v1/research", {
     method: "POST",
     headers: {
-      "Authorization": \`Bearer \${process.env.HSX_API_KEY}\`,
+      "Authorization": \`Bearer \${process.env.FETCHIUM_API_KEY}\`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({

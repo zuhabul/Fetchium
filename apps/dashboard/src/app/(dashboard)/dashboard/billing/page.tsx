@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Check, ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Billing — HyperSearchX Dashboard" };
+export const metadata: Metadata = { title: "Billing — Fetchium Dashboard" };
 
 const plans = [
   { name: "Free", price: "$0", requests: "1,000 / month", current: true },
@@ -47,7 +47,7 @@ export default function BillingPage() {
                 <div className="text-sm font-bold text-white">{p.price}</div>
               </div>
               <Link
-                href={`https://app.hypersearchx.com/checkout?plan=${p.name.toLowerCase()}`}
+                href={`https://app.fetchium.com/checkout?plan=${p.name.toLowerCase()}`}
                 className="flex items-center justify-center gap-1.5 w-full rounded-lg bg-brand-500 py-2 text-sm font-medium text-white hover:bg-brand-600 transition-colors"
               >
                 Upgrade <ArrowUpRight className="h-3.5 w-3.5" />

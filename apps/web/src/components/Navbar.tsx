@@ -45,8 +45,8 @@ export default function Navbar() {
               <Zap className="h-4 w-4 text-white" strokeWidth={2.5} />
             </div>
             <span className="text-[15px] tracking-tight text-slate-100">
-              HyperSearch
-              <span className="text-indigo-400">X</span>
+              Fetchi
+              <span className="text-indigo-400">um</span>
             </span>
           </Link>
 
@@ -77,7 +77,7 @@ export default function Navbar() {
             transition={{ delay: 0.35, duration: 0.5 }}
           >
             <Link
-              href="https://github.com/hypersearchx/hypersearchx"
+              href="https://github.com/zuhabul/Fetchium"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition-all hover:bg-white/5 hover:text-slate-100"
@@ -87,7 +87,7 @@ export default function Navbar() {
             </Link>
             <div className="h-4 w-px bg-white/10" />
             <Link
-              href="https://app.hypersearchx.zuhabul.com"
+              href="https://app.fetchium.com"
               target="_blank"
               rel="noopener noreferrer"
               className="group relative flex items-center gap-1.5 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(99,102,241,0.5)]"
@@ -162,7 +162,7 @@ export default function Navbar() {
               <div className="my-3 h-px bg-white/5" />
 
               <Link
-                href="https://github.com/hypersearchx/hypersearchx"
+                href="https://github.com/zuhabul/Fetchium"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-400 transition-all hover:bg-white/5 hover:text-white"
@@ -173,7 +173,7 @@ export default function Navbar() {
               </Link>
 
               <Link
-                href="https://app.hypersearchx.zuhabul.com"
+                href="https://app.fetchium.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] min-h-[44px]"

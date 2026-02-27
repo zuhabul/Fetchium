@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guidelines for AI agents (Claude Code, OpenAI Codex, Gemini CLI, etc.) working on the HyperSearchX codebase.
+Guidelines for AI agents (Claude Code, OpenAI Codex, Gemini CLI, etc.) working on the Fetchium codebase.
 
 ## Build, Lint, and Test Commands
 

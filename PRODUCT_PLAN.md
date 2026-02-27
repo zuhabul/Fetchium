@@ -1,8 +1,8 @@
-# HyperSearchX — Commercial Product Plan
+# Fetchium — Commercial Product Plan
 ## "The only API that searches, extracts, ranks, and reasons — all in one request"
 
-> **Positioning**: HyperSearchX is to Firecrawl what a Formula 1 car is to a bicycle.
-> Firecrawl scrapes one URL. HyperSearchX searches 11+ sources simultaneously, extracts
+> **Positioning**: Fetchium is to Firecrawl what a Formula 1 car is to a bicycle.
+> Firecrawl scrapes one URL. Fetchium searches 11+ sources simultaneously, extracts
 > with 5-layer CEP, ranks with 8-signal HyperFusion, learns across sessions, monitors
 > changes over time, and returns structured AI-native results with citations and evidence graphs.
 
@@ -22,8 +22,8 @@
 | F1 score 0.638, response time 3-12s | Mediocre quality and speed |
 | 500 one-time free credits | Terrible for evaluation |
 
-### HyperSearchX Differentiators (what we have RIGHT NOW)
-| Feature | HyperSearchX | Firecrawl | Advantage |
+### Fetchium Differentiators (what we have RIGHT NOW)
+| Feature | Fetchium | Firecrawl | Advantage |
 |---------|-------------|-----------|-----------|
 | **Multi-engine search** | 11+ backends federated | 0 (scrape-only) | **100x more data** |
 | **5-layer CEP extraction** | CSS→readability→headless→PDF→OCR | 1 mode | **5x reliability** |
@@ -41,7 +41,7 @@
 | **Resilience** | Circuit breakers, bulkhead, telemetry | None visible | **Production-grade** |
 
 ### Pricing Edge
-| | Firecrawl | HyperSearchX |
+| | Firecrawl | Fetchium |
 |---|-----------|-------------|
 | **Free tier** | 500 credits (one-time, dead) | 1,000 req/month (renewing) |
 | **Entry** | $16/month (3k pages) | $19/month (10k unified requests) |
@@ -59,8 +59,8 @@
 - **OmniSearch** (omnidirectional search)
 - **SearchForge** (industrial-grade)
 
-**Recommendation**: Keep **HyperSearchX** — it's distinctive and the `hsx` CLI is already shipped.
-Public API brand: `api.hypersearchx.com`
+**Recommendation**: Keep **Fetchium** — it's distinctive and the `hsx` CLI is already shipped.
+Public API brand: `api.fetchium.com`
 
 ### Core Value Propositions
 1. **"One API for everything"** — Search + extract + rank + reason in one request
@@ -85,7 +85,7 @@ Current: Cargo workspace (Rust only)
 Target: Full-stack monorepo with web, dashboard, SDK
 
 ```
-HyperSearchX/                          # Root monorepo
+Fetchium/                          # Root monorepo
 ├── Cargo.toml                         # Rust workspace (existing)
 ├── package.json                       # Node workspace root (NEW)
 ├── pnpm-workspace.yaml                # pnpm monorepo config (NEW)
@@ -174,7 +174,7 @@ DELETE /v1/keys/:id       # Revoke key
 }
 ```
 
-### Response Format (AI-native, unique to HyperSearchX)
+### Response Format (AI-native, unique to Fetchium)
 ```json
 {
   "meta": {
@@ -324,9 +324,9 @@ DELETE /v1/keys/:id       # Revoke key
 
 ```typescript
 // Usage example
-import { HyperSearchX } from '@hypersearchx/sdk'
+import { Fetchium } from '@fetchium/sdk'
 
-const hsx = new HyperSearchX({ apiKey: 'hsx_...' })
+const hsx = new Fetchium({ apiKey: 'hsx_...' })
 
 // Simple search
 const results = await hsx.search('rust async programming')
@@ -356,7 +356,7 @@ const monitor = await hsx.monitor('https://example.com/pricing')
 
 #### D1: SDK Tasks
 - [ ] TypeScript types (generated from OpenAPI spec)
-- [ ] `HyperSearchX` class with all endpoints
+- [ ] `Fetchium` class with all endpoints
 - [ ] Request retry with exponential backoff
 - [ ] Rate limit handling (retry-after header)
 - [ ] Error types with helpful messages
@@ -368,23 +368,23 @@ const monitor = await hsx.monitor('https://example.com/pricing')
 
 ### PHASE E: PYTHON SDK (Week 5)
 ```python
-from hypersearchx import HyperSearchX
+from fetchium import Fetchium
 
-hsx = HyperSearchX(api_key="hsx_...")
+hsx = Fetchium(api_key="hsx_...")
 
 # Sync
 results = hsx.search("rust async programming")
 
 # Async
-async with HyperSearchX(api_key="hsx_...") as hsx:
+async with Fetchium(api_key="hsx_...") as hsx:
     results = await hsx.search("rust async programming")
 ```
 
 #### E1: SDK Tasks
-- [ ] `hypersearchx` package (PyPI)
+- [ ] `fetchium` package (PyPI)
 - [ ] Sync and async clients
 - [ ] Pydantic models for all types
-- [ ] `pip install hypersearchx`
+- [ ] `pip install fetchium`
 - [ ] Jupyter notebook examples
 
 ---
@@ -433,10 +433,10 @@ services:
 - [ ] Uptime monitoring (Grafana Cloud or UptimeRobot)
 
 #### G3: Domain & Hosting
-- [ ] Register `hypersearchx.com` (or use `server.zuhabul.com` subdomain initially)
-- [ ] DNS: `api.hypersearchx.com` → API server
-- [ ] DNS: `hypersearchx.com` → landing page
-- [ ] DNS: `app.hypersearchx.com` → dashboard
+- [ ] Register `fetchium.com` (or use `server.zuhabul.com` subdomain initially)
+- [ ] DNS: `api.fetchium.com` → API server
+- [ ] DNS: `fetchium.com` → landing page
+- [ ] DNS: `app.fetchium.com` → dashboard
 - [ ] SSL certificates (Let's Encrypt auto-renew)
 - [ ] CDN for landing page (Cloudflare)
 
@@ -447,14 +447,14 @@ services:
 #### H1: Pre-launch
 - [ ] Product Hunt draft (launch day checklist)
 - [ ] Hacker News "Show HN" draft
-- [ ] Twitter/X account (@hypersearchx)
+- [ ] Twitter/X account (@fetchium)
 - [ ] GitHub repo README overhaul (stars bait)
 - [ ] Discord server setup
 - [ ] Beta waitlist email capture on landing page
-- [ ] 5 comparison blog posts ("HyperSearchX vs X")
+- [ ] 5 comparison blog posts ("Fetchium vs X")
 
 #### H2: Launch
-- [ ] Post to HN "Show HN: HyperSearchX - open-source Firecrawl alternative with 8-signal ranking, evidence graphs, and free unlimited self-hosting"
+- [ ] Post to HN "Show HN: Fetchium - open-source Firecrawl alternative with 8-signal ranking, evidence graphs, and free unlimited self-hosting"
 - [ ] Product Hunt launch
 - [ ] Post to r/MachineLearning, r/LocalLLaMA, r/programming
 - [ ] Email beta waitlist
@@ -649,7 +649,7 @@ services:
 
 ## APPENDIX: COMPETITIVE INTELLIGENCE SUMMARY
 
-| Metric | HyperSearchX | Firecrawl | Tavily | Exa |
+| Metric | Fetchium | Firecrawl | Tavily | Exa |
 |--------|-------------|-----------|--------|-----|
 | Search backends | 11+ | 0 | 1 (proprietary) | 1 (semantic) |
 | Extraction layers | 5 (CEP) | 1 | 1 | 1 |

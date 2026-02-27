@@ -6,7 +6,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "HyperSearchX Dashboard",
+  title: "Fetchium Dashboard",
   description: "Manage your API keys, view usage, and upgrade your plan.",
 };
 

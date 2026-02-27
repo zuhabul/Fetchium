@@ -20,8 +20,8 @@ export default function UsageApiReference() {
       </div>
 
       <h2>Example request</h2>
-      <CodeBlock language="bash" code={`curl https://api.hypersearchx.zuhabul.com/v1/usage \\
-  -H "Authorization: Bearer hsx_your_key"`} />
+      <CodeBlock language="bash" code={`curl https://api.fetchium.com/v1/usage \\
+  -H "Authorization: Bearer fetchium_your_key"`} />
 
       <h2>Response</h2>
       <CodeBlock language="json" filename="response.json" code={`{
@@ -54,7 +54,7 @@ export default function UsageApiReference() {
         dependencies are healthy, <code>503</code> if any critical dependency is down.
       </p>
 
-      <CodeBlock language="bash" code={`curl https://api.hypersearchx.zuhabul.com/health`} />
+      <CodeBlock language="bash" code={`curl https://api.fetchium.com/health`} />
 
       <CodeBlock language="json" code={`{
   "status": "healthy",

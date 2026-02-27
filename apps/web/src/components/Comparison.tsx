@@ -36,7 +36,7 @@ interface Tool {
 
 const tools: Tool[] = [
   {
-    name: "HyperSearchX",
+    name: "Fetchium",
     tagline: "The search API that thinks",
     highlight: true,
     data: [
@@ -142,7 +142,7 @@ export default function Comparison() {
             <span className="gradient-text">comes close</span>
           </h2>
           <p className="mt-4 sm:mt-5 mx-auto max-w-2xl text-sm sm:text-lg text-slate-500">
-            HyperSearchX is the only API combining search federation, neural ranking,
+            Fetchium is the only API combining search federation, neural ranking,
             deep content extraction, and cross-session AI learning — features competitors
             don&apos;t offer at any price point.
           </p>

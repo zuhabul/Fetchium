@@ -1,6 +1,6 @@
 # Agent Integration
 
-HyperSearchX supports 6 integration modes for AI frameworks.
+Fetchium supports 6 integration modes for AI frameworks.
 
 ## MCP (Model Context Protocol)
 
@@ -11,7 +11,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "hypersearchx": {
+    "fetchium": {
       "command": "hsx",
       "args": ["serve", "--mcp"]
     }
@@ -26,7 +26,7 @@ Add to `.mcp.json` in your project root:
 ```json
 {
   "servers": {
-    "hypersearchx": {
+    "fetchium": {
       "command": "hsx",
       "args": ["serve", "--mcp"],
       "env": {}
@@ -83,7 +83,7 @@ def hsx_search(query: str) -> str:
     return result.stdout
 
 search_tool = Tool(
-    name="HyperSearchX",
+    name="Fetchium",
     func=hsx_search,
     description="Search the web with AI-native token-budgeted results"
 )
@@ -97,7 +97,7 @@ import subprocess
 
 @tool("Web Search")
 def web_search(query: str) -> str:
-    """Search the web using HyperSearchX and return structured results."""
+    """Search the web using Fetchium and return structured results."""
     result = subprocess.run(
         ["hsx", "agent-search", query],
         capture_output=True, text=True, timeout=30
@@ -136,6 +136,6 @@ def handle_function_call(name, args):
 
 **`Ollama not available`** — Start with `ollama serve`. Install at https://ollama.com.
 
-**`Rate limited`** — HyperSearchX respects rate limits. Wait and retry, or configure multiple backends.
+**`Rate limited`** — Fetchium respects rate limits. Wait and retry, or configure multiple backends.
 
 **`Content not found`** — The page may require JavaScript. Install Chromium for CEP Layer 3.

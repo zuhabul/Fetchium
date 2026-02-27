@@ -1,6 +1,6 @@
 # Algorithm Reference
 
-HyperSearchX implements 17 novel algorithms not found in existing tools.
+Fetchium implements 17 novel algorithms not found in existing tools.
 
 ## CEP — Cascade Extraction Protocol (PRD §16)
 

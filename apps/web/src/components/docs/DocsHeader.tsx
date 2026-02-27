@@ -29,7 +29,7 @@ export default function DocsHeader({ onMenuClick }: DocsHeaderProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
-          <span className="font-semibold text-slate-200 text-sm">HyperSearchX</span>
+          <span className="font-semibold text-slate-200 text-sm">Fetchium</span>
           <span className="text-slate-600 hidden sm:inline">/</span>
           <span className="text-slate-400 text-sm hidden sm:inline">docs</span>
         </Link>
@@ -52,9 +52,9 @@ export default function DocsHeader({ onMenuClick }: DocsHeaderProps) {
         <nav className="flex items-center gap-1 sm:gap-2 ml-auto">
           <Link href="/" className="text-xs text-slate-500 hover:text-slate-300 transition-colors px-1 sm:px-2 py-1 hidden xs:block">Home</Link>
           <Link href="/pricing" className="text-xs text-slate-500 hover:text-slate-300 transition-colors px-1 sm:px-2 py-1 hidden sm:block">Pricing</Link>
-          <a href="https://github.com/zuhabul/hypersearchx" target="_blank" rel="noopener noreferrer"
+          <a href="https://github.com/zuhabul/Fetchium" target="_blank" rel="noopener noreferrer"
             className="text-xs text-slate-500 hover:text-slate-300 transition-colors px-1 sm:px-2 py-1 hidden sm:block">GitHub</a>
-          <Link href="https://app.hypersearchx.zuhabul.com"
+          <Link href="https://app.fetchium.com"
             className="ml-1 sm:ml-2 px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors whitespace-nowrap min-h-[36px] flex items-center">
             <span className="hidden sm:inline">Dashboard →</span>
             <span className="sm:hidden">App →</span>

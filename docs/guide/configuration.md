@@ -1,18 +1,18 @@
 # Configuration
 
-HyperSearchX reads config from `~/.hypersearchx/config.toml`. All settings can be
+Fetchium reads config from `~/.fetchium/config.toml`. All settings can be
 overridden via environment variables.
 
 ## Config File Location
 
 ```bash
-~/.hypersearchx/config.toml  # Primary config
+~/.fetchium/config.toml  # Primary config
 ```
 
 Create the directory and file:
 ```bash
-mkdir -p ~/.hypersearchx
-cat > ~/.hypersearchx/config.toml << 'EOF'
+mkdir -p ~/.fetchium
+cat > ~/.fetchium/config.toml << 'EOF'
 [general]
 max_results = 10
 
@@ -32,8 +32,8 @@ EOF
 # Maximum search results to return (default: 10)
 max_results = 10
 
-# Directory for HyperSearchX data files (default: ~/.hypersearchx)
-data_dir = "~/.hypersearchx"
+# Directory for Fetchium data files (default: ~/.fetchium)
+data_dir = "~/.fetchium"
 
 [fetch]
 # HTTP request timeout in seconds (default: 15)
@@ -46,7 +46,7 @@ max_page_size = 5242880
 max_redirects = 5
 
 # User agent string
-user_agent = "HyperSearchX/0.1 (https://github.com/hypersearchx/hypersearchx)"
+user_agent = "Fetchium/0.1 (https://github.com/fetchium/fetchium)"
 
 [ai]
 # Ollama server address (default: http://localhost:11434)

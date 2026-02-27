@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Settings — HyperSearchX Dashboard" };
+export const metadata: Metadata = { title: "Settings — Fetchium Dashboard" };
 
 export default function SettingsPage() {
   return (

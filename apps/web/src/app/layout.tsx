@@ -6,21 +6,21 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "HyperSearchX — The Search API That Thinks",
+  title: "Fetchium — The Search API That Thinks",
   description:
     "11 federated sources, 8-signal ranking, evidence graphs, cross-session learning. The most advanced search and scraping API for AI applications.",
   keywords: ["search api", "web scraping api", "firecrawl alternative", "ai search", "rust search"],
-  authors: [{ name: "HyperSearchX" }],
+  authors: [{ name: "Fetchium" }],
   openGraph: {
-    title: "HyperSearchX — The Search API That Thinks",
+    title: "Fetchium — The Search API That Thinks",
     description:
       "11 federated sources, 8-signal ranking, evidence graphs, cross-session learning.",
     type: "website",
-    url: "https://hypersearchx.com",
+    url: "https://fetchium.com",
   },
   twitter: {
     card: "summary_large_image",
-    title: "HyperSearchX — The Search API That Thinks",
+    title: "Fetchium — The Search API That Thinks",
     description: "The most advanced search and scraping API for AI applications.",
   },
 };

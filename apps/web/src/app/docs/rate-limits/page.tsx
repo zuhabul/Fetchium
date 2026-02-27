@@ -10,7 +10,7 @@ export default function RateLimits() {
       <div className="text-xs text-slate-500 mb-2 font-mono">Getting Started</div>
       <h1>Rate Limits</h1>
       <p>
-        HyperSearchX enforces two types of rate limits: a monthly request quota per plan, and a
+        Fetchium enforces two types of rate limits: a monthly request quota per plan, and a
         per-minute limit to prevent burst abuse. Both limits are tracked per API key.
       </p>
 
@@ -88,10 +88,10 @@ X-RateLimit-Reset: 2025-07-01T00:00:00Z`} />
 
       <CodeBlock language="typescript" filename="retry.ts" code={`async function searchWithRetry(query: string, maxRetries = 3): Promise<any> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const res = await fetch("https://api.hypersearchx.zuhabul.com/v1/search", {
+    const res = await fetch("https://api.fetchium.com/v1/search", {
       method: "POST",
       headers: {
-        "Authorization": \`Bearer \${process.env.HSX_API_KEY}\`,
+        "Authorization": \`Bearer \${process.env.FETCHIUM_API_KEY}\`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ query, tier: "summary" }),
@@ -113,12 +113,12 @@ X-RateLimit-Reset: 2025-07-01T00:00:00Z`} />
 
       <CodeBlock language="python" filename="retry.py" code={`import time, requests, os
 
-HSX_BASE = "https://api.hypersearchx.zuhabul.com"
-HEADERS = {"Authorization": f"Bearer {os.environ['HSX_API_KEY']}"}
+FETCHIUM_BASE = "https://api.fetchium.com"
+HEADERS = {"Authorization": f"Bearer {os.environ['FETCHIUM_API_KEY']}"}
 
 def search_with_retry(query: str, max_retries: int = 3) -> dict:
     for attempt in range(max_retries + 1):
-        r = requests.post(f"{HSX_BASE}/v1/search",
+        r = requests.post(f"{FETCHIUM_BASE}/v1/search",
             headers=HEADERS,
             json={"query": query, "tier": "summary"})
 
@@ -144,8 +144,8 @@ def search_with_retry(query: str, max_retries: int = 3) -> dict:
         Check your current usage via the <code>/v1/usage</code> endpoint:
       </p>
 
-      <CodeBlock language="bash" code={`curl https://api.hypersearchx.zuhabul.com/v1/usage \\
-  -H "Authorization: Bearer hsx_your_key"`} />
+      <CodeBlock language="bash" code={`curl https://api.fetchium.com/v1/usage \\
+  -H "Authorization: Bearer fetchium_your_key"`} />
 
       <CodeBlock language="json" filename="usage-response.json" code={`{
   "plan": "free",
@@ -163,13 +163,13 @@ def search_with_retry(query: str, max_retries: int = 3) -> dict:
 
       <p>
         You can also view real-time usage in the{" "}
-        <Link href="https://app.hypersearchx.zuhabul.com">dashboard</Link>.
+        <Link href="https://app.fetchium.com">dashboard</Link>.
       </p>
 
       <h2>Upgrade your plan</h2>
       <p>
         Upgrade anytime from the{" "}
-        <Link href="https://app.hypersearchx.zuhabul.com">dashboard → Billing</Link>. Quota
+        <Link href="https://app.fetchium.com">dashboard → Billing</Link>. Quota
         increases take effect immediately.
       </p>
 

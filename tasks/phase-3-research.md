@@ -9,7 +9,7 @@
 
 ## Phase 3 Summary
 
-Phase 3 transforms HyperSearchX from a multi-engine search tool into a validated research platform with verifiable evidence chains. It adds:
+Phase 3 transforms Fetchium from a multi-engine search tool into a validated research platform with verifiable evidence chains. It adds:
 
 1. **6-Layer Validation Pipeline** -- Source, content, freshness, cross-source, extraction quality, and output integrity checks with configurable strictness (PRD SS19)
 2. **RAR Self-Correction** -- Reflection-Augmented Research loop inspired by Self-RAG and CRAG that detects and auto-corrects bad retrievals at 5 reflection checkpoints (PRD SS8.6)

@@ -16,7 +16,7 @@ Phase 0 establishes the entire foundation that every subsequent phase builds upo
 3. **Error System** -- Structured error taxonomy with retry semantics and fallback hints (PRD SS44)
 4. **Configuration** -- Layered config loading: defaults -> TOML file -> env vars -> CLI args (PRD SS11)
 5. **CI/CD** -- GitHub Actions for build/test/lint on every PR, plus release workflow for multi-platform binaries
-6. **npm Wrapper** -- `npm install -g hypersearchx` installs the native Rust binary via postinstall script (PRD SS12)
+6. **npm Wrapper** -- `npm install -g fetchium` installs the native Rust binary via postinstall script (PRD SS12)
 7. **CLI Skeleton** -- Full clap derive CLI with all commands stubbed, dispatching to per-command handlers
 8. **Doctor Command** -- System health check showing resource tier, available tools, and configuration (PRD SS13)
 
@@ -295,7 +295,7 @@ fn pds_tier_default_is_summary() {
 **Dependencies:** `P0-E1-T2`
 
 **Description:**
-Build the layered configuration system per PRD SS11: defaults -> `~/.hypersearchx/config.toml` -> environment variables -> CLI args. The config file covers search, fetch, cache, AI, and output settings.
+Build the layered configuration system per PRD SS11: defaults -> `~/.fetchium/config.toml` -> environment variables -> CLI args. The config file covers search, fetch, cache, AI, and output settings.
 
 **What already exists:**
 The file `crates/hsx-core/src/config.rs` is **fully implemented** with:
@@ -388,7 +388,7 @@ pub fn load_from(path: Option<&std::path::Path>) -> Self {
     let config_path = path.map(|p| p.to_path_buf()).unwrap_or_else(|| {
         dirs::home_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join(".hypersearchx")
+            .join(".fetchium")
             .join("config.toml")
     });
 
@@ -434,7 +434,7 @@ impl HsxConfig {
     pub fn config_file_path() -> PathBuf {
         dirs::home_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join(".hypersearchx")
+            .join(".fetchium")
             .join("config.toml")
     }
 
@@ -490,9 +490,9 @@ fn save_and_reload() {
 }
 
 #[test]
-fn config_file_path_contains_hypersearchx() {
+fn config_file_path_contains_fetchium() {
     let path = HsxConfig::config_file_path();
-    assert!(path.to_string_lossy().contains(".hypersearchx"));
+    assert!(path.to_string_lossy().contains(".fetchium"));
     assert!(path.to_string_lossy().ends_with("config.toml"));
 }
 ```
@@ -504,10 +504,10 @@ crates/hsx-core/src/config.rs   # Add env overrides, ensure_data_dir, save, conf
 
 **Acceptance criteria:**
 
-- [ ] Config loads from `~/.hypersearchx/config.toml` when file exists
+- [ ] Config loads from `~/.fetchium/config.toml` when file exists
 - [ ] Config falls back to defaults when file is missing
 - [ ] Config applies environment variable overrides (HSX_SEARCH_DEFAULT_BUDGET, etc.)
-- [ ] `data_dir()` returns `~/.hypersearchx` by default
+- [ ] `data_dir()` returns `~/.fetchium` by default
 - [ ] `ensure_data_dir()` creates the directory if missing
 - [ ] `save()` writes current config to TOML file
 - [ ] `detect_resource_tier()` returns appropriate tier based on system RAM/CPU
@@ -934,10 +934,10 @@ python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release.yml'))"
 **Dependencies:** `P0-E2-T2`
 
 **Description:**
-Create the npm wrapper package that allows `npm install -g hypersearchx` (or pnpm/bun). The package contains a `postinstall` script that downloads the platform-specific binary from GitHub Releases, and bin stubs (`hsx`, `hyper`) that invoke the native binary.
+Create the npm wrapper package that allows `npm install -g fetchium` (or pnpm/bun). The package contains a `postinstall` script that downloads the platform-specific binary from GitHub Releases, and bin stubs (`hsx`, `hyper`) that invoke the native binary.
 
 **PRD References:**
-- SS12 "npm/pnpm/bun Compatibility": `npm install -g hypersearchx`, `pnpm add -g hypersearchx`, `bun add -g hypersearchx`
+- SS12 "npm/pnpm/bun Compatibility": `npm install -g fetchium`, `pnpm add -g fetchium`, `bun add -g fetchium`
 - SS11 "Binary Names": Primary `hsx`, Alias `hyper`
 
 **Files to create:**
@@ -956,7 +956,7 @@ npm/
 
 ```json
 {
-  "name": "hypersearchx",
+  "name": "fetchium",
   "version": "0.1.0",
   "description": "AI-native search engine for humans and agents — blazing fast, free, zero API keys",
   "keywords": [
@@ -972,9 +972,9 @@ npm/
   "license": "MIT OR Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hypersearchx/hypersearchx"
+    "url": "https://github.com/fetchium/fetchium"
   },
-  "homepage": "https://github.com/hypersearchx/hypersearchx",
+  "homepage": "https://github.com/fetchium/fetchium",
   "bin": {
     "hsx": "bin/hsx.js",
     "hyper": "bin/hyper.js"
@@ -1019,7 +1019,7 @@ const { pipeline } = require("stream/promises");
 const zlib = require("zlib");
 const { createGunzip } = require("zlib");
 
-const REPO = "hypersearchx/hypersearchx";
+const REPO = "fetchium/fetchium";
 const BINARY_NAME = "hsx";
 
 /**
@@ -1046,7 +1046,7 @@ function getArtifactName() {
         `Supported: ${Object.keys(map).join(", ")}`
     );
     console.error(
-      "You can build from source: cargo install hypersearchx"
+      "You can build from source: cargo install fetchium"
     );
     process.exit(1);
   }
@@ -1070,7 +1070,7 @@ function getVersion() {
 function download(url) {
   return new Promise((resolve, reject) => {
     https
-      .get(url, { headers: { "User-Agent": "hypersearchx-npm" } }, (res) => {
+      .get(url, { headers: { "User-Agent": "fetchium-npm" } }, (res) => {
         if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
           // Follow redirect
           return download(res.headers.location).then(resolve).catch(reject);
@@ -1111,7 +1111,7 @@ async function install() {
   const binDir = path.join(__dirname, "..", "bin");
   const tmpDir = path.join(os.tmpdir(), `hsx-install-${Date.now()}`);
 
-  console.log(`HyperSearchX: Downloading ${artifact} (${tag})...`);
+  console.log(`Fetchium: Downloading ${artifact} (${tag})...`);
   console.log(`  URL: ${downloadUrl}`);
 
   mkdirSync(tmpDir, { recursive: true });
@@ -1148,13 +1148,13 @@ async function install() {
       fs.chmodSync(destBinary, 0o755);
     }
 
-    console.log(`HyperSearchX: Installed ${BINARY_NAME} to ${destBinary}`);
+    console.log(`Fetchium: Installed ${BINARY_NAME} to ${destBinary}`);
   } catch (err) {
-    console.error(`HyperSearchX: Failed to install binary.`);
+    console.error(`Fetchium: Failed to install binary.`);
     console.error(`  Error: ${err.message}`);
     console.error(``);
     console.error(`  You can install manually:`);
-    console.error(`    cargo install hypersearchx`);
+    console.error(`    cargo install fetchium`);
     console.error(`  Or download from:`);
     console.error(`    https://github.com/${REPO}/releases`);
 
@@ -1190,17 +1190,17 @@ const binaryExt = os.platform() === "win32" ? ".exe" : "";
 const binaryPath = path.join(__dirname, `hsx${binaryExt}`);
 
 if (!fs.existsSync(binaryPath)) {
-  console.error("Error: HyperSearchX binary not found.");
+  console.error("Error: Fetchium binary not found.");
   console.error("");
   console.error("The native binary was not installed during `npm install`.");
   console.error("Try reinstalling:");
-  console.error("  npm install -g hypersearchx");
+  console.error("  npm install -g fetchium");
   console.error("");
   console.error("Or install directly via Cargo:");
-  console.error("  cargo install hypersearchx");
+  console.error("  cargo install fetchium");
   console.error("");
   console.error("Or download from GitHub Releases:");
-  console.error("  https://github.com/hypersearchx/hypersearchx/releases");
+  console.error("  https://github.com/fetchium/fetchium/releases");
   process.exit(1);
 }
 
@@ -1231,14 +1231,14 @@ require("./hsx.js");
 **Step 5: Create minimal `npm/README.md`**
 
 ```markdown
-# HyperSearchX
+# Fetchium
 
 AI-native search engine for humans and agents.
 
 ## Install
 
 ```bash
-npm install -g hypersearchx
+npm install -g fetchium
 ```
 
 ## Usage
@@ -1249,7 +1249,7 @@ hsx fetch https://example.com
 hsx doctor
 ```
 
-See [GitHub](https://github.com/hypersearchx/hypersearchx) for full documentation.
+See [GitHub](https://github.com/fetchium/fetchium) for full documentation.
 ```
 
 **Step 6: Test the npm package structure locally**
@@ -1257,7 +1257,7 @@ See [GitHub](https://github.com/hypersearchx/hypersearchx) for full documentatio
 ```bash
 cd npm
 node -e "const pkg = require('./package.json'); console.log(pkg.name, pkg.version, pkg.bin);"
-# Should output: hypersearchx 0.1.0 { hsx: 'bin/hsx.js', hyper: 'bin/hyper.js' }
+# Should output: fetchium 0.1.0 { hsx: 'bin/hsx.js', hyper: 'bin/hyper.js' }
 
 # Verify postinstall script syntax
 node -c scripts/install-binary.js
@@ -1270,7 +1270,7 @@ node -c bin/hyper.js
 
 **Acceptance criteria:**
 
-- [ ] `npm/package.json` exists with name `hypersearchx`, correct version, bin stubs
+- [ ] `npm/package.json` exists with name `fetchium`, correct version, bin stubs
 - [ ] `npm/scripts/install-binary.js` downloads platform-specific binary from GitHub Releases
 - [ ] Supports 5 platforms: darwin-x64, darwin-arm64, linux-x64, linux-arm64, win32-x64
 - [ ] `npm/bin/hsx.js` forwards all args to the native binary
@@ -1342,7 +1342,7 @@ The CLI is **fully implemented** in `crates/hsx-cli/src/`:
 PRD SS11 specifies these global flags. Add them to `crates/hsx-cli/src/cli.rs`:
 
 ```rust
-/// HyperSearchX -- AI-native search engine for humans and agents.
+/// Fetchium -- AI-native search engine for humans and agents.
 #[derive(Debug, Parser)]
 #[command(name = "hsx", version, about, long_about = None)]
 #[command(propagate_version = true)]
@@ -1536,7 +1536,7 @@ fn cli_doctor_runs() {
         .arg("doctor")
         .assert()
         .success()
-        .stdout(predicate::str::contains("HyperSearchX Doctor"));
+        .stdout(predicate::str::contains("Fetchium Doctor"));
 }
 ```
 
@@ -1614,7 +1614,7 @@ use hsx_core::config::HsxConfig;
 use sysinfo::System;
 
 pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
-    println!("{}", "HyperSearchX Doctor".bold().cyan());
+    println!("{}", "Fetchium Doctor".bold().cyan());
     println!("{}", "=".repeat(50));
     println!();
 
@@ -1839,7 +1839,7 @@ crates/hsx-cli/tests/cli_smoke.rs       # Add doctor output test
 cargo run -p hsx-cli -- doctor
 
 # Expected output structure:
-# HyperSearchX Doctor
+# Fetchium Doctor
 # ==================================================
 #
 # System Information
@@ -1848,8 +1848,8 @@ cargo run -p hsx-cli -- doctor
 #   [OK] Resource Tier: Server (32+ GB RAM, 8+ cores)
 #
 # Configuration
-#   [OK] Data directory: /Users/user/.hypersearchx (exists)
-#   [WARN] Config file: /Users/user/.hypersearchx/config.toml (using defaults)
+#   [OK] Data directory: /Users/user/.fetchium (exists)
+#   [WARN] Config file: /Users/user/.fetchium/config.toml (using defaults)
 #   [OK] Default budget: 4000 tokens
 #   [OK] Cache: enabled
 #

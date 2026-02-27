@@ -1,10 +1,10 @@
-# SearXNG settings for HyperSearchX local instance
+# SearXNG settings for Fetchium local instance
 # Optimized for JSON API access with maximum engine coverage
 
 use_default_settings: true
 
 general:
-  instance_name: "HyperSearchX Local"
+  instance_name: "Fetchium Local"
   privacypolicy_url: false
   donation_url: false
   contact_url: false
