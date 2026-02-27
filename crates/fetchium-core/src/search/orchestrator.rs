@@ -581,11 +581,37 @@ impl SearchOrchestrator {
         };
 
         // Step 5: Filter low-relevance garbage results
+        // (a) Score threshold: discard results with near-zero HyperFusion score.
+        // (b) Title-term check: require at least one non-trivial query word in
+        //     title+snippet. Prevents high-authority domains gaming BM25 on stopwords
+        //     (e.g. arxiv.org "best practices" paper ranking for "best Rust async runtimes").
+        let query_content_words = extract_content_words(query);
         let pre_filter_count = ranked.len();
-        ranked.retain(|r| r.score.unwrap_or(0.0) >= 0.10);
+        ranked.retain(|r| {
+            // (a) score threshold
+            if r.score.unwrap_or(0.0) < 0.10 {
+                return false;
+            }
+            // (b) title-term check — only apply when we have meaningful query words
+            if !query_content_words.is_empty() {
+                let haystack = format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
+                let has_match = query_content_words
+                    .iter()
+                    .any(|w| haystack.contains(w.as_str()));
+                if !has_match {
+                    tracing::debug!(
+                        "Filtered title-mismatch: {:?} (none of {:?} in title/snippet)",
+                        r.title,
+                        &query_content_words[..query_content_words.len().min(3)]
+                    );
+                    return false;
+                }
+            }
+            true
+        });
         if ranked.len() < pre_filter_count {
             tracing::debug!(
-                "Filtered {} low-relevance results (score < 0.10)",
+                "Filtered {} low-relevance/off-topic results",
                 pre_filter_count - ranked.len()
             );
         }
@@ -628,9 +654,49 @@ pub fn parse_backend_id(s: &str) -> Option<BackendId> {
     }
 }
 
+/// Extract meaningful content words from a query, stripping English stopwords.
+///
+/// Used by the title-term relevance filter to ensure results contain at least
+/// one substantive query term. Returns lowercase words with length >= 3.
+fn extract_content_words(query: &str) -> Vec<String> {
+    const STOPWORDS: &[&str] = &[
+        "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
+        "is", "are", "was", "were", "be", "been", "have", "has", "do", "does", "did", "will",
+        "would", "could", "should", "may", "might", "what", "which", "who", "when", "where", "how",
+        "why", "best", "top", "good", "vs", "vs.", "versus", "most", "more", "less", "all", "any",
+        "some", "many", "can", "its", "it", "this", "that", "than", "then", "from", "into",
+        "about", "like", "get", "use", "used",
+    ];
+    query
+        .split_whitespace()
+        .map(|w| {
+            w.trim_matches(|c: char| !c.is_alphanumeric())
+                .to_lowercase()
+        })
+        .filter(|w| w.len() >= 3 && !STOPWORDS.contains(&w.as_str()))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn extract_content_words_strips_stopwords() {
+        let words = extract_content_words("best Rust async runtimes 2025");
+        assert!(words.contains(&"rust".to_string()));
+        assert!(words.contains(&"async".to_string()));
+        assert!(words.contains(&"runtimes".to_string()));
+        assert!(words.contains(&"2025".to_string()));
+        assert!(!words.contains(&"best".to_string())); // stopword
+    }
+
+    #[test]
+    fn extract_content_words_short_words_removed() {
+        let words = extract_content_words("is it a good idea");
+        // "is", "it", "a", "good" are stopwords or <3 chars
+        assert!(words.is_empty() || !words.contains(&"is".to_string()));
+    }
 
     #[test]
     fn parse_backend_id_variants() {

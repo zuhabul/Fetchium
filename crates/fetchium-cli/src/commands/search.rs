@@ -10,10 +10,13 @@
 use crate::cli::{Format, SearchArgs};
 use anyhow::Context;
 use colored::Colorize;
+use fetchium_core::ai::provider_client::chat_with_fallback;
+use fetchium_core::ai::types::{AiConfig, ChatMessage};
 use fetchium_core::cache::{search_key, MemoryCache};
 use fetchium_core::config::HsxConfig;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::output::{format_search_json, format_search_markdown};
+use fetchium_core::rank::detect_intent;
 use fetchium_core::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
 use fetchium_core::types::{PdsTier, ResourceTier, SearchMeta, SearchMode, SearchResult};
 use indicatif::{ProgressBar, ProgressStyle};
@@ -206,6 +209,97 @@ pub async fn run(
             result.items.len(),
             duration_ms
         );
+    }
+
+    // ── AI synthesis banner (Opinion/Factual/Comparison) ──────────────────
+    // Run a quick AI synthesis for queries that benefit from a direct answer.
+    // Skip for JSON output (machine-readable) and empty result sets.
+    if !quiet && format != Format::Json && !result.items.is_empty() {
+        let intent = detect_intent(query);
+        use fetchium_core::rank::QueryIntent;
+        let should_synthesize = matches!(
+            intent,
+            QueryIntent::Opinion | QueryIntent::Factual | QueryIntent::Comparison
+        );
+        if should_synthesize {
+            let ai_config = AiConfig::from_hsx_config(config);
+            let has_ai =
+                !ai_config.providers.fallback_chain.is_empty() || ai_config.default_model.is_some();
+            if has_ai {
+                // Build context from top-5 results (title + snippet)
+                let context = result
+                    .items
+                    .iter()
+                    .take(5)
+                    .enumerate()
+                    .map(|(i, r)| format!("[{}] {}: {}", i + 1, r.title, r.snippet))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+
+                let system = "You are a search assistant. Based ONLY on the provided sources, give a concise 2-3 sentence direct answer to the query. Cite sources with [N]. Be specific, not generic.".to_string();
+                let user_msg = format!("Query: {query}\n\nSources:\n{context}\n\nAnswer:");
+                let messages = vec![
+                    ChatMessage {
+                        role: "system".into(),
+                        content: system,
+                    },
+                    ChatMessage {
+                        role: "user".into(),
+                        content: user_msg,
+                    },
+                ];
+
+                let pb = ProgressBar::new_spinner();
+                pb.set_style(
+                    ProgressStyle::with_template("{spinner:.cyan} {msg}")
+                        .unwrap()
+                        .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]),
+                );
+                pb.enable_steady_tick(std::time::Duration::from_millis(80));
+                pb.set_message("Synthesizing answer...");
+
+                let (tx, rx) = tokio::sync::oneshot::channel::<Option<String>>();
+                let providers = ai_config.providers.clone();
+                std::thread::spawn(move || {
+                    let rt = tokio::runtime::Builder::new_current_thread()
+                        .enable_all()
+                        .build()
+                        .unwrap();
+                    let result = rt.block_on(async move {
+                        let mut noop = |_: &str| {};
+                        match tokio::time::timeout(
+                            std::time::Duration::from_secs(15),
+                            chat_with_fallback(
+                                &messages, None, &ai_config, &providers, false, &mut noop,
+                            ),
+                        )
+                        .await
+                        {
+                            Ok(Ok(r)) => Some(r.content),
+                            _ => None,
+                        }
+                    });
+                    let _ = tx.send(result);
+                });
+
+                if let Ok(Some(answer)) = rx.await {
+                    pb.finish_and_clear();
+                    if !answer.is_empty() {
+                        eprintln!(
+                            "\n{}",
+                            "── AI Answer ──────────────────────────────────────".dimmed()
+                        );
+                        eprintln!("{answer}");
+                        eprintln!(
+                            "{}",
+                            "───────────────────────────────────────────────────".dimmed()
+                        );
+                    }
+                } else {
+                    pb.finish_and_clear();
+                }
+            }
+        }
     }
 
     Ok(())
