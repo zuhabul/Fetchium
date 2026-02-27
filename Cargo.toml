@@ -1,10 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/hsx-core",
-    "crates/hsx-cli",
-    "crates/hsx-mcp",
-    "crates/hsx-api",
+    "crates/fetchium-core",
+    "crates/fetchium-cli",
+    "crates/fetchium-mcp",
+    "crates/fetchium-api",
 ]
 
 [workspace.package]
@@ -12,8 +12,8 @@ version = "1.0.0"
 edition = "2021"
 rust-version = "1.75"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/zuhabul/HyperSearchX"
-description = "AI-native federated search engine for humans and agents"
+repository = "https://github.com/zuhabul/Fetchium"
+description = "Fetchium — the universal retrieval layer for the internet"
 
 
 [workspace.dependencies]
@@ -103,6 +103,9 @@ pretty_assertions = "1"
 proptest = "1"
 criterion = { version = "0.5", features = ["html_reports"] }
 
+# ZIP extraction (used by setup --headless to unpack Chrome for Testing)
+zip = { version = "2", default-features = false, features = ["deflate"] }
+
 # Security
 ammonia = "4"
 
@@ -112,7 +115,7 @@ tower = { version = "0.4" }
 tower-http = { version = "0.5", features = ["cors", "trace", "timeout", "limit", "request-id", "set-header"] }
 
 # Core library (internal)
-hsx-core = { path = "crates/hsx-core" }
+fetchium-core = { path = "crates/fetchium-core" }
 
 [profile.release]
 opt-level = 3

@@ -14,4 +14,4 @@ archives = true
 checksum = "sha256"
 
 [dist.builds]
-cargo = [{ package = "hsx-cli" }]
+cargo = [{ package = "fetchium-cli" }]
