@@ -32,7 +32,7 @@ export default function Sidebar() {
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-500">
           <Zap className="h-3.5 w-3.5 text-white" />
         </div>
-        <span className="font-semibold text-white text-sm">HyperSearchX</span>
+        <span className="font-semibold text-white text-sm">Fetchium</span>
       </div>
 
       {/* Nav */}
@@ -59,7 +59,7 @@ export default function Sidebar() {
       {/* Bottom */}
       <div className="border-t border-white/5 p-3 space-y-0.5">
         <Link
-          href="https://docs.hypersearchx.com"
+          href="https://docs.fetchium.com"
           target="_blank"
           className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/40 hover:text-white/70"
         >

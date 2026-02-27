@@ -25,15 +25,15 @@ const pkg = require("../package.json");
 const version = pkg.version;
 const isWindows = process.platform === "win32";
 const ext = isWindows ? "zip" : "tar.gz";
-const binName = isWindows ? "hsx.exe" : "hsx";
-const repoUrl = "https://github.com/hypersearchx/hypersearchx";
-const archiveName = `hypersearchx-${target}.${ext}`;
+const binName = isWindows ? "fetchium.exe" : "fetchium";
+const repoUrl = "https://github.com/zuhabul/fetchium";
+const archiveName = `fetchium-${target}.${ext}`;
 const downloadUrl = `${repoUrl}/releases/download/v${version}/${archiveName}`;
 
 const binDir = path.join(__dirname, "..", "bin");
 fs.mkdirSync(binDir, { recursive: true });
 
-console.log(`Downloading HyperSearchX v${version} for ${platform}...`);
+console.log(`Downloading Fetchium v${version} for ${platform}...`);
 console.log(`URL: ${downloadUrl}`);
 
 try {
@@ -47,8 +47,8 @@ try {
   }
   const binPath = path.join(binDir, binName);
   fs.chmodSync(binPath, 0o755);
-  console.log(`HyperSearchX installed at ${binPath}`);
-  console.log(`Run: hsx --version`);
+  console.log(`Fetchium installed at ${binPath}`);
+  console.log(`Run: fetchium --version`);
 } catch (err) {
   console.error(`Installation failed: ${err.message}`);
   console.error(`Try installing manually from: ${repoUrl}/releases`);

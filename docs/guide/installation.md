@@ -1,13 +1,13 @@
 # Installation
 
-HyperSearchX (`hsx`) is available via npm, Cargo, or as a pre-built binary.
+Fetchium (`hsx`) is available via npm, Cargo, or as a pre-built binary.
 
 ## npm (Recommended)
 
 The easiest way to install on any platform:
 
 ```bash
-npm install -g hypersearchx
+npm install -g fetchium
 hsx --version
 ```
 
@@ -24,19 +24,19 @@ hsx --version
 
 ## Pre-built Binaries
 
-Download the latest release from [GitHub Releases](https://github.com/hypersearchx/hypersearchx/releases).
+Download the latest release from [GitHub Releases](https://github.com/fetchium/fetchium/releases).
 
 | Platform | File |
 |----------|------|
-| Linux x64 | `hypersearchx-x86_64-unknown-linux-gnu.tar.gz` |
-| Linux ARM64 | `hypersearchx-aarch64-unknown-linux-gnu.tar.gz` |
-| macOS x64 | `hypersearchx-x86_64-apple-darwin.tar.gz` |
-| macOS ARM64 | `hypersearchx-aarch64-apple-darwin.tar.gz` |
-| Windows x64 | `hypersearchx-x86_64-pc-windows-msvc.zip` |
+| Linux x64 | `fetchium-x86_64-unknown-linux-gnu.tar.gz` |
+| Linux ARM64 | `fetchium-aarch64-unknown-linux-gnu.tar.gz` |
+| macOS x64 | `fetchium-x86_64-apple-darwin.tar.gz` |
+| macOS ARM64 | `fetchium-aarch64-apple-darwin.tar.gz` |
+| Windows x64 | `fetchium-x86_64-pc-windows-msvc.zip` |
 
 ```bash
 # Example: macOS ARM64
-curl -fsSL https://github.com/hypersearchx/hypersearchx/releases/latest/download/hypersearchx-aarch64-apple-darwin.tar.gz | tar xz
+curl -fsSL https://github.com/fetchium/fetchium/releases/latest/download/fetchium-aarch64-apple-darwin.tar.gz | tar xz
 sudo mv hsx /usr/local/bin/
 hsx --version
 ```
@@ -55,7 +55,7 @@ Run `hsx doctor` to check which tools are available on your system.
 
 ## Configuration
 
-HyperSearchX reads configuration from `~/.hypersearchx/config.toml`:
+Fetchium reads configuration from `~/.fetchium/config.toml`:
 
 ```toml
 [general]

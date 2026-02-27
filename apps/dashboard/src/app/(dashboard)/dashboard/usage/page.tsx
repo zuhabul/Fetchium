@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Usage — HyperSearchX Dashboard" };
+export const metadata: Metadata = { title: "Usage — Fetchium Dashboard" };
 
 // Mock 30-day data
 const days = Array.from({ length: 30 }, (_, i) => {

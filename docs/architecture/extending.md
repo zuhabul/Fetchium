@@ -1,4 +1,4 @@
-# Extending HyperSearchX
+# Extending Fetchium
 
 ## Adding a New Search Backend
 
@@ -77,7 +77,7 @@ impl HsxPlugin for MyPlugin {
 ```
 
 Build as a dynamic library (`.so` / `.dylib` / `.dll`) and place in
-`~/.hypersearchx/plugins/`.
+`~/.fetchium/plugins/`.
 
 ## Adding a New CLI Command
 

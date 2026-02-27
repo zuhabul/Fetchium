@@ -171,7 +171,7 @@ export default function Hero() {
           className="flex flex-col sm:flex-row gap-3 justify-center mb-12"
         >
           <Link
-            href="https://app.hypersearchx.zuhabul.com"
+            href="https://app.fetchium.com"
             className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all duration-200 shadow-[0_0_30px_rgba(99,102,241,0.3)] hover:shadow-[0_0_50px_rgba(99,102,241,0.5)] min-h-[48px]"
           >
             Get API Key — Free

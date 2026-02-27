@@ -10,13 +10,13 @@ export default function SelfHostingDocker() {
       <div className="text-xs text-slate-500 mb-2 font-mono">Self-Hosting</div>
       <h1>Self-Hosting with Docker</h1>
       <p>
-        Run HyperSearchX on your own infrastructure at no cost. The entire stack runs in Docker
+        Run Fetchium on your own infrastructure. The entire stack runs in Docker
         Compose: the Rust API, SearXNG search backend, and SQLite database.
       </p>
 
       <div className="callout">
-        <strong>Free forever:</strong> Self-hosting has no request limits or pricing. You only pay
-        for your own server costs. The source code is MIT-licensed.
+        <strong>No request limits:</strong> Self-hosted deployments have no API quotas. You only pay
+        for your own server costs.
       </div>
 
       <h2>Prerequisites</h2>
@@ -29,12 +29,12 @@ export default function SelfHostingDocker() {
       <h2>Quick start</h2>
 
       <CodeBlock language="bash" code={`# Clone the repository
-git clone https://github.com/zuhabul/hypersearchx.git
-cd hypersearchx
+git clone https://github.com/zuhabul/Fetchium.git
+cd fetchium
 
 # Copy and configure environment
 cp .env.example .env
-# Edit .env to set HSX_ADMIN_SECRET and other settings
+# Edit .env to set FETCHIUM_ADMIN_SECRET and other settings
 
 # Start the stack
 docker compose up -d
@@ -47,16 +47,16 @@ curl http://localhost:3050/health`} />
       <CodeBlock language="yaml" filename="docker-compose.yml" code={`version: "3.9"
 
 services:
-  hsx-api:
-    image: ghcr.io/zuhabul/hypersearchx:latest
+  fetchium-api:
+    image: ghcr.io/zuhabul/fetchium:latest
     ports:
       - "3050:3050"
     environment:
-      - HSX_ADMIN_SECRET=\${HSX_ADMIN_SECRET}
+      - FETCHIUM_ADMIN_SECRET=\${FETCHIUM_ADMIN_SECRET}
       - SEARXNG_URL=http://searxng:8080
-      - DATABASE_PATH=/data/hsx.db
+      - DATABASE_PATH=/data/fetchium.db
     volumes:
-      - hsx-data:/data
+      - fetchium-data:/data
     depends_on:
       - searxng
     restart: unless-stopped
@@ -68,17 +68,17 @@ services:
     restart: unless-stopped
 
 volumes:
-  hsx-data:`} />
+  fetchium-data:`} />
 
       <h2>Environment variables</h2>
       <table>
         <thead><tr><th>Variable</th><th>Required</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td><code>HSX_ADMIN_SECRET</code></td><td>Yes</td><td>Admin API secret (min 32 chars). Generate: <code>openssl rand -hex 32</code></td></tr>
+          <tr><td><code>FETCHIUM_ADMIN_SECRET</code></td><td>Yes</td><td>Admin API secret (min 32 chars). Generate: <code>openssl rand -hex 32</code></td></tr>
           <tr><td><code>SEARXNG_URL</code></td><td>Yes</td><td>URL of your SearXNG instance</td></tr>
-          <tr><td><code>DATABASE_PATH</code></td><td>No</td><td>SQLite database path. Default: <code>~/.hypersearchx/hsx.db</code></td></tr>
-          <tr><td><code>HSX_PORT</code></td><td>No</td><td>API port. Default: <code>3050</code></td></tr>
-          <tr><td><code>HSX_LOG_LEVEL</code></td><td>No</td><td><code>debug</code>, <code>info</code>, <code>warn</code>, <code>error</code>. Default: <code>info</code></td></tr>
+          <tr><td><code>DATABASE_PATH</code></td><td>No</td><td>SQLite database path. Default: <code>~/.fetchium/fetchium.db</code></td></tr>
+          <tr><td><code>FETCHIUM_PORT</code></td><td>No</td><td>API port. Default: <code>3050</code></td></tr>
+          <tr><td><code>FETCHIUM_LOG_LEVEL</code></td><td>No</td><td><code>debug</code>, <code>info</code>, <code>warn</code>, <code>error</code>. Default: <code>info</code></td></tr>
           <tr><td><code>ALLOWED_ORIGINS</code></td><td>No</td><td>Comma-separated CORS origins. Default: none (API only)</td></tr>
         </tbody>
       </table>
@@ -94,7 +94,7 @@ volumes:
   -d '{"name": "My App", "tier": "unlimited"}'`} />
 
       <CodeBlock language="json" code={`{
-  "key": "hsx_4626d3fc3fd6693aaaf2d8f5fd084a71...",
+  "key": "fetchium_4626d3fc3fd6693aaaf2d8f5fd084a71...",
   "id": "key_abc123",
   "name": "My App",
   "tier": "unlimited",
@@ -107,14 +107,14 @@ volumes:
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Clone and build
-git clone https://github.com/zuhabul/hypersearchx.git
-cd hypersearchx
-cargo build -p hsx-cli --release
+git clone https://github.com/zuhabul/Fetchium.git
+cd fetchium
+cargo build -p fetchium-cli --release
 
 # Run
-HSX_ADMIN_SECRET=your_secret \\
+FETCHIUM_ADMIN_SECRET=your_secret \\
 SEARXNG_URL=http://localhost:8080 \\
-  ./target/release/hsx serve --port 3050`} />
+  ./target/release/fetchium serve --port 3050`} />
 
       <h2>Reverse proxy with nginx</h2>
 
@@ -146,7 +146,7 @@ docker compose up -d`} />
           { href: "/docs/quickstart", title: "Quick Start", desc: "Make your first API call" },
           { href: "/docs/authentication", title: "Authentication", desc: "Key management" },
           { href: "/docs/api/search", title: "Search API", desc: "Full API reference" },
-          { href: "https://github.com/zuhabul/hypersearchx", title: "GitHub", desc: "Source code and issues" },
+          { href: "https://github.com/zuhabul/Fetchium", title: "GitHub", desc: "Source code and issues" },
         ].map(l => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

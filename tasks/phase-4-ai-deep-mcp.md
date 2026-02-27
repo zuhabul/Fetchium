@@ -9,7 +9,7 @@
 
 ## Phase 4 Summary
 
-Phase 4 transforms HyperSearchX from a search-and-research tool into an AI-powered deep research platform with external interfaces. It adds:
+Phase 4 transforms Fetchium from a search-and-research tool into an AI-powered deep research platform with external interfaces. It adds:
 
 1. **AI Preview Engine** -- Local LLM synthesis via Ollama with intelligent model routing and sandwich layout context assembly (PRD SS23)
 2. **AMRS Deep Research** -- Adaptive Multi-Agent Research Swarm with 4 specialized agent types communicating over tokio channels (PRD SS8.8)
@@ -549,7 +549,7 @@ pub fn assemble_context(
 /// System prompt for AI synthesis with citation requirements.
 pub fn synthesis_system_prompt(query: &str, source_count: usize) -> String {
     format!(
-        r#"You are a research synthesis assistant for HyperSearchX. Your task is to provide a clear, accurate, and well-cited answer to the user's query.
+        r#"You are a research synthesis assistant for Fetchium. Your task is to provide a clear, accurate, and well-cited answer to the user's query.
 
 RULES:
 1. Base your answer ONLY on the provided sources. Never fabricate information.
@@ -1941,7 +1941,7 @@ fn find_contradiction(claim: &str, new_findings: &[String]) -> Option<String> {
 **Estimated effort:** 4-5 days
 
 **Description:**
-Build the MCP (Model Context Protocol) server that exposes HyperSearchX as a tool provider for Claude, Claude Code, and any MCP-compatible client. Implement 5 composite tools (`hypersearch_search`, `hypersearch_fetch`, `hypersearch_research`, `hypersearch_estimate`, `hypersearch_expand`) that handle the full pipeline in a single call. Support both stdio and SSE transports.
+Build the MCP (Model Context Protocol) server that exposes Fetchium as a tool provider for Claude, Claude Code, and any MCP-compatible client. Implement 5 composite tools (`hypersearch_search`, `hypersearch_fetch`, `hypersearch_research`, `hypersearch_estimate`, `hypersearch_expand`) that handle the full pipeline in a single call. Support both stdio and SSE transports.
 
 **PRD References:**
 - SS30 "MCP Server Mode" -- Full tool schemas, composite tool rationale
@@ -2345,7 +2345,7 @@ pub async fn start_mcp_server(
     let tools = tool_definitions();
 
     let config = McpServerConfig {
-        name: "hypersearchx".to_string(),
+        name: "fetchium".to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         capabilities: rmcp::Capabilities {
             tools: Some(rmcp::ToolsCapability {}),
@@ -2461,7 +2461,7 @@ pub enum TransportType {
 **Estimated effort:** 3-4 days
 
 **Description:**
-Build a REST API server using axum that exposes HyperSearchX functionality over HTTP. Implement POST endpoints for `/api/search`, `/api/fetch`, `/api/research`, and `/api/estimate`. Add rate limiting middleware, CORS support, and a health check endpoint. This enables any programming language to use HyperSearchX via HTTP requests.
+Build a REST API server using axum that exposes Fetchium functionality over HTTP. Implement POST endpoints for `/api/search`, `/api/fetch`, `/api/research`, and `/api/estimate`. Add rate limiting middleware, CORS support, and a health check endpoint. This enables any programming language to use Fetchium via HTTP requests.
 
 **PRD References:**
 - SS9 "AI-Native Agent Architecture" -- REST API Mode (Interface Mode 3)
@@ -2918,7 +2918,7 @@ pub async fn start_api_server(
     let addr = format!("{}:{}", config.host, config.port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
 
-    tracing::info!("HyperSearchX REST API listening on http://{}", addr);
+    tracing::info!("Fetchium REST API listening on http://{}", addr);
     axum::serve(listener, app).await?;
 
     Ok(())

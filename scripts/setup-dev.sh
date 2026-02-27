@@ -3,7 +3,7 @@
 # Run once after cloning: sh scripts/setup-dev.sh
 set -eu
 
-echo "Setting up HyperSearchX development environment..."
+echo "Setting up Fetchium development environment..."
 
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 HOOKS_DIR="${REPO_ROOT}/.git/hooks"

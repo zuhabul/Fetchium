@@ -76,7 +76,7 @@ export default function AlgorithmsOverview() {
       <div className="text-xs text-slate-500 mb-2 font-mono">Algorithms</div>
       <h1>Algorithms Overview</h1>
       <p>
-        HyperSearchX implements 17 novel algorithms that don&apos;t exist in any other search tool.
+        Fetchium implements 17 novel algorithms that don&apos;t exist in any other search tool.
         Each algorithm is purpose-built to solve a specific aspect of the intelligent search pipeline.
       </p>
 

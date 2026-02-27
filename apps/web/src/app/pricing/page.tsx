@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Pricing — HyperSearchX",
+  title: "Pricing — Fetchium",
   description: "Simple, transparent pricing. Start free, upgrade when ready. Self-host for unlimited usage.",
 };
 

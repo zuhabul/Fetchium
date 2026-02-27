@@ -1,6 +1,6 @@
 version: "3.9"
 
-# HyperSearchX production stack
+# Fetchium production stack
 # Usage:
 #   cp .env.example .env && nano .env
 #   docker compose -f infra/docker-compose.yml up -d
@@ -9,7 +9,7 @@ services:
   # ─── Self-hosted SearXNG (free, unlimited search aggregation) ────────────────
   searxng:
     image: searxng/searxng:latest
-    container_name: hsx-searxng
+    container_name: fetchium-searxng
     restart: unless-stopped
     ports:
       - "127.0.0.1:4040:8080"
@@ -18,19 +18,19 @@ services:
     environment:
       - SEARXNG_BASE_URL=http://localhost:4040/
     networks:
-      - hsx-internal
+      - fetchium-internal
 
-  # ─── HyperSearchX REST API ───────────────────────────────────────────────────
+  # ─── Fetchium REST API ───────────────────────────────────────────────────────
   api:
     build:
       context: ..
       dockerfile: infra/Dockerfile
-    container_name: hsx-api
+    container_name: fetchium-api
     restart: unless-stopped
     ports:
       - "3000:3000"
     volumes:
-      - hsx-data:/data
+      - fetchium-data:/data
     environment:
       - HSX_API_HOST=0.0.0.0
       - HSX_API_PORT=3000
@@ -43,7 +43,7 @@ services:
     depends_on:
       - searxng
     networks:
-      - hsx-internal
+      - fetchium-internal
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
@@ -52,8 +52,8 @@ services:
       start_period: 10s
 
 networks:
-  hsx-internal:
+  fetchium-internal:
     driver: bridge
 
 volumes:
-  hsx-data:
+  fetchium-data:

@@ -88,7 +88,7 @@ const features = [
     icon: GitBranch,
     title: "PIE Cross-Session Learning",
     description:
-      "Persistent Intelligence Engine tracks source trust, failure patterns, and query predictions across sessions via SQLite. HyperSearchX gets smarter with every query your application makes — improving result quality automatically over time.",
+      "Persistent Intelligence Engine tracks source trust, failure patterns, and query predictions across sessions via SQLite. Fetchium gets smarter with every query your application makes — improving result quality automatically over time.",
     badge: "Novel",
     accent: "from-pink-500/20 to-pink-600/5",
     iconBg: "bg-pink-500/10",

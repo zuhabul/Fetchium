@@ -2,10 +2,10 @@
 
 ## Workspace Structure
 
-HyperSearchX is a Cargo workspace with 4 crates:
+Fetchium is a Cargo workspace with 4 crates:
 
 ```
-hypersearchx/
+fetchium/
 ├── crates/
 │   ├── hsx-core/     # All algorithms and business logic
 │   ├── hsx-cli/      # The `hsx` binary — clap CLI

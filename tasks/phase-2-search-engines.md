@@ -9,7 +9,7 @@
 
 ## Phase 2 Summary
 
-Phase 2 upgrades HyperSearchX from single-backend DuckDuckGo search to **full multi-engine parallel search** with advanced ranking. After this phase, users can:
+Phase 2 upgrades Fetchium from single-backend DuckDuckGo search to **full multi-engine parallel search** with advanced ranking. After this phase, users can:
 
 1. **Search 10+ backends simultaneously** -- Google, Bing, Scholar, SearXNG, Wikipedia, Brave, HN, ArXiv, GitHub, Reddit, StackOverflow
 2. **Headless Chromium extraction** -- CEP layers 3-5 for JavaScript-heavy sites

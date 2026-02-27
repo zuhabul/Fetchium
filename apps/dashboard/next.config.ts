@@ -27,7 +27,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://api.hypersearchx.zuhabul.com",
+              "connect-src 'self' https://api.fetchium.zuhabul.com",
               "frame-ancestors 'self'",
             ].join("; "),
           },

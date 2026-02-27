@@ -30,7 +30,7 @@ export default function TrustBar() {
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          Why developers choose HyperSearchX
+          Why developers choose Fetchium
         </motion.p>
 
         {/* Items grid */}
