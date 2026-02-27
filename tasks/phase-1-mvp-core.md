@@ -9,14 +9,14 @@
 
 ## Phase 1 Summary
 
-Phase 1 builds the **working MVP** of HyperSearchX. After this phase, users can run:
+Phase 1 builds the **working MVP** of Fetchium. After this phase, users can run:
 
 1. **`hsx fetch <url>`** -- Extract content from any webpage using CEP layers 1-2
 2. **`hsx search "query"`** -- Search the web via DuckDuckGo and display ranked results
 3. **`hsx agent-search "query" --budget N`** -- Agent-optimized search with token budgets
 4. **`hsx agent-fetch <url> --query "..." --budget N`** -- Agent-optimized fetch with QATBE
 
-This phase implements the core algorithms that differentiate HyperSearchX:
+This phase implements the core algorithms that differentiate Fetchium:
 
 - **QATBE** (Query-Aware Token-Budgeted Extraction) -- PRD SS17, SS8.2
 - **SCS** (Semantic Content Segmentation) -- PRD SS18, SS8.4
@@ -55,7 +55,7 @@ All of the following must be `DONE` before starting any Phase 1 task:
 **Dependencies:** P0-E1-T1 (workspace), P0-E1-T3 (config)
 
 **Description:**
-Extend the scaffolded `HttpClient` in `hsx-core/src/http/client.rs` with production-quality retry logic (exponential backoff with jitter), per-domain rate limiting, response size enforcement, and structured error mapping. The HTTP client is the foundation for every network operation in HyperSearchX.
+Extend the scaffolded `HttpClient` in `hsx-core/src/http/client.rs` with production-quality retry logic (exponential backoff with jitter), per-domain rate limiting, response size enforcement, and structured error mapping. The HTTP client is the foundation for every network operation in Fetchium.
 
 **PRD References:**
 
@@ -2535,7 +2535,7 @@ pub use counter::{count_tokens, estimate_tokens_fast, TokenBudget};
 **Dependencies:** P1-E3-T1 (tokenizer), P1-E1-T2 (CEP extraction)
 
 **Description:**
-Implement Query-Aware Token-Budgeted Extraction (QATBE) -- the core algorithm that makes HyperSearchX unique. Given a URL, a query, and a token budget, QATBE extracts only the most query-relevant content within the budget. Phase 1 uses BM25 scoring only (no semantic embeddings -- those come in Phase 5).
+Implement Query-Aware Token-Budgeted Extraction (QATBE) -- the core algorithm that makes Fetchium unique. Given a URL, a query, and a token budget, QATBE extracts only the most query-relevant content within the budget. Phase 1 uses BM25 scoring only (no semantic embeddings -- those come in Phase 5).
 
 **PRD References:**
 
@@ -3034,7 +3034,7 @@ mod tests {
 **Dependencies:** P1-E3-T1 (tokenizer), P1-E1-T2 (CEP extraction)
 
 **Description:**
-Implement Semantic Content Segmentation (SCS) -- the algorithm that segments extracted content into typed blocks (facts, tables, code, lists, data, paragraphs) each in their most token-efficient representation. SCS is what makes HyperSearchX output dramatically more compact than flat markdown.
+Implement Semantic Content Segmentation (SCS) -- the algorithm that segments extracted content into typed blocks (facts, tables, code, lists, data, paragraphs) each in their most token-efficient representation. SCS is what makes Fetchium output dramatically more compact than flat markdown.
 
 **PRD References:**
 
@@ -5183,4 +5183,4 @@ cargo run -p hsx-cli -- agent-fetch https://example.com --query "test" --budget 
 - **Phase 2** can begin: multi-engine search backends, HyperFusion ranking
 - **Phase 3** can begin: validation pipeline, citations, research mode
 - **Phase 4** can begin (partially): MCP server wrapping existing commands
-- Users can install and use HyperSearchX for basic search and fetch operations
+- Users can install and use Fetchium for basic search and fetch operations

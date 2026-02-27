@@ -43,27 +43,27 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            artifact: hsx-linux-x64
+            artifact: fetchium-linux-x64
             cross: false
 
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
-            artifact: hsx-linux-arm64
+            artifact: fetchium-linux-arm64
             cross: true
 
           - target: x86_64-apple-darwin
             os: macos-14
-            artifact: hsx-darwin-x64
+            artifact: fetchium-darwin-x64
             cross: false
 
           - target: aarch64-apple-darwin
             os: macos-14
-            artifact: hsx-darwin-arm64
+            artifact: fetchium-darwin-arm64
             cross: false
 
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-            artifact: hsx-win-x64
+            artifact: fetchium-win-x64
             cross: false
 
     steps:
@@ -87,18 +87,18 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.cross }}" = "true" ]; then
-            cross build --release --target ${{ matrix.target }} -p hsx-cli
+            cross build --release --target ${{ matrix.target }} -p fetchium-cli
           else
-            cargo build --release --target ${{ matrix.target }} -p hsx-cli
+            cargo build --release --target ${{ matrix.target }} -p fetchium-cli
           fi
 
       - name: Package binary (Unix)
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          BIN="target/${{ matrix.target }}/release/hsx"
-          cp "$BIN" hsx
-          tar czf "${{ matrix.artifact }}.tar.gz" hsx
+          BIN="target/${{ matrix.target }}/release/fetchium"
+          cp "$BIN" fetchium
+          tar czf "${{ matrix.artifact }}.tar.gz" fetchium
           shasum -a 256 "${{ matrix.artifact }}.tar.gz" | awk '{print $1}' > "${{ matrix.artifact }}.tar.gz.sha256"
           echo "SHA256=$(cat ${{ matrix.artifact }}.tar.gz.sha256)" >> $GITHUB_ENV
 
@@ -106,9 +106,9 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $src = "target/${{ matrix.target }}/release/hsx.exe"
-          Copy-Item $src hsx.exe
-          Compress-Archive -Path hsx.exe -DestinationPath "${{ matrix.artifact }}.zip" -Force
+          $src = "target/${{ matrix.target }}/release/fetchium.exe"
+          Copy-Item $src fetchium.exe
+          Compress-Archive -Path fetchium.exe -DestinationPath "${{ matrix.artifact }}.zip" -Force
           $hash = (Get-FileHash "${{ matrix.artifact }}.zip" -Algorithm SHA256).Hash.ToLower()
           Set-Content -Path "${{ matrix.artifact }}.zip.sha256" -Value $hash
 
@@ -213,67 +213,67 @@ jobs:
         run: |
           TAG="${{ github.event.release.tag_name }}"
           VERSION="${TAG#v}"
-          BASE_URL="https://github.com/zuhabul/HyperSearchX/releases/download/${TAG}"
+          BASE_URL="https://github.com/zuhabul/fetchium/releases/download/${TAG}"
 
-          SHA_LINUX_X64=$(cat artifacts/hsx-linux-x64.tar.gz.sha256)
-          SHA_LINUX_ARM64=$(cat artifacts/hsx-linux-arm64.tar.gz.sha256)
-          SHA_DARWIN_X64=$(cat artifacts/hsx-darwin-x64.tar.gz.sha256)
-          SHA_DARWIN_ARM64=$(cat artifacts/hsx-darwin-arm64.tar.gz.sha256)
+          SHA_LINUX_X64=$(cat artifacts/fetchium-linux-x64.tar.gz.sha256)
+          SHA_LINUX_ARM64=$(cat artifacts/fetchium-linux-arm64.tar.gz.sha256)
+          SHA_DARWIN_X64=$(cat artifacts/fetchium-darwin-x64.tar.gz.sha256)
+          SHA_DARWIN_ARM64=$(cat artifacts/fetchium-darwin-arm64.tar.gz.sha256)
 
-          cat > hsx.rb << EOF
-          class Hsx < Formula
-            desc "HyperSearchX CLI — AI-native federated search engine"
-            homepage "https://hypersearchx.zuhabul.com"
+          cat > fetchium.rb << EOF
+          class Fetchium < Formula
+            desc "Fetchium CLI — AI-native federated search engine"
+            homepage "https://fetchium.com"
             version "${VERSION}"
             license "MIT"
 
             on_macos do
               on_arm do
-                url "${BASE_URL}/hsx-darwin-arm64.tar.gz"
+                url "${BASE_URL}/fetchium-darwin-arm64.tar.gz"
                 sha256 "${SHA_DARWIN_ARM64}"
               end
               on_intel do
-                url "${BASE_URL}/hsx-darwin-x64.tar.gz"
+                url "${BASE_URL}/fetchium-darwin-x64.tar.gz"
                 sha256 "${SHA_DARWIN_X64}"
               end
             end
 
             on_linux do
               on_arm do
-                url "${BASE_URL}/hsx-linux-arm64.tar.gz"
+                url "${BASE_URL}/fetchium-linux-arm64.tar.gz"
                 sha256 "${SHA_LINUX_ARM64}"
               end
               on_intel do
-                url "${BASE_URL}/hsx-linux-x64.tar.gz"
+                url "${BASE_URL}/fetchium-linux-x64.tar.gz"
                 sha256 "${SHA_LINUX_X64}"
               end
             end
 
             def install
-              bin.install "hsx"
+              bin.install "fetchium"
             end
 
             test do
-              assert_match "hsx ${VERSION}", shell_output("#{bin}/hsx --version")
+              assert_match "fetchium ${VERSION}", shell_output("#{bin}/fetchium --version")
             end
           end
           EOF
 
-          echo "Generated formula for hsx ${VERSION}"
-          cat hsx.rb
+          echo "Generated formula for fetchium ${VERSION}"
+          cat fetchium.rb
 
       - name: Push to Homebrew tap repository
         uses: dmnemec/copy_file_to_another_repo_action@main
         env:
           API_TOKEN_GITHUB: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         with:
-          source_file: hsx.rb
-          destination_repo: zuhabul/homebrew-hsx
+          source_file: fetchium.rb
+          destination_repo: zuhabul/homebrew-fetchium
           destination_branch: main
           destination_folder: Formula
           user_email: "github-actions[bot]@users.noreply.github.com"
           user_name: "github-actions[bot]"
-          commit_message: "chore: update hsx to ${{ github.event.release.tag_name }}"
+          commit_message: "chore: update fetchium to ${{ github.event.release.tag_name }}"
 
   # ─────────────────────────────────────────────────────────────
   # 5. Post-release summary
@@ -293,23 +293,23 @@ jobs:
           echo "| Channel | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| GitHub Release | ✅ Binaries attached |" >> $GITHUB_STEP_SUMMARY
-          echo "| npm \`hypersearchx\` | ${{ needs.publish-npm.result == 'success' && '✅ Published' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Homebrew \`zuhabul/tap/hsx\` | ${{ needs.update-homebrew.result == 'success' && '✅ Updated' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| npm \`fetchium\` | ${{ needs.publish-npm.result == 'success' && '✅ Published' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Homebrew \`zuhabul/tap/fetchium\` | ${{ needs.update-homebrew.result == 'success' && '✅ Updated' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| cargo-binstall | ✅ Metadata in Cargo.toml |" >> $GITHUB_STEP_SUMMARY
-          echo "| Shell installer | ✅ install.hypersearchx.zuhabul.com |" >> $GITHUB_STEP_SUMMARY
+          echo "| Shell installer | ✅ install.fetchium.com |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Install commands" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
           echo "# Shell (Linux/macOS)" >> $GITHUB_STEP_SUMMARY
-          echo "curl -sSf https://install.hypersearchx.zuhabul.com | sh" >> $GITHUB_STEP_SUMMARY
+          echo "curl -sSf https://install.fetchium.com | sh" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# npm / npx" >> $GITHUB_STEP_SUMMARY
-          echo "npm install -g hypersearchx" >> $GITHUB_STEP_SUMMARY
-          echo "npx hypersearchx --help" >> $GITHUB_STEP_SUMMARY
+          echo "npm install -g fetchium" >> $GITHUB_STEP_SUMMARY
+          echo "npx fetchium --help" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Homebrew (macOS/Linux)" >> $GITHUB_STEP_SUMMARY
-          echo "brew install zuhabul/tap/hsx" >> $GITHUB_STEP_SUMMARY
+          echo "brew install zuhabul/tap/fetchium" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# cargo-binstall" >> $GITHUB_STEP_SUMMARY
-          echo "cargo binstall hsx" >> $GITHUB_STEP_SUMMARY
+          echo "cargo binstall fetchium" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY

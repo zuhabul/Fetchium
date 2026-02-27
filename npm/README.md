@@ -1,11 +1,11 @@
-# HyperSearchX
+# Fetchium
 
 AI-native search engine for humans and agents.
 
 ## Install
 
 ```bash
-npm install -g hypersearchx
+npm install -g fetchium
 ```
 
 ## Usage

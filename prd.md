@@ -1,4 +1,4 @@
-# HyperSearchX — Product Requirements Document (PRD)
+# Fetchium — Product Requirements Document (PRD)
 
 > **Version:** 4.0.0 | **Last Updated:** 2026-02-23
 > **Status:** Draft — Pre-Implementation
@@ -15,7 +15,7 @@
 5. [Goals & Non-Goals](#5-goals--non-goals)
 6. [Core Principles](#6-core-principles)
 7. [Competitive Gap Analysis](#7-competitive-gap-analysis)
-8. [Novel HyperSearchX Algorithms & Inventions](#8-novel-hypersearchx-algorithms--inventions)
+8. [Novel Fetchium Algorithms & Inventions](#8-novel-fetchium-algorithms--inventions)
 9. [AI-Native Agent Architecture](#9-ai-native-agent-architecture)
 10. [Modes of Operation](#10-modes-of-operation)
 11. [CLI Interface Design](#11-cli-interface-design)
@@ -62,9 +62,9 @@
 
 ## 1. Executive Summary
 
-**HyperSearchX** is a **free, open-source, AI-native web search and deep research engine** designed from the ground up for both **AI agents** and **human power users**. It is the first tool to unify search, extraction, ranking, validation, synthesis, and structured output into a single zero-cost CLI command — with novel algorithms that no existing tool provides.
+**Fetchium** is a **free, open-source, AI-native web search and deep research engine** designed from the ground up for both **AI agents** and **human power users**. It is the first tool to unify search, extraction, ranking, validation, synthesis, and structured output into a single zero-cost CLI command — with novel algorithms that no existing tool provides.
 
-### The 17 Inventions That Make HyperSearchX Unique
+### The 17 Inventions That Make Fetchium Unique
 
 No existing tool — Tavily, Exa, Perplexity, Firecrawl, Crawl4AI, Jina, SearXNG, or any other — provides any of these:
 
@@ -90,7 +90,7 @@ No existing tool — Tavily, Exa, Perplexity, Firecrawl, Crawl4AI, Jina, SearXNG
 
 ### Competitive Position
 
-| Dimension | Industry Best | HyperSearchX |
+| Dimension | Industry Best | Fetchium |
 |-----------|--------------|--------------|
 | **Cost** | DDG (free but limited) | Free, unlimited, zero API keys |
 | **Speed** | Exa Fast (350ms, $paid) | <1s cached, <3s uncached via SRP |
@@ -157,7 +157,7 @@ Works with: `npm` | `pnpm` | `bun` — Aliases: `hsx` | `hyper`
 11. **No Resource Awareness**: Same fixed behavior on 4GB laptop and 128GB workstation.
 12. **No Validation**: Results taken at face value.
 
-### HyperSearchX Goal
+### Fetchium Goal
 
 **For agents**: The most token-efficient, query-aware, framework-adaptive web data layer — zero cost, zero API keys.
 **For humans**: The fastest path from question to trusted, structured, reproducible knowledge artifact.
@@ -168,7 +168,7 @@ Works with: `npm` | `pnpm` | `bun` — Aliases: `hsx` | `hyper`
 
 ### Vision
 
-> HyperSearchX is the world's first AI-native web search engine — equally powerful as a human CLI tool and as a data layer for AI agents. It delivers the right information, in the right format, at the right level of detail, within the right token budget — free, fast, and validated.
+> Fetchium is the world's first AI-native web search engine — equally powerful as a human CLI tool and as a data layer for AI agents. It delivers the right information, in the right format, at the right level of detail, within the right token budget — free, fast, and validated.
 
 ### Positioning
 
@@ -271,7 +271,7 @@ No API keys. No credits. No subscriptions. No rate-limited free tiers. Everythin
 
 ## 7. Competitive Gap Analysis
 
-### The 15 Gaps No Tool Fills (HyperSearchX Fills All)
+### The 15 Gaps No Tool Fills (Fetchium Fills All)
 
 #### Gap 1: No Query-Aware Token-Budgeted Extraction
 
@@ -280,7 +280,7 @@ No API keys. No credits. No subscriptions. No rate-limited free tiers. Everythin
 - Tavily: Has `max_tokens` for search results, not page extraction
 - Exa: Has highlights but separate from extraction
 
-**HyperSearchX Solution**: QATBE — single call: `agent-fetch <url> --query "what I need" --budget 2000`
+**Fetchium Solution**: QATBE — single call: `agent-fetch <url> --query "what I need" --budget 2000`
 
 #### Gap 2: No Unified Search+Extract+Structure Pipeline
 
@@ -289,89 +289,89 @@ No API keys. No credits. No subscriptions. No rate-limited free tiers. Everythin
 - Exa: Separate search and extract calls
 - Firecrawl: Separate search and scrape
 
-**HyperSearchX Solution**: Single call: `agent-search "query" --schema schema.json --budget 3000`
+**Fetchium Solution**: Single call: `agent-search "query" --schema schema.json --budget 3000`
 
 #### Gap 3: No Semantic Content Segmentation
 
 **Problem**: Everything outputs flat markdown. Tables waste tokens as markdown. Structured data loses structure.
 
-**HyperSearchX Solution**: SCS outputs `{facts: [...], tables: [{json}], code: [...], opinions: [...], metadata: {...}}`
+**Fetchium Solution**: SCS outputs `{facts: [...], tables: [{json}], code: [...], opinions: [...], metadata: {...}}`
 
 #### Gap 4: No Progressive Detail Levels
 
 **Problem**: All-or-nothing output. Can't request a summary first, then decide if you need more.
 
-**HyperSearchX Solution**: PDS delivers 4 tiers: `key_facts` (200 tokens) → `summary` (1K) → `detailed` (5K) → `full` — without re-fetching.
+**Fetchium Solution**: PDS delivers 4 tiers: `key_facts` (200 tokens) → `summary` (1K) → `detailed` (5K) → `full` — without re-fetching.
 
 #### Gap 5: No Self-Correcting Research
 
 **Problem**: Bad retrieval = bad output. No tool evaluates its own results.
 
-**HyperSearchX Solution**: RAR with Self-RAG reflection tokens + CRAG evaluator — auto-detects and corrects bad retrievals.
+**Fetchium Solution**: RAR with Self-RAG reflection tokens + CRAG evaluator — auto-detects and corrects bad retrievals.
 
 #### Gap 6: No Framework-Adaptive Output
 
 **Problem**: LangChain needs `Document` objects. CrewAI needs strings. MCP needs specific schemas.
 
-**HyperSearchX Solution**: Auto-detects consuming framework and returns data in the optimal format.
+**Fetchium Solution**: Auto-detects consuming framework and returns data in the optimal format.
 
 #### Gap 7: No Pre-Fetch Token Estimation
 
 **Problem**: No tool says "this fetch will cost ~X tokens" before executing.
 
-**HyperSearchX Solution**: `agent-fetch <url> --estimate` returns token estimate without fetching content.
+**Fetchium Solution**: `agent-fetch <url> --estimate` returns token estimate without fetching content.
 
 #### Gap 8: No Multi-Source Synthesis with Deduplication
 
 **Problem**: Multiple sources with overlapping content waste agent context.
 
-**HyperSearchX Solution**: Cross-source deduplication and merging via SimHash — non-redundant output from N sources.
+**Fetchium Solution**: Cross-source deduplication and merging via SimHash — non-redundant output from N sources.
 
 #### Gap 9: No Structured Error Taxonomy
 
 **Problem**: Generic errors (timeout, 403) with no remediation. No fallback chains.
 
-**HyperSearchX Solution**: Classified errors with automatic fallback: cache → alternative source → Wayback Machine → partial result.
+**Fetchium Solution**: Classified errors with automatic fallback: cache → alternative source → Wayback Machine → partial result.
 
 #### Gap 10: No MCP-Native Composite Tools
 
 **Problem**: MCP search servers expose individual tools. LLM must orchestrate multiple calls.
 
-**HyperSearchX Solution**: Composite MCP tools: `research(query, depth, schema, budget)` handles the full pipeline internally.
+**Fetchium Solution**: Composite MCP tools: `research(query, depth, schema, budget)` handles the full pipeline internally.
 
 #### Gap 11: No Streaming Incremental Extraction
 
 **Problem**: No tool streams content section-by-section ranked by relevance.
 
-**HyperSearchX Solution**: SRP streams chunks ranked by query relevance — agent can stop consuming when it has enough.
+**Fetchium Solution**: SRP streams chunks ranked by query relevance — agent can stop consuming when it has enough.
 
 #### Gap 12: No Content Freshness and Temporal Awareness
 
 **Problem**: No tool scores content by temporal relevance relative to query intent.
 
-**HyperSearchX Solution**: HyperFusion includes temporal decay scoring calibrated by query intent category.
+**Fetchium Solution**: HyperFusion includes temporal decay scoring calibrated by query intent category.
 
 #### Gap 13: No Self-Hosted Full-Pipeline CLI
 
 **Problem**: No single self-hostable tool does search + fetch + extract + structure + AI — without cloud APIs.
 
-**HyperSearchX Solution**: Complete pipeline in a single binary. Zero external dependencies for core function.
+**Fetchium Solution**: Complete pipeline in a single binary. Zero external dependencies for core function.
 
 #### Gap 14: No Verifiable Evidence Chains
 
 **Problem**: No cryptographic verification of cited content. Sources can change after citation.
 
-**HyperSearchX Solution**: EGP hashes content at fetch time. Citations are verifiable against stored hashes.
+**Fetchium Solution**: EGP hashes content at fetch time. Citations are verifiable against stored hashes.
 
 #### Gap 15: No Intelligent Extraction Method Selection
 
 **Problem**: Tools use fixed extraction (always headless or never). No intelligence in method selection.
 
-**HyperSearchX Solution**: CEP uses ML-based prediction to select the cheapest sufficient extraction method per URL.
+**Fetchium Solution**: CEP uses ML-based prediction to select the cheapest sufficient extraction method per URL.
 
 ---
 
-## 8. Novel HyperSearchX Algorithms & Inventions
+## 8. Novel Fetchium Algorithms & Inventions
 
 ### 8.1 HyperFusion Ranking Algorithm
 
@@ -1064,13 +1064,13 @@ Claim: "GPT-5 achieves 98% on MMLU"
 
 ### Design Philosophy
 
-HyperSearchX is **agent-first**: every API, output format, and pipeline stage is designed for programmatic consumption by AI systems. Human CLI output is a formatting layer on top of the structured agent API.
+Fetchium is **agent-first**: every API, output format, and pipeline stage is designed for programmatic consumption by AI systems. Human CLI output is a formatting layer on top of the structured agent API.
 
 ### Agent Interface Modes
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│                  HyperSearchX Core                      │
+│                  Fetchium Core                      │
 │                                                         │
 │  Search │ Extract │ Rank │ Validate │ Synthesize       │
 ├────────────────────────────────────────────────────────┤
@@ -1130,7 +1130,7 @@ Exposes composite MCP tools (see §30).
 ### 5. Library Mode (for Node.js/TypeScript/Bun)
 
 ```typescript
-import { search, fetch, research, deep } from 'hypersearchx';
+import { search, fetch, research, deep } from 'fetchium';
 
 const results = await search({
   query: "query",
@@ -1144,12 +1144,12 @@ const results = await search({
 
 ```typescript
 // LangChain
-import { HyperSearchXRetriever } from 'hypersearchx/langchain';
-const retriever = new HyperSearchXRetriever({ tokenBudget: 3000 });
+import { FetchiumRetriever } from 'fetchium/langchain';
+const retriever = new FetchiumRetriever({ tokenBudget: 3000 });
 
 // CrewAI
-import { HyperSearchXTool } from 'hypersearchx/crewai';
-const searchTool = new HyperSearchXTool({ tier: 'detailed' });
+import { FetchiumTool } from 'fetchium/crewai';
+const searchTool = new FetchiumTool({ tier: 'detailed' });
 ```
 
 ### Pre-Fetch Token Estimation
@@ -1351,9 +1351,9 @@ Local hybrid index (BM25 + vector) with late chunking for superior embeddings.
 ### Package Manager Support
 
 ```bash
-npm install -g hypersearchx
-pnpm add -g hypersearchx
-bun add -g hypersearchx
+npm install -g fetchium
+pnpm add -g fetchium
+bun add -g fetchium
 ```
 
 ### Complete Command Reference
@@ -1415,7 +1415,7 @@ AGENT FLAGS
 
 ### Configuration
 
-Location: `~/.hypersearchx/config.yaml`
+Location: `~/.fetchium/config.yaml`
 
 ```yaml
 defaults:
@@ -1592,13 +1592,13 @@ politeness:
 
 ### npm/pnpm/bun Compatibility
 
-HyperSearchX ships as a **Rust binary** with an **npm wrapper** for seamless installation:
+Fetchium ships as a **Rust binary** with an **npm wrapper** for seamless installation:
 
 ```bash
 # Installs pre-built native binary for your platform
-npm install -g hypersearchx
-pnpm add -g hypersearchx
-bun add -g hypersearchx
+npm install -g fetchium
+pnpm add -g fetchium
+bun add -g fetchium
 
 # The npm package contains:
 # - postinstall script that downloads platform-specific binary
@@ -1608,7 +1608,7 @@ bun add -g hypersearchx
 
 Alternatively, install directly via Cargo:
 ```bash
-cargo install hypersearchx
+cargo install fetchium
 ```
 
 Or download pre-built binaries from GitHub Releases.
@@ -1696,7 +1696,7 @@ hsx doctor
 | **Bing** | Headless Chromium (stealth) | Strong for technical queries, good image/video search | Headless |
 | **Brave Search** | HTTP scrape | Independent index, privacy-focused, good freshness | HTTP |
 
-HyperSearchX uses **chromiumoxide** (Rust CDP client) to drive a headless Chromium instance. Key optimizations:
+Fetchium uses **chromiumoxide** (Rust CDP client) to drive a headless Chromium instance. Key optimizations:
 
 - **Stealth mode**: Randomized fingerprints, realistic user-agent, `navigator.webdriver` patched, TLS fingerprint rotation
 - **Connection reuse**: Single browser instance, multiple tabs for parallel searches
@@ -1849,7 +1849,7 @@ hsx agent-fetch urls.txt --query "security best practices" --budget 5000 --dedup
 ### Programmatic API
 
 ```typescript
-import { agentFetch } from 'hypersearchx';
+import { agentFetch } from 'fetchium';
 
 const result = await agentFetch({
   url: 'https://example.com/docs',
@@ -1949,8 +1949,8 @@ After V4 (cross-source validation), RAR reflection kicks in:
 | Clean HTML | 12,000 |
 | Flat Markdown (Firecrawl/Jina) | 4,000 |
 | Fit Markdown (Crawl4AI style) | 2,500 |
-| **HyperSearchX SCS + QATBE** | **1,500** |
-| **HyperSearchX key_facts tier** | **200** |
+| **Fetchium SCS + QATBE** | **1,500** |
+| **Fetchium key_facts tier** | **200** |
 
 ### Token Budget System
 
@@ -2001,7 +2001,7 @@ For local index search:
 
 ### Papers and Techniques Integrated
 
-| Paper/Technique | How HyperSearchX Uses It |
+| Paper/Technique | How Fetchium Uses It |
 |----------------|------------------------|
 | **Self-RAG** (ICLR 2024) | RAR reflection tokens evaluate retrieval quality |
 | **CRAG** (ICLR 2025) | Lightweight retrieval evaluator triggers re-search |
@@ -2095,9 +2095,9 @@ Every factual statement must cite a source. Uncitable claims marked `[unverified
 ### LangChain
 
 ```typescript
-import { HyperSearchXRetriever } from 'hypersearchx/langchain';
+import { FetchiumRetriever } from 'fetchium/langchain';
 
-const retriever = new HyperSearchXRetriever({
+const retriever = new FetchiumRetriever({
   tokenBudget: 3000,
   tier: 'detailed',
   validate: true
@@ -2110,9 +2110,9 @@ const docs = await retriever.getRelevantDocuments("query");
 ### CrewAI
 
 ```typescript
-import { HyperSearchXTool } from 'hypersearchx/crewai';
+import { FetchiumTool } from 'fetchium/crewai';
 
-const searchTool = new HyperSearchXTool({
+const searchTool = new FetchiumTool({
   name: "web_search",
   tokenBudget: 2000,
   tier: 'summary'
@@ -2123,7 +2123,7 @@ const searchTool = new HyperSearchXTool({
 ### AutoGPT / Custom Agents
 
 ```typescript
-import { search, agentFetch, agentResearch } from 'hypersearchx';
+import { search, agentFetch, agentResearch } from 'fetchium';
 
 // Direct library usage with full control
 const results = await search({ query: "...", tokenBudget: 2000, format: 'segments' });
@@ -2235,7 +2235,7 @@ hsx plugin create my-plugin
 
 ### Purpose
 
-Expose HyperSearchX as a Model Context Protocol server for Claude, Claude Code, and any MCP client — with **composite tools** that handle the full pipeline internally.
+Expose Fetchium as a Model Context Protocol server for Claude, Claude Code, and any MCP client — with **composite tools** that handle the full pipeline internally.
 
 ### Starting the Server
 
@@ -2296,7 +2296,7 @@ tools: [
 
 ### Why Composite Tools Matter
 
-Existing MCP search servers expose individual tools (search, fetch, scrape). The LLM must orchestrate 3-5 tool calls, wasting tokens on planning. HyperSearchX composite tools handle the entire pipeline — search + fetch + extract + rank + validate — in **one tool call**.
+Existing MCP search servers expose individual tools (search, fetch, scrape). The LLM must orchestrate 3-5 tool calls, wasting tokens on planning. Fetchium composite tools handle the entire pipeline — search + fetch + extract + rank + validate — in **one tool call**.
 
 ---
 
@@ -2342,7 +2342,7 @@ Existing MCP search servers expose individual tools (search, fetch, scrape). The
 
 All persistent data stored in local SQLite (encrypted at rest):
 ```
-~/.hypersearchx/intelligence/
+~/.fetchium/intelligence/
 ├── knowledge_graph.db     # PKG: entities, relationships
 ├── source_trust.db        # STM: domain scores, extraction rates
 ├── failure_patterns.db    # FPM: error logs, method success rates
@@ -2437,7 +2437,7 @@ hsx deep "is cryptocurrency a good investment" --self-debate
 
 ### 33.1 Topic Monitoring & Research Radar
 
-**Problem**: HyperSearchX is reactive — waits for queries. World-class tools anticipate needs.
+**Problem**: Fetchium is reactive — waits for queries. World-class tools anticipate needs.
 
 ```bash
 # Subscribe to topics
@@ -2584,7 +2584,7 @@ hsx research "sensitive topic" --auto-expire 24h
 
 ### 36.3 Zero-Knowledge Search Architecture
 
-For the most sensitive use cases, HyperSearchX can be configured so that:
+For the most sensitive use cases, Fetchium can be configured so that:
 - No external service sees the full query (queries split across engines)
 - Local synthesis means no cloud AI sees the combined results
 - Cache is encrypted at rest with user key
@@ -2992,7 +2992,7 @@ With user consent, anonymized signals improve the global model:
 214. Scoring explainability
 215. YAML/JSON config files
 216. Environment variable overrides
-217. Per-project config (`.hypersearchx.yaml`)
+217. Per-project config (`.fetchium.yaml`)
 218. Verbose/debug logging
 219. Structured log output
 220. Benchmark harness
@@ -3432,24 +3432,24 @@ The npm package is a thin wrapper that downloads the correct platform binary:
 
 ```json
 {
-  "name": "hypersearchx",
+  "name": "fetchium",
   "version": "1.0.0",
   "bin": { "hsx": "bin/hsx", "hyper": "bin/hyper" },
   "scripts": { "postinstall": "node scripts/install-binary.js" },
   "optionalDependencies": {
-    "@hypersearchx/linux-x64": "1.0.0",
-    "@hypersearchx/linux-arm64": "1.0.0",
-    "@hypersearchx/darwin-x64": "1.0.0",
-    "@hypersearchx/darwin-arm64": "1.0.0",
-    "@hypersearchx/win-x64": "1.0.0"
+    "@fetchium/linux-x64": "1.0.0",
+    "@fetchium/linux-arm64": "1.0.0",
+    "@fetchium/darwin-x64": "1.0.0",
+    "@fetchium/darwin-arm64": "1.0.0",
+    "@fetchium/win-x64": "1.0.0"
   }
 }
 ```
 
 This pattern (used by esbuild, turbo, SWC) ensures:
-- `npm install -g hypersearchx` works seamlessly
-- `pnpm add -g hypersearchx` works seamlessly
-- `bun add -g hypersearchx` works seamlessly
+- `npm install -g fetchium` works seamlessly
+- `pnpm add -g fetchium` works seamlessly
+- `bun add -g fetchium` works seamlessly
 - No Rust toolchain needed for end users
 - Pre-built native binary for each platform
 
@@ -3488,4 +3488,4 @@ Tavily, Exa, Perplexity, Serper, Brave, googler, SearXNG, Crawl4AI, Firecrawl, J
 
 ---
 
-*HyperSearchX — AI-native. Agent-first. Human-friendly. The fastest path from question to knowledge. Free. Open-source. Yours.*
+*Fetchium — AI-native. Agent-first. Human-friendly. The fastest path from question to knowledge. Free. Open-source. Yours.*

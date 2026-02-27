@@ -137,7 +137,7 @@ function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
       <div className="mt-6 mx-3 p-3 rounded-xl border border-indigo-500/20 bg-indigo-500/5">
         <div className="text-xs font-medium text-indigo-300 mb-1">Need help?</div>
         <div className="text-[11px] text-slate-500 mb-2">Join our Discord or open an issue on GitHub.</div>
-        <a href="https://github.com/zuhabul/hypersearchx" target="_blank" rel="noopener noreferrer"
+        <a href="https://github.com/zuhabul/Fetchium" target="_blank" rel="noopener noreferrer"
           className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors">
           GitHub →
         </a>

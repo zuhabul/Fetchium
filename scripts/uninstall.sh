@@ -1,12 +1,12 @@
 #!/usr/bin/env sh
-# HyperSearchX CLI uninstaller
+# Fetchium CLI uninstaller
 set -eu
 
-BIN_NAME="hsx"
+BIN_NAME="fetchium"
 LOCATIONS="/usr/local/bin /usr/bin /opt/homebrew/bin $HOME/.local/bin $HOME/.cargo/bin"
 FOUND=0
 
-echo "Searching for hsx installations..."
+echo "Searching for fetchium installations..."
 for dir in $LOCATIONS; do
   BIN="${dir}/${BIN_NAME}"
   if [ -f "$BIN" ]; then
@@ -22,9 +22,9 @@ for dir in $LOCATIONS; do
 done
 
 if [ "$FOUND" -eq 0 ]; then
-  echo "hsx not found in standard locations."
-  echo "If you installed via npm: npm uninstall -g hypersearchx"
-  echo "If you installed via brew: brew uninstall hsx"
+  echo "fetchium not found in standard locations."
+  echo "If you installed via npm: npm uninstall -g fetchium"
+  echo "If you installed via brew: brew uninstall fetchium"
 else
-  echo "✓ hsx uninstalled successfully."
+  echo "✓ fetchium uninstalled successfully."
 fi

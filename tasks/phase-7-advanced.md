@@ -8,7 +8,7 @@
 
 ## Overview
 
-Phase 7 implements the advanced features that differentiate HyperSearchX from a research tool into a platform. Each epic is relatively self-contained and can be developed in parallel by different contributors.
+Phase 7 implements the advanced features that differentiate Fetchium from a research tool into a platform. Each epic is relatively self-contained and can be developed in parallel by different contributors.
 
 ---
 
@@ -267,7 +267,7 @@ pub enum PluginCommand {
 - [x] WASM plugins load via `wasmtime` (feature-gated)
 - [x] Plugin manifest (`plugin.toml`) defines name, version, type, and config schema
 - [x] `hsx plugin list` shows installed plugins with status
-- [x] `hsx plugin install ./my-plugin` copies plugin to `~/.hypersearchx/plugins/`
+- [x] `hsx plugin install ./my-plugin` copies plugin to `~/.fetchium/plugins/`
 - [x] Backend plugins integrate with the search orchestrator
 - [x] Extractor plugins integrate with the CEP pipeline
 - [x] Plugins are isolated: a crashing plugin does not crash the host
@@ -380,7 +380,7 @@ impl CacheEncryption {
     /// Create encryption engine from a user-provided passphrase.
     /// Derives a 256-bit key via Argon2.
     pub fn new(passphrase: &str) -> Result<Self, crate::Error> {
-        let salt = b"hypersearchx-cache-v1";
+        let salt = b"fetchium-cache-v1";
         let config = argon2::Config::default();
         let hash = argon2::hash_raw(passphrase.as_bytes(), salt, &config)?;
         let key = Key::from_slice(&hash[..32]);
@@ -1303,7 +1303,7 @@ impl App {
 | **ID** | `P7-E9-T1` |
 | **Status** | `TODO` |
 | **Priority** | P3 |
-| **Description** | Create Python packages that wrap the HyperSearchX CLI/REST API as LangChain Retriever and CrewAI Tool objects. Published as `hypersearchx-langchain` and `hypersearchx-crewai` on PyPI. |
+| **Description** | Create Python packages that wrap the Fetchium CLI/REST API as LangChain Retriever and CrewAI Tool objects. Published as `fetchium-langchain` and `fetchium-crewai` on PyPI. |
 | **PRD Ref** | 25 (Agent Framework Integration), 9 (Framework Adapters) |
 | **Depends On** | `P4-E3` (REST API server) |
 
@@ -1312,22 +1312,22 @@ impl App {
 | File | Action |
 |------|--------|
 | `adapters/langchain/pyproject.toml` | LangChain adapter package |
-| `adapters/langchain/hypersearchx_langchain/retriever.py` | LangChain Retriever class |
+| `adapters/langchain/fetchium_langchain/retriever.py` | LangChain Retriever class |
 | `adapters/crewai/pyproject.toml` | CrewAI adapter package |
-| `adapters/crewai/hypersearchx_crewai/tool.py` | CrewAI Tool class |
+| `adapters/crewai/fetchium_crewai/tool.py` | CrewAI Tool class |
 
 #### Step-by-Step Implementation Guide
 
 ```python
-# adapters/langchain/hypersearchx_langchain/retriever.py
+# adapters/langchain/fetchium_langchain/retriever.py
 from typing import List, Optional
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 import subprocess
 import json
 
-class HyperSearchXRetriever(BaseRetriever):
-    """LangChain Retriever that uses HyperSearchX for token-efficient web search."""
+class FetchiumRetriever(BaseRetriever):
+    """LangChain Retriever that uses Fetchium for token-efficient web search."""
 
     token_budget: int = 3000
     tier: str = "detailed"
@@ -1347,7 +1347,7 @@ class HyperSearchXRetriever(BaseRetriever):
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
 
         if result.returncode != 0:
-            raise RuntimeError(f"HyperSearchX failed: {result.stderr}")
+            raise RuntimeError(f"Fetchium failed: {result.stderr}")
 
         data = json.loads(result.stdout)
         documents = []
@@ -1367,17 +1367,17 @@ class HyperSearchXRetriever(BaseRetriever):
         return documents
 
 
-# adapters/crewai/hypersearchx_crewai/tool.py
+# adapters/crewai/fetchium_crewai/tool.py
 from crewai_tools import BaseTool
 import subprocess
 import json
 
-class HyperSearchXTool(BaseTool):
-    """CrewAI Tool that uses HyperSearchX for web search and research."""
+class FetchiumTool(BaseTool):
+    """CrewAI Tool that uses Fetchium for web search and research."""
 
-    name: str = "HyperSearchX Web Search"
+    name: str = "Fetchium Web Search"
     description: str = (
-        "Search the web using HyperSearchX. Returns token-efficient, "
+        "Search the web using Fetchium. Returns token-efficient, "
         "validated results with citations. Input should be a search query string."
     )
     token_budget: int = 2000
@@ -1410,10 +1410,10 @@ class HyperSearchXTool(BaseTool):
 
 #### Acceptance Criteria
 
-- [x] `pip install hypersearchx-langchain` installs the LangChain adapter
-- [x] `HyperSearchXRetriever(token_budget=3000).invoke("query")` returns LangChain `Document` objects
-- [x] `pip install hypersearchx-crewai` installs the CrewAI adapter
-- [x] `HyperSearchXTool().run("query")` returns string output suitable for CrewAI agents
+- [x] `pip install fetchium-langchain` installs the LangChain adapter
+- [x] `FetchiumRetriever(token_budget=3000).invoke("query")` returns LangChain `Document` objects
+- [x] `pip install fetchium-crewai` installs the CrewAI adapter
+- [x] `FetchiumTool().run("query")` returns string output suitable for CrewAI agents
 - [x] Both adapters work via CLI subprocess (no network dependency beyond hsx binary)
 - [x] Both adapters also support REST API mode when `hsx serve --api` is running
 - [x] Error handling: clear messages when hsx binary is not found

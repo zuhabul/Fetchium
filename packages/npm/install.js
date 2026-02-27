@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// postinstall.js — Downloads the correct hsx binary from GitHub Releases.
-// Runs automatically after `npm install -g hypersearchx`.
+// postinstall.js — Downloads the correct fetchium binary from GitHub Releases.
+// Runs automatically after `npm install -g fetchium`.
 "use strict";
 
 const https = require("https");
@@ -11,7 +11,7 @@ const { execFileSync } = require("child_process");
 
 const PKG = require("./package.json");
 const VERSION = PKG.version;
-const REPO = "zuhabul/HyperSearchX";
+const REPO = "zuhabul/fetchium";
 const BIN_DIR = path.join(__dirname, "bin");
 const IS_WIN = process.platform === "win32";
 
@@ -21,11 +21,11 @@ function getArtifact() {
   const plat = process.platform;
   const arch = process.arch;
   const map = {
-    "linux-x64":    { name: "hsx-linux-x64",    ext: ".tar.gz", bin: "hsx"     },
-    "linux-arm64":  { name: "hsx-linux-arm64",   ext: ".tar.gz", bin: "hsx"     },
-    "darwin-x64":   { name: "hsx-darwin-x64",    ext: ".tar.gz", bin: "hsx"     },
-    "darwin-arm64": { name: "hsx-darwin-arm64",  ext: ".tar.gz", bin: "hsx"     },
-    "win32-x64":    { name: "hsx-win-x64",       ext: ".zip",    bin: "hsx.exe" },
+    "linux-x64":    { name: "fetchium-linux-x64",    ext: ".tar.gz", bin: "fetchium"     },
+    "linux-arm64":  { name: "fetchium-linux-arm64",   ext: ".tar.gz", bin: "fetchium"     },
+    "darwin-x64":   { name: "fetchium-darwin-x64",    ext: ".tar.gz", bin: "fetchium"     },
+    "darwin-arm64": { name: "fetchium-darwin-arm64",  ext: ".tar.gz", bin: "fetchium"     },
+    "win32-x64":    { name: "fetchium-win-x64",       ext: ".zip",    bin: "fetchium.exe" },
   };
   const key = `${plat}-${arch}`;
   const info = map[key];
@@ -53,7 +53,7 @@ function download(url, dest) {
 
     function request(url) {
       if (++redirectCount > 5) return reject(new Error("Too many redirects"));
-      https.get(url, { headers: { "User-Agent": `hypersearchx-npm-installer/${VERSION}` } }, (res) => {
+      https.get(url, { headers: { "User-Agent": `fetchium-npm-installer/${VERSION}` } }, (res) => {
         if ([301, 302, 307, 308].includes(res.statusCode)) {
           return request(res.headers.location);
         }
@@ -99,7 +99,7 @@ async function main() {
   } catch (err) {
     console.warn(`\n⚠  ${err.message}\n`);
     console.warn("Skipping binary download. You can still install via:");
-    console.warn("  curl -sSf https://install.hypersearchx.zuhabul.com | sh");
+    console.warn("  curl -sSf https://install.fetchium.com | sh");
     return; // Don't fail npm install
   }
 
@@ -110,7 +110,7 @@ async function main() {
     try {
       const out = execFileSync(binPath, ["--version"], { encoding: "utf8", timeout: 5000 }).trim();
       if (out.includes(VERSION)) {
-        console.log(`✓ hsx ${VERSION} already installed`);
+        console.log(`✓ fetchium ${VERSION} already installed`);
         return;
       }
     } catch {}
@@ -120,10 +120,10 @@ async function main() {
     fs.mkdirSync(BIN_DIR, { recursive: true });
   }
 
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "hsx-"));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "fetchium-"));
   const tmpArchive = path.join(tmpDir, artifact.filename);
 
-  console.log(`\nDownloading hsx v${VERSION} (${process.platform}/${process.arch})`);
+  console.log(`\nDownloading fetchium v${VERSION} (${process.platform}/${process.arch})`);
   console.log(`  ${artifact.url}`);
 
   try {
@@ -131,9 +131,9 @@ async function main() {
   } catch (err) {
     console.warn(`\n⚠  Download failed: ${err.message}`);
     console.warn("\nAlternative installation methods:");
-    console.warn("  Shell:   curl -sSf https://install.hypersearchx.zuhabul.com | sh");
-    console.warn("  Brew:    brew install zuhabul/tap/hsx");
-    console.warn("  Binstall: cargo binstall hsx");
+    console.warn("  Shell:   curl -sSf https://install.fetchium.com | sh");
+    console.warn("  Brew:    brew install zuhabul/tap/fetchium");
+    console.warn("  Binstall: cargo binstall fetchium");
     // Don't fail npm install — the CLI wrapper will print a helpful error
     return;
   }
@@ -157,15 +157,15 @@ async function main() {
     const ver = execFileSync(binPath, ["--version"], { encoding: "utf8", timeout: 5000 }).trim();
     console.log(`\n✓ ${ver} installed`);
   } catch {
-    console.log(`\n✓ hsx v${VERSION} installed`);
+    console.log(`\n✓ fetchium v${VERSION} installed`);
   }
-  console.log(`  Run: hsx --help`);
-  console.log(`  Docs: https://hypersearchx.zuhabul.com/docs\n`);
+  console.log(`  Run: fetchium --help`);
+  console.log(`  Docs: https://fetchium.com/docs\n`);
 }
 
 main().catch((err) => {
   // Swallow errors so npm install never fails because of this postinstall
-  console.warn(`\n⚠  hsx postinstall warning: ${err.message}`);
-  console.warn("  You can install manually: https://hypersearchx.zuhabul.com/docs/self-hosting\n");
+  console.warn(`\n⚠  fetchium postinstall warning: ${err.message}`);
+  console.warn("  You can install manually: https://fetchium.com/docs/self-hosting\n");
   process.exitCode = 0;
 });

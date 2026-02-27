@@ -62,7 +62,7 @@ static SESSION: OnceLock<Session> = OnceLock::new();
 fn model_path() -> PathBuf {
     let base = dirs::data_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join("hypersearchx")
+        .join("fetchium")
         .join("models");
     base.join("all-MiniLM-L6-v2.onnx")
 }
@@ -678,7 +678,7 @@ pub enum IndexCommand {
 - [ ] `hsx index search "query" --mode hybrid` fuses BM25 + vector results via RRF
 - [ ] `hsx index stats` shows document count, index size, embedding coverage
 - [ ] Vector search of 10,000 documents returns in < 20ms
-- [ ] Index persists across sessions (stored at `~/.hypersearchx/index/`)
+- [ ] Index persists across sessions (stored at `~/.fetchium/index/`)
 - [ ] Duplicate URLs detected by content hash and skipped
 
 #### Pitfalls

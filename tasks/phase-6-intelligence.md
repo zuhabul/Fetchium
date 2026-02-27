@@ -8,7 +8,7 @@
 
 ## Overview
 
-Phase 6 implements the 7 novel intelligence algorithms that make HyperSearchX unique. Each algorithm is a standalone module in `crates/hsx-core/src/intelligence/` with well-defined traits so they can be composed, tested, and evolved independently.
+Phase 6 implements the 7 novel intelligence algorithms that make Fetchium unique. Each algorithm is a standalone module in `crates/hsx-core/src/intelligence/` with well-defined traits so they can be composed, tested, and evolved independently.
 
 ```
 crates/hsx-core/src/intelligence/
@@ -521,7 +521,7 @@ impl PersistentIntelligenceEngine {
 
 #### Acceptance Criteria
 
-- [x] PIE persists data across sessions in `~/.hypersearchx/intelligence/`
+- [x] PIE persists data across sessions in `~/.fetchium/intelligence/`
 - [x] STM: After 10 successful fetches from a domain, trust score > 0.7
 - [x] STM: After 10 failed fetches from a domain, trust score < 0.3
 - [x] FPM: `recommend_layer("spa-site.com")` returns Layer 3 after repeated Layer 1 failures

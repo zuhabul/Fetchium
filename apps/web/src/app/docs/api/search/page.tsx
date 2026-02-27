@@ -37,7 +37,7 @@ export default function SearchApiReference() {
       <table>
         <thead><tr><th>Header</th><th>Value</th><th>Required</th></tr></thead>
         <tbody>
-          <tr><td><code>Authorization</code></td><td><code>Bearer hsx_...</code></td><td>Yes</td></tr>
+          <tr><td><code>Authorization</code></td><td><code>Bearer fetchium_...</code></td><td>Yes</td></tr>
           <tr><td><code>Content-Type</code></td><td><code>application/json</code></td><td>Yes</td></tr>
         </tbody>
       </table>
@@ -98,8 +98,8 @@ export default function SearchApiReference() {
 
       <h2>Example request</h2>
 
-      <CodeBlock language="bash" filename="search.sh" code={`curl -X POST https://api.hypersearchx.zuhabul.com/v1/search \\
-  -H "Authorization: Bearer hsx_your_key" \\
+      <CodeBlock language="bash" filename="search.sh" code={`curl -X POST ***REMOVED***/v1/search \\
+  -H "Authorization: Bearer fetchium_your_key" \\
   -H "Content-Type: application/json" \\
   -d '{
     "query": "rust async programming best practices",
@@ -108,10 +108,10 @@ export default function SearchApiReference() {
     "freshness": "year"
   }'`} />
 
-      <CodeBlock language="typescript" filename="search.ts" code={`const res = await fetch("https://api.hypersearchx.zuhabul.com/v1/search", {
+      <CodeBlock language="typescript" filename="search.ts" code={`const res = await fetch("***REMOVED***/v1/search", {
   method: "POST",
   headers: {
-    "Authorization": \`Bearer \${process.env.HSX_API_KEY}\`,
+    "Authorization": \`Bearer \${process.env.FETCHIUM_API_KEY}\`,
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -126,8 +126,8 @@ const data = await res.json();`} />
       <CodeBlock language="python" filename="search.py" code={`import os, requests
 
 r = requests.post(
-    "https://api.hypersearchx.zuhabul.com/v1/search",
-    headers={"Authorization": f"Bearer {os.environ['HSX_API_KEY']}"},
+    "***REMOVED***/v1/search",
+    headers={"Authorization": f"Bearer {os.environ['FETCHIUM_API_KEY']}"},
     json={
         "query": "rust async programming best practices",
         "tier": "detailed",

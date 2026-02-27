@@ -9,7 +9,7 @@ export default function Errors() {
       <div className="text-xs text-slate-500 mb-2 font-mono">Reference</div>
       <h1>Error Reference</h1>
       <p>
-        All HyperSearchX API errors follow a consistent JSON format with machine-readable error
+        All Fetchium API errors follow a consistent JSON format with machine-readable error
         codes, human-readable messages, and a unique request ID for support.
       </p>
 
@@ -113,10 +113,10 @@ export default function Errors() {
 }
 
 async function search(query: string) {
-  const res = await fetch("https://api.hypersearchx.zuhabul.com/v1/search", {
+  const res = await fetch("***REMOVED***/v1/search", {
     method: "POST",
     headers: {
-      "Authorization": \`Bearer \${process.env.HSX_API_KEY}\`,
+      "Authorization": \`Bearer \${process.env.FETCHIUM_API_KEY}\`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ query, tier: "summary" }),
@@ -134,7 +134,7 @@ async function search(query: string) {
       case "quota_exceeded":
         throw new Error("Monthly quota exhausted. Please upgrade your plan.");
       case "invalid_key":
-        throw new Error("Invalid API key. Check HSX_API_KEY.");
+        throw new Error("Invalid API key. Check FETCHIUM_API_KEY.");
       default:
         throw new Error(\`API error [\${err.code}]: \${err.message} (req: \${err.request_id})\`);
     }

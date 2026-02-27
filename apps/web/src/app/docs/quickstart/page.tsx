@@ -15,9 +15,9 @@ export default function Quickstart() {
 
       <h2>Step 1 — Get an API key</h2>
       <p>
-        Sign up at the <Link href="https://app.hypersearchx.zuhabul.com">dashboard</Link>.
+        Sign up at the <Link href="https://app.fetchium.com">dashboard</Link>.
         The Free tier gives you 1,000 requests/month with no credit card required.
-        Your API key will look like: <code>hsx_4626d3fc3fd669...</code>
+        Your API key will look like: <code>fetchium_4626d3fc3fd669...</code>
       </p>
 
       <div className="callout">
@@ -26,10 +26,10 @@ export default function Quickstart() {
       </div>
 
       <h2>Step 2 — Make a search request</h2>
-      <p>Replace <code>hsx_your_key</code> with your actual API key:</p>
+      <p>Replace <code>fetchium_your_key</code> with your actual API key:</p>
 
-      <CodeBlock language="bash" filename="search.sh" code={`curl -X POST https://api.hypersearchx.zuhabul.com/v1/search \\
-  -H "Authorization: Bearer hsx_your_key" \\
+      <CodeBlock language="bash" filename="search.sh" code={`curl -X POST ***REMOVED***/v1/search \\
+  -H "Authorization: Bearer fetchium_your_key" \\
   -H "Content-Type: application/json" \\
   -d '{"query": "what is tokio in rust", "tier": "summary"}'`} />
 
@@ -65,18 +65,18 @@ export default function Quickstart() {
       <p>The <code>tier</code> parameter controls how much content is extracted:</p>
 
       <CodeBlock language="bash" code={`# Just key facts (~200 tokens) — fast, cheap
-curl -X POST .../v1/search -H "Authorization: Bearer hsx_..." \\
+curl -X POST .../v1/search -H "Authorization: Bearer fetchium_..." \\
   -d '{"query": "python vs rust performance", "tier": "key_facts"}'
 
 # Detailed analysis (~5,000 tokens) — thorough
-curl -X POST .../v1/search -H "Authorization: Bearer hsx_..." \\
+curl -X POST .../v1/search -H "Authorization: Bearer fetchium_..." \\
   -d '{"query": "best approaches to async rust", "tier": "detailed"}'`} />
 
       <h2>Step 5 — Try the research pipeline</h2>
       <p>The research endpoint runs a full multi-step investigation with citations:</p>
 
-      <CodeBlock language="bash" code={`curl -X POST https://api.hypersearchx.zuhabul.com/v1/research \\
-  -H "Authorization: Bearer hsx_your_key" \\
+      <CodeBlock language="bash" code={`curl -X POST ***REMOVED***/v1/research \\
+  -H "Authorization: Bearer fetchium_your_key" \\
   -H "Content-Type: application/json" \\
   -d '{
     "query": "Compare vector databases for production use in 2025",

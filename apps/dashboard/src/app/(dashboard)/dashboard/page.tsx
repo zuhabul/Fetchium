@@ -1,7 +1,7 @@
 import { BarChart3, Zap, Clock, CheckCircle } from "lucide-react";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Overview — HyperSearchX Dashboard" };
+export const metadata: Metadata = { title: "Overview — Fetchium Dashboard" };
 
 const stats = [
   { label: "Requests Today", value: "47", change: "+12%", icon: Zap, color: "text-brand-400" },

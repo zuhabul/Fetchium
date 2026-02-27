@@ -322,7 +322,7 @@ export default function HowItWorks() {
               </div>
             </div>
             <a
-              href="https://app.hypersearchx.zuhabul.com"
+              href="https://app.fetchium.com"
               className="group flex shrink-0 items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-indigo-300 transition-all hover:bg-indigo-500/20 hover:text-indigo-200 w-full sm:w-auto justify-center min-h-[44px]"
             >
               Get API Key Free

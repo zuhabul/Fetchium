@@ -18,15 +18,15 @@ const examples: Record<Lang, LangConfig> = {
   typescript: {
     label: "TypeScript",
     ext: ".ts",
-    code: `import { HyperSearchX } from "@hypersearchx/sdk";
+    code: `import { Fetchium } from "@fetchium/sdk";
 
-const hsx = new HyperSearchX({
-  apiKey: process.env.HSX_API_KEY!,
-  baseUrl: "https://api.hypersearchx.zuhabul.com",
+const fetchium = new Fetchium({
+  apiKey: process.env.FETCHIUM_API_KEY!,
+  baseUrl: "***REMOVED***",
 });
 
 // Multi-source federated search
-const results = await hsx.search("rust async programming", {
+const results = await fetchium.search("rust async programming", {
   backends: ["searxng", "brave", "github", "stackoverflow"],
   maxResults: 10,
   tier: "summary",       // key_facts | summary | detailed | complete
@@ -39,7 +39,7 @@ console.log(results.meta.tokensUsed);    // always within budget
 console.log(results.evidenceGraph);      // citations + trust scores
 
 // Deep-extract any URL
-const page = await hsx.extract("https://docs.rs/tokio", {
+const page = await fetchium.extract("https://docs.rs/tokio", {
   format: "markdown",
   tokenBudget: 4096,
   layer: "readability",  // css | readability | headless | pdf | ocr
@@ -48,16 +48,16 @@ const page = await hsx.extract("https://docs.rs/tokio", {
   python: {
     label: "Python",
     ext: ".py",
-    code: `from hypersearchx import HyperSearchX
+    code: `from fetchium import Fetchium
 import os
 
-hsx = HyperSearchX(
-    api_key=os.environ["HSX_API_KEY"],
-    base_url="https://api.hypersearchx.zuhabul.com",
+fetchium = Fetchium(
+    api_key=os.environ["FETCHIUM_API_KEY"],
+    base_url="***REMOVED***",
 )
 
 # Multi-source federated search
-results = hsx.search(
+results = fetchium.search(
     "rust async programming",
     backends=["searxng", "brave", "github", "stackoverflow"],
     max_results=10,
@@ -71,7 +71,7 @@ print(results.meta.tokens_used)    # always within budget
 print(results.evidence_graph)      # citations + trust scores
 
 # Deep-extract any URL
-page = hsx.extract(
+page = fetchium.extract(
     "https://docs.rs/tokio",
     format="markdown",
     token_budget=4096,
@@ -82,8 +82,8 @@ page = hsx.extract(
     label: "cURL",
     ext: ".sh",
     code: `# Federated search across 11 backends
-curl -X POST https://api.hypersearchx.zuhabul.com/v1/search \\
-  -H "Authorization: Bearer $HSX_API_KEY" \\
+curl -X POST ***REMOVED***/v1/search \\
+  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "query": "rust async programming",
@@ -95,8 +95,8 @@ curl -X POST https://api.hypersearchx.zuhabul.com/v1/search \\
   }'
 
 # Deep-extract a URL (5-layer CEP)
-curl -X POST https://api.hypersearchx.zuhabul.com/v1/extract \\
-  -H "Authorization: Bearer $HSX_API_KEY" \\
+curl -X POST ***REMOVED***/v1/extract \\
+  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "url": "https://docs.rs/tokio",
@@ -197,7 +197,7 @@ function tokenizeLine(
     [/^\b\d+(\.\d+)?\b/, "token-number"],
     [/^[{}[\]().,;:?!\\]/, "token-punctuation"],
     [/^[-+*/%=<>!&|^~]+/, "token-operator"],
-    [/^\b(HyperSearchX|hsx|results|page|meta|items)\b/, "token-type"],
+    [/^\b(Fetchium|fetchium|results|page|meta|items)\b/, "token-type"],
     [/^\b\w+\b/, "text-slate-300"],
     [/^\s+/, "text-transparent"],
   ];
@@ -372,9 +372,9 @@ export default function CodeDemo() {
                     className="text-slate-400 truncate"
                   >
                     {lang === "typescript"
-                      ? "npm install @hypersearchx/sdk"
+                      ? "npm install @fetchium/sdk"
                       : lang === "python"
-                      ? "pip install hypersearchx"
+                      ? "pip install fetchium"
                       : "curl -fsSL ..."}
                   </motion.span>
                 </AnimatePresence>

@@ -37,8 +37,8 @@ export default function YoutubeApiReference() {
 
       <h2>Example request</h2>
 
-      <CodeBlock language="bash" filename="youtube.sh" code={`curl -X POST https://api.hypersearchx.zuhabul.com/v1/youtube/search \\
-  -H "Authorization: Bearer hsx_your_key" \\
+      <CodeBlock language="bash" filename="youtube.sh" code={`curl -X POST ***REMOVED***/v1/youtube/search \\
+  -H "Authorization: Bearer fetchium_your_key" \\
   -H "Content-Type: application/json" \\
   -d '{
     "query": "rust async tokio tutorial",
@@ -93,8 +93,8 @@ export default function YoutubeApiReference() {
         <span className="text-slate-300">/v1/social/research</span>
       </div>
 
-      <CodeBlock language="bash" code={`curl -X POST https://api.hypersearchx.zuhabul.com/v1/social/research \\
-  -H "Authorization: Bearer hsx_your_key" \\
+      <CodeBlock language="bash" code={`curl -X POST ***REMOVED***/v1/social/research \\
+  -H "Authorization: Bearer fetchium_your_key" \\
   -H "Content-Type: application/json" \\
   -d '{
     "query": "best rust web framework 2025",

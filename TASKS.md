@@ -1,4 +1,4 @@
-# HyperSearchX — Master Implementation Task Plan
+# Fetchium — Master Implementation Task Plan
 
 > **Version:** 1.0.0 | **Generated:** 2026-02-23
 > **Total Phases:** 9 | **Total Epics:** 42 | **Total Tasks:** 200+
@@ -222,7 +222,7 @@ These task groups can run **simultaneously** by different agents:
 ## Cargo Workspace Structure
 
 ```
-hypersearchx/
+fetchium/
 ├── Cargo.toml                    # Workspace root
 ├── rust-toolchain.toml           # Pin Rust version
 ├── .github/workflows/            # CI/CD

@@ -41,7 +41,7 @@ const plans: Plan[] = [
       "Community support (Discord)",
     ],
     cta: "Start Free",
-    href: () => "https://app.hypersearchx.zuhabul.com/register",
+    href: () => "https://app.fetchium.com/register",
     highlight: false,
   },
   {
@@ -63,7 +63,7 @@ const plans: Plan[] = [
     ],
     cta: "Start Starter",
     href: (annual) =>
-      `https://app.hypersearchx.zuhabul.com/register?plan=starter&billing=${annual ? "annual" : "monthly"}`,
+      `https://app.fetchium.com/register?plan=starter&billing=${annual ? "annual" : "monthly"}`,
     highlight: false,
   },
   {
@@ -85,7 +85,7 @@ const plans: Plan[] = [
     ],
     cta: "Start Pro",
     href: (annual) =>
-      `https://app.hypersearchx.zuhabul.com/register?plan=pro&billing=${annual ? "annual" : "monthly"}`,
+      `https://app.fetchium.com/register?plan=pro&billing=${annual ? "annual" : "monthly"}`,
     highlight: true,
     badge: "Most Popular",
   },
@@ -107,7 +107,7 @@ const plans: Plan[] = [
       "Dedicated Slack channel",
     ],
     cta: "Contact Sales",
-    href: () => "mailto:enterprise@hypersearchx.zuhabul.com",
+    href: () => "mailto:enterprise@fetchium.com",
     highlight: false,
     badge: "Custom",
   },

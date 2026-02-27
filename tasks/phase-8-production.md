@@ -9,7 +9,7 @@
 
 ## Phase 8 Summary
 
-Phase 8 is **not sequential** -- it runs in parallel with every other phase. Its job is to ensure that HyperSearchX ships as a production-grade tool with:
+Phase 8 is **not sequential** -- it runs in parallel with every other phase. Its job is to ensure that Fetchium ships as a production-grade tool with:
 
 1. **Comprehensive Test Suite** -- Unit tests with coverage gating, integration tests for pipelines, E2E CLI tests with `assert_cmd`, performance benchmarks with `criterion`, and fuzz testing with `cargo-fuzz` (PRD SS45)
 2. **Documentation** -- `rustdoc` API docs for every public item, a user guide, and architecture documentation (PRD SS46 V2.0)
@@ -1249,9 +1249,9 @@ crates/hsx-api/src/lib.rs                        -- Add #![deny(missing_docs)]
 **Step 1: Add `deny(missing_docs)` and crate-level docs to `crates/hsx-core/src/lib.rs`**
 
 ```rust
-//! # HyperSearchX Core Library
+//! # Fetchium Core Library
 //!
-//! `hsx-core` is the core library powering HyperSearchX, an AI-native
+//! `hsx-core` is the core library powering Fetchium, an AI-native
 //! search, extraction, and research tool. It provides:
 //!
 //! - **Search backends** -- DuckDuckGo, Google, Bing, Scholar, SearXNG, and more
@@ -1432,7 +1432,7 @@ Content for `docs/guide/agent-integration.md` (MCP excerpt):
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
-    "hypersearchx": {
+    "fetchium": {
       "command": "hsx",
       "args": ["serve", "--mcp"]
     }
@@ -1443,7 +1443,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 Add to `.mcp.json` in your project root:
 {
   "servers": {
-    "hypersearchx": {
+    "fetchium": {
       "command": "hsx",
       "args": ["serve", "--mcp"],
       "env": {}
@@ -1987,7 +1987,7 @@ jobs:
       - name: Package (Unix)
         if: runner.os != 'Windows'
         run: |
-          ARCHIVE=hypersearchx-${{ matrix.target }}.${{ matrix.archive }}
+          ARCHIVE=fetchium-${{ matrix.target }}.${{ matrix.archive }}
           chmod +x target/${{ matrix.target }}/release/hsx
           tar czf "$ARCHIVE" -C target/${{ matrix.target }}/release hsx
           shasum -a 256 "$ARCHIVE" > "$ARCHIVE.sha256"
@@ -1995,15 +1995,15 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $ARCHIVE = "hypersearchx-${{ matrix.target }}.${{ matrix.archive }}"
+          $ARCHIVE = "fetchium-${{ matrix.target }}.${{ matrix.archive }}"
           Compress-Archive -Path "target/${{ matrix.target }}/release/hsx.exe" -DestinationPath $ARCHIVE
           (Get-FileHash $ARCHIVE -Algorithm SHA256).Hash | Out-File "$ARCHIVE.sha256"
       - uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.target }}
           path: |
-            hypersearchx-*.${{ matrix.archive }}
-            hypersearchx-*.${{ matrix.archive }}.sha256
+            fetchium-*.${{ matrix.archive }}
+            fetchium-*.${{ matrix.archive }}.sha256
 
   release:
     name: Create Release
@@ -2029,7 +2029,7 @@ jobs:
           fi
       - uses: softprops/action-gh-release@v2
         with:
-          name: HyperSearchX v${{ steps.notes.outputs.version }}
+          name: Fetchium v${{ steps.notes.outputs.version }}
           body_path: notes.md
           draft: false
           prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') }}
@@ -2270,12 +2270,12 @@ if (!target) {
 const pkg = require("../package.json");
 const version = pkg.version;
 const ext = process.platform === "win32" ? "zip" : "tar.gz";
-const url = `https://github.com/hypersearchx/hypersearchx/releases/download/v${version}/hypersearchx-${target}.${ext}`;
+const url = `https://github.com/fetchium/fetchium/releases/download/v${version}/fetchium-${target}.${ext}`;
 
 const binDir = path.join(__dirname, "..", "bin");
 fs.mkdirSync(binDir, { recursive: true });
 
-console.log(`Downloading HyperSearchX ${version} for ${platform}...`);
+console.log(`Downloading Fetchium ${version} for ${platform}...`);
 const binName = process.platform === "win32" ? "hsx.exe" : "hsx";
 if (ext === "tar.gz") {
   execSync(`curl -fsSL "${url}" | tar xz -C "${binDir}"`, { stdio: "inherit" });
@@ -2286,7 +2286,7 @@ if (ext === "tar.gz") {
   fs.unlinkSync(zipPath);
 }
 fs.chmodSync(path.join(binDir, binName), 0o755);
-console.log(`Installed HyperSearchX to ${path.join(binDir, binName)}`);
+console.log(`Installed Fetchium to ${path.join(binDir, binName)}`);
 ```
 
 **Step 5: `Cross.toml`**
@@ -2303,7 +2303,7 @@ image = "ghcr.io/cross-rs/x86_64-unknown-linux-gnu:main"
 - [x] Pushing a `v*` tag triggers the release workflow
 - [x] GitHub Release created with archives + SHA256 checksums for all 5 platforms
 - [x] npm package installs correct binary for current platform
-- [x] `npm install -g hypersearchx && hsx --version` works
+- [x] `npm install -g fetchium && hsx --version` works
 - [x] `cargo publish --dry-run --package hsx-core` succeeds
 - [x] Windows binary packaged as `.zip`, Unix as `.tar.gz`
 - [x] Pre-release tags (`-rc`, `-beta`) create prerelease GitHub Releases

@@ -11,15 +11,15 @@ cargo install hsx-cli
 
 **From source** (latest main branch):
 ```bash
-git clone https://github.com/zuhabul/HyperSearchX
-cd HyperSearchX
+git clone https://github.com/zuhabul/Fetchium
+cd Fetchium
 cargo build --release -p hsx-cli
 # Binary is at ./target/release/hsx
 ```
 
 **macOS via Homebrew** (when formula is available):
 ```bash
-brew install hypersearchx
+brew install fetchium
 ```
 
 ## 2. Your First Search

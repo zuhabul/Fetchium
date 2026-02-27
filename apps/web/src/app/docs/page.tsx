@@ -21,10 +21,10 @@ export default function DocsIndex() {
         API v1 · Open Beta
       </div>
 
-      <h1>HyperSearchX Documentation</h1>
+      <h1>Fetchium Documentation</h1>
 
       <p>
-        HyperSearchX is an intelligent search API that aggregates multiple search backends, extracts
+        Fetchium is an intelligent search API that aggregates multiple search backends, extracts
         structured content from web pages, runs multi-step research pipelines, and delivers
         token-budgeted, AI-ready context through a clean REST API.
       </p>
@@ -36,9 +36,9 @@ export default function DocsIndex() {
       </p>
 
       <div className="callout">
-        <strong>Open Beta:</strong> HyperSearchX is currently in open beta. The Free tier provides
+        <strong>Open Beta:</strong> Fetchium is currently in open beta. The Free tier provides
         1,000 requests/month with no credit card required.{" "}
-        <Link href="https://app.hypersearchx.zuhabul.com">Get your API key →</Link>
+        <Link href="https://app.fetchium.com">Get your API key →</Link>
       </div>
 
       <h2>Quick links</h2>
@@ -56,20 +56,20 @@ export default function DocsIndex() {
 
       <h2>Base URL</h2>
       <p>All API requests are made to the following base URL:</p>
-      <CodeBlock code="https://api.hypersearchx.zuhabul.com" language="text" />
+      <CodeBlock code="***REMOVED***" language="text" />
 
       <h2>Your first request</h2>
       <p>
         Once you have an API key from the{" "}
-        <Link href="https://app.hypersearchx.zuhabul.com">dashboard</Link>, you can make your first
+        <Link href="https://app.fetchium.com">dashboard</Link>, you can make your first
         search request:
       </p>
 
       <CodeBlock
         language="bash"
         filename="search.sh"
-        code={`curl -X POST https://api.hypersearchx.zuhabul.com/v1/search \\
-  -H "Authorization: Bearer hsx_your_api_key" \\
+        code={`curl -X POST ***REMOVED***/v1/search \\
+  -H "Authorization: Bearer fetchium_your_api_key" \\
   -H "Content-Type: application/json" \\
   -d '{
     "query": "rust async programming best practices",
@@ -128,7 +128,7 @@ export default function DocsIndex() {
       <h3>Authentication</h3>
       <p>
         All API endpoints (except <code>/health</code>) require a Bearer token in the{" "}
-        <code>Authorization</code> header. API keys are prefixed with <code>hsx_</code> and contain
+        <code>Authorization</code> header. API keys are prefixed with <code>fetchium_</code> and contain
         64 hex characters (256-bit entropy).
       </p>
 
@@ -167,15 +167,15 @@ export default function DocsIndex() {
 
       <CodeBlock
         language="typescript"
-        filename="hypersearchx.ts"
+        filename="fetchium.ts"
         code={`// TypeScript — plain fetch
-const HSX_BASE = "https://api.hypersearchx.zuhabul.com";
+const FETCHIUM_BASE = "***REMOVED***";
 
 async function search(query: string, tier = "summary") {
-  const res = await fetch(\`\${HSX_BASE}/v1/search\`, {
+  const res = await fetch(\`\${FETCHIUM_BASE}/v1/search\`, {
     method: "POST",
     headers: {
-      "Authorization": \`Bearer \${process.env.HSX_API_KEY}\`,
+      "Authorization": \`Bearer \${process.env.FETCHIUM_API_KEY}\`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ query, tier, max_sources: 10 }),
@@ -190,15 +190,15 @@ console.log(result.results[0].title);`}
 
       <CodeBlock
         language="python"
-        filename="hypersearchx.py"
+        filename="fetchium.py"
         code={`# Python — requests
 import os, requests
 
-HSX_BASE = "https://api.hypersearchx.zuhabul.com"
-HEADERS = {"Authorization": f"Bearer {os.environ['HSX_API_KEY']}"}
+FETCHIUM_BASE = "***REMOVED***"
+HEADERS = {"Authorization": f"Bearer {os.environ['FETCHIUM_API_KEY']}"}
 
 def search(query: str, tier: str = "summary") -> dict:
-    r = requests.post(f"{HSX_BASE}/v1/search",
+    r = requests.post(f"{FETCHIUM_BASE}/v1/search",
         headers=HEADERS,
         json={"query": query, "tier": tier, "max_sources": 10})
     r.raise_for_status()
@@ -217,7 +217,7 @@ print(result["results"][0]["title"])`}
               Get your free API key and make your first request in under 2 minutes.
             </p>
             <div className="flex gap-3">
-              <Link href="https://app.hypersearchx.zuhabul.com"
+              <Link href="https://app.fetchium.com"
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors no-underline">
                 Get API Key →
               </Link>

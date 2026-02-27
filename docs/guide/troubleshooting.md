@@ -41,7 +41,7 @@ hsx fetch https://react.dev --tier complete
 
 **Fix:**
 - Wait 60 seconds and retry
-- Configure backup search engines in `~/.hypersearchx/config.toml`
+- Configure backup search engines in `~/.fetchium/config.toml`
 - Use `--engines brave` if you have a Brave Search API key
 
 ### Slow Performance
@@ -85,7 +85,7 @@ hsx fetch <url> --tier key_facts  # Use smaller tier
 **Fix:**
 ```bash
 # Increase timeout globally
-echo 'timeout_secs = 30' >> ~/.hypersearchx/config.toml
+echo 'timeout_secs = 30' >> ~/.fetchium/config.toml
 
 # Or per-command (if supported)
 export HSX_TIMEOUT=30
@@ -104,10 +104,10 @@ hsx --version
 hsx search "test" --format json 2>&1 | head -20
 
 # Check config
-cat ~/.hypersearchx/config.toml
+cat ~/.fetchium/config.toml
 ```
 
 ## Getting Help
 
-- GitHub Issues: https://github.com/hypersearchx/hypersearchx/issues
-- Discussions: https://github.com/hypersearchx/hypersearchx/discussions
+- GitHub Issues: https://github.com/fetchium/fetchium/issues
+- Discussions: https://github.com/fetchium/fetchium/discussions

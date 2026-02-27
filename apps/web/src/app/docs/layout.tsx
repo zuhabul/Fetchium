@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import DocsLayoutClient from "@/components/docs/DocsLayoutClient";
 
 export const metadata: Metadata = {
-  title: { default: "Documentation", template: "%s — HyperSearchX Docs" },
-  description: "Complete documentation for the HyperSearchX API — authentication, endpoints, SDKs, and self-hosting guides.",
+  title: { default: "Documentation", template: "%s — Fetchium Docs" },
+  description: "Complete documentation for the Fetchium API — authentication, endpoints, SDKs, and self-hosting guides.",
 };
 
 export default function DocsLayout({ children }: { children: React.ReactNode }) {

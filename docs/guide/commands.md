@@ -1,6 +1,6 @@
 # Command Reference
 
-All 25+ HyperSearchX commands, grouped by category.
+All 25+ Fetchium commands, grouped by category.
 
 ## Search Commands
 

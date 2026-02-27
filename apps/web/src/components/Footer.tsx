@@ -15,16 +15,16 @@ const nav: Record<string, { label: string; href: string }[]> = {
   Developers: [
     { label: "Documentation", href: "/docs" },
     { label: "API Reference", href: "/docs/api" },
-    { label: "TypeScript SDK", href: "https://www.npmjs.com/package/@hypersearchx/sdk" },
-    { label: "Python SDK", href: "https://pypi.org/project/hypersearchx" },
+    { label: "TypeScript SDK", href: "https://www.npmjs.com/package/@fetchium/sdk" },
+    { label: "Python SDK", href: "https://pypi.org/project/fetchium" },
     { label: "Algorithm Docs", href: "/docs/algorithms" },
   ],
   Company: [
     { label: "About", href: "/about" },
     { label: "Blog", href: "/blog" },
-    { label: "Discord", href: "https://discord.gg/hypersearchx" },
-    { label: "GitHub", href: "https://github.com/hypersearchx/hypersearchx" },
-    { label: "Contact", href: "mailto:hello@hypersearchx.zuhabul.com" },
+    { label: "Discord", href: "https://discord.gg/fetchium" },
+    { label: "GitHub", href: "https://github.com/zuhabul/Fetchium" },
+    { label: "Contact", href: "mailto:hello@fetchium.com" },
   ],
   Legal: [
     { label: "Privacy Policy", href: "/privacy" },
@@ -37,12 +37,12 @@ const nav: Record<string, { label: string; href: string }[]> = {
 const socialLinks = [
   {
     label: "GitHub",
-    href: "https://github.com/hypersearchx/hypersearchx",
+    href: "https://github.com/zuhabul/Fetchium",
     icon: Github,
   },
   {
     label: "Twitter / X",
-    href: "https://twitter.com/hypersearchx",
+    href: "https://twitter.com/fetchium",
     icon: Twitter,
   },
 ];
@@ -73,8 +73,8 @@ export default function Footer() {
                 <Zap className="h-4 w-4 text-white" strokeWidth={2.5} />
               </div>
               <span className="text-[15px] tracking-tight text-slate-100">
-                HyperSearch
-                <span className="text-indigo-400">X</span>
+                Fetchi
+                <span className="text-indigo-400">um</span>
               </span>
             </Link>
 
@@ -151,7 +151,7 @@ export default function Footer() {
           transition={{ delay: 0.3, duration: 0.5 }}
         >
           <p className="text-[11px] sm:text-[12px] text-slate-700">
-            &copy; 2026 HyperSearchX. All rights reserved.
+            &copy; 2026 Fetchium. All rights reserved.
           </p>
 
           {/* Tech badges */}

@@ -52,8 +52,8 @@ export default function ScrapeApiReference() {
 
       <h2>Example request</h2>
 
-      <CodeBlock language="bash" filename="scrape.sh" code={`curl -X POST https://api.hypersearchx.zuhabul.com/v1/scrape \\
-  -H "Authorization: Bearer hsx_your_key" \\
+      <CodeBlock language="bash" filename="scrape.sh" code={`curl -X POST ***REMOVED***/v1/scrape \\
+  -H "Authorization: Bearer fetchium_your_key" \\
   -H "Content-Type: application/json" \\
   -d '{
     "url": "https://tokio.rs/tokio/tutorial/hello-tokio",
@@ -111,8 +111,8 @@ export default function ScrapeApiReference() {
 
       <h2>PDF extraction</h2>
       <p>Point the scrape endpoint at any PDF URL — CEP layer 4 handles extraction automatically:</p>
-      <CodeBlock language="bash" code={`curl -X POST https://api.hypersearchx.zuhabul.com/v1/scrape \\
-  -H "Authorization: Bearer hsx_your_key" \\
+      <CodeBlock language="bash" code={`curl -X POST ***REMOVED***/v1/scrape \\
+  -H "Authorization: Bearer fetchium_your_key" \\
   -H "Content-Type: application/json" \\
   -d '{"url": "https://arxiv.org/pdf/2301.00234.pdf", "tier": "detailed"}'`} />
 

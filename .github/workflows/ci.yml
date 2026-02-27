@@ -170,7 +170,7 @@ jobs:
             target
           key: ${{ runner.os }}-bench-${{ hashFiles('**/Cargo.lock') }}
       - name: Run benchmarks
-        run: cargo bench --package hsx-core -- --output-format bencher | tee output.txt
+        run: cargo bench --package fetchium-core -- --output-format bencher | tee output.txt
       - name: Store benchmark results
         uses: benchmark-action/github-action-benchmark@v1
         with:
