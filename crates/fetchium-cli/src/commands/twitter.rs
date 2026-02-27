@@ -1,4 +1,4 @@
-//! `fetchium twitter` — X/Twitter Intelligence (search, trends, sentiment, monitor, fetch).
+//! `fetchium x` / `fetchium twitter` — X (Twitter) Intelligence (search, trends, sentiment, monitor, fetch).
 
 use crate::cli::Format;
 use anyhow::Result;
@@ -18,7 +18,7 @@ pub async fn run(args: crate::cli::TwitterArgs, config: &HsxConfig, format: Form
 
     match args.action {
         crate::cli::TwitterAction::Search { query, max } => {
-            let spinner = make_spinner(&format!("Searching Twitter: {}...", query));
+            let spinner = make_spinner(&format!("Searching X (Twitter): {}...", query));
 
             let cfg = TwitterPipelineConfig {
                 query: query.clone(),
@@ -46,7 +46,7 @@ pub async fn run(args: crate::cli::TwitterArgs, config: &HsxConfig, format: Form
                         }
                     }
                 }
-                Err(e) => eprintln!("{} {e}", "Twitter error:".red()),
+                Err(e) => eprintln!("{} {e}", "X error:".red()),
             }
             println!("\nCompleted in {:.1}s", start.elapsed().as_secs_f64());
         }
@@ -57,7 +57,7 @@ pub async fn run(args: crate::cli::TwitterArgs, config: &HsxConfig, format: Form
 
             match result {
                 Ok(trending) => {
-                    println!("\n{}\n", "Trending on Twitter/X".bold().cyan());
+                    println!("\n{}\n", "Trending on X (Twitter)".bold().cyan());
                     for trend in trending.iter().take(25) {
                         let volume = trend
                             .tweet_volume
@@ -128,7 +128,7 @@ pub async fn run(args: crate::cli::TwitterArgs, config: &HsxConfig, format: Form
                         neutral as f64 / total as f64 * 100.0
                     );
                 }
-                Err(e) => eprintln!("{} {e}", "Twitter error:".red()),
+                Err(e) => eprintln!("{} {e}", "X error:".red()),
             }
         }
         crate::cli::TwitterAction::Fetch { url } => {
@@ -148,7 +148,11 @@ pub async fn run(args: crate::cli::TwitterArgs, config: &HsxConfig, format: Form
         crate::cli::TwitterAction::Monitor { query, interval } => {
             println!(
                 "{}",
-                format!("Monitoring Twitter for: {} (every {}s)", query, interval).cyan()
+                format!(
+                    "Monitoring X (Twitter) for: {} (every {}s)",
+                    query, interval
+                )
+                .cyan()
             );
             println!("Press Ctrl+C to stop.\n");
 
@@ -178,6 +182,7 @@ pub async fn run(args: crate::cli::TwitterArgs, config: &HsxConfig, format: Form
             // Delegate to social module with twitter-only flag
             let social_args = crate::cli::SocialArgs {
                 query,
+                extra_query: None,
                 unified: false,
                 twitter: true,
                 reddit: false,
@@ -229,7 +234,7 @@ pub async fn run(args: crate::cli::TwitterArgs, config: &HsxConfig, format: Form
                         println!("No tweets found for @{}", username);
                     }
                 }
-                Err(e) => eprintln!("{} {e}", "Twitter error:".red()),
+                Err(e) => eprintln!("{} {e}", "X error:".red()),
             }
         }
     }

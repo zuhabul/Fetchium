@@ -21,7 +21,7 @@ description = "Fetchium — the universal retrieval layer for the internet"
 tokio = { version = "1", features = ["full"] }
 
 # HTTP
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip", "brotli", "cookies", "stream", "blocking", "http2"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "rustls-tls-native-roots", "json", "gzip", "brotli", "cookies", "stream", "blocking", "http2"] }
 
 # HTML parsing
 scraper = "0.21"

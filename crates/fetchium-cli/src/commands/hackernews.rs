@@ -56,6 +56,7 @@ pub async fn run(args: HackernewsArgs, config: &HsxConfig, format: Format) -> Re
         crate::cli::HackernewsAction::Research { query, max } => {
             let social_args = crate::cli::SocialArgs {
                 query,
+                extra_query: None,
                 unified: false,
                 twitter: false,
                 reddit: false,
