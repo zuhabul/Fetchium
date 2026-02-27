@@ -1,6 +1,6 @@
 #![no_main]
 // Fuzz TOML config parsing. Must NEVER panic.
-use hsx_core::config::HsxConfig;
+use fetchium_core::config::HsxConfig;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {

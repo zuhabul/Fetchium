@@ -1,6 +1,6 @@
 #![no_main]
 // Fuzz HTML extraction (CEP Layer 1). Must NEVER panic regardless of input.
-use hsx_core::extract::layer1;
+use fetchium_core::extract::layer1;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {

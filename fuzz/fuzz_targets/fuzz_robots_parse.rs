@@ -1,6 +1,6 @@
 #![no_main]
 // Fuzz robots.txt parsing. Must NEVER panic.
-use hsx_core::http::robots::parse_robots_txt;
+use fetchium_core::http::robots::parse_robots_txt;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
