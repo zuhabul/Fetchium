@@ -580,7 +580,17 @@ impl SearchOrchestrator {
             rank::rerank(deduped, query)
         };
 
-        // Step 5: Take top N
+        // Step 5: Filter low-relevance garbage results
+        let pre_filter_count = ranked.len();
+        ranked.retain(|r| r.score.unwrap_or(0.0) >= 0.10);
+        if ranked.len() < pre_filter_count {
+            tracing::debug!(
+                "Filtered {} low-relevance results (score < 0.10)",
+                pre_filter_count - ranked.len()
+            );
+        }
+
+        // Step 6: Take top N
         ranked.truncate(max as usize);
 
         info!(

@@ -131,7 +131,17 @@ impl IntentWeights {
                 depth: 0.10,
                 consensus: 0.05,
             },
-            // Balanced fallback for Verification, Opinion, Data, and any new variants
+            QueryIntent::Opinion => Self {
+                bm25: 0.20,
+                semantic: 0.10,
+                temporal: 0.05,
+                authority: 0.10,
+                evidence: 0.10,
+                diversity: 0.15,
+                depth: 0.10,
+                consensus: 0.20,
+            },
+            // Balanced fallback for Verification, Data, and any new variants
             _ => Self {
                 bm25: 0.15,
                 semantic: 0.15,
@@ -406,6 +416,19 @@ pub fn detect_intent(query: &str) -> QueryIntent {
         || q.contains(" is an ")
     {
         return QueryIntent::Informational;
+    }
+
+    // Opinion: "best X", "top X", "recommended", "should I use"
+    if q.contains("best ")
+        || q.starts_with("best ")
+        || q.contains("top ")
+        || q.contains("recommended")
+        || q.contains("which is better")
+        || q.contains("should i use")
+        || q.contains("worth it")
+        || q.contains("pros and cons")
+    {
+        return QueryIntent::Opinion;
     }
 
     if q.contains("vs ") || q.contains(" vs") || q.contains("compare") || q.contains("difference") {
