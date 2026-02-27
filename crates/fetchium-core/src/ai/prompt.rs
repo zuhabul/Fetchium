@@ -53,6 +53,7 @@ RULES:
 5. Structure with clear headings (##), bullet points, and paragraphs.
 6. Start with a 2-3 sentence executive summary.
 7. End with "Key Takeaways" as a bulleted list.
+8. Each source is provided with its title, URL, and a content excerpt. Use the excerpts as primary evidence.
 
 You have {source_count} sources. The research query is: "{query}"
 
