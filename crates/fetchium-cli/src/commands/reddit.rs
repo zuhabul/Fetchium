@@ -21,6 +21,7 @@ pub async fn run(args: RedditArgs, config: &HsxConfig, format: Format) -> Result
             let spinner = make_spinner(&format!("Searching Reddit: {}...", query));
             let social_args = crate::cli::SocialArgs {
                 query,
+                extra_query: None,
                 unified: false,
                 twitter: false,
                 reddit: true,
@@ -42,6 +43,7 @@ pub async fn run(args: RedditArgs, config: &HsxConfig, format: Format) -> Result
         crate::cli::RedditAction::Research { query, max } => {
             let social_args = crate::cli::SocialArgs {
                 query,
+                extra_query: None,
                 unified: false,
                 twitter: false,
                 reddit: true,

@@ -29,8 +29,47 @@ use fetchium_core::social::{
 
 use crate::cli::{Format, SocialArgs};
 
+/// Resolve platform shorthand: `social twitter "query"` → twitter=true, query="query".
+fn resolve_platform(mut args: SocialArgs) -> SocialArgs {
+    let Some(extra) = args.extra_query.take() else {
+        return args;
+    };
+    match args.query.to_lowercase().as_str() {
+        "twitter" | "x" | "tw" => {
+            args.twitter = true;
+            args.query = extra;
+        }
+        "reddit" | "r" => {
+            args.reddit = true;
+            args.query = extra;
+        }
+        "hn" | "hackernews" | "hacker-news" | "hacker_news" => {
+            args.hackernews = true;
+            args.query = extra;
+        }
+        "facebook" | "fb" => {
+            args.facebook = true;
+            args.query = extra;
+        }
+        "tiktok" | "tt" => {
+            args.tiktok = true;
+            args.query = extra;
+        }
+        "youtube" | "yt" => {
+            args.youtube = true;
+            args.query = extra;
+        }
+        _ => {
+            // first arg was NOT a platform name — join both args as the query
+            args.query = format!("{} {}", args.query, extra);
+        }
+    }
+    args
+}
+
 /// Run the `hsx social` command.
 pub async fn run(args: SocialArgs, config: &HsxConfig, format: Format) -> Result<()> {
+    let args = resolve_platform(args);
     let http = HttpClient::new(config)?;
 
     // Determine which specific platforms were requested.
