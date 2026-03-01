@@ -6,7 +6,7 @@
 
 use crate::error::HsxResult;
 use crate::http::HttpClient;
-use crate::search::SearchBackend;
+use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,8 @@ use tracing::debug;
 struct SerperRequest<'a> {
     q: &'a str,
     num: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tbs: Option<&'a str>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -81,10 +83,16 @@ impl SerperBackend {
         Self { http, api_key }
     }
 
-    async fn search_organic(&self, query: &str, max_results: u32) -> Vec<ResultItem> {
+    async fn search_organic(
+        &self,
+        query: &str,
+        max_results: u32,
+        tbs: Option<&str>,
+    ) -> Vec<ResultItem> {
         let request = SerperRequest {
             q: query,
             num: max_results.min(10),
+            tbs,
         };
         let body = match serde_json::to_string(&request) {
             Ok(b) => b,
@@ -128,7 +136,11 @@ impl SerperBackend {
     }
 
     async fn search_scholar(&self, query: &str) -> Vec<ResultItem> {
-        let request = SerperRequest { q: query, num: 5 };
+        let request = SerperRequest {
+            q: query,
+            num: 5,
+            tbs: None,
+        };
         let body = match serde_json::to_string(&request) {
             Ok(b) => b,
             Err(_) => return vec![],
@@ -171,7 +183,11 @@ impl SerperBackend {
     }
 
     async fn search_news(&self, query: &str) -> Vec<ResultItem> {
-        let request = SerperRequest { q: query, num: 5 };
+        let request = SerperRequest {
+            q: query,
+            num: 5,
+            tbs: None,
+        };
         let body = match serde_json::to_string(&request) {
             Ok(b) => b,
             Err(_) => return vec![],
@@ -218,6 +234,18 @@ impl SerperBackend {
     }
 }
 
+impl SerperBackend {
+    fn time_range_to_tbs(tr: Option<TimeRange>) -> Option<&'static str> {
+        match tr {
+            Some(TimeRange::Day) => Some("qdr:d"),
+            Some(TimeRange::Week) => Some("qdr:w"),
+            Some(TimeRange::Month) => Some("qdr:m"),
+            Some(TimeRange::Year) => Some("qdr:y"),
+            None => None,
+        }
+    }
+}
+
 #[async_trait]
 impl SearchBackend for SerperBackend {
     fn id(&self) -> BackendId {
@@ -226,7 +254,7 @@ impl SearchBackend for SerperBackend {
 
     async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
         let (organic, scholar, news) = tokio::join!(
-            self.search_organic(query, max_results),
+            self.search_organic(query, max_results, None),
             self.search_scholar(query),
             self.search_news(query),
         );
@@ -238,6 +266,32 @@ impl SearchBackend for SerperBackend {
         debug!(
             "Serper: {} total results (organic + scholar + news)",
             results.len()
+        );
+
+        Ok(results)
+    }
+
+    async fn search_with_context(
+        &self,
+        query: &str,
+        max_results: u32,
+        ctx: &SearchContext,
+    ) -> HsxResult<Vec<ResultItem>> {
+        let tbs = Self::time_range_to_tbs(ctx.time_range);
+        let (organic, scholar, news) = tokio::join!(
+            self.search_organic(query, max_results, tbs),
+            self.search_scholar(query),
+            self.search_news(query),
+        );
+
+        let mut results = organic;
+        results.extend(scholar);
+        results.extend(news);
+
+        debug!(
+            "Serper: {} total results (organic + scholar + news) [tbs={:?}]",
+            results.len(),
+            tbs
         );
 
         Ok(results)

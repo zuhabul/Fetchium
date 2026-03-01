@@ -37,14 +37,21 @@ pub async fn run(args: CompareArgs, config: &HsxConfig, format: Format) -> Resul
     let orch_config = OrchestratorConfig::from_hsx_config(config, args.max_sources as u32);
     let orchestrator = Arc::new(SearchOrchestrator::new(http.clone(), orch_config));
 
-    // Build comparison context from original query for disambiguation
-    let comparison_context = parsed.items.join(" vs ");
+    // Detect the comparison domain from the original query for disambiguation.
+    // e.g. "Rust vs Go" → domain "programming language", so we search
+    // "Rust programming language" instead of just "Rust" (which returns video games).
+    let domain_hint = detect_comparison_domain(&parsed.items, &args.query);
+    let comparison_context = if domain_hint.is_empty() {
+        parsed.items.join(" vs ")
+    } else {
+        format!("{} {}", parsed.items.join(" vs "), domain_hint)
+    };
 
     // Collect search snippets from multiple context-aware queries in parallel
     spinner.set_message(format!("Searching: {}...", comparison_context));
 
     let mut search_handles = Vec::new();
-    // Query 1: Direct comparison query
+    // Query 1: Direct comparison query with domain context
     {
         let orch = orchestrator.clone();
         let ctx = comparison_context.clone();
@@ -55,15 +62,19 @@ pub async fn run(args: CompareArgs, config: &HsxConfig, format: Format) -> Resul
                 .unwrap_or_default()
         }));
     }
-    // Query 2: Per-item queries in parallel
+    // Query 2: Per-item queries with domain context for disambiguation
     for item in &parsed.items {
         let orch = orchestrator.clone();
-        let item = item.clone();
+        let item_qualified = if domain_hint.is_empty() {
+            item.clone()
+        } else {
+            format!("{item} {domain_hint}")
+        };
         let ctx = comparison_context.clone();
         let max = args.max_sources as u32;
         search_handles.push(tokio::spawn(async move {
             orch.search(
-                &format!("{item} {ctx} features performance ecosystem"),
+                &format!("{item_qualified} {ctx} features performance"),
                 Some(max),
             )
             .await
@@ -138,13 +149,13 @@ pub async fn run(args: CompareArgs, config: &HsxConfig, format: Format) -> Resul
                 || lower.contains("antigravity")
         });
 
+    spinner.finish_and_clear();
+
     let comparison = if use_ai {
         build_comparison_ai_unified(&parsed, &snippet_text, &sources, config).await
     } else {
         build_comparison(&parsed, &item_data)
     };
-
-    spinner.finish_and_clear();
 
     let output = match format {
         Format::Json => serde_json::to_string_pretty(&comparison)?,
@@ -162,4 +173,47 @@ pub async fn run(args: CompareArgs, config: &HsxConfig, format: Format) -> Resul
     eprintln!("\nCompleted in {:.1}s", elapsed.as_secs_f64());
 
     Ok(())
+}
+
+/// Detect the domain/category of items being compared from the query context.
+///
+/// Returns a disambiguation hint to improve search quality.
+/// The AI prompt itself handles disambiguation for the final output.
+fn detect_comparison_domain(items: &[String], query: &str) -> &'static str {
+    let lower_query = query.to_lowercase();
+
+    // If the query already contains domain context, no extra hint needed
+    if lower_query.contains("programming")
+        || lower_query.contains("language")
+        || lower_query.contains("framework")
+        || lower_query.contains("library")
+        || lower_query.contains("database")
+        || lower_query.contains("cloud")
+        || lower_query.contains("editor")
+    {
+        return "";
+    }
+
+    // Check if the query mentions technical context
+    if lower_query.contains("backend")
+        || lower_query.contains("frontend")
+        || lower_query.contains("web")
+        || lower_query.contains("api")
+        || lower_query.contains("server")
+        || lower_query.contains("performance")
+        || lower_query.contains("code")
+        || lower_query.contains("development")
+    {
+        return "programming";
+    }
+
+    // For short "X vs Y" queries with no context, check if items look technical.
+    // We use the "vs" pattern with exactly 2+ items as a heuristic that this is
+    // a technical comparison — add "programming" to disambiguate.
+    if items.len() >= 2 && items.iter().all(|i| i.len() <= 15) {
+        // Short item names are often ambiguous (Go, Rust, C, R, Swift, etc.)
+        return "programming";
+    }
+
+    ""
 }

@@ -5,7 +5,7 @@
 
 use crate::error::HsxResult;
 use crate::http::HttpClient;
-use crate::search::SearchBackend;
+use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
 use serde::Deserialize;
@@ -73,21 +73,25 @@ impl BraveBackend {
     }
 }
 
-#[async_trait]
-impl SearchBackend for BraveBackend {
-    fn id(&self) -> BackendId {
-        BackendId::Brave
-    }
-
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+impl BraveBackend {
+    async fn search_inner(
+        &self,
+        query: &str,
+        max_results: u32,
+        freshness: Option<&str>,
+    ) -> HsxResult<Vec<ResultItem>> {
         let Some(ref key) = self.api_key else {
             debug!("Brave: no API key set (BRAVE_API_KEY), skipping");
             return Ok(vec![]);
         };
 
         let count = max_results.min(20);
+        let freshness_param = match freshness {
+            Some(f) => format!("&freshness={f}"),
+            None => String::new(),
+        };
         let url = format!(
-            "{BRAVE_API}?q={}&count={count}&search_lang=en",
+            "{BRAVE_API}?q={}&count={count}&search_lang=en{freshness_param}",
             urlencoding_encode(query)
         );
 
@@ -147,6 +151,37 @@ impl SearchBackend for BraveBackend {
 
         debug!("Brave: {} results for {:?}", results.len(), query);
         Ok(results)
+    }
+
+    fn time_range_to_freshness(tr: Option<TimeRange>) -> Option<&'static str> {
+        match tr {
+            Some(TimeRange::Day) => Some("pd"),
+            Some(TimeRange::Week) => Some("pw"),
+            Some(TimeRange::Month) => Some("pm"),
+            Some(TimeRange::Year) => Some("py"),
+            None => None,
+        }
+    }
+}
+
+#[async_trait]
+impl SearchBackend for BraveBackend {
+    fn id(&self) -> BackendId {
+        BackendId::Brave
+    }
+
+    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+        self.search_inner(query, max_results, None).await
+    }
+
+    async fn search_with_context(
+        &self,
+        query: &str,
+        max_results: u32,
+        ctx: &SearchContext,
+    ) -> HsxResult<Vec<ResultItem>> {
+        let freshness = Self::time_range_to_freshness(ctx.time_range);
+        self.search_inner(query, max_results, freshness).await
     }
 }
 

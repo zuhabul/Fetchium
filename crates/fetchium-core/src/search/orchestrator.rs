@@ -28,7 +28,7 @@ use crate::search::serper::SerperBackend;
 use crate::search::stackoverflow::StackOverflowBackend;
 use crate::search::tavily::TavilyBackend;
 use crate::search::wikipedia::WikipediaBackend;
-use crate::search::SearchBackend;
+use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::telemetry::PipelineMetrics;
 use crate::types::{BackendId, ResultItem};
 use std::collections::HashMap;
@@ -547,6 +547,22 @@ impl SearchOrchestrator {
         // Step 0: Detect query intent and select appropriate backends via ABS.
         // This prevents e.g. GitHub from being queried for "what is AI" definitions.
         let intent = detect_intent(query);
+
+        // Compute effective freshness based on intent:
+        // CurrentEvents → boost to at least 0.9; Factual → cap at 0.3
+        let effective_freshness = match intent {
+            rank::fusion::QueryIntent::CurrentEvents => self.config.freshness_need.max(0.9),
+            rank::fusion::QueryIntent::Factual => self.config.freshness_need.min(0.3),
+            _ => self.config.freshness_need,
+        };
+
+        // Build search context for backends that support date filtering
+        let time_range = match intent {
+            rank::fusion::QueryIntent::CurrentEvents => Some(TimeRange::Year),
+            _ => None,
+        };
+        let search_ctx = SearchContext { intent, time_range };
+
         let available_ids: Vec<BackendId> = self.backends.iter().map(|b| b.id()).collect();
         let unhealthy_ids: Vec<BackendId> = available_ids
             .iter()
@@ -598,6 +614,7 @@ impl SearchOrchestrator {
             let cb = self.circuit_breaker.clone();
             let bh = self.bulkhead.clone();
             let metrics = self.metrics.clone();
+            let ctx = search_ctx.clone();
 
             handles.push(tokio::spawn(async move {
                 let id = backend.id();
@@ -613,7 +630,12 @@ impl SearchOrchestrator {
                     }
                 };
 
-                let results = match timeout(timeout_dur, backend.search(&q, per_backend)).await {
+                let results = match timeout(
+                    timeout_dur,
+                    backend.search_with_context(&q, per_backend, &ctx),
+                )
+                .await
+                {
                     Ok(Ok(results)) => {
                         cb.record_success(&id_str);
                         info!("Backend {:?}: {} results", id, results.len());
@@ -677,7 +699,7 @@ impl SearchOrchestrator {
                 &mut results,
                 query,
                 intent,
-                self.config.freshness_need,
+                effective_freshness,
                 &self.weight_overrides,
             );
             results
@@ -721,6 +743,37 @@ impl SearchOrchestrator {
             );
         }
 
+        // Step 5b: For temporal queries, enforce recency and cap static-content sources.
+        if intent == rank::fusion::QueryIntent::CurrentEvents {
+            // Extract the year from the query (e.g., "2025" from "breakthroughs 2025")
+            let query_year = extract_query_year(query);
+
+            let mut wiki_count = 0u32;
+            let mut arxiv_count = 0u32;
+            ranked.retain(|r| {
+                // Cap Wikipedia and ArXiv to max 1 each
+                if r.url.contains("wikipedia.org") {
+                    wiki_count += 1;
+                    return wiki_count <= 1;
+                }
+                if r.url.contains("arxiv.org") {
+                    arxiv_count += 1;
+                    return arxiv_count <= 1;
+                }
+                // If query mentions a year, filter out results published in older years
+                if let Some(qy) = query_year {
+                    if let Some(ref date) = r.published_date {
+                        if let Some(pub_year) = date.get(..4).and_then(|s| s.parse::<u32>().ok()) {
+                            if pub_year + 1 < qy {
+                                return false; // published 2+ years before query year
+                            }
+                        }
+                    }
+                }
+                true
+            });
+        }
+
         // Step 6: Take top N
         ranked.truncate(max as usize);
 
@@ -761,6 +814,21 @@ pub fn parse_backend_id(s: &str) -> Option<BackendId> {
         "firecrawl" => Some(BackendId::Firecrawl),
         _ => None,
     }
+}
+
+/// Extract a 4-digit year from the query (e.g., "breakthroughs 2025" → Some(2025)).
+fn extract_query_year(query: &str) -> Option<u32> {
+    query
+        .split_whitespace()
+        .filter_map(|w| {
+            let w = w.trim_matches(|c: char| !c.is_ascii_digit());
+            if w.len() == 4 {
+                w.parse::<u32>().ok().filter(|y| (2020..=2030).contains(y))
+            } else {
+                None
+            }
+        })
+        .next()
 }
 
 /// Extract meaningful content words from a query, stripping English stopwords.

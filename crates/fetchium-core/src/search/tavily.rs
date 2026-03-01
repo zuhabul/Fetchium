@@ -5,7 +5,7 @@
 
 use crate::error::{HsxError, HsxResult};
 use crate::http::HttpClient;
-use crate::search::SearchBackend;
+use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -19,6 +19,8 @@ struct TavilyRequest<'a> {
     include_answer: bool,
     include_raw_content: bool,
     max_results: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    days: Option<u32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -51,13 +53,13 @@ impl TavilyBackend {
     }
 }
 
-#[async_trait]
-impl SearchBackend for TavilyBackend {
-    fn id(&self) -> BackendId {
-        BackendId::Tavily
-    }
-
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+impl TavilyBackend {
+    async fn search_inner(
+        &self,
+        query: &str,
+        max_results: u32,
+        days: Option<u32>,
+    ) -> HsxResult<Vec<ResultItem>> {
         let request = TavilyRequest {
             api_key: &self.api_key,
             query,
@@ -65,6 +67,7 @@ impl SearchBackend for TavilyBackend {
             include_answer: false,
             include_raw_content: false,
             max_results: max_results.min(20),
+            days,
         };
 
         let body = serde_json::to_string(&request)
@@ -79,9 +82,10 @@ impl SearchBackend for TavilyBackend {
             .map_err(|e| HsxError::Search(format!("Tavily parse: {e}")))?;
 
         debug!(
-            "Tavily: {} results in {:.2}s",
+            "Tavily: {} results in {:.2}s [days={:?}]",
             parsed.results.len(),
-            parsed.response_time.unwrap_or(0.0)
+            parsed.response_time.unwrap_or(0.0),
+            days,
         );
 
         let results = parsed
@@ -100,6 +104,37 @@ impl SearchBackend for TavilyBackend {
             .collect();
 
         Ok(results)
+    }
+
+    fn time_range_to_days(tr: Option<TimeRange>) -> Option<u32> {
+        match tr {
+            Some(TimeRange::Day) => Some(1),
+            Some(TimeRange::Week) => Some(7),
+            Some(TimeRange::Month) => Some(30),
+            Some(TimeRange::Year) => Some(365),
+            None => None,
+        }
+    }
+}
+
+#[async_trait]
+impl SearchBackend for TavilyBackend {
+    fn id(&self) -> BackendId {
+        BackendId::Tavily
+    }
+
+    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+        self.search_inner(query, max_results, None).await
+    }
+
+    async fn search_with_context(
+        &self,
+        query: &str,
+        max_results: u32,
+        ctx: &SearchContext,
+    ) -> HsxResult<Vec<ResultItem>> {
+        let days = Self::time_range_to_days(ctx.time_range);
+        self.search_inner(query, max_results, days).await
     }
 }
 

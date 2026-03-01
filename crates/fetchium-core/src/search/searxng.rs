@@ -16,7 +16,7 @@
 
 use crate::error::HsxResult;
 use crate::http::HttpClient;
-use crate::search::SearchBackend;
+use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
 use serde::Deserialize;
@@ -134,22 +134,39 @@ impl SearxngBackend {
     }
 }
 
-#[async_trait]
-impl SearchBackend for SearxngBackend {
-    fn id(&self) -> BackendId {
-        BackendId::Searxng
-    }
-
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+impl SearxngBackend {
+    /// Internal search with optional time range and category filtering.
+    async fn search_inner(
+        &self,
+        query: &str,
+        max_results: u32,
+        time_range: Option<TimeRange>,
+        categories: Option<&str>,
+    ) -> HsxResult<Vec<ResultItem>> {
         let instances = self.instance_list();
         let is_local_first = self.custom_url.is_none();
+
+        let time_param = match time_range {
+            Some(TimeRange::Day) => "&time_range=day",
+            Some(TimeRange::Week) => "&time_range=week",
+            Some(TimeRange::Month) => "&time_range=month",
+            Some(TimeRange::Year) => "&time_range=year",
+            None => "",
+        };
+
+        let cat_param = match categories {
+            Some(cats) => format!("&categories={cats}"),
+            None => String::new(),
+        };
 
         for (i, instance) in instances.iter().enumerate() {
             let is_local = instance.contains("localhost") || instance.contains("127.0.0.1");
             let url = format!(
-                "{}/search?q={}&format=json&pageno=1&language=en",
+                "{}/search?q={}&format=json&pageno=1&language=en{}{}",
                 instance,
-                urlencoding_encode(query)
+                urlencoding_encode(query),
+                time_param,
+                cat_param,
             );
 
             match self.http.fetch_text(&url).await {
@@ -166,7 +183,6 @@ impl SearchBackend for SearxngBackend {
                 }
                 Err(e) => {
                     if is_local {
-                        // Local instance down — silently fall through to public
                         debug!("SearXNG local unavailable, falling back to public instances: {e}");
                     } else {
                         warn!("SearXNG {instance} request failed: {e}");
@@ -177,6 +193,53 @@ impl SearchBackend for SearxngBackend {
 
         warn!("SearXNG: all instances exhausted for query {:?}", query);
         Ok(vec![])
+    }
+}
+
+#[async_trait]
+impl SearchBackend for SearxngBackend {
+    fn id(&self) -> BackendId {
+        BackendId::Searxng
+    }
+
+    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+        self.search_inner(query, max_results, None, None).await
+    }
+
+    async fn search_with_context(
+        &self,
+        query: &str,
+        max_results: u32,
+        ctx: &SearchContext,
+    ) -> HsxResult<Vec<ResultItem>> {
+        use crate::rank::fusion::QueryIntent;
+
+        match ctx.intent {
+            QueryIntent::CurrentEvents => {
+                // Fire two parallel SearXNG queries for temporal coverage:
+                // 1. News category → actual news articles (highest quality for temporal)
+                // 2. General + time_range → time-filtered web results
+                let (news, general) = tokio::join!(
+                    self.search_inner(query, max_results, ctx.time_range, Some("news")),
+                    self.search_inner(query, max_results, ctx.time_range, Some("general")),
+                );
+                let mut results = news.unwrap_or_default();
+                results.extend(general.unwrap_or_default());
+                Ok(results)
+            }
+            QueryIntent::Code => {
+                self.search_inner(query, max_results, ctx.time_range, Some("it,general"))
+                    .await
+            }
+            QueryIntent::Academic => {
+                self.search_inner(query, max_results, ctx.time_range, Some("science,general"))
+                    .await
+            }
+            _ => {
+                self.search_inner(query, max_results, ctx.time_range, None)
+                    .await
+            }
+        }
     }
 }
 

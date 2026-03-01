@@ -43,8 +43,25 @@ pub mod google;
 pub mod scholar;
 
 use crate::error::HsxResult;
+use crate::rank::fusion::QueryIntent;
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
+
+/// Time range filter for date-restricted searches.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TimeRange {
+    Day,
+    Week,
+    Month,
+    Year,
+}
+
+/// Context passed to backends for intent-aware, time-filtered searches.
+#[derive(Debug, Clone)]
+pub struct SearchContext {
+    pub intent: QueryIntent,
+    pub time_range: Option<TimeRange>,
+}
 
 /// Trait implemented by every search backend.
 ///
@@ -70,4 +87,17 @@ pub trait SearchBackend: Send + Sync {
     /// - Return `Err` only for hard failures (network down, auth broken, etc.)
     /// - Never panic
     async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>>;
+
+    /// Execute a search with intent and time range context.
+    ///
+    /// Backends that support date filtering should override this method.
+    /// Default implementation delegates to `search()`, ignoring context.
+    async fn search_with_context(
+        &self,
+        query: &str,
+        max_results: u32,
+        _ctx: &SearchContext,
+    ) -> HsxResult<Vec<ResultItem>> {
+        self.search(query, max_results).await
+    }
 }
