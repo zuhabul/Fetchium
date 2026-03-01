@@ -30,6 +30,9 @@ pub struct ResearchConfig {
     pub max_rar_loops: usize,
     /// Use AI to synthesize the report (default: true). Disable with --no-ai.
     pub ai_synthesis: bool,
+    /// Enable deep thinking mode for AI models that support it (Gemini 2.5+).
+    /// Default: false (fast mode ~5s). Use --think flag for deeper analysis (~15-25s).
+    pub thinking: bool,
 }
 
 impl Default for ResearchConfig {
@@ -46,6 +49,7 @@ impl Default for ResearchConfig {
             trust_verify: false,
             max_rar_loops: 3,
             ai_synthesis: true,
+            thinking: false,
         }
     }
 }

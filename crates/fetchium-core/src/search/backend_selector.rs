@@ -83,6 +83,22 @@ impl BackendStats {
 ///
 /// Maps query intents to their preferred backends with affinity scores.
 fn intent_affinity(intent: &QueryIntent, backend: &BackendId) -> f64 {
+    // SearXNG is a META-SEARCH engine (aggregates Google, Bing, Brave, DDG, Wikipedia,
+    // StackOverflow, GitHub, ArXiv). It should ALWAYS be selected because it provides
+    // the broadest coverage of any single backend.
+    if *backend == BackendId::Searxng {
+        return 0.85; // High for all intents — it covers everything
+    }
+
+    // Premium backends also get consistently high scores — they provide
+    // pre-scored, AI-optimized results when API keys are available.
+    match backend {
+        BackendId::Tavily | BackendId::Serper | BackendId::Exa | BackendId::Firecrawl => {
+            return 0.80; // Premium backends always valuable
+        }
+        _ => {}
+    }
+
     match intent {
         QueryIntent::Academic | QueryIntent::Data => match backend {
             BackendId::Arxiv => 0.95,
@@ -120,22 +136,20 @@ fn intent_affinity(intent: &QueryIntent, backend: &BackendId) -> f64 {
             BackendId::DuckDuckGo => 0.70,
             BackendId::Google => 0.65,
             BackendId::Brave => 0.60,
-            BackendId::Github => 0.20, // repos rarely answer factual questions
+            BackendId::Github => 0.20,
             _ => 0.40,
         },
-        // Definitional queries: Wikipedia/web search excel; GitHub repos are almost useless
         QueryIntent::Informational => match backend {
             BackendId::Wikipedia => 0.95,
             BackendId::DuckDuckGo => 0.80,
             BackendId::Google => 0.75,
             BackendId::Brave => 0.70,
             BackendId::Bing => 0.65,
-            BackendId::Searxng => 0.70,
             BackendId::StackOverflow => 0.55,
             BackendId::Reddit => 0.45,
             BackendId::HackerNews => 0.40,
             BackendId::Arxiv => 0.35,
-            BackendId::Github => 0.10, // nearly never relevant for definitions
+            BackendId::Github => 0.10,
             _ => 0.40,
         },
         QueryIntent::Verification => match backend {
@@ -156,7 +170,6 @@ fn intent_affinity(intent: &QueryIntent, backend: &BackendId) -> f64 {
             BackendId::Arxiv => 0.15,
             _ => 0.50,
         },
-        // HowTo, DeepAnalysis — use all backends roughly equally
         _ => match backend {
             BackendId::DuckDuckGo => 0.70,
             BackendId::Google => 0.70,
