@@ -80,6 +80,7 @@ pub async fn handle_research(
         trust_verify: false,
         max_rar_loops: 2,
         ai_synthesis: true,
+        thinking: false,
     };
 
     match ResearchPipeline::execute(&rc, config, http).await {

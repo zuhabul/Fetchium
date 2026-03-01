@@ -268,6 +268,10 @@ pub struct ResearchArgs {
     #[arg(long)]
     pub no_ai: bool,
 
+    /// Enable deep thinking mode for higher quality analysis (slower, ~5-10x)
+    #[arg(long)]
+    pub think: bool,
+
     /// Output file
     #[arg(short, long)]
     pub output: Option<String>,
