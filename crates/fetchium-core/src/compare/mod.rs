@@ -284,23 +284,32 @@ pub async fn build_comparison_ai_unified(
     let context: String = snippet_text.chars().take(6000).collect();
 
     let prompt = format!(
-        r#"Compare {items_str} using these search results as evidence.
+        r#"Compare these items: {items_str}
 
-SEARCH RESULTS:
+Context from the user's query: "{raw_query}"
+
+Below are search results that MAY contain relevant information. WARNING: Search results
+can be noisy or irrelevant (e.g., "Go" may match "GoPro" cameras, "Rust" may match the
+video game). IGNORE any search result that is not actually about the items being compared.
+Use YOUR OWN KNOWLEDGE as the primary source of information.
+
+SEARCH RESULTS (use only if relevant):
 {context}
 
-Fill in this comparison table. For each cell, write a concise 1-2 sentence factual assessment.
-Use your knowledge to supplement if the search results are insufficient.
+Fill in this comparison table with factual, specific assessments.
 
-Respond in EXACTLY this format (one section per item, items separated by blank lines):
+Respond in EXACTLY this format:
 
 {format_str}
 
 Rules:
+- Use YOUR knowledge as primary source — search results are supplementary
 - Be specific: cite numbers, stats, percentages where possible
 - Keep each value to 1-2 sentences max
+- IGNORE irrelevant search results entirely
 - If genuinely unknown, write "Insufficient data"
 - Do NOT repeat the dimension name in the value"#,
+        raw_query = query.raw_query,
         format_str = items
             .iter()
             .map(|item| {
@@ -328,6 +337,10 @@ Rules:
     ];
 
     let mut noop = |_: &str| {};
+    tracing::debug!(
+        "Compare AI: calling chat_with_fallback with {} chars of context",
+        context.len()
+    );
     let ai_result = crate::ai::provider_client::chat_with_fallback(
         &messages, None, &ai_config, &providers, false, &mut noop,
     )
@@ -337,6 +350,10 @@ Rules:
 
     match ai_result {
         Ok(result) => {
+            tracing::debug!(
+                "Compare AI succeeded: {} chars response",
+                result.content.len()
+            );
             for item in &items {
                 for dim in &dimensions {
                     let value = parse_unified_response(&result.content, item, dim);
@@ -349,7 +366,8 @@ Rules:
                 }
             }
         }
-        Err(_) => {
+        Err(e) => {
+            tracing::warn!("Compare AI call failed: {e}, falling back to heuristic extraction");
             // Fall back to heuristic — build per-item data from snippet_text
             for item in &items {
                 for dim in &dimensions {

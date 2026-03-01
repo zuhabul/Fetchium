@@ -15,7 +15,7 @@
 //! delay; CAPTCHA detection on first-page empty or block-page markers.
 
 use crate::error::HsxResult;
-use crate::search::SearchBackend;
+use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
 use tracing::debug;
@@ -54,12 +54,31 @@ impl GoogleBackend {
 
     /// Build a Google search URL for the given query and page (0-indexed).
     fn build_url(query: &str, page: usize) -> String {
+        Self::build_url_with_tbs(query, page, "")
+    }
+
+    fn build_url_with_tbs(query: &str, page: usize, tbs: &str) -> String {
         let start = page * 10;
         let encoded = url::form_urlencoded::Serializer::new(String::new())
             .append_key_only(query)
             .finish();
+        let tbs_param = if tbs.is_empty() {
+            String::new()
+        } else {
+            format!("&tbs={tbs}")
+        };
         // pws=0  — disable personalised results for consistent scraping
-        format!("https://www.google.com/search?q={encoded}&start={start}&hl=en&num=10&gl=us&pws=0")
+        format!("https://www.google.com/search?q={encoded}&start={start}&hl=en&num=10&gl=us&pws=0{tbs_param}")
+    }
+
+    fn time_range_to_tbs(tr: Option<TimeRange>) -> &'static str {
+        match tr {
+            Some(TimeRange::Day) => "qdr:d",
+            Some(TimeRange::Week) => "qdr:w",
+            Some(TimeRange::Month) => "qdr:m",
+            Some(TimeRange::Year) => "qdr:y",
+            None => "",
+        }
     }
 
     /// Parse a Google SERP HTML page into [`ResultItem`]s.
@@ -265,6 +284,67 @@ impl SearchBackend for GoogleBackend {
 
             Ok(all_results.into_iter().take(max_results as usize).collect())
         }
+    }
+
+    async fn search_with_context(
+        &self,
+        query: &str,
+        max_results: u32,
+        ctx: &SearchContext,
+    ) -> HsxResult<Vec<ResultItem>> {
+        let tbs = Self::time_range_to_tbs(ctx.time_range);
+        if tbs.is_empty() {
+            return self.search(query, max_results).await;
+        }
+
+        // Non-headless path with tbs date filtering
+        #[cfg(not(feature = "headless"))]
+        {
+            let pages = (max_results as usize).div_ceil(10).min(2);
+            let mut all_results = Vec::new();
+
+            for page in 0..pages {
+                let url = Self::build_url_with_tbs(query, page, tbs);
+
+                match self
+                    .http
+                    .client()
+                    .get(&url)
+                    .header("User-Agent", BROWSER_UA)
+                    .header(
+                        "Accept",
+                        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    )
+                    .header("Accept-Language", "en-US,en;q=0.9")
+                    .header("Referer", "https://www.google.com/")
+                    .header("Cache-Control", "no-cache")
+                    .send()
+                    .await
+                {
+                    Ok(resp) if resp.status().is_success() => match resp.text().await {
+                        Ok(html) => {
+                            let page_results = Self::parse_serp(&html, page);
+                            if page_results.is_empty() && page == 0 {
+                                break;
+                            }
+                            all_results.extend(page_results);
+                        }
+                        Err(_) => break,
+                    },
+                    _ => break,
+                }
+
+                if page + 1 < pages {
+                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                }
+            }
+
+            return Ok(all_results.into_iter().take(max_results as usize).collect());
+        }
+
+        // Headless path — fallback to default search (tbs not easily injectable)
+        #[cfg(feature = "headless")]
+        self.search(query, max_results).await
     }
 }
 

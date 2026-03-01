@@ -118,9 +118,14 @@ fn intent_affinity(intent: &QueryIntent, backend: &BackendId) -> f64 {
         QueryIntent::CurrentEvents => match backend {
             BackendId::HackerNews => 0.90,
             BackendId::Reddit => 0.85,
-            BackendId::Google => 0.70,
+            BackendId::Google => 0.75,
             BackendId::Bing => 0.65,
             BackendId::DuckDuckGo => 0.60,
+            BackendId::Brave => 0.55,
+            BackendId::StackOverflow => 0.30,
+            BackendId::Github => 0.15,
+            BackendId::Wikipedia => 0.10, // Wikipedia almost never useful for temporal queries
+            BackendId::Arxiv => 0.10,     // ArXiv returns old papers, not news
             _ => 0.30,
         },
         QueryIntent::Comparison => match backend {
@@ -255,9 +260,20 @@ impl AdaptiveBackendSelector {
         let mut backends: Vec<BackendId> = scored[..n].iter().map(|(b, _)| b.clone()).collect();
         let mut scores: Vec<f64> = scored[..n].iter().map(|(_, s)| *s).collect();
 
-        // Ensure at least one reliable backend is included
+        // Ensure at least one reliable backend is included — intent-aware selection.
+        // CurrentEvents → DuckDuckGo/HackerNews (not Wikipedia which returns static articles)
+        // Code → StackOverflow/DuckDuckGo
+        // Academic → Arxiv/Wikipedia
+        // Default → Wikipedia/DuckDuckGo
         if self.config.always_include_reliable {
-            let reliable = [BackendId::Wikipedia, BackendId::DuckDuckGo];
+            let reliable: &[BackendId] = match intent {
+                QueryIntent::CurrentEvents => &[BackendId::DuckDuckGo, BackendId::HackerNews],
+                QueryIntent::Code => &[BackendId::StackOverflow, BackendId::DuckDuckGo],
+                QueryIntent::Academic | QueryIntent::Data => {
+                    &[BackendId::Arxiv, BackendId::Wikipedia]
+                }
+                _ => &[BackendId::Wikipedia, BackendId::DuckDuckGo],
+            };
             let has_reliable = backends.iter().any(|b| reliable.contains(b));
             if !has_reliable {
                 if let Some(reliable_b) = reliable
@@ -438,19 +454,34 @@ mod tests {
         };
         let abs = AdaptiveBackendSelector::new(config);
 
-        // Only offer backends that are NOT reliable
+        // Factual intent: reliable fallback is Wikipedia/DuckDuckGo
         let backends = vec![
             BackendId::Arxiv,
             BackendId::Github,
             BackendId::HackerNews,
-            BackendId::Wikipedia, // reliable
+            BackendId::Wikipedia, // reliable for Factual
         ];
 
-        let selection = abs.select(&QueryIntent::Code, &backends, &[]);
+        let selection = abs.select(&QueryIntent::Factual, &backends, &[]);
         assert!(
             selection.backends.contains(&BackendId::Wikipedia)
                 || selection.backends.contains(&BackendId::DuckDuckGo),
-            "Should include at least one reliable backend"
+            "Should include at least one reliable backend for Factual"
+        );
+
+        // Code intent: reliable fallback is StackOverflow/DuckDuckGo
+        let code_backends = vec![
+            BackendId::Arxiv,
+            BackendId::Github,
+            BackendId::HackerNews,
+            BackendId::StackOverflow, // reliable for Code
+        ];
+
+        let selection = abs.select(&QueryIntent::Code, &code_backends, &[]);
+        assert!(
+            selection.backends.contains(&BackendId::StackOverflow)
+                || selection.backends.contains(&BackendId::DuckDuckGo),
+            "Should include at least one reliable backend for Code"
         );
     }
 

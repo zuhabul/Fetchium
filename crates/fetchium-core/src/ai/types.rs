@@ -35,7 +35,7 @@ pub struct AiConfig {
     pub fast_model: Option<String>,
     /// Request timeout in seconds (default: 120)
     pub timeout_secs: u64,
-    /// Maximum context tokens to assemble (default: 4096)
+    /// Maximum output tokens for AI responses (default: 8192)
     pub max_context_tokens: usize,
     /// Sampling temperature (default: 0.3 for factual synthesis)
     pub temperature: f32,
@@ -55,7 +55,7 @@ impl Default for AiConfig {
             default_model: None,
             fast_model: None,
             timeout_secs: 30,
-            max_context_tokens: 4096,
+            max_context_tokens: 8192,
             temperature: 0.3,
             providers: ProvidersConfig::default(),
             thinking: false,

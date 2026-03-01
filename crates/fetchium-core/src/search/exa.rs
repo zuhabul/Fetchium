@@ -6,7 +6,7 @@
 
 use crate::error::{HsxError, HsxResult};
 use crate::http::HttpClient;
-use crate::search::SearchBackend;
+use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -20,6 +20,8 @@ struct ExaRequest<'a> {
     search_type: &'a str,
     num_results: u32,
     contents: ExaContents,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    start_published_date: Option<&'a str>,
 }
 
 #[derive(Debug, Serialize)]
@@ -80,13 +82,13 @@ impl ExaBackend {
     }
 }
 
-#[async_trait]
-impl SearchBackend for ExaBackend {
-    fn id(&self) -> BackendId {
-        BackendId::Exa
-    }
-
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+impl ExaBackend {
+    async fn search_inner(
+        &self,
+        query: &str,
+        max_results: u32,
+        start_date: Option<&str>,
+    ) -> HsxResult<Vec<ResultItem>> {
         let request = ExaRequest {
             query,
             search_type: "auto",
@@ -100,6 +102,7 @@ impl SearchBackend for ExaBackend {
                     highlights_per_url: 3,
                 },
             },
+            start_published_date: start_date,
         };
 
         let body = serde_json::to_string(&request)
@@ -119,9 +122,10 @@ impl SearchBackend for ExaBackend {
             .map_err(|e| HsxError::Search(format!("Exa parse: {e}")))?;
 
         debug!(
-            "Exa: {} results in {:.0}ms",
+            "Exa: {} results in {:.0}ms [start_date={:?}]",
             parsed.results.len(),
-            parsed.search_time.unwrap_or(0.0)
+            parsed.search_time.unwrap_or(0.0),
+            start_date,
         );
 
         let results = parsed
@@ -150,6 +154,55 @@ impl SearchBackend for ExaBackend {
             .collect();
 
         Ok(results)
+    }
+
+    fn time_range_to_date(tr: Option<TimeRange>) -> Option<String> {
+        let now = chrono::Utc::now();
+        match tr {
+            Some(TimeRange::Day) => Some(
+                (now - chrono::Duration::days(1))
+                    .format("%Y-%m-%dT%H:%M:%SZ")
+                    .to_string(),
+            ),
+            Some(TimeRange::Week) => Some(
+                (now - chrono::Duration::days(7))
+                    .format("%Y-%m-%dT%H:%M:%SZ")
+                    .to_string(),
+            ),
+            Some(TimeRange::Month) => Some(
+                (now - chrono::Duration::days(30))
+                    .format("%Y-%m-%dT%H:%M:%SZ")
+                    .to_string(),
+            ),
+            Some(TimeRange::Year) => Some(
+                (now - chrono::Duration::days(365))
+                    .format("%Y-%m-%dT%H:%M:%SZ")
+                    .to_string(),
+            ),
+            None => None,
+        }
+    }
+}
+
+#[async_trait]
+impl SearchBackend for ExaBackend {
+    fn id(&self) -> BackendId {
+        BackendId::Exa
+    }
+
+    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+        self.search_inner(query, max_results, None).await
+    }
+
+    async fn search_with_context(
+        &self,
+        query: &str,
+        max_results: u32,
+        ctx: &SearchContext,
+    ) -> HsxResult<Vec<ResultItem>> {
+        let date_str = Self::time_range_to_date(ctx.time_range);
+        self.search_inner(query, max_results, date_str.as_deref())
+            .await
     }
 }
 

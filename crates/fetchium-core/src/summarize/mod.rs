@@ -101,13 +101,37 @@ pub async fn summarize(
             match crate::youtube::universal::fetch_universal_transcript(input, &http, hsx_config)
                 .await
             {
-                Ok(transcript) => {
+                Ok(transcript) if !transcript.full_text.trim().is_empty() => {
                     let video_id = transcript.video_id.clone();
                     let text = transcript.full_text.clone();
                     let title = format!("YouTube Video ({})", video_id);
+                    tracing::info!(
+                        "YouTube transcript extracted: {} chars for video {}",
+                        text.len(),
+                        video_id
+                    );
                     (text, Some(input.to_string()), Some(title))
                 }
-                Err(_) => {
+                Ok(transcript) => {
+                    tracing::warn!(
+                        "YouTube transcript was empty for video {}, falling back to metadata",
+                        transcript.video_id
+                    );
+                    // Transcript was empty — use video ID as context
+                    let title = format!("YouTube Video ({})", transcript.video_id);
+                    (
+                        "This YouTube video's transcript could not be extracted. \
+                         No summary is available without transcript content."
+                            .to_string(),
+                        Some(input.to_string()),
+                        Some(title),
+                    )
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        "YouTube transcript fetch failed: {}. Falling back to HTML.",
+                        e
+                    );
                     // Fall back to regular HTML fetch if transcript unavailable
                     let html = http.fetch_text(input).await?;
                     let extracted = crate::extract::pipeline::extract(&html, input);

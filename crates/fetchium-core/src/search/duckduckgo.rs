@@ -14,7 +14,7 @@
 
 use crate::error::HsxResult;
 use crate::http::HttpClient;
-use crate::search::SearchBackend;
+use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
 use scraper::{Html, Selector};
@@ -265,8 +265,8 @@ impl DuckDuckGoBackend {
     }
 
     /// Fetch results from the full DDG HTML endpoint.
-    async fn try_full(&self, query: &str, max_results: u32) -> Vec<ResultItem> {
-        let form: &[(&str, &str)] = &[("q", query), ("b", ""), ("s", "0"), ("kl", ""), ("df", "")];
+    async fn try_full(&self, query: &str, max_results: u32, df: &str) -> Vec<ResultItem> {
+        let form: &[(&str, &str)] = &[("q", query), ("b", ""), ("s", "0"), ("kl", ""), ("df", df)];
 
         match self
             .client
@@ -311,14 +311,24 @@ impl DuckDuckGoBackend {
     }
 
     /// Fetch results from the DDG lite endpoint.
-    async fn try_lite(&self, query: &str, max_results: u32) -> Vec<ResultItem> {
-        let lite_form: &[(&str, &str)] = &[("q", query), ("s", "0"), ("o", "json"), ("dc", "1")];
+    async fn try_lite(&self, query: &str, max_results: u32, df: &str) -> Vec<ResultItem> {
+        let lite_form: Vec<(&str, &str)> = if df.is_empty() {
+            vec![("q", query), ("s", "0"), ("o", "json"), ("dc", "1")]
+        } else {
+            vec![
+                ("q", query),
+                ("s", "0"),
+                ("o", "json"),
+                ("dc", "1"),
+                ("df", df),
+            ]
+        };
 
         match self
             .client
             .client()
             .post(DDG_LITE_URL)
-            .form(lite_form)
+            .form(&lite_form)
             .header("User-Agent", BROWSER_UA)
             .header(
                 "Accept",
@@ -356,29 +366,32 @@ impl DuckDuckGoBackend {
     }
 }
 
-#[async_trait]
-impl SearchBackend for DuckDuckGoBackend {
-    fn id(&self) -> BackendId {
-        BackendId::DuckDuckGo
+impl DuckDuckGoBackend {
+    fn time_range_to_df(tr: Option<TimeRange>) -> &'static str {
+        match tr {
+            Some(TimeRange::Day) => "d",
+            Some(TimeRange::Week) => "w",
+            Some(TimeRange::Month) => "m",
+            Some(TimeRange::Year) => "y",
+            None => "",
+        }
     }
 
-    fn requires_headless(&self) -> bool {
-        false
-    }
-
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
-        info!("DDG search: query={query:?}, max={max_results}");
+    async fn search_inner(
+        &self,
+        query: &str,
+        max_results: u32,
+        df: &str,
+    ) -> HsxResult<Vec<ResultItem>> {
+        info!("DDG search: query={query:?}, max={max_results}, df={df:?}");
 
         if query.trim().is_empty() {
             return Ok(Vec::new());
         }
 
-        // Race both endpoints in parallel — saves ~500ms vs sequential fallback.
-        // Full HTML endpoint returns richer snippets; lite is simpler but more bot-tolerant.
-        // Both are fired simultaneously; we prefer full results when non-empty.
         let (full, lite) = tokio::join!(
-            self.try_full(query, max_results),
-            self.try_lite(query, max_results),
+            self.try_full(query, max_results, df),
+            self.try_lite(query, max_results, df),
         );
 
         if !full.is_empty() {
@@ -397,6 +410,31 @@ impl SearchBackend for DuckDuckGoBackend {
             debug!("DDG: no results for {query:?} (CAPTCHA or rate-limited)");
             Ok(Vec::new())
         }
+    }
+}
+
+#[async_trait]
+impl SearchBackend for DuckDuckGoBackend {
+    fn id(&self) -> BackendId {
+        BackendId::DuckDuckGo
+    }
+
+    fn requires_headless(&self) -> bool {
+        false
+    }
+
+    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+        self.search_inner(query, max_results, "").await
+    }
+
+    async fn search_with_context(
+        &self,
+        query: &str,
+        max_results: u32,
+        ctx: &SearchContext,
+    ) -> HsxResult<Vec<ResultItem>> {
+        let df = Self::time_range_to_df(ctx.time_range);
+        self.search_inner(query, max_results, df).await
     }
 }
 
