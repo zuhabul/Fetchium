@@ -35,6 +35,7 @@ pub async fn run(args: ResearchArgs, config_obj: &HsxConfig) -> anyhow::Result<(
         trust_verify: args.trust_verify,
         max_rar_loops: 3,
         ai_synthesis: !args.no_ai,
+        thinking: args.think,
     };
 
     let spinner = ProgressBar::new_spinner();

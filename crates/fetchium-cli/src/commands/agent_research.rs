@@ -64,6 +64,7 @@ pub async fn run(args: AgentResearchArgs, config_obj: &HsxConfig) -> anyhow::Res
         trust_verify: false,
         max_rar_loops: 3,
         ai_synthesis: true,
+        thinking: false,
     };
 
     let http_client = fetchium_core::http::client::HttpClient::new(config_obj)?;
