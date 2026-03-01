@@ -441,7 +441,7 @@ impl std::fmt::Display for ProviderKind {
     }
 }
 
-/// Per-provider configuration stored in `~/.hypersearchx/config.toml`.
+/// Per-provider configuration stored in `~/.fetchium/config.toml`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ProviderEntry {
@@ -450,6 +450,12 @@ pub struct ProviderEntry {
     /// Prefer setting the corresponding environment variable instead
     /// (e.g. `OPENAI_API_KEY`) to avoid storing secrets in config files.
     pub api_key: Option<String>,
+    /// Additional API keys for pool rotation.
+    /// All keys in this array plus `api_key` are combined into a single pool.
+    /// Keys are rotated with rate-limit awareness — if one key gets 429'd,
+    /// the next key is tried automatically.
+    #[serde(default)]
+    pub api_keys: Vec<String>,
     /// Model name override. Uses the provider default when absent.
     pub model: Option<String>,
     /// Base URL override (useful for proxies or custom deployments).
@@ -462,6 +468,7 @@ impl Default for ProviderEntry {
     fn default() -> Self {
         Self {
             api_key: None,
+            api_keys: Vec::new(),
             model: None,
             base_url: None,
             enabled: true,

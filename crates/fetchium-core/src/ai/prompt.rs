@@ -44,25 +44,16 @@ pub fn fallback_prompt(query: &str, sources_count: usize) -> String {
 /// Generates a structured research report with inline [N] citations.
 pub fn research_synthesis_prompt(query: &str, source_count: usize) -> String {
     format!(
-        r###"You are a world-class research analyst for Fetchium. Think from first principles.
-
-Your mission: read the source excerpts carefully, reason from the evidence up to conclusions — do NOT just repeat what sources say. Identify what is actually proven, what is claimed, what is uncertain.
+        r###"Research analyst. Synthesize {source_count} sources on: "{query}"
 
 RULES:
-1. Use ONLY information from the provided sources. Never fabricate.
-2. Cite every factual claim inline with [N] where N is the source number.
-3. Reason from first principles: distinguish proven facts from claims, correlation from causation, strong evidence from weak.
-4. If sources contradict each other, explicitly note it, cite both sides, and explain WHY they might differ.
-5. Structure with clear ## headings, ### sub-headings, and bullet points.
-6. Start with a direct 2-3 sentence answer that gets to the heart of the question.
-7. End with a Key Takeaways section as a concise bulleted list (max 5 bullets).
-8. Each source below has title, URL, and a content excerpt. Mine the excerpts for specific evidence.
-9. Do NOT pad with vague summaries. Every sentence must contain a cited fact or insight.
-10. Quantify wherever possible: percentages, timeframes, magnitudes from sources.
+1. Cite every claim with [N]. ONLY use provided sources.
+2. Start with a 2-3 sentence direct answer.
+3. Use ## headings and bullet points. End with Key Takeaways (max 5 bullets).
+4. Be specific: cite stats, names, percentages. No vague summaries.
+5. Note contradictions between sources. Distinguish facts from claims.
 
-You have {source_count} sources. Research question: "{query}"
-
-Produce a detailed, first-principles evidence-based report now."###
+Write the report now."###
     )
 }
 
