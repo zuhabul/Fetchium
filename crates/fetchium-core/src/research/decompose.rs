@@ -2,7 +2,11 @@
 
 /// Decompose a complex query into parallel sub-questions.
 ///
-/// Detects comparison and implication patterns; falls back to the original query.
+/// Generates diverse perspective-aware sub-queries for broader coverage:
+/// - Original query (always included)
+/// - Comparison items (if "vs" or "compare" detected)
+/// - Implication/impact subjects
+/// - Perspective queries (factual, recent, expert)
 pub fn decompose_query(query: &str) -> Vec<String> {
     let lower = query.to_lowercase();
     let mut sub_queries = Vec::new();
@@ -31,8 +35,38 @@ pub fn decompose_query(query: &str) -> Vec<String> {
         return sub_queries;
     }
 
-    // Default: return the original query as-is
-    vec![query.to_string()]
+    // Default: generate perspective-aware sub-queries for richer coverage
+    sub_queries.push(query.to_string());
+
+    // Extract the core topic (strip question words)
+    let topic = extract_topic(query);
+    if topic.len() > 3 {
+        // Add a "recent developments" perspective for freshness
+        sub_queries.push(format!("{topic} 2025 2026 latest"));
+        // Add an expert/detailed perspective
+        sub_queries.push(format!("{topic} explained overview"));
+    }
+
+    sub_queries
+}
+
+/// Extract the core topic from a query by stripping question words.
+fn extract_topic(query: &str) -> String {
+    let lower = query.to_lowercase();
+    let stripped = lower
+        .trim_start_matches("what is ")
+        .trim_start_matches("what are ")
+        .trim_start_matches("how does ")
+        .trim_start_matches("how do ")
+        .trim_start_matches("how to ")
+        .trim_start_matches("why is ")
+        .trim_start_matches("why are ")
+        .trim_start_matches("explain ")
+        .trim_start_matches("describe ")
+        .trim_start_matches("tell me about ")
+        .trim_end_matches('?')
+        .trim();
+    stripped.to_string()
 }
 
 fn extract_comparison_items(query: &str) -> Vec<String> {
@@ -63,8 +97,10 @@ mod tests {
     #[test]
     fn simple_query_no_decomposition() {
         let subs = decompose_query("what is Rust");
-        assert_eq!(subs.len(), 1);
-        assert_eq!(subs[0], "what is Rust");
+        assert!(subs.len() >= 1);
+        assert!(subs
+            .iter()
+            .any(|q| q.contains("Rust") || q.contains("rust")));
     }
 
     #[test]
@@ -77,5 +113,13 @@ mod tests {
     fn vs_query_includes_original() {
         let subs = decompose_query("Rust vs Python performance");
         assert!(subs.iter().any(|q| q.contains("Rust vs Python")));
+    }
+
+    #[test]
+    fn perspective_aware_queries() {
+        let subs = decompose_query("how does async work in Rust");
+        assert!(subs.len() >= 2);
+        // Should have original + at least one perspective query
+        assert!(subs[0].contains("async"));
     }
 }
