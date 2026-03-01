@@ -216,14 +216,17 @@ struct RawScores {
     consensus: f64,
 }
 
-/// Adjust raw authority score based on query intent to fix GitHub over-ranking.
+/// Adjust raw authority score based on query intent to fix over-ranking biases.
 ///
 /// GitHub.com has domain authority 0.90 (same tier as Wikipedia), which is correct
 /// for code queries but causes irrelevant repositories to rank above educational pages
-/// for informational/factual queries. This applies a per-intent multiplier.
+/// for informational/factual queries.
+///
+/// Wikipedia has high authority which is correct for factual/informational queries
+/// but causes generic articles to dominate temporal/current-events queries where
+/// news sources should rank higher.
 fn adjust_authority_for_intent(url: &str, base: f64, intent: QueryIntent) -> f64 {
-    // Only GitHub suffers from this bias — it has high domain authority but repos are
-    // only relevant for code queries, not definitions or factual lookups.
+    // GitHub bias: repos only relevant for code queries
     if url.contains("github.com/") {
         return match intent {
             QueryIntent::Code => base,               // repos are the right result
@@ -232,6 +235,16 @@ fn adjust_authority_for_intent(url: &str, base: f64, intent: QueryIntent) -> f64
             _ => base * 0.45,                        // informational/factual: heavily downweight
         };
     }
+
+    // Wikipedia bias: great for definitions, poor for "breakthroughs 2025" type queries
+    if url.contains("wikipedia.org") {
+        return match intent {
+            QueryIntent::CurrentEvents => base * 0.35, // temporal queries: heavily downweight
+            QueryIntent::Factual | QueryIntent::Informational | QueryIntent::Verification => base, // keep full authority
+            _ => base * 0.75, // moderate for other intents
+        };
+    }
+
     base
 }
 
@@ -385,6 +398,28 @@ pub fn detect_intent(query: &str) -> QueryIntent {
         return QueryIntent::Code;
     }
 
+    // CurrentEvents: temporal signals — checked early so "breakthroughs 2025" doesn't
+    // fall through to Factual. Year patterns, recency keywords, and news signals.
+    if q.contains("today")
+        || q.contains("2025")
+        || q.contains("2026")
+        || q.contains("latest")
+        || q.contains("news")
+        || q.contains("recent")
+        || q.contains("this year")
+        || q.contains("this month")
+        || q.contains("this week")
+        || q.contains("breaking")
+        || q.contains("update")
+        || q.contains("announcement")
+        || q.contains("breakthrough")
+        || q.contains("released")
+        || q.contains("launched")
+        || q.contains("new in ")
+    {
+        return QueryIntent::CurrentEvents;
+    }
+
     // HowTo: procedural instructions
     if q.contains("how to")
         || q.contains("tutorial")
@@ -436,14 +471,6 @@ pub fn detect_intent(query: &str) -> QueryIntent {
     }
     if q.contains("arxiv") || q.contains("paper") || q.contains("research") || q.contains("study") {
         return QueryIntent::Academic;
-    }
-    if q.contains("today")
-        || q.contains("2025")
-        || q.contains("2026")
-        || q.contains("latest")
-        || q.contains("news")
-    {
-        return QueryIntent::CurrentEvents;
     }
     if q.contains("deep") || q.contains("analysis") || q.contains("comprehensive") {
         return QueryIntent::DeepAnalysis;
@@ -598,6 +625,52 @@ mod tests {
         assert_eq!(
             detect_intent("Rust latest news 2026"),
             QueryIntent::CurrentEvents
+        );
+    }
+
+    #[test]
+    fn detect_intent_temporal_keywords() {
+        assert_eq!(
+            detect_intent("quantum computing breakthroughs 2025"),
+            QueryIntent::CurrentEvents
+        );
+        assert_eq!(
+            detect_intent("recent advances in AI"),
+            QueryIntent::CurrentEvents
+        );
+        assert_eq!(
+            detect_intent("breaking news AI regulation"),
+            QueryIntent::CurrentEvents
+        );
+        assert_eq!(
+            detect_intent("new in rust this year"),
+            QueryIntent::CurrentEvents
+        );
+        assert_eq!(
+            detect_intent("GPT-5 announcement"),
+            QueryIntent::CurrentEvents
+        );
+    }
+
+    #[test]
+    fn wikipedia_authority_capped_for_temporal() {
+        let wiki_result = make_result(
+            "Quantum computing",
+            "https://en.wikipedia.org/wiki/Quantum_computing",
+            "Quantum computing is the exploitation of collective properties...",
+        );
+        let base_auth = 0.9_f64;
+        let events_auth =
+            adjust_authority_for_intent(&wiki_result.url, base_auth, QueryIntent::CurrentEvents);
+        let factual_auth =
+            adjust_authority_for_intent(&wiki_result.url, base_auth, QueryIntent::Factual);
+        assert!(
+            events_auth < 0.4,
+            "Wikipedia authority for CurrentEvents should be < 0.4, got {events_auth}"
+        );
+        assert!(
+            (factual_auth - base_auth).abs() < 1e-9,
+            "Wikipedia authority for Factual should be unchanged"
         );
     }
 

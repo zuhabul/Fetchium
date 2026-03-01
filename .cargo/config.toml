@@ -2,3 +2,4 @@
 check-all = "check --workspace --all-targets"
 lint      = "clippy --workspace --all-targets -- -D warnings"
 test-fast = "test --workspace -- --skip research::pipeline"
+ship-bin  = "install --path crates/fetchium-cli --force"
