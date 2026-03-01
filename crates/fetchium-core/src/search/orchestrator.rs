@@ -16,13 +16,17 @@ use crate::search::bing::BingBackend;
 use crate::search::brave::BraveBackend;
 use crate::search::dedup::deduplicate;
 use crate::search::duckduckgo::DuckDuckGoBackend;
+use crate::search::exa::ExaBackend;
+use crate::search::firecrawl::FirecrawlBackend;
 use crate::search::github::GithubBackend;
 #[cfg(not(feature = "headless"))]
 use crate::search::google::GoogleBackend;
 use crate::search::hackernews::HackerNewsBackend;
 use crate::search::reddit::RedditBackend;
 use crate::search::searxng::SearxngBackend;
+use crate::search::serper::SerperBackend;
 use crate::search::stackoverflow::StackOverflowBackend;
+use crate::search::tavily::TavilyBackend;
 use crate::search::wikipedia::WikipediaBackend;
 use crate::search::SearchBackend;
 use crate::telemetry::PipelineMetrics;
@@ -57,6 +61,14 @@ pub struct OrchestratorConfig {
     pub freshness_need: f64,
     /// Use HyperFusion ranking (true) or legacy BM25 rerank (false).
     pub use_hyperfusion: bool,
+    /// Tavily API key.
+    pub tavily_api_key: Option<String>,
+    /// Serper API key.
+    pub serper_api_key: Option<String>,
+    /// Exa API key.
+    pub exa_api_key: Option<String>,
+    /// Firecrawl API key.
+    pub firecrawl_api_key: Option<String>,
 }
 
 /// Reliable API-based backends that never require scraping or CAPTCHAs.
@@ -75,6 +87,10 @@ const RELIABLE_API_BACKENDS: &[BackendId] = &[
 /// SearXNG self-hosted (localhost:4040) is first — it aggregates Google, Bing,
 /// Brave, DuckDuckGo, Wikipedia, SO, GitHub, ArXiv, Reddit in a single request.
 const ALL_DEFAULT_BACKENDS: &[BackendId] = &[
+    BackendId::Tavily, // Premium: AI-optimized search with content (requires API key)
+    BackendId::Serper, // Premium: fast Google + Scholar + News (requires API key)
+    BackendId::Exa,    // Premium: neural semantic search (requires API key)
+    BackendId::Firecrawl, // Premium: search + full markdown extraction (requires API key)
     BackendId::Searxng, // Primary: self-hosted aggregator (free, unlimited, no CAPTCHA)
     BackendId::Wikipedia,
     BackendId::HackerNews,
@@ -97,6 +113,10 @@ impl Default for OrchestratorConfig {
             simhash_threshold: 6,
             freshness_need: 0.5,
             use_hyperfusion: true,
+            tavily_api_key: None,
+            serper_api_key: None,
+            exa_api_key: None,
+            firecrawl_api_key: None,
         }
     }
 }
@@ -126,6 +146,21 @@ impl OrchestratorConfig {
             }
         }
 
+        // Auto-include premium backends when their API keys are configured,
+        // even if the user's config file doesn't list them explicitly.
+        let premium_backends: &[(BackendId, &Option<String>)] = &[
+            (BackendId::Tavily, &hsx.search.tavily_api_key),
+            (BackendId::Serper, &hsx.search.serper_api_key),
+            (BackendId::Exa, &hsx.search.exa_api_key),
+            (BackendId::Firecrawl, &hsx.search.firecrawl_api_key),
+        ];
+        for (backend_id, api_key) in premium_backends {
+            if api_key.is_some() && !enabled_backends.contains(backend_id) {
+                // Insert premium backends at the front for priority
+                enabled_backends.insert(0, backend_id.clone());
+            }
+        }
+
         Self {
             max_results_per_backend: max_results + 5,
             max_total_results: max_results,
@@ -134,6 +169,10 @@ impl OrchestratorConfig {
             simhash_threshold: hsx.ranking.simhash_threshold,
             freshness_need: hsx.ranking.freshness_need,
             use_hyperfusion: true,
+            tavily_api_key: hsx.search.tavily_api_key.clone(),
+            serper_api_key: hsx.search.serper_api_key.clone(),
+            exa_api_key: hsx.search.exa_api_key.clone(),
+            firecrawl_api_key: hsx.search.firecrawl_api_key.clone(),
         }
     }
 }
@@ -249,6 +288,35 @@ impl SearchOrchestrator {
                         &pool,
                     ))));
                 }
+                BackendId::Tavily => {
+                    if let Some(ref key) = config.tavily_api_key {
+                        backends.push(Arc::new(TavilyBackend::new(
+                            http_client.clone(),
+                            key.clone(),
+                        )));
+                    }
+                }
+                BackendId::Serper => {
+                    if let Some(ref key) = config.serper_api_key {
+                        backends.push(Arc::new(SerperBackend::new(
+                            http_client.clone(),
+                            key.clone(),
+                        )));
+                    }
+                }
+                BackendId::Exa => {
+                    if let Some(ref key) = config.exa_api_key {
+                        backends.push(Arc::new(ExaBackend::new(http_client.clone(), key.clone())));
+                    }
+                }
+                BackendId::Firecrawl => {
+                    if let Some(ref key) = config.firecrawl_api_key {
+                        backends.push(Arc::new(FirecrawlBackend::new(
+                            http_client.clone(),
+                            key.clone(),
+                        )));
+                    }
+                }
                 BackendId::GoogleScholar => {
                     warn!("GoogleScholar backend not yet implemented — skipping");
                 }
@@ -335,6 +403,43 @@ impl SearchOrchestrator {
                         "Bing headless backend needs BrowserPool — \
                          use SearchOrchestrator::with_pool(); skipping Bing"
                     );
+                }
+                BackendId::Tavily => {
+                    if let Some(ref key) = config.tavily_api_key {
+                        backends.push(Arc::new(TavilyBackend::new(
+                            http_client.clone(),
+                            key.clone(),
+                        )));
+                    } else {
+                        info!("Tavily backend skipped — no TAVILY_API_KEY configured");
+                    }
+                }
+                BackendId::Serper => {
+                    if let Some(ref key) = config.serper_api_key {
+                        backends.push(Arc::new(SerperBackend::new(
+                            http_client.clone(),
+                            key.clone(),
+                        )));
+                    } else {
+                        info!("Serper backend skipped — no SERPER_API_KEY configured");
+                    }
+                }
+                BackendId::Exa => {
+                    if let Some(ref key) = config.exa_api_key {
+                        backends.push(Arc::new(ExaBackend::new(http_client.clone(), key.clone())));
+                    } else {
+                        info!("Exa backend skipped — no EXA_API_KEY configured");
+                    }
+                }
+                BackendId::Firecrawl => {
+                    if let Some(ref key) = config.firecrawl_api_key {
+                        backends.push(Arc::new(FirecrawlBackend::new(
+                            http_client.clone(),
+                            key.clone(),
+                        )));
+                    } else {
+                        info!("Firecrawl backend skipped — no FIRECRAWL_API_KEY configured");
+                    }
                 }
                 BackendId::GoogleScholar => {
                     warn!("GoogleScholar backend not yet implemented — skipping");
@@ -650,6 +755,10 @@ pub fn parse_backend_id(s: &str) -> Option<BackendId> {
         "reddit" => Some(BackendId::Reddit),
         "stackoverflow" | "so" => Some(BackendId::StackOverflow),
         "youtube" | "yt" => Some(BackendId::YouTube),
+        "tavily" => Some(BackendId::Tavily),
+        "serper" => Some(BackendId::Serper),
+        "exa" => Some(BackendId::Exa),
+        "firecrawl" => Some(BackendId::Firecrawl),
         _ => None,
     }
 }
