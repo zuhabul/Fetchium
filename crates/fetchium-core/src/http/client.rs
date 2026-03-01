@@ -327,6 +327,63 @@ impl HttpClient {
 
         resp.text().await.map_err(HsxError::Network)
     }
+
+    /// POST JSON with retry support (uses the standard retry/rate-limit pipeline).
+    pub async fn post_json(&self, url: &str, body: &str) -> HsxResult<String> {
+        let resp = self
+            .inner
+            .post(url)
+            .header("Content-Type", "application/json")
+            .body(body.to_string())
+            .send()
+            .await
+            .map_err(HsxError::Network)?;
+
+        if !resp.status().is_success() {
+            return Err(HsxError::Structured(crate::error::StructuredError {
+                kind: Self::status_to_error_kind(resp.status()),
+                retryable: resp.status().is_server_error(),
+                message: format!("HTTP {} from {url}", resp.status()),
+                source_url: Some(url.to_string()),
+                suggested_action: "Check API key and request format".into(),
+                alternatives: vec![],
+            }));
+        }
+
+        resp.text().await.map_err(HsxError::Network)
+    }
+
+    /// POST JSON with a custom header (e.g., API key in non-standard header).
+    pub async fn post_json_with_header(
+        &self,
+        url: &str,
+        body: &str,
+        header_name: &str,
+        header_value: &str,
+    ) -> HsxResult<String> {
+        let resp = self
+            .inner
+            .post(url)
+            .header("Content-Type", "application/json")
+            .header(header_name, header_value)
+            .body(body.to_string())
+            .send()
+            .await
+            .map_err(HsxError::Network)?;
+
+        if !resp.status().is_success() {
+            return Err(HsxError::Structured(crate::error::StructuredError {
+                kind: Self::status_to_error_kind(resp.status()),
+                retryable: resp.status().is_server_error(),
+                message: format!("HTTP {} from {url}", resp.status()),
+                source_url: Some(url.to_string()),
+                suggested_action: "Check API key and request format".into(),
+                alternatives: vec![],
+            }));
+        }
+
+        resp.text().await.map_err(HsxError::Network)
+    }
 }
 
 #[cfg(test)]
