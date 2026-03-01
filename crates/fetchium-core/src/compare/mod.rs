@@ -256,7 +256,160 @@ pub struct AiCompareConfig {
     pub model: Option<String>,
 }
 
-/// Build a comparison using AI to extract dimension values.
+/// Build a comparison using AI with a SINGLE call for the entire table.
+///
+/// Uses all collected search snippets as context and asks the AI to fill
+/// every cell at once. Much faster and more accurate than per-item calls.
+pub async fn build_comparison_ai_unified(
+    query: &ComparisonQuery,
+    snippet_text: &str,
+    sources: &[String],
+    hsx_config: &crate::config::HsxConfig,
+) -> ComparisonResult {
+    use crate::ai::types::{AiConfig, ChatMessage};
+
+    let items: Vec<String> = query.items.clone();
+    let dimensions: Vec<String> = STANDARD_DIMENSIONS.iter().map(|s| s.to_string()).collect();
+    let ai_config = AiConfig::from_hsx_config(hsx_config);
+    let providers = ai_config.providers.clone();
+
+    let items_str = items
+        .iter()
+        .map(|i| capitalise(i))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let _dim_str = dimensions.join(", ");
+
+    // Truncate snippet text to fit in context
+    let context: String = snippet_text.chars().take(6000).collect();
+
+    let prompt = format!(
+        r#"Compare {items_str} using these search results as evidence.
+
+SEARCH RESULTS:
+{context}
+
+Fill in this comparison table. For each cell, write a concise 1-2 sentence factual assessment.
+Use your knowledge to supplement if the search results are insufficient.
+
+Respond in EXACTLY this format (one section per item, items separated by blank lines):
+
+{format_str}
+
+Rules:
+- Be specific: cite numbers, stats, percentages where possible
+- Keep each value to 1-2 sentences max
+- If genuinely unknown, write "Insufficient data"
+- Do NOT repeat the dimension name in the value"#,
+        format_str = items
+            .iter()
+            .map(|item| {
+                let cap = capitalise(item);
+                dimensions
+                    .iter()
+                    .map(|d| format!("[{cap}] {d}: ..."))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            })
+            .collect::<Vec<_>>()
+            .join("\n\n")
+    );
+
+    let messages = vec![
+        ChatMessage {
+            role: "system".into(),
+            content: "You are a technical comparison expert. Produce concise, factual comparisons."
+                .into(),
+        },
+        ChatMessage {
+            role: "user".into(),
+            content: prompt,
+        },
+    ];
+
+    let mut noop = |_: &str| {};
+    let ai_result = crate::ai::provider_client::chat_with_fallback(
+        &messages, None, &ai_config, &providers, false, &mut noop,
+    )
+    .await;
+
+    let mut cells = Vec::new();
+
+    match ai_result {
+        Ok(result) => {
+            for item in &items {
+                for dim in &dimensions {
+                    let value = parse_unified_response(&result.content, item, dim);
+                    cells.push(ComparisonCell {
+                        item: item.clone(),
+                        dimension: dim.clone(),
+                        value,
+                        sources: sources.to_vec(),
+                    });
+                }
+            }
+        }
+        Err(_) => {
+            // Fall back to heuristic — build per-item data from snippet_text
+            for item in &items {
+                for dim in &dimensions {
+                    let value = extract_dimension_value(snippet_text, dim, item);
+                    cells.push(ComparisonCell {
+                        item: item.clone(),
+                        dimension: dim.clone(),
+                        value,
+                        sources: sources.to_vec(),
+                    });
+                }
+            }
+        }
+    }
+
+    let markdown_table = render_markdown_table(&items, &dimensions, &cells);
+
+    ComparisonResult {
+        raw_query: query.raw_query.clone(),
+        items,
+        dimensions,
+        cells,
+        markdown_table,
+    }
+}
+
+/// Parse unified AI response for a specific [Item] Dimension: value.
+fn parse_unified_response(response: &str, item: &str, dimension: &str) -> String {
+    let item_cap = capitalise(item);
+    let prefix = format!("[{}] {}:", item_cap, dimension);
+    let prefix_lower = prefix.to_lowercase();
+
+    for line in response.lines() {
+        let line_trimmed = line.trim();
+        let line_lower = line_trimmed.to_lowercase();
+        if line_lower.starts_with(&prefix_lower) {
+            let value = line_trimmed[prefix.len()..].trim().to_string();
+            if !value.is_empty() {
+                return value;
+            }
+        }
+    }
+
+    // Fallback: try without the [Item] prefix (AI might use "Dimension:" format)
+    let dim_prefix = format!("{}:", dimension);
+    let dim_prefix_lower = dim_prefix.to_lowercase();
+    for line in response.lines() {
+        let line_lower = line.trim().to_lowercase();
+        if line_lower.starts_with(&dim_prefix_lower) {
+            let value = line.trim()[dim_prefix.len()..].trim().to_string();
+            if !value.is_empty() {
+                return value;
+            }
+        }
+    }
+
+    "Insufficient data".to_string()
+}
+
+/// Build a comparison using AI to extract dimension values (per-item calls).
 pub async fn build_comparison_ai(
     query: &ComparisonQuery,
     item_data: &[(String, String, Vec<String>)],
