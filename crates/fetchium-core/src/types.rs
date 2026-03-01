@@ -292,6 +292,10 @@ pub enum BackendId {
     Reddit,
     StackOverflow,
     YouTube,
+    Tavily,
+    Serper,
+    Exa,
+    Firecrawl,
     Custom(String),
 }
 
@@ -309,6 +313,10 @@ impl std::fmt::Display for BackendId {
             Self::Arxiv => write!(f, "arxiv"),
             Self::Github => write!(f, "github"),
             Self::Reddit => write!(f, "reddit"),
+            Self::Tavily => write!(f, "tavily"),
+            Self::Serper => write!(f, "serper"),
+            Self::Exa => write!(f, "exa"),
+            Self::Firecrawl => write!(f, "firecrawl"),
             Self::StackOverflow => write!(f, "stackoverflow"),
             Self::YouTube => write!(f, "youtube"),
             Self::Custom(name) => write!(f, "{name}"),

@@ -20,14 +20,18 @@ pub mod backend_selector;
 pub mod brave;
 pub mod dedup;
 pub mod duckduckgo;
+pub mod exa;
 pub mod fallback;
+pub mod firecrawl;
 pub mod github;
 pub mod hackernews;
 pub mod latency;
 pub mod orchestrator;
 pub mod reddit;
 pub mod searxng;
+pub mod serper;
 pub mod stackoverflow;
+pub mod tavily;
 pub mod wikipedia;
 
 pub use backend_selector::{AbsConfig, AdaptiveBackendSelector, BackendSelection};
