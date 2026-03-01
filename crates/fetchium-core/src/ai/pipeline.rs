@@ -83,13 +83,26 @@ pub async fn run_ai_pipeline(
                             _ => String::new(),
                         };
 
-                    let extracted = if html.is_empty() {
+                    // Skip binary content (images, PDFs, etc.) that slipped through
+                    let is_binary = html.len() > 4
+                        && (html.starts_with("\u{fffd}")
+                            || html.starts_with("JFIF")
+                            || html.starts_with("%PDF")
+                            || html
+                                .as_bytes()
+                                .iter()
+                                .take(512)
+                                .filter(|b| **b == 0)
+                                .count()
+                                > 5);
+
+                    let extracted = if html.is_empty() || is_binary {
                         None
                     } else {
                         let ext = extract(&html, &item.url);
                         let max_chars = budget * 4;
-                        let content = if ext.text.len() > max_chars {
-                            ext.text[..max_chars].to_string()
+                        let content = if ext.text.chars().count() > max_chars {
+                            ext.text.chars().take(max_chars).collect::<String>()
                         } else {
                             ext.text
                         };

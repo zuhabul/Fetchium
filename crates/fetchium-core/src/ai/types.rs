@@ -41,6 +41,10 @@ pub struct AiConfig {
     pub temperature: f32,
     /// Multi-provider configuration with fallback chain.
     pub providers: ProvidersConfig,
+    /// Enable "thinking" mode for models that support it (Gemini 2.5+).
+    /// When false (default), thinking is disabled for ~5x faster responses.
+    /// Use `--think` flag to enable deeper analysis at the cost of speed.
+    pub thinking: bool,
 }
 
 impl Default for AiConfig {
@@ -50,10 +54,11 @@ impl Default for AiConfig {
             ollama_port: 11434,
             default_model: None,
             fast_model: None,
-            timeout_secs: 120,
+            timeout_secs: 30,
             max_context_tokens: 4096,
             temperature: 0.3,
             providers: ProvidersConfig::default(),
+            thinking: false,
         }
     }
 }
