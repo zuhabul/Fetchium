@@ -16,7 +16,7 @@
 
 <br/>
 
-[![Tests](https://img.shields.io/badge/tests-904%20passing-brightgreen?style=flat-square&logo=rust)](https://github.com/zuhabul/Fetchium)
+[![Tests](https://img.shields.io/badge/tests-974%20passing-brightgreen?style=flat-square&logo=rust)](https://github.com/zuhabul/Fetchium)
 [![Rust](https://img.shields.io/badge/rust-1.75%2B-orange?style=flat-square&logo=rust)](https://rustup.rs)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue?style=flat-square)](LICENSE)
 [![Binary](https://img.shields.io/badge/binary-single%20static-purple?style=flat-square)](https://github.com/zuhabul/Fetchium/releases)
@@ -100,8 +100,14 @@ fetchium research "Impact of LLMs on software engineering jobs"
 fetchium summarize https://docs.rs/tokio/latest/tokio/
 fetchium summarize "long article text here..."
 
+# Compare anything — auto-generates AI-powered comparison tables
+fetchium compare "Rust vs Go vs Python"
+
 # Transcribe YouTube / any audio URL
 fetchium transcribe https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+# Agentic multi-step search with reasoning
+fetchium agent-search "latest developments in quantum computing"
 
 # Social media intelligence — platform commands
 fetchium x search "GPT-5 release"                # X (Twitter)
@@ -132,7 +138,7 @@ fetchium serve --mode mcp
 | Open source | Yes | No | No | No | Partial |
 | Self-hostable | Yes | No | No | No | Yes |
 | Rust-native binary | Yes | No | No | No | No |
-| Multi-backend federation | Yes (8+) | No | No | No | No |
+| Multi-backend federation | Yes (15+) | No | No | No | No |
 | Social media search | Yes | Partial | No | No | No |
 | AI answer with citations | Yes | Yes | Yes | Partial | No |
 | Deep research mode | Yes | Yes | Partial | No | No |
@@ -149,18 +155,22 @@ fetchium serve --mode mcp
 
 | Feature | Description |
 |---------|-------------|
-| **Multi-backend federation** | SearXNG + Brave + DuckDuckGo + Google + Bing + Reddit + HN + GitHub |
+| **Multi-backend federation** | SearXNG + Brave + DuckDuckGo + Google + Bing + Reddit + HN + GitHub + Tavily + Serper + Exa + Firecrawl |
 | **CEP — 5-layer extraction** | CSS selectors → Readability → Headless JS → PDF → Screenshot OCR |
 | **QATBE — token budgeting** | BM25-scored segment ranking + greedy knapsack within token limits |
 | **HyperFusion ranking** | 8-signal score: BM25 + semantic + temporal + authority + evidence + diversity + depth + consensus |
 | **Evidence graph** | Claim-level source attribution and cross-reference verification |
 | **AMRS — agent swarm** | 4 parallel agent types via tokio channels for deep research |
 | **PIE — intelligence engine** | Cross-session learning: source trust, failure patterns, query prediction |
-| **Social media intelligence** | Native Reddit, Twitter/X, HN, Facebook, TikTok with sentiment analysis |
+| **Social media intelligence** | Native Reddit, Twitter/X, HN, YouTube, Facebook, TikTok with sentiment analysis |
 | **QADD — DOM distillation** | 10-20x token reduction via 5-step DOM pruning |
 | **RAR — self-correction** | 5-checkpoint retry-and-refine loop for AI answers |
 | **PDS — progressive streaming** | 4 detail tiers: key_facts → summary → detailed → complete |
-| **Key pool rotation** | Round-robin + 429-fallback across multiple Gemini / OpenAI keys |
+| **Key pool rotation** | Round-robin + 429-cooldown across multiple Gemini / OpenAI / premium API keys |
+| **Premium backend integration** | Tavily, Serper, Exa, Firecrawl — optional, auto-detected from env vars |
+| **YouTube-aware summarization** | Extracts transcript instead of HTML for YouTube URLs — far better summaries |
+| **Perspective-aware decomposition** | Generates parallel sub-queries for broader coverage (freshness + depth) |
+| **Unified AI comparison** | Single AI call fills entire comparison table with specific, sourced data |
 | **MCP protocol** | Native Model Context Protocol server for Claude, GPT, and any MCP client |
 | **Single static binary** | Zero runtime deps, ~5ms startup, cross-platform |
 
@@ -219,6 +229,29 @@ fetchium provider set anthropic --key sk-ant-...
 fetchium provider set ollama --url http://localhost:11434 --model llama3
 ```
 
+### Premium Search Backends (optional)
+
+```bash
+# Tavily — AI-optimized search
+export TAVILY_API_KEY=tvly-...
+
+# Serper — Google SERP API
+export SERPER_API_KEY=...
+
+# Exa — Neural search
+export EXA_API_KEY=...
+
+# Firecrawl — AI-ready web scraping
+export FIRECRAWL_API_KEY=...
+
+# Or configure in ~/.fetchium/config.toml:
+# [search]
+# tavily_api_key = "tvly-..."
+# serper_api_key = "..."
+# exa_api_key = "..."
+# firecrawl_api_key = "..."
+```
+
 ### Check configured providers
 
 ```bash
@@ -231,18 +264,27 @@ fetchium provider list
 
 Fetchium federates across these backends and merges results with HyperFusion ranking:
 
-| Backend | Type | Notes |
-|---------|------|-------|
-| SearXNG (self-hosted) | Meta-search | Covers Google, Bing, DDG and 70+ engines. Preferred Tier 0 |
-| Brave Search | Web | Privacy-respecting, good freshness |
-| DuckDuckGo | Web | No API key required |
-| Google | Web | Via scraping (rate-limited) |
-| Bing | Web | Via scraping (rate-limited) |
-| Reddit | Social | Native API — threads, comments, scores |
-| Hacker News | Social | Algolia search API |
-| GitHub | Code | REST API — repos, issues, code search |
+| Backend | Type | API Key | Notes |
+|---------|------|---------|-------|
+| SearXNG (self-hosted) | Meta-search | No | Covers Google, Bing, DDG and 70+ engines. Preferred Tier 0 |
+| Brave Search | Web | No | Privacy-respecting, good freshness |
+| DuckDuckGo | Web | No | Always available, zero config |
+| Google | Web | No | Via scraping (rate-limited) |
+| Bing | Web | No | Via scraping (rate-limited) |
+| Wikipedia | Knowledge | No | Factual queries, always reliable |
+| Reddit | Social | No | Native API — threads, comments, scores |
+| Hacker News | Social | No | Algolia search API |
+| GitHub | Code | No | REST API — repos, issues, code search |
+| ArXiv | Academic | No | Academic papers, scientific research |
+| Google Scholar | Academic | No | Scholarly articles and citations |
+| **Tavily** | Premium | Yes | AI-optimized search with pre-scored results |
+| **Serper** | Premium | Yes | Google SERP API with structured data |
+| **Exa** | Premium | Yes | Neural search with semantic understanding |
+| **Firecrawl** | Premium | Yes | Web scraping with AI-ready extraction |
 
-Backend selection is automatic via ABS (Adaptive Backend Selector) based on query intent. Code queries route to GitHub; social queries route to Reddit/HN; general queries use SearXNG first.
+Backend selection is automatic via **ABS (Adaptive Backend Selector)** — a UCB1 multi-armed bandit that routes queries to optimal backends based on query intent, historical success rates, and backend health. Academic queries prefer ArXiv + Scholar; code queries prefer GitHub + StackOverflow; SearXNG is always included as a meta-search aggregator.
+
+**Premium backends are optional** — Fetchium works great standalone with 11 free backends. Premium backends add extra coverage when API keys are configured.
 
 ---
 
@@ -298,9 +340,10 @@ Core Commands:
   ai            AI-powered answer with source citations
   research      Deep multi-step research report with citations
   deep          Deep multi-agent research swarm (AMRS)
-  compare       Side-by-side comparison ("Rust vs Go")
-  summarize     AI-powered summarization of any URL or text
+  compare       Side-by-side comparison ("Rust vs Go") — auto-uses AI when configured
+  summarize     AI-powered summarization of any URL or text (YouTube-aware)
   transcribe    Transcribe audio/video from any URL
+  agent-search  Agentic multi-step search with reasoning
 
 Platform Commands:
   x / twitter   X (Twitter) intelligence — search, trends, sentiment, monitor
@@ -363,6 +406,7 @@ fetchium ai "query" --no-stream                  # wait for full response
 fetchium research "Impact of LLMs on software engineering"
 fetchium research "query" --max-sources 15       # fetch more sources
 fetchium research "query" --no-ai                # heuristic listing (no AI)
+fetchium research "query" --thinking             # enable thinking/reasoning mode
 fetchium research "query" -o report.md           # save to file
 ```
 
@@ -376,9 +420,19 @@ fetchium deep "query" --timeout 60               # 60-second timeout
 #### `fetchium compare`
 
 ```bash
-fetchium compare "Rust vs Go"
-fetchium compare "React vs Vue vs Svelte"
-fetchium compare "query" --ai                    # AI-powered comparison table
+fetchium compare "Rust vs Go"                    # auto-uses AI when provider configured
+fetchium compare "React vs Vue vs Svelte"        # multi-item comparison
+fetchium compare "Python vs JavaScript vs Go"    # context-aware search per item
+fetchium compare "query" --ai                    # explicitly request AI comparison
+fetchium compare "query" -f json                 # JSON output
+```
+
+#### `fetchium agent-search`
+
+```bash
+fetchium agent-search "latest Rust async frameworks comparison"
+fetchium agent-search "query" --max-steps 5      # limit reasoning steps
+fetchium agent-search "query" --model flash3     # use specific model
 ```
 
 #### `fetchium summarize`
@@ -388,6 +442,7 @@ fetchium summarize https://docs.rs/tokio/latest/tokio/
 fetchium summarize "long text to summarize here..."
 fetchium summarize <URL> --length short          # ~100 words
 fetchium summarize <URL> --length long           # ~700 words
+fetchium summarize https://youtube.com/watch?v=...  # YouTube-aware (uses transcript)
 ```
 
 #### `fetchium transcribe`
@@ -656,9 +711,15 @@ FETCHIUM_SEARXNG_URL=http://localhost:4040
 FETCHIUM_AI_PROVIDER=gemini
 FETCHIUM_ADMIN_SECRET=my-secret
 GEMINI_API_KEY=AIza...
-GEMINI_API_KEYS=AIza...,AIza...,AIza...   # comma-separated pool
+GEMINI_API_KEYS=AIza...,AIza...,AIza...   # comma-separated pool (round-robin + 429 cooldown)
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
+
+# Premium search backends (optional — enhances results when available)
+TAVILY_API_KEY=tvly-...
+SERPER_API_KEY=...
+EXA_API_KEY=...
+FIRECRAWL_API_KEY=...
 ```
 
 ### First-time setup
