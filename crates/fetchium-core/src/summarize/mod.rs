@@ -91,15 +91,45 @@ pub async fn summarize(
     let is_url = input.starts_with("http://") || input.starts_with("https://");
 
     let (content, source_url, source_title) = if is_url {
-        let http = HttpClient::new(hsx_config)?;
-        let html = http.fetch_text(input).await?;
-        let extracted = crate::extract::pipeline::extract(&html, input);
-        let title = if extracted.title.is_empty() {
-            None
+        // YouTube URLs: extract transcript instead of HTML for much better summaries
+        let is_youtube = input.contains("youtube.com/watch")
+            || input.contains("youtu.be/")
+            || input.contains("youtube.com/shorts/");
+
+        if is_youtube {
+            let http = HttpClient::new(hsx_config)?;
+            match crate::youtube::universal::fetch_universal_transcript(input, &http, hsx_config)
+                .await
+            {
+                Ok(transcript) => {
+                    let video_id = transcript.video_id.clone();
+                    let text = transcript.full_text.clone();
+                    let title = format!("YouTube Video ({})", video_id);
+                    (text, Some(input.to_string()), Some(title))
+                }
+                Err(_) => {
+                    // Fall back to regular HTML fetch if transcript unavailable
+                    let html = http.fetch_text(input).await?;
+                    let extracted = crate::extract::pipeline::extract(&html, input);
+                    let title = if extracted.title.is_empty() {
+                        None
+                    } else {
+                        Some(extracted.title)
+                    };
+                    (extracted.text, Some(input.to_string()), title)
+                }
+            }
         } else {
-            Some(extracted.title)
-        };
-        (extracted.text, Some(input.to_string()), title)
+            let http = HttpClient::new(hsx_config)?;
+            let html = http.fetch_text(input).await?;
+            let extracted = crate::extract::pipeline::extract(&html, input);
+            let title = if extracted.title.is_empty() {
+                None
+            } else {
+                Some(extracted.title)
+            };
+            (extracted.text, Some(input.to_string()), title)
+        }
     } else {
         (input.to_string(), None, None)
     };
