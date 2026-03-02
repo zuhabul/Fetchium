@@ -259,7 +259,7 @@ pub async fn get_usage(
 
 /// `GET /health` — service liveness + dependency readiness.
 ///
-/// Returns 200 if fully operational, 503 if any critical dependency is down.
+/// Returns 200 for healthy/degraded states, 503 only when a critical dependency fails.
 pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
     let searxng_url = state
         .config
@@ -268,10 +268,18 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
         .as_deref()
         .unwrap_or("http://localhost:4040");
     let health_url = format!("{}/healthz", searxng_url.trim_end_matches('/'));
-    let searxng_ok = state.http.fetch_text(&health_url).await.is_ok();
+    let search_backbone_ok = state.http.fetch_text(&health_url).await.is_ok();
+    let auth_store_ok =
+        tokio::task::block_in_place(|| state.auth_db.list_keys().map(|_| ())).is_ok();
 
-    let status = if searxng_ok { "ok" } else { "degraded" };
-    let http_status = if searxng_ok {
+    let status = if auth_store_ok && search_backbone_ok {
+        "ok"
+    } else if auth_store_ok {
+        "degraded"
+    } else {
+        "unavailable"
+    };
+    let http_status = if auth_store_ok {
         StatusCode::OK
     } else {
         StatusCode::SERVICE_UNAVAILABLE
@@ -282,7 +290,11 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
         Json(serde_json::json!({
             "status": status,
             "version": env!("CARGO_PKG_VERSION"),
-            "searxng": if searxng_ok { "ok" } else { "degraded" },
+            "checks": {
+                "api": "ok",
+                "search_backbone": if search_backbone_ok { "ok" } else { "degraded" },
+                "auth_store": if auth_store_ok { "ok" } else { "error" }
+            },
             "timestamp": chrono::Utc::now().to_rfc3339(),
         })),
     )

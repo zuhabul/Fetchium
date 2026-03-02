@@ -10,107 +10,107 @@ export default function YoutubeApiReference() {
       <div className="text-xs text-slate-500 mb-2 font-mono">API Reference</div>
       <h1>YouTube API</h1>
       <p>
-        Search YouTube videos, extract transcripts, and analyze video content — all without a YouTube
-        API key. The YouTube endpoint uses the same HyperFusion ranking and QATBE token-budgeted
-        extraction as the main search API.
+        YouTube endpoints return pipeline output for search and deep single-video analysis.
       </p>
 
-      <div className="flex items-center gap-3 my-4 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] font-mono text-sm not-prose">
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-semibold border bg-indigo-500/15 text-indigo-300 border-indigo-500/30">POST</span>
-        <span className="text-slate-300">/v1/youtube/search</span>
-      </div>
-
-      <h2>Request parameters</h2>
+      <h2>Endpoints</h2>
       <table>
-        <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td><code>query</code></td><td>string</td><td>Yes</td><td>Search query. Max 500 characters.</td></tr>
-          <tr><td><code>max_results</code></td><td>integer</td><td>No</td><td>Videos to return. Range: 1–20. Default: 5.</td></tr>
-          <tr><td><code>tier</code></td><td>string</td><td>No</td><td>Detail level for transcript extraction. Default: <code>summary</code>.</td></tr>
-          <tr><td><code>include_transcript</code></td><td>boolean</td><td>No</td><td>Extract and include video transcripts. Default: true.</td></tr>
-          <tr><td><code>language</code></td><td>string</td><td>No</td><td>Preferred transcript language (BCP-47). Default: <code>en</code>.</td></tr>
-          <tr><td><code>min_duration</code></td><td>integer</td><td>No</td><td>Minimum video duration in seconds.</td></tr>
-          <tr><td><code>max_duration</code></td><td>integer</td><td>No</td><td>Maximum video duration in seconds.</td></tr>
-          <tr><td><code>freshness</code></td><td>string</td><td>No</td><td>Filter by upload date: <code>day</code>, <code>week</code>, <code>month</code>, <code>year</code>.</td></tr>
+          <tr><td><code>POST</code></td><td><code>/v1/youtube/search</code></td><td>Search/rank videos</td></tr>
+          <tr><td><code>POST</code></td><td><code>/v1/youtube/analyze</code></td><td>Analyze one video URL</td></tr>
         </tbody>
       </table>
 
-      <h2>Example request</h2>
+      <h2>/v1/youtube/search request</h2>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Required</th></tr></thead>
+        <tbody>
+          <tr><td><code>query</code></td><td>string</td><td>Yes</td></tr>
+          <tr><td><code>max_results</code></td><td>integer</td><td>No</td></tr>
+          <tr><td><code>fact_check</code></td><td>boolean</td><td>No</td></tr>
+        </tbody>
+      </table>
 
-      <CodeBlock language="bash" filename="youtube.sh" code={`curl -X POST https://api.fetchium.com/v1/youtube/search \\
+      <CodeBlock language="bash" filename="youtube-search.sh" code={`curl -X POST https://api.fetchium.com/v1/youtube/search \\
   -H "Authorization: Bearer fetchium_your_key" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "query": "rust async tokio tutorial",
-    "max_results": 5,
-    "tier": "summary",
-    "include_transcript": true
+    "query": "Java learning",
+    "max_results": 10,
+    "fact_check": false
   }'`} />
 
-      <h2>Response</h2>
+      <h2>/v1/youtube/analyze request</h2>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Required</th></tr></thead>
+        <tbody>
+          <tr><td><code>url</code></td><td>string</td><td>Yes</td></tr>
+          <tr><td><code>transcript</code></td><td>boolean</td><td>No</td></tr>
+          <tr><td><code>comments</code></td><td>boolean</td><td>No</td></tr>
+          <tr><td><code>teaching</code></td><td>boolean</td><td>No</td></tr>
+        </tbody>
+      </table>
 
-      <CodeBlock language="json" filename="response.json" code={`{
-  "meta": {
-    "query": "rust async tokio tutorial",
-    "results_count": 5,
-    "tokens_used": 2840,
-    "duration_ms": 3120
-  },
-  "results": [
+      <CodeBlock language="bash" filename="youtube-analyze.sh" code={`curl -X POST https://api.fetchium.com/v1/youtube/analyze \\
+  -H "Authorization: Bearer fetchium_your_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "transcript": true,
+    "comments": true,
+    "teaching": false
+  }'`} />
+
+      <h2>Representative response shape</h2>
+      <CodeBlock language="json" filename="youtube-response.json" code={`{
+  "query": "Java learning",
+  "videos": [
     {
-      "video_id": "dQw4w9WgXcQ",
-      "title": "Tokio Tutorial: Async Rust in Practice",
-      "channel": "Let's Get Rusty",
-      "channel_id": "UCpeX4D-ArTrsqvhLapAHprQ",
-      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      "thumbnail": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
-      "duration_seconds": 2847,
-      "view_count": 234521,
-      "published_at": "2024-09-15T00:00:00Z",
-      "score": 0.912,
-      "transcript_snippet": "In this tutorial, we explore Tokio, the most popular async runtime for Rust. We cover the core concepts of async/await, the Tokio scheduler, and practical patterns for building concurrent applications..."
+      "metadata": {
+        "video_id": "abc123",
+        "title": "Java Tutorial for Beginners",
+        "channel": {
+          "name": "Example Channel",
+          "id": "UCxxxx",
+          "subscriber_count": 120000,
+          "verified": true
+        },
+        "duration_secs": 3600,
+        "view_count": 250000,
+        "like_count": 8400,
+        "published": "2025-01-08"
+      },
+      "credibility": {
+        "score": 0.78,
+        "tier": "established"
+      }
     }
-  ]
+  ],
+  "rankings": [
+    {
+      "video_id": "abc123",
+      "final_score": 0.87,
+      "educational_score": 0.74,
+      "clickbait_score": 0.18
+    }
+  ],
+  "duration_ms": 912
 }`} />
 
-      <h3>Response fields</h3>
-      <table>
-        <thead><tr><th>Field</th><th>Description</th></tr></thead>
-        <tbody>
-          <tr><td><code>video_id</code></td><td>YouTube video ID</td></tr>
-          <tr><td><code>duration_seconds</code></td><td>Video length in seconds</td></tr>
-          <tr><td><code>view_count</code></td><td>Current view count</td></tr>
-          <tr><td><code>score</code></td><td>HyperFusion relevance score (0–1)</td></tr>
-          <tr><td><code>transcript_snippet</code></td><td>QATBE-extracted transcript excerpt (null if no transcript)</td></tr>
-        </tbody>
-      </table>
-
-      <h2>Social research endpoint</h2>
-      <p>Cross-platform social media research across Reddit, Hacker News, and dev communities:</p>
-
-      <div className="flex items-center gap-3 my-4 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] font-mono text-sm not-prose">
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-semibold border bg-indigo-500/15 text-indigo-300 border-indigo-500/30">POST</span>
-        <span className="text-slate-300">/v1/social/research</span>
-      </div>
-
-      <CodeBlock language="bash" code={`curl -X POST https://api.fetchium.com/v1/social/research \\
-  -H "Authorization: Bearer fetchium_your_key" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "query": "best rust web framework 2025",
-    "platforms": ["reddit", "hackernews"],
-    "max_sources": 10,
-    "tier": "summary"
-  }'`} />
+      <p>
+        Response may include additional fields such as transcript, comments, timeline, learning
+        path, and fact checks depending on request and pipeline state.
+      </p>
 
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/api/search", title: "Search API", desc: "Web search across all backends" },
-          { href: "/docs/api/research", title: "Research API", desc: "Deep multi-source research" },
-          { href: "/docs/api/scrape", title: "Scrape API", desc: "Single-URL content extraction" },
-          { href: "/docs/api/usage", title: "Usage API", desc: "Monitor quota consumption" },
-        ].map(l => (
+          { href: "/docs/api/social", title: "Social API", desc: "Cross-platform social research" },
+          { href: "/docs/api/search", title: "Search API", desc: "Web search endpoint" },
+          { href: "/docs/sdk/mcp", title: "MCP Protocol", desc: "Tool integration" },
+          { href: "/docs/api/usage", title: "Usage API", desc: "Quota monitoring" },
+        ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>
             <div className="text-xs text-slate-500 mt-1">{l.desc}</div>

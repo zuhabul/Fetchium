@@ -1,0 +1,66 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import CodeBlock from "@/components/docs/CodeBlock";
+
+export const metadata: Metadata = { title: "Admin Keys API Reference" };
+
+export default function AdminKeysApiReference() {
+  return (
+    <article className="docs-content max-w-3xl">
+      <div className="text-xs text-slate-500 mb-2 font-mono">API Reference</div>
+      <h1>Admin Keys API</h1>
+      <p>
+        Admin-only endpoints for API key lifecycle management. These endpoints require
+        <code> X-Admin-Secret</code> header, not Bearer auth.
+      </p>
+
+      <h2>Endpoints</h2>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>POST</code></td><td><code>/v1/keys</code></td><td>Create API key</td></tr>
+          <tr><td><code>GET</code></td><td><code>/v1/keys</code></td><td>List active API keys (masked)</td></tr>
+          <tr><td><code>DELETE</code></td><td><code>/v1/keys/:id</code></td><td>Revoke API key</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Create key</h2>
+      <CodeBlock language="bash" code={`curl -X POST https://api.fetchium.com/v1/keys \\
+  -H "X-Admin-Secret: $FETCHIUM_ADMIN_SECRET" \\
+  -H "Content-Type: application/json" \\
+  -d '{"name":"prod-service","plan":"pro"}'`} />
+
+      <CodeBlock language="json" code={`{
+  "key": "fetchium_...",
+  "id": "a8f31bdb-0456-44b6-a405-d4ad7dfd2cf7",
+  "name": "prod-service",
+  "plan": "pro",
+  "created_at": "2026-03-02T19:20:40.424897+00:00",
+  "warning": "This key will not be shown again. Store it securely."
+}`} />
+
+      <h2>List keys</h2>
+      <CodeBlock language="bash" code={`curl https://api.fetchium.com/v1/keys \\
+  -H "X-Admin-Secret: $FETCHIUM_ADMIN_SECRET"`} />
+
+      <h2>Revoke key</h2>
+      <CodeBlock language="bash" code={`curl -X DELETE https://api.fetchium.com/v1/keys/a8f31bdb-0456-44b6-a405-d4ad7dfd2cf7 \\
+  -H "X-Admin-Secret: $FETCHIUM_ADMIN_SECRET"`} />
+
+      <h2>Next steps</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
+        {[
+          { href: "/docs/authentication", title: "Authentication", desc: "Bearer and admin auth model" },
+          { href: "/docs/api/usage", title: "Usage API", desc: "Per-key usage" },
+          { href: "/docs/api/health", title: "Health API", desc: "Liveness and checks" },
+          { href: "/docs/errors", title: "Error Reference", desc: "Admin/auth failures" },
+        ].map((l) => (
+          <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
+            <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>
+            <div className="text-xs text-slate-500 mt-1">{l.desc}</div>
+          </Link>
+        ))}
+      </div>
+    </article>
+  );
+}
