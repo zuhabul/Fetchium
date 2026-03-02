@@ -24,6 +24,9 @@ pub async fn run(args: TranscribeArgs, config: &HsxConfig) -> Result<()> {
         let yt_args = crate::cli::YtTranscriptArgs {
             url: args.url.clone(),
             chapters: args.chapters,
+            text: args.text,
+            chunks: args.chunks,
+            chunk_size: args.chunk_size,
         };
         spinner.finish_and_clear();
         let yt_wrapper = crate::cli::YouTubeArgs {

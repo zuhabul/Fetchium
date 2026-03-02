@@ -31,7 +31,7 @@ use crate::search::wikipedia::WikipediaBackend;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::telemetry::PipelineMetrics;
 use crate::types::{BackendId, ResultItem};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::oneshot;
@@ -630,8 +630,9 @@ impl SearchOrchestrator {
                     }
                 };
 
+                let backend_timeout = backend_timeout_for(&id, timeout_dur);
                 let results = match timeout(
-                    timeout_dur,
+                    backend_timeout,
                     backend.search_with_context(&q, per_backend, &ctx),
                 )
                 .await
@@ -648,7 +649,7 @@ impl SearchOrchestrator {
                     }
                     Err(_) => {
                         cb.record_failure(&id_str);
-                        warn!("Backend {:?} timed out after {timeout_dur:?}", id);
+                        warn!("Backend {:?} timed out after {backend_timeout:?}", id);
                         Vec::new()
                     }
                 };
@@ -713,22 +714,35 @@ impl SearchOrchestrator {
         //     title+snippet. Prevents high-authority domains gaming BM25 on stopwords
         //     (e.g. arxiv.org "best practices" paper ranking for "best Rust async runtimes").
         let query_content_words = extract_content_words(query);
+        let ranked_before_filter = ranked.clone();
         let pre_filter_count = ranked.len();
+        let multilingual_query = has_non_ascii_letters(query);
+        let strict_min_term_matches = if multilingual_query {
+            0
+        } else if query_content_words.len() >= 5 {
+            2
+        } else {
+            1
+        };
+        let relaxed_min_term_matches = strict_min_term_matches.min(1);
         ranked.retain(|r| {
             // (a) score threshold
             if r.score.unwrap_or(0.0) < 0.10 {
                 return false;
             }
             // (b) title-term check — only apply when we have meaningful query words
-            if !query_content_words.is_empty() {
+            if strict_min_term_matches > 0 && !query_content_words.is_empty() {
                 let haystack = format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
-                let has_match = query_content_words
+                let matches = query_content_words
                     .iter()
-                    .any(|w| haystack.contains(w.as_str()));
-                if !has_match {
+                    .filter(|w| haystack.contains(w.as_str()))
+                    .count();
+                if matches < strict_min_term_matches {
                     tracing::debug!(
-                        "Filtered title-mismatch: {:?} (none of {:?} in title/snippet)",
+                        "Filtered title-mismatch: {:?} (matches={}, need {}, words={:?})",
                         r.title,
+                        matches,
+                        strict_min_term_matches,
                         &query_content_words[..query_content_words.len().min(3)]
                     );
                     return false;
@@ -742,21 +756,59 @@ impl SearchOrchestrator {
                 pre_filter_count - ranked.len()
             );
         }
+        if ranked.len() < 5 && pre_filter_count >= 5 {
+            tracing::debug!(
+                "Relevance filter was too strict ({} -> {}) — relaxing thresholds",
+                pre_filter_count,
+                ranked.len()
+            );
+            ranked = ranked_before_filter.clone();
+            ranked.retain(|r| {
+                if r.score.unwrap_or(0.0) < 0.02 {
+                    return false;
+                }
+                if relaxed_min_term_matches == 0 || query_content_words.is_empty() {
+                    return true;
+                }
+                let haystack = format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
+                query_content_words
+                    .iter()
+                    .filter(|w| haystack.contains(w.as_str()))
+                    .count()
+                    >= relaxed_min_term_matches
+            });
+        }
+        if ranked.len() < 3 && pre_filter_count >= 3 {
+            tracing::debug!(
+                "Relevance filtering left too few results ({}). Backfilling from pre-filter set.",
+                ranked.len()
+            );
+            let mut backfill = ranked_before_filter
+                .iter()
+                .filter(|r| r.score.unwrap_or(0.0) >= 0.02)
+                .cloned()
+                .collect::<Vec<_>>();
+            backfill.truncate(3);
+            if backfill.len() > ranked.len() {
+                ranked = backfill;
+            }
+        }
 
         // Step 5b: For temporal queries, enforce recency and cap static-content sources.
         if intent == rank::fusion::QueryIntent::CurrentEvents {
             // Extract the year from the query (e.g., "2025" from "breakthroughs 2025")
             let query_year = extract_query_year(query);
+            let cap_static_sources = should_cap_static_sources(multilingual_query, &ranked);
 
             let mut wiki_count = 0u32;
             let mut arxiv_count = 0u32;
             ranked.retain(|r| {
                 // Cap Wikipedia and ArXiv to max 1 each
-                if r.url.contains("wikipedia.org") {
+                if cap_static_sources && r.url.contains("wikipedia.org") {
                     wiki_count += 1;
                     return wiki_count <= 1;
                 }
-                if r.url.contains("arxiv.org") {
+                if cap_static_sources && r.url.contains("arxiv.org") {
                     arxiv_count += 1;
                     return arxiv_count <= 1;
                 }
@@ -772,6 +824,23 @@ impl SearchOrchestrator {
                 }
                 true
             });
+        }
+
+        // Step 5c: If filtering/caps left fewer than requested results, backfill from
+        // the pre-filter ranked pool without extra network calls.
+        if ranked.len() < max as usize {
+            let mut seen: HashSet<String> = ranked.iter().map(|r| r.url.clone()).collect();
+            for candidate in &ranked_before_filter {
+                if ranked.len() >= max as usize {
+                    break;
+                }
+                if candidate.score.unwrap_or(0.0) < 0.02 {
+                    continue;
+                }
+                if seen.insert(candidate.url.clone()) {
+                    ranked.push(candidate.clone());
+                }
+            }
         }
 
         // Step 6: Take top N
@@ -851,7 +920,38 @@ fn extract_content_words(query: &str) -> Vec<String> {
                 .to_lowercase()
         })
         .filter(|w| w.len() >= 3 && !STOPWORDS.contains(&w.as_str()))
+        .filter(|w| !w.chars().all(|c| c.is_ascii_digit()))
         .collect()
+}
+
+/// True when query contains non-ASCII alphabetic characters (e.g. CJK, accented scripts).
+///
+/// Used to avoid over-applying ASCII word-match filters to multilingual queries.
+fn has_non_ascii_letters(query: &str) -> bool {
+    query.chars().any(|c| c.is_alphabetic() && !c.is_ascii())
+}
+
+/// Whether to cap static-content domains (Wikipedia/ArXiv) for temporal queries.
+///
+/// Disable caps for multilingual queries or when there are no non-static alternatives,
+/// to preserve recall on sparse or cross-lingual retrieval.
+fn should_cap_static_sources(multilingual_query: bool, ranked: &[ResultItem]) -> bool {
+    if multilingual_query {
+        return false;
+    }
+    ranked
+        .iter()
+        .any(|r| !r.url.contains("wikipedia.org") && !r.url.contains("arxiv.org"))
+}
+
+/// Per-backend timeout cap to avoid long tail latency from flaky scrapers.
+fn backend_timeout_for(id: &BackendId, default_timeout: Duration) -> Duration {
+    let cap = match id {
+        BackendId::DuckDuckGo | BackendId::Google | BackendId::Bing => Duration::from_secs(7),
+        BackendId::Searxng => Duration::from_secs(3),
+        _ => default_timeout,
+    };
+    default_timeout.min(cap)
 }
 
 #[cfg(test)]
@@ -864,7 +964,7 @@ mod tests {
         assert!(words.contains(&"rust".to_string()));
         assert!(words.contains(&"async".to_string()));
         assert!(words.contains(&"runtimes".to_string()));
-        assert!(words.contains(&"2025".to_string()));
+        assert!(!words.contains(&"2025".to_string()));
         assert!(!words.contains(&"best".to_string())); // stopword
     }
 
@@ -873,6 +973,79 @@ mod tests {
         let words = extract_content_words("is it a good idea");
         // "is", "it", "a", "good" are stopwords or <3 chars
         assert!(words.is_empty() || !words.contains(&"is".to_string()));
+    }
+
+    #[test]
+    fn has_non_ascii_letters_detects_multilingual_queries() {
+        assert!(has_non_ascii_letters("最新の生成aiニュース 2026"));
+        assert!(has_non_ascii_letters(
+            "quelles sont les avancees en ia générative"
+        ));
+        assert!(!has_non_ascii_letters("latest ai news 2026"));
+    }
+
+    #[test]
+    fn should_cap_static_sources_disabled_for_multilingual() {
+        let ranked = vec![ResultItem {
+            title: "x".into(),
+            url: "https://arxiv.org/abs/1234.5678".into(),
+            snippet: "".into(),
+            rank: 1,
+            backend: BackendId::Arxiv,
+            score: Some(0.5),
+            published_date: None,
+        }];
+        assert!(!should_cap_static_sources(true, &ranked));
+    }
+
+    #[test]
+    fn should_cap_static_sources_disabled_without_alternatives() {
+        let ranked = vec![
+            ResultItem {
+                title: "x".into(),
+                url: "https://arxiv.org/abs/1234.5678".into(),
+                snippet: "".into(),
+                rank: 1,
+                backend: BackendId::Arxiv,
+                score: Some(0.5),
+                published_date: None,
+            },
+            ResultItem {
+                title: "y".into(),
+                url: "https://en.wikipedia.org/wiki/Test".into(),
+                snippet: "".into(),
+                rank: 2,
+                backend: BackendId::Wikipedia,
+                score: Some(0.4),
+                published_date: None,
+            },
+        ];
+        assert!(!should_cap_static_sources(false, &ranked));
+    }
+
+    #[test]
+    fn should_cap_static_sources_enabled_with_non_static_mix() {
+        let ranked = vec![
+            ResultItem {
+                title: "x".into(),
+                url: "https://arxiv.org/abs/1234.5678".into(),
+                snippet: "".into(),
+                rank: 1,
+                backend: BackendId::Arxiv,
+                score: Some(0.5),
+                published_date: None,
+            },
+            ResultItem {
+                title: "z".into(),
+                url: "https://example.com/news".into(),
+                snippet: "".into(),
+                rank: 2,
+                backend: BackendId::Searxng,
+                score: Some(0.6),
+                published_date: None,
+            },
+        ];
+        assert!(should_cap_static_sources(false, &ranked));
     }
 
     #[test]
@@ -925,5 +1098,22 @@ mod tests {
         assert!(cfg.enabled_backends.contains(&BackendId::Reddit));
         assert!(cfg.enabled_backends.contains(&BackendId::StackOverflow));
         assert!(cfg.enabled_backends.contains(&BackendId::Arxiv));
+    }
+
+    #[test]
+    fn backend_timeout_caps_slow_scrapers() {
+        let default = Duration::from_secs(30);
+        assert_eq!(
+            backend_timeout_for(&BackendId::DuckDuckGo, default),
+            Duration::from_secs(7)
+        );
+        assert_eq!(
+            backend_timeout_for(&BackendId::Searxng, default),
+            Duration::from_secs(3)
+        );
+        assert_eq!(
+            backend_timeout_for(&BackendId::Wikipedia, default),
+            Duration::from_secs(30)
+        );
     }
 }

@@ -1,12 +1,14 @@
 //! YouTube Intelligence System CLI command handler.
 
 use crate::cli::Format;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use colored::Colorize;
 use fetchium_core::config::HsxConfig;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::youtube::pipeline;
-use fetchium_core::youtube::types::YouTubePipelineConfig;
+use fetchium_core::youtube::types::{TranscriptEntry, YouTubePipelineConfig};
+use serde::Serialize;
+use std::time::Duration;
 
 /// Run the YouTube subcommand.
 pub async fn run(args: crate::cli::YouTubeArgs, config: &HsxConfig, format: Format) -> Result<()> {
@@ -15,6 +17,15 @@ pub async fn run(args: crate::cli::YouTubeArgs, config: &HsxConfig, format: Form
     match args.action {
         crate::cli::YouTubeAction::Search(search_args) => {
             run_search(&search_args, config, &http, format).await
+        }
+        crate::cli::YouTubeAction::Video(video_args) => {
+            run_video(&video_args, config, &http, format).await
+        }
+        crate::cli::YouTubeAction::Channel(channel_args) => {
+            run_channel(&channel_args, format).await
+        }
+        crate::cli::YouTubeAction::Playlist(playlist_args) => {
+            run_playlist(&playlist_args, format).await
         }
         crate::cli::YouTubeAction::Analyze(analyze_args) => {
             run_analyze(&analyze_args, config, &http, format).await
@@ -62,6 +73,106 @@ async fn run_search(
         println!("{}", pipeline::format_result_markdown(&result));
     }
 
+    Ok(())
+}
+
+async fn run_video(
+    args: &crate::cli::YtVideoArgs,
+    config: &HsxConfig,
+    http: &HttpClient,
+    format: Format,
+) -> Result<()> {
+    let video_id = if args.input.starts_with("http://") || args.input.starts_with("https://") {
+        fetchium_core::multimodal::video::extract_video_id(&args.input)
+            .with_context(|| format!("Invalid YouTube URL: {}", args.input))?
+    } else {
+        args.input.clone()
+    };
+    let meta = fetchium_core::youtube::metadata::fetch_metadata(&video_id, http, config).await?;
+
+    if format == Format::Json {
+        println!("{}", serde_json::to_string_pretty(&meta)?);
+    } else {
+        println!("{}", "YouTube Video Metadata".bold());
+        println!("ID: {}", meta.video_id);
+        println!("Title: {}", meta.title);
+        println!("Channel: {}", meta.channel.name);
+        println!("Views: {}", meta.view_count);
+        println!("Likes: {}", meta.like_count);
+        println!("Published: {}", meta.published);
+        println!("Duration: {}s", meta.duration_secs);
+    }
+    Ok(())
+}
+
+#[derive(Debug, Serialize)]
+struct ChannelResult {
+    id: Option<String>,
+    name: String,
+    handle: Option<String>,
+    description: Option<String>,
+    follower_count: Option<u64>,
+    videos: Vec<String>,
+}
+
+async fn run_channel(args: &crate::cli::YtChannelArgs, format: Format) -> Result<()> {
+    let url = normalize_channel_input_to_url(&args.input);
+    let mut meta = fetch_channel_metadata_ytdlp(&url).await?;
+    if args.videos {
+        meta.videos = fetch_flat_video_ids(&format!("{url}/videos"), args.max_results).await?;
+    }
+
+    if format == Format::Json {
+        println!("{}", serde_json::to_string_pretty(&meta)?);
+    } else {
+        println!("{}", "YouTube Channel".bold());
+        println!("Name: {}", meta.name);
+        if let Some(id) = &meta.id {
+            println!("ID: {id}");
+        }
+        if let Some(handle) = &meta.handle {
+            println!("Handle: {handle}");
+        }
+        if let Some(subs) = meta.follower_count {
+            println!("Subscribers: {subs}");
+        }
+        if let Some(desc) = &meta.description {
+            println!("Description: {}", truncate_str(desc, 240));
+        }
+        if args.videos {
+            println!("\nVideo IDs ({}):", meta.videos.len());
+            for vid in &meta.videos {
+                println!("  - {vid}");
+            }
+        }
+    }
+    Ok(())
+}
+
+#[derive(Debug, Serialize)]
+struct PlaylistResult {
+    id: Option<String>,
+    video_ids: Vec<String>,
+}
+
+async fn run_playlist(args: &crate::cli::YtPlaylistArgs, format: Format) -> Result<()> {
+    let url = normalize_playlist_input_to_url(&args.input);
+    let out = PlaylistResult {
+        id: extract_playlist_id(&args.input),
+        video_ids: fetch_flat_video_ids(&url, args.max_results).await?,
+    };
+    if format == Format::Json {
+        println!("{}", serde_json::to_string_pretty(&out)?);
+    } else {
+        println!("{}", "YouTube Playlist".bold());
+        if let Some(id) = &out.id {
+            println!("ID: {id}");
+        }
+        println!("Video IDs ({}):", out.video_ids.len());
+        for vid in &out.video_ids {
+            println!("  - {vid}");
+        }
+    }
     Ok(())
 }
 
@@ -113,8 +224,40 @@ async fn run_transcript(
     spinner.finish_and_clear();
 
     if format == Format::Json {
-        println!("{}", serde_json::to_string_pretty(&transcript)?);
+        if args.chunks {
+            let chunks = chunk_transcript(&transcript.entries, args.chunk_size);
+            let out = serde_json::json!({
+                "language": transcript.language,
+                "source": transcript.source,
+                "quality_score": transcript.quality_score,
+                "word_count": transcript.word_count,
+                "text": transcript.full_text,
+                "chunks": chunks,
+            });
+            println!("{}", serde_json::to_string_pretty(&out)?);
+        } else if args.text {
+            println!("{}", transcript.full_text);
+        } else {
+            println!("{}", serde_json::to_string_pretty(&transcript)?);
+        }
     } else {
+        if args.text {
+            println!("{}", transcript.full_text);
+            return Ok(());
+        }
+        if args.chunks {
+            println!("{}", format!("{platform} Transcript Chunks").bold());
+            for c in chunk_transcript(&transcript.entries, args.chunk_size) {
+                println!(
+                    "\n[{} - {}]\n{}",
+                    format_timestamp(c.start_ms),
+                    format_timestamp(c.end_ms),
+                    c.text
+                );
+            }
+            return Ok(());
+        }
+
         // Quality indicator: ★★★ = excellent, ★★☆ = fair, ★☆☆ = poor
         let quality_stars = match (transcript.quality_score * 10.0) as u32 {
             8..=10 => "★★★ Excellent",
@@ -356,4 +499,168 @@ fn truncate_str(s: &str, max: usize) -> String {
     } else {
         format!("{}...", &s[..max.saturating_sub(3)])
     }
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct TranscriptChunk {
+    start_ms: u32,
+    end_ms: u32,
+    text: String,
+}
+
+fn chunk_transcript(entries: &[TranscriptEntry], chunk_size: usize) -> Vec<TranscriptChunk> {
+    if entries.is_empty() {
+        return Vec::new();
+    }
+    let target = chunk_size.max(120);
+    let mut out = Vec::new();
+    let mut buf = String::new();
+    let mut start_ms = entries[0].start_ms;
+    let mut end_ms = entries[0].start_ms + entries[0].duration_ms;
+
+    for e in entries {
+        let next = if buf.is_empty() {
+            e.text.clone()
+        } else {
+            format!("{buf} {}", e.text)
+        };
+        let seg_end = e.start_ms + e.duration_ms;
+        if !buf.is_empty() && next.chars().count() > target {
+            out.push(TranscriptChunk {
+                start_ms,
+                end_ms,
+                text: buf.trim().to_string(),
+            });
+            buf = e.text.clone();
+            start_ms = e.start_ms;
+        } else {
+            buf = next;
+        }
+        end_ms = seg_end;
+    }
+    if !buf.trim().is_empty() {
+        out.push(TranscriptChunk {
+            start_ms,
+            end_ms,
+            text: buf.trim().to_string(),
+        });
+    }
+    out
+}
+
+fn normalize_channel_input_to_url(input: &str) -> String {
+    if input.starts_with("http://") || input.starts_with("https://") {
+        return input.to_string();
+    }
+    if input.starts_with('@') {
+        return format!("https://www.youtube.com/{input}");
+    }
+    if input.starts_with("UC") {
+        return format!("https://www.youtube.com/channel/{input}");
+    }
+    format!("https://www.youtube.com/@{input}")
+}
+
+fn normalize_playlist_input_to_url(input: &str) -> String {
+    if input.starts_with("http://") || input.starts_with("https://") {
+        return input.to_string();
+    }
+    format!("https://www.youtube.com/playlist?list={input}")
+}
+
+fn extract_playlist_id(input: &str) -> Option<String> {
+    if input.starts_with("http://") || input.starts_with("https://") {
+        if let Ok(u) = url::Url::parse(input) {
+            return u
+                .query_pairs()
+                .find_map(|(k, v)| (k == "list").then(|| v.to_string()));
+        }
+        None
+    } else {
+        Some(input.to_string())
+    }
+}
+
+async fn fetch_channel_metadata_ytdlp(url: &str) -> Result<ChannelResult> {
+    let output = tokio::time::timeout(
+        Duration::from_secs(20),
+        tokio::process::Command::new("yt-dlp")
+            .args([
+                "--dump-single-json",
+                "--flat-playlist",
+                "--no-warnings",
+                "--quiet",
+                url,
+            ])
+            .output(),
+    )
+    .await
+    .context("yt-dlp channel metadata timed out")?
+    .map_err(|e| {
+        if e.kind() == std::io::ErrorKind::NotFound {
+            anyhow::anyhow!("yt-dlp not found. Install with: pip install yt-dlp")
+        } else {
+            anyhow::anyhow!("failed to execute yt-dlp for channel metadata: {e}")
+        }
+    })?;
+
+    if !output.status.success() {
+        let err = String::from_utf8_lossy(&output.stderr);
+        anyhow::bail!("yt-dlp channel metadata failed: {err}");
+    }
+    let v: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+    Ok(ChannelResult {
+        id: v["channel_id"].as_str().map(|s| s.to_string()),
+        name: v["channel"]
+            .as_str()
+            .or_else(|| v["uploader"].as_str())
+            .unwrap_or("")
+            .to_string(),
+        handle: v["uploader_id"].as_str().map(|s| s.to_string()),
+        description: v["description"].as_str().map(|s| s.to_string()),
+        follower_count: v["channel_follower_count"].as_u64(),
+        videos: Vec::new(),
+    })
+}
+
+async fn fetch_flat_video_ids(url: &str, max_results: usize) -> Result<Vec<String>> {
+    let output = tokio::time::timeout(
+        Duration::from_secs(25),
+        tokio::process::Command::new("yt-dlp")
+            .args([
+                "--flat-playlist",
+                "--dump-single-json",
+                "--playlist-end",
+                &max_results.to_string(),
+                "--no-warnings",
+                "--quiet",
+                url,
+            ])
+            .output(),
+    )
+    .await
+    .context("yt-dlp flat playlist timed out")?
+    .map_err(|e| {
+        if e.kind() == std::io::ErrorKind::NotFound {
+            anyhow::anyhow!("yt-dlp not found. Install with: pip install yt-dlp")
+        } else {
+            anyhow::anyhow!("failed to execute yt-dlp for playlist/channel videos: {e}")
+        }
+    })?;
+
+    if !output.status.success() {
+        let err = String::from_utf8_lossy(&output.stderr);
+        anyhow::bail!("yt-dlp flat playlist failed: {err}");
+    }
+
+    let v: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+    let mut ids = Vec::new();
+    if let Some(entries) = v["entries"].as_array() {
+        for e in entries.iter().take(max_results) {
+            if let Some(id) = e["id"].as_str() {
+                ids.push(id.to_string());
+            }
+        }
+    }
+    Ok(ids)
 }

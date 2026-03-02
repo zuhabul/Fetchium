@@ -12,6 +12,7 @@ use anyhow::Context;
 use colored::Colorize;
 use fetchium_core::ai::prompt::multi_perspective_synthesis_prompt;
 use fetchium_core::ai::provider_client::chat_with_fallback;
+use fetchium_core::ai::providers::ProviderKind;
 use fetchium_core::ai::types::{AiConfig, ChatMessage};
 use fetchium_core::cache::{search_key, MemoryCache};
 use fetchium_core::config::HsxConfig;
@@ -19,6 +20,7 @@ use fetchium_core::http::client::HttpClient;
 use fetchium_core::output::{format_search_json, format_search_markdown};
 use fetchium_core::query::expansion::ai_perspective_expand;
 use fetchium_core::rank::detect_intent;
+use fetchium_core::rank::quality::{assess_quality, ConfidenceLevel};
 use fetchium_core::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
 use fetchium_core::types::{
     BackendId, PdsTier, ResourceTier, SearchMeta, SearchMode, SearchResult,
@@ -46,7 +48,10 @@ pub async fn run(
         let parsed: Vec<fetchium_core::types::BackendId> = args
             .backends
             .iter()
-            .filter_map(|s| fetchium_core::search::orchestrator::parse_backend_id(s))
+            .flat_map(|s| s.split(','))
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .filter_map(fetchium_core::search::orchestrator::parse_backend_id)
             .collect();
         if !parsed.is_empty() {
             orch_config.enabled_backends = parsed;
@@ -80,9 +85,11 @@ pub async fn run(
     // generate 3-4 perspective-specific sub-queries to cover all angles.
     // Runs concurrently with a 6s timeout; gracefully skips if AI unavailable.
     let ai_config_for_expand = AiConfig::from_hsx_config(config);
-    let has_ai = !ai_config_for_expand.providers.fallback_chain.is_empty()
-        || ai_config_for_expand.default_model.is_some();
-    let perspective_queries: Vec<String> = if has_ai {
+    let has_ai = has_reachable_ai_for_expand(&ai_config_for_expand, config).await;
+    let perspective_enabled = std::env::var("FETCHIUM_ENABLE_PERSPECTIVE")
+        .map(|v| v == "1")
+        .unwrap_or(false);
+    let perspective_queries: Vec<String> = if perspective_enabled && has_ai {
         ai_perspective_expand(query, &ai_config_for_expand).await
     } else {
         vec![]
@@ -181,6 +188,67 @@ pub async fn run(
             .iter_mut()
             .enumerate()
             .for_each(|(i, r)| r.rank = (i + 1) as u32);
+    }
+
+    // Corrective retrieval pass (CRAG-style): if result-set quality is low,
+    // run a small set of reformulated queries and merge.
+    let unique_domains = count_unique_domains(&items);
+    let multilingual_query = query.chars().any(|c| c.is_alphabetic() && !c.is_ascii());
+    let strong_recall = items.len() >= max_results as usize;
+    let adequate_recall_diversity = items.len() >= 6 && unique_domains >= 4;
+    let first_pass_slow = start.elapsed() > std::time::Duration::from_millis(4500);
+    let corrective_enabled = std::env::var("FETCHIUM_ENABLE_CORRECTIVE")
+        .map(|v| v == "1")
+        .unwrap_or(false);
+    let skip_corrective_for_latency = strong_recall
+        || adequate_recall_diversity
+        || (multilingual_query && items.len() >= 8)
+        || first_pass_slow;
+    let quality = assess_quality(&items, query);
+    if matches!(
+        quality.confidence,
+        ConfidenceLevel::Low | ConfidenceLevel::VeryLow
+    ) && corrective_enabled
+        && !skip_corrective_for_latency
+    {
+        let corrective_queries = generate_corrective_queries(query);
+        if !corrective_queries.is_empty() {
+            if let Some(ref pb) = pb {
+                pb.set_message("Running corrective retrieval...");
+            }
+            let mut seen_urls: HashSet<String> = items.iter().map(|r| r.url.clone()).collect();
+            let orchestrator3 = SearchOrchestrator::new(
+                HttpClient::new(config)
+                    .context("Failed to build HTTP client for corrective pass")?,
+                orch_config.clone(),
+            );
+            let orchestrator3 = std::sync::Arc::new(orchestrator3);
+
+            let mut handles = Vec::new();
+            for cq in corrective_queries.into_iter().take(2) {
+                let orch = orchestrator3.clone();
+                handles.push(tokio::spawn(async move {
+                    orch.search(&cq, Some(6)).await.unwrap_or_default()
+                }));
+            }
+            for handle in handles {
+                if let Ok(results) = handle.await {
+                    for mut r in results {
+                        if seen_urls.insert(r.url.clone()) {
+                            r.backend = BackendId::Searxng; // corrective merged result tag
+                            items.push(r);
+                        }
+                    }
+                }
+            }
+
+            items = fetchium_core::rank::rerank(items, query);
+            items.truncate(max_results as usize);
+            items
+                .iter_mut()
+                .enumerate()
+                .for_each(|(i, r)| r.rank = (i + 1) as u32);
+        }
     }
 
     let duration_ms = start.elapsed().as_millis() as u64;
@@ -372,6 +440,59 @@ pub async fn run(
     }
 
     Ok(())
+}
+
+fn generate_corrective_queries(query: &str) -> Vec<String> {
+    let q = query.trim();
+    let lower = q.to_lowercase();
+    let mut out = Vec::new();
+
+    if !lower.contains("overview") {
+        out.push(format!("{q} overview"));
+    }
+    if !lower.contains("explained") {
+        out.push(format!("{q} explained"));
+    }
+
+    // Temporal-heavy queries can over-constrain retrieval; try a de-temporalized variant.
+    let stripped = q
+        .split_whitespace()
+        .filter(|w| {
+            let wl = w.to_lowercase();
+            !matches!(
+                wl.as_str(),
+                "latest" | "recent" | "today" | "this" | "year" | "month" | "week"
+            ) && !wl.chars().all(|c| c.is_ascii_digit())
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+    if !stripped.is_empty() && stripped != q {
+        out.push(stripped);
+    }
+
+    out
+}
+
+fn count_unique_domains(items: &[fetchium_core::types::ResultItem]) -> usize {
+    items
+        .iter()
+        .filter_map(|it| it.url.split('/').nth(2))
+        .collect::<HashSet<_>>()
+        .len()
+}
+
+async fn has_reachable_ai_for_expand(ai_config: &AiConfig, config: &HsxConfig) -> bool {
+    let configured = ai_config.providers.configured_providers();
+    if configured.is_empty() {
+        return false;
+    }
+
+    // Perspective fan-out is latency-sensitive and should only run when a
+    // remote provider is available; local Ollama/Gemini CLI paths are slower.
+    let _ = (ai_config, config);
+    configured
+        .iter()
+        .any(|k| *k != ProviderKind::Ollama && *k != ProviderKind::GeminiCli)
 }
 
 /// Format a `SearchResult` according to the chosen output format.
