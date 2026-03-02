@@ -9,17 +9,18 @@ pub fn rank_videos(analyses: &[VideoAnalysis], query: &str) -> Vec<VideoRanking>
     let mut rankings: Vec<VideoRanking> =
         analyses.iter().map(|a| compute_ranking(a, query)).collect();
 
+    let intent = detect_video_query_intent(query);
+    // Recompute final score with intent/mismatch adjustments, then sort.
+    for r in &mut rankings {
+        let base = weighted_score_by_intent(&r.signals, intent);
+        let mismatch_penalty = title_query_mismatch_penalty(query, &r.title);
+        r.final_score = base * (1.0 - r.clickbait_score * 0.45) * (1.0 - mismatch_penalty);
+    }
     rankings.sort_by(|a, b| {
         b.final_score
             .partial_cmp(&a.final_score)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
-
-    // Assign sequential ranks (1-indexed)
-    for (i, r) in rankings.iter_mut().enumerate() {
-        r.final_score = r.signals.weighted_score() * (1.0 - r.clickbait_score * 0.3);
-        let _ = i; // ranks are sorted by score
-    }
 
     rankings
 }
@@ -30,7 +31,12 @@ fn compute_ranking(analysis: &VideoAnalysis, query: &str) -> VideoRanking {
     let relevance = compute_relevance(query, &meta.title, &meta.description, &meta.keywords);
     let freshness = compute_freshness(&meta.published);
     let authority = analysis.credibility.score;
-    let engagement = compute_engagement(meta.view_count, meta.like_count, meta.duration_secs);
+    let engagement = compute_engagement(
+        meta.view_count,
+        meta.like_count,
+        meta.duration_secs,
+        &meta.published,
+    );
     let educational = compute_educational_score(analysis);
     let authenticity = compute_authenticity_signal(analysis);
     let comment_quality = compute_comment_quality(analysis);
@@ -49,7 +55,10 @@ fn compute_ranking(analysis: &VideoAnalysis, query: &str) -> VideoRanking {
 
     let clickbait_score = detect_clickbait(&meta.title, &meta.description, analysis);
     let educational_score = educational;
-    let final_score = signals.weighted_score() * (1.0 - clickbait_score * 0.3);
+    let intent = detect_video_query_intent(query);
+    let final_score = weighted_score_by_intent(&signals, intent)
+        * (1.0 - clickbait_score * 0.45)
+        * (1.0 - title_query_mismatch_penalty(query, &meta.title));
 
     VideoRanking {
         video_id: meta.video_id.clone(),
@@ -131,7 +140,7 @@ fn parse_relative_time(s: &str) -> f64 {
 }
 
 /// Signal 4: Engagement — view/like ratio + comment activity.
-fn compute_engagement(views: u64, likes: u64, _duration: u64) -> f64 {
+fn compute_engagement(views: u64, likes: u64, _duration: u64, published: &str) -> f64 {
     if views == 0 {
         return 0.0;
     }
@@ -140,7 +149,11 @@ fn compute_engagement(views: u64, likes: u64, _duration: u64) -> f64 {
     let normalized = (like_ratio / 0.05).min(1.0);
     // View count logarithmic boost
     let view_boost = (views as f64).log10() / 7.0; // 10M views = 1.0
-    (normalized * 0.6 + view_boost.min(1.0) * 0.4).min(1.0)
+                                                   // View velocity (views/day) rewards currently relevant videos.
+    let days = parse_relative_time(published).max(1.0);
+    let views_per_day = views as f64 / days;
+    let velocity = ((views_per_day + 1.0).log10() / 5.0).min(1.0);
+    (normalized * 0.45 + view_boost.min(1.0) * 0.35 + velocity * 0.20).min(1.0)
 }
 
 /// Signal 5: Educational value scoring.
@@ -263,6 +276,105 @@ fn compute_depth(duration_secs: u64, transcript: Option<&EnhancedTranscript>) ->
         .unwrap_or(0.5);
 
     (dur_score * 0.5 + word_density.min(1.0) * 0.5).min(1.0)
+}
+
+#[derive(Debug, Clone, Copy)]
+enum VideoQueryIntent {
+    Learn,
+    News,
+    Review,
+    Comparison,
+    General,
+}
+
+fn detect_video_query_intent(query: &str) -> VideoQueryIntent {
+    let q = query.to_lowercase();
+    if ["learn", "tutorial", "course", "beginner", "how to", "guide"]
+        .iter()
+        .any(|k| q.contains(k))
+    {
+        VideoQueryIntent::Learn
+    } else if ["latest", "news", "update", "2026", "today", "breaking"]
+        .iter()
+        .any(|k| q.contains(k))
+    {
+        VideoQueryIntent::News
+    } else if ["review", "best", "top", "vs", "comparison", "compare"]
+        .iter()
+        .any(|k| q.contains(k))
+    {
+        if q.contains("vs") || q.contains("compare") || q.contains("comparison") {
+            VideoQueryIntent::Comparison
+        } else {
+            VideoQueryIntent::Review
+        }
+    } else {
+        VideoQueryIntent::General
+    }
+}
+
+fn weighted_score_by_intent(signals: &VideoSignals, intent: VideoQueryIntent) -> f64 {
+    match intent {
+        VideoQueryIntent::Learn => {
+            signals.relevance * 0.22
+                + signals.freshness * 0.06
+                + signals.authority * 0.14
+                + signals.engagement * 0.08
+                + signals.educational * 0.25
+                + signals.authenticity * 0.10
+                + signals.comment_quality * 0.05
+                + signals.depth * 0.10
+        }
+        VideoQueryIntent::News => {
+            signals.relevance * 0.22
+                + signals.freshness * 0.20
+                + signals.authority * 0.14
+                + signals.engagement * 0.14
+                + signals.educational * 0.08
+                + signals.authenticity * 0.10
+                + signals.comment_quality * 0.06
+                + signals.depth * 0.06
+        }
+        VideoQueryIntent::Review | VideoQueryIntent::Comparison => {
+            signals.relevance * 0.24
+                + signals.freshness * 0.09
+                + signals.authority * 0.14
+                + signals.engagement * 0.15
+                + signals.educational * 0.10
+                + signals.authenticity * 0.12
+                + signals.comment_quality * 0.08
+                + signals.depth * 0.08
+        }
+        VideoQueryIntent::General => signals.weighted_score(),
+    }
+}
+
+fn title_query_mismatch_penalty(query: &str, title: &str) -> f64 {
+    let stop = [
+        "a", "an", "the", "in", "on", "for", "to", "of", "and", "or", "with", "how", "what",
+    ];
+    let q_terms: Vec<String> = query
+        .to_lowercase()
+        .split_whitespace()
+        .filter(|t| t.len() > 2 && !stop.contains(t))
+        .map(|t| t.trim_matches(|c: char| !c.is_alphanumeric()).to_string())
+        .filter(|t| !t.is_empty())
+        .collect();
+    if q_terms.is_empty() {
+        return 0.0;
+    }
+    let t = title.to_lowercase();
+    let matched = q_terms
+        .iter()
+        .filter(|term| t.contains(term.as_str()))
+        .count();
+    if matched == 0 {
+        0.35
+    } else if matched * 2 <= q_terms.len() {
+        0.12
+    } else {
+        0.0
+    }
 }
 
 // ─── Clickbait Detection ───────────────────────────────────────
@@ -407,13 +519,13 @@ mod tests {
 
     #[test]
     fn engagement_high() {
-        let e = compute_engagement(1_000_000, 50_000, 600);
+        let e = compute_engagement(1_000_000, 50_000, 600, "2 days ago");
         assert!(e > 0.5);
     }
 
     #[test]
     fn engagement_low() {
-        let e = compute_engagement(100, 1, 60);
+        let e = compute_engagement(100, 1, 60, "3 years ago");
         assert!(e < 0.3);
     }
 
