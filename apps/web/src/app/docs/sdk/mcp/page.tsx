@@ -33,11 +33,16 @@ export default function McpSDK() {
       <table>
         <thead><tr><th>Tool name</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td><code>fetchium_search</code></td><td>Web search with HyperFusion ranking</td></tr>
-          <tr><td><code>fetchium_scrape</code></td><td>Extract content from any URL</td></tr>
-          <tr><td><code>fetchium_research</code></td><td>Deep multi-source research</td></tr>
-          <tr><td><code>fetchium_social</code></td><td>Reddit and HackerNews search</td></tr>
-          <tr><td><code>fetchium_youtube</code></td><td>YouTube video search</td></tr>
+          <tr><td><code>hypersearch_search</code></td><td>Web search with ranking + extraction</td></tr>
+          <tr><td><code>hypersearch_fetch</code></td><td>Query-aware URL extraction</td></tr>
+          <tr><td><code>hypersearch_research</code></td><td>Deep multi-source research</td></tr>
+          <tr><td><code>hypersearch_estimate</code></td><td>Token cost estimate before fetch</td></tr>
+          <tr><td><code>hypersearch_expand</code></td><td>Progressive detail expansion (PDS)</td></tr>
+          <tr><td><code>youtube_search</code></td><td>YouTube search with ranking</td></tr>
+          <tr><td><code>youtube_analyze</code></td><td>Single-video analysis</td></tr>
+          <tr><td><code>social_research</code></td><td>Unified social research</td></tr>
+          <tr><td><code>reddit_search</code></td><td>Reddit search</td></tr>
+          <tr><td><code>hackernews_search</code></td><td>Hacker News search</td></tr>
         </tbody>
       </table>
 
@@ -48,10 +53,7 @@ export default function McpSDK() {
   "mcpServers": {
     "fetchium": {
       "command": "fetchium",
-      "args": ["mcp"],
-      "env": {
-        "FETCHIUM_API_KEY": "fetchium_your_key_here"
-      }
+      "args": ["serve", "--mode", "mcp"]
     }
   }
 }`} />
@@ -61,33 +63,15 @@ export default function McpSDK() {
   "mcpServers": {
     "fetchium": {
       "command": "fetchium",
-      "args": ["mcp"],
-      "env": {
-        "FETCHIUM_API_KEY": "fetchium_your_key_here"
-      }
-    }
-  }
-}`} />
-
-      <h2>Remote MCP server</h2>
-      <p>
-        If you prefer not to install the CLI, use the hosted MCP endpoint:
-      </p>
-      <CodeBlock language="json" code={`{
-  "mcpServers": {
-    "fetchium": {
-      "url": "https://mcp.fetchium.com/sse",
-      "headers": {
-        "Authorization": "Bearer fetchium_your_key_here"
-      }
+      "args": ["serve", "--mode", "mcp"]
     }
   }
 }`} />
 
       <h2>Tool schema reference</h2>
 
-      <CodeBlock language="json" filename="fetchium_search tool" code={`{
-  "name": "fetchium_search",
+      <CodeBlock language="json" filename="hypersearch_search tool" code={`{
+  "name": "hypersearch_search",
   "description": "Search the web with HyperFusion multi-signal ranking. Returns ranked results with extracted content.",
   "inputSchema": {
     "type": "object",
@@ -114,10 +98,10 @@ export default function McpSDK() {
 
       <h2>Testing the MCP server</h2>
       <CodeBlock language="bash" code={`# Start the MCP server manually to test
-fetchium mcp
+fetchium serve --mode mcp
 
 # In another terminal, use the MCP inspector
-npx @modelcontextprotocol/inspector fetchium mcp`} />
+npx @modelcontextprotocol/inspector fetchium serve --mode mcp`} />
 
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">

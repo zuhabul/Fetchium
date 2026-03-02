@@ -88,16 +88,16 @@ volumes:
         After the stack is running, create an API key using the admin secret:
       </p>
 
-      <CodeBlock language="bash" code={`curl -X POST http://localhost:3050/v1/admin/keys \\
+      <CodeBlock language="bash" code={`curl -X POST http://localhost:3050/v1/keys \\
   -H "X-Admin-Secret: your_admin_secret_here" \\
   -H "Content-Type: application/json" \\
-  -d '{"name": "My App", "tier": "unlimited"}'`} />
+  -d '{"name": "My App", "plan": "pro"}'`} />
 
       <CodeBlock language="json" code={`{
   "key": "fetchium_4626d3fc3fd6693aaaf2d8f5fd084a71...",
   "id": "key_abc123",
   "name": "My App",
-  "tier": "unlimited",
+  "plan": "pro",
   "created_at": "2025-06-20T14:30:00Z"
 }`} />
 

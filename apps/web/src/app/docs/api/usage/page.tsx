@@ -25,21 +25,13 @@ export default function UsageApiReference() {
 
       <h2>Response</h2>
       <CodeBlock language="json" filename="response.json" code={`{
+  "key_id": "9e57a4f8-2f8a-4f7b-b527-2f5cfca2ad2f",
   "plan": "pro",
-  "quota": 100000,
-  "used": 12847,
-  "remaining": 87153,
-  "reset_at": "2025-07-01T00:00:00Z",
-  "per_minute_limit": 500,
-  "endpoints": {
-    "search": 10234,
-    "research": 1892,
-    "scrape": 721
-  },
-  "daily": [
-    { "date": "2025-06-19", "requests": 542 },
-    { "date": "2025-06-20", "requests": 891 }
-  ]
+  "requests_this_month": 12847,
+  "requests_today": 212,
+  "tokens_this_month": 4912032,
+  "monthly_limit": 250000,
+  "quota_remaining": 237153
 }`} />
 
       <h2>Health endpoint</h2>
@@ -57,13 +49,10 @@ export default function UsageApiReference() {
       <CodeBlock language="bash" code={`curl ***REMOVED***/health`} />
 
       <CodeBlock language="json" code={`{
-  "status": "healthy",
+  "status": "ok",
   "version": "1.0.0",
-  "uptime_seconds": 86400,
-  "dependencies": {
-    "search_backend": "healthy",
-    "database": "healthy"
-  }
+  "searxng": "ok",
+  "timestamp": "2026-03-02T18:26:15Z"
 }`} />
 
       <h2>Next steps</h2>
