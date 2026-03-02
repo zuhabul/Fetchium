@@ -637,6 +637,27 @@ scripts/youtube_regression_suite.sh
 QUERY="java learning roadmap" TOP_K=10 scripts/youtube_regression_suite.sh
 ```
 
+Latest YouTube commands (current):
+
+```bash
+fetchium youtube search "query" -n 10
+fetchium youtube search "query" --compact
+fetchium youtube search "query" --open 1
+fetchium youtube search "query" --copy-url 1
+fetchium youtube watch <url-or-video-id> --highlights 5
+fetchium youtube video <url-or-video-id> -f json
+fetchium youtube transcript <url> --semantic --highlights 5
+fetchium youtube transcript <url> --language en
+fetchium youtube transcript <url> --translate es
+fetchium youtube analyze <url> --transcript --comments
+fetchium youtube compare <url1> <url2>
+fetchium youtube playlist <playlist_id> -n 20 -f json
+fetchium youtube playlist-analyze <playlist_id> -n 10 --learning-path
+fetchium youtube channel <channel_id> --videos -n 20 -f json
+fetchium youtube channel-audit <channel_id> -n 10
+fetchium youtube research "query" --max-videos 10 --fact-check
+```
+
 #### `fetchium facebook` / `fetchium fb`
 
 ```bash
