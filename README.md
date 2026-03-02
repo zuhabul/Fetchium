@@ -756,7 +756,7 @@ GET  /health          — Health check (503 if SearXNG down)
 ```bash
 curl -X POST http://localhost:3050/search \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer hsx_YOUR_API_KEY" \
+  -H "Authorization: Bearer fetchium_YOUR_API_KEY" \
   -d '{"query": "rust async runtimes", "num": 5}'
 ```
 
@@ -779,7 +779,7 @@ curl -X POST http://localhost:3050/search \
 ```bash
 curl -X POST http://localhost:3050/ai \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer hsx_YOUR_API_KEY" \
+  -H "Authorization: Bearer fetchium_YOUR_API_KEY" \
   -d '{"query": "What is quantum entanglement?"}'
 ```
 
@@ -797,6 +797,22 @@ curl http://localhost:3050/admin/keys \
 ```
 
 Set `FETCHIUM_ADMIN_SECRET` env var before starting the server. The server panics on startup if unset.
+
+### Dashboard (API + MCP Operations)
+
+The Next.js dashboard in `apps/dashboard` is wired to live API data:
+
+- Keys: `POST/GET/DELETE /v1/keys` via secure server routes
+- Usage: live `GET /v1/usage` per API key
+- Playground: live requests to allowed API endpoints via proxy route
+- Billing: current plan derived from live usage data
+
+Required env vars for dashboard runtime:
+
+```bash
+FETCHIUM_API_BASE_URL=http://localhost:3050
+FETCHIUM_ADMIN_SECRET=your_admin_secret
+```
 
 ### MCP Server
 

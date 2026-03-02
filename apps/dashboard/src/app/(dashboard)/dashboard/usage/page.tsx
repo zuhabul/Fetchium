@@ -1,94 +1,129 @@
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = { title: "Usage — Fetchium Dashboard" };
+import { useEffect, useState } from "react";
+import { loadDashboardConfig } from "@/lib/client-config";
 
-// Mock 30-day data
-const days = Array.from({ length: 30 }, (_, i) => {
-  const d = new Date();
-  d.setDate(d.getDate() - (29 - i));
-  return {
-    date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    requests: Math.floor(Math.random() * 60 + 10),
-  };
-});
-
-const endpoints = [
-  { name: "/v1/search", count: 412, pct: 48 },
-  { name: "/v1/scrape", count: 289, pct: 34 },
-  { name: "/v1/research", count: 102, pct: 12 },
-  { name: "/v1/youtube/search", count: 44, pct: 5 },
-];
-
-const maxReq = Math.max(...days.map(d => d.requests));
+type UsageStats = {
+  key_id: string;
+  plan: string;
+  requests_this_month: number;
+  requests_today: number;
+  tokens_this_month: number;
+  monthly_limit: number | null;
+  quota_remaining: number | null;
+};
 
 export default function UsagePage() {
+  const [apiKey, setApiKey] = useState("");
+  const [apiBase, setApiBase] = useState("http://localhost:3050");
+  const [stats, setStats] = useState<UsageStats | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const cfg = loadDashboardConfig();
+    setApiKey(cfg.apiKey);
+    setApiBase(cfg.apiBaseUrl);
+    if (cfg.apiKey) {
+      void fetchUsage(cfg.apiKey, cfg.apiBaseUrl);
+    }
+  }, []);
+
+  async function fetchUsage(key = apiKey, base = apiBase) {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: key, apiBase: base }),
+      });
+      const body = (await res.json()) as UsageStats & { title?: string; message?: string };
+      if (!res.ok) {
+        setStats(null);
+        setError(body.title || body.message || "Failed to fetch usage.");
+        return;
+      }
+      setStats(body);
+    } catch (e) {
+      setStats(null);
+      setError(e instanceof Error ? e.message : "Failed to fetch usage.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Usage Analytics</h1>
-        <p className="text-sm text-white/40 mt-1">Last 30 days of API activity.</p>
+        <p className="text-sm text-white/40 mt-1">Live usage from `/v1/usage`.</p>
       </div>
 
-      {/* Bar chart — server-rendered SVG approximation */}
-      <div className="rounded-xl border border-white/5 bg-surface-1 p-5">
-        <h2 className="font-medium text-white mb-4">Requests per day</h2>
-        <div className="flex items-end gap-1 h-32">
-          {days.map((d, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
-              <div
-                className="w-full rounded-t bg-brand-500/60 hover:bg-brand-500 transition-colors"
-                style={{ height: `${(d.requests / maxReq) * 100}%` }}
-                title={`${d.date}: ${d.requests} requests`}
-              />
-            </div>
-          ))}
+      <div className="rounded-xl border border-white/5 bg-surface-1 p-5 space-y-3">
+        <div className="grid gap-3 md:grid-cols-2">
+          <input
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder="fetchium_..."
+            className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-brand-500/50"
+          />
+          <input
+            type="text"
+            value={apiBase}
+            onChange={(e) => setApiBase(e.target.value)}
+            placeholder="http://localhost:3050"
+            className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-brand-500/50"
+          />
         </div>
-        <div className="flex justify-between mt-2 text-[10px] text-white/25">
-          <span>{days[0].date}</span>
-          <span>{days[14].date}</span>
-          <span>{days[29].date}</span>
-        </div>
+        <button
+          onClick={() => void fetchUsage()}
+          disabled={loading}
+          className="rounded-lg bg-brand-500 px-4 py-2 text-sm text-white hover:bg-brand-600 disabled:opacity-60"
+        >
+          {loading ? "Refreshing..." : "Refresh usage"}
+        </button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {/* By endpoint */}
-        <div className="rounded-xl border border-white/5 bg-surface-1 p-5">
-          <h2 className="font-medium text-white mb-4">By endpoint</h2>
-          <div className="space-y-3">
-            {endpoints.map(e => (
-              <div key={e.name}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-mono text-white/60 text-xs">{e.name}</span>
-                  <span className="text-white/40">{e.count}</span>
-                </div>
-                <div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
-                  <div className="h-full rounded-full bg-brand-500/60" style={{ width: `${e.pct}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
+      {error && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-300">
+          {error}
         </div>
+      )}
 
-        {/* Summary stats */}
-        <div className="rounded-xl border border-white/5 bg-surface-1 p-5">
-          <h2 className="font-medium text-white mb-4">Summary</h2>
-          <div className="space-y-3">
-            {[
-              { label: "Total requests", value: "847" },
-              { label: "Tokens used", value: "1.2M" },
-              { label: "Avg latency", value: "1.2s" },
-              { label: "P95 latency", value: "3.4s" },
-              { label: "Success rate", value: "99.1%" },
-              { label: "Quota remaining", value: "153 req" },
-            ].map(s => (
-              <div key={s.label} className="flex justify-between text-sm">
-                <span className="text-white/40">{s.label}</span>
-                <span className="font-medium text-white">{s.value}</span>
-              </div>
-            ))}
-          </div>
+      {stats && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Plan" value={stats.plan} />
+          <StatCard label="Requests Today" value={String(stats.requests_today)} />
+          <StatCard label="Requests This Month" value={String(stats.requests_this_month)} />
+          <StatCard
+            label="Quota Remaining"
+            value={stats.quota_remaining == null ? "Unlimited" : String(stats.quota_remaining)}
+          />
+          <StatCard label="Monthly Limit" value={stats.monthly_limit == null ? "Unlimited" : String(stats.monthly_limit)} />
+          <StatCard label="Tokens This Month" value={stats.tokens_this_month.toLocaleString()} />
+          <StatCard label="Key ID" value={stats.key_id.slice(0, 8)} />
+          <StatCard
+            label="Quota Used"
+            value={
+              stats.monthly_limit
+                ? `${Math.round((stats.requests_this_month / stats.monthly_limit) * 100)}%`
+                : "N/A"
+            }
+          />
         </div>
-      </div>
+      )}
     </div>
   );
 }
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-white/5 bg-surface-1 p-5">
+      <div className="text-sm text-white/40">{label}</div>
+      <div className="text-xl font-semibold text-white mt-1">{value}</div>
+    </div>
+  );
+}
+

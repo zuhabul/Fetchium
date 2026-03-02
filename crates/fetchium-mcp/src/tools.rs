@@ -103,6 +103,32 @@ pub fn tool_definitions() -> Vec<Value> {
             }
         }),
         json!({
+            "name": "youtube_watch",
+            "description": "Unified YouTube watch report: metadata + transcript + summary + key moments + comment signals in one payload.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "url": { "type": "string", "description": "The YouTube video URL" },
+                    "transcript": { "type": "boolean", "description": "Fetch transcript (default: true)" },
+                    "comments": { "type": "boolean", "description": "Fetch comments (default: true)" },
+                    "highlights": { "type": "integer", "description": "Top key moments to include (default: 5)" }
+                },
+                "required": ["url"]
+            }
+        }),
+        json!({
+            "name": "youtube_transcript",
+            "description": "Extract universal transcript (YouTube fast path + fallback), with key moments and quality score.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "url": { "type": "string", "description": "Video URL" },
+                    "highlights": { "type": "integer", "description": "Top key moments to include (default: 5)" }
+                },
+                "required": ["url"]
+            }
+        }),
+        json!({
             "name": "social_research",
             "description": "Unified cross-platform social media research: Twitter/X, Reddit, TikTok, HackerNews, YouTube simultaneously. Returns trends, viral content, and content ideas.",
             "inputSchema": {
@@ -196,6 +222,20 @@ pub struct YouTubeAnalyzeInput {
     pub transcript: Option<bool>,
     pub comments: Option<bool>,
     pub teaching: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct YouTubeWatchInput {
+    pub url: String,
+    pub transcript: Option<bool>,
+    pub comments: Option<bool>,
+    pub highlights: Option<usize>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct YouTubeTranscriptInput {
+    pub url: String,
+    pub highlights: Option<usize>,
 }
 
 #[derive(Debug, Deserialize)]
