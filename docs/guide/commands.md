@@ -1,205 +1,89 @@
 # Command Reference
 
-All 25+ Fetchium commands, grouped by category.
+This reference is generated from the live CLI surface. For full flags and examples per command, run:
 
-## Search Commands
-
-### `fetchium search`
-
-Search the web using multiple engines with intelligent ranking.
-
-```
-fetchium search <QUERY> [OPTIONS]
-```
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--format`, `-f` | `markdown` | Output format: `markdown`, `json`, `text`, `csv` |
-| `--max-results`, `-n` | `10` | Maximum results to return |
-| `--engines` | `auto` | Engines: `ddg`, `google`, `bing`, `scholar`, `all` |
-| `--validate` | `standard` | Validation mode: `off`, `fast`, `standard`, `strict` |
-
-**Examples:**
 ```bash
-fetchium search "Rust async runtime comparison"
-fetchium search "quantum computing 2026" --format json --max-results 5
-fetchium search "site:arxiv.org transformer attention" --engines scholar
+fetchium <command> --help
 ```
 
-### `fetchium fetch`
+## Core Retrieval
 
-Fetch and extract content from a URL using CEP.
+- `fetchium search` — Search the web (human-friendly output)
+- `fetchium fetch` — Fetch and extract URL content
+- `fetchium view` — Alias for `fetchium fetch`
+- `fetchium research` — Multi-source research with citations
+- `fetchium ai` — AI analysis over retrieved evidence
+- `fetchium deep` — Deep multi-agent research
 
-```
-fetchium fetch <URL> [OPTIONS]
-```
+## Agent JSON Commands
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--format`, `-f` | `markdown` | Output format |
-| `--tier` | `summary` | PDS tier: `key_facts`, `summary`, `detailed`, `complete` |
-| `--budget` | `4096` | Token budget |
+- `fetchium agent-search` — Token-budgeted agent search output
+- `fetchium agent-fetch` — Agent-optimized URL extraction
+- `fetchium agent-research` — Agent-optimized research output
 
-**Examples:**
+## API / Server
+
+- `fetchium serve --mode rest --port 3000` — REST API server
+- `fetchium serve --mode mcp` — MCP server (stdio)
+- `fetchium serve --mode both --port 3000` — REST + MCP
+
+Common REST endpoints:
+
+- `GET /health`
+- `GET /v1/health`
+- `POST /v1/search`
+- `POST /v1/fetch` (alias: `POST /v1/scrape`)
+- `POST /v1/research`
+- `POST /v1/estimate`
+- `POST /v1/youtube/search`
+- `POST /v1/youtube/analyze`
+- `POST /v1/social/research`
+- `POST /v1/social/reddit`
+- `POST /v1/social/hackernews`
+- `GET /v1/usage` (Bearer auth)
+- `POST /v1/keys` (admin)
+- `GET /v1/keys` (admin)
+- `DELETE /v1/keys/:id` (admin)
+
+## Intelligence / Productivity
+
+- `fetchium compare` — Side-by-side comparison research
+- `fetchium monitor` — URL change monitoring
+- `fetchium index` — Local document index management
+- `fetchium intelligence` — PIE/intelligence tools
+- `fetchium workspace` — Workspace create/fork/merge/sync
+- `fetchium subscribe` — Topic subscriptions
+- `fetchium radar` — Personalized research radar
+- `fetchium digest` — Research digests
+
+## Platform / Specialized
+
+- `fetchium youtube` — YouTube intelligence suite
+- `fetchium social` — Unified social intelligence
+- `fetchium twitter` — X/Twitter-specific tooling
+- `fetchium reddit` — Reddit-specific tooling
+- `fetchium hackernews` — Hacker News tooling
+- `fetchium facebook` — Facebook tooling
+- `fetchium tiktok` — TikTok tooling
+- `fetchium transcribe` — Audio/video transcription
+- `fetchium summarize` — AI summarization
+
+## System / Setup
+
+- `fetchium help` — Show help for commands and subcommands
+- `fetchium doctor` — Environment and dependency checks
+- `fetchium setup` — Guided setup (Chromium/SearXNG/etc.)
+- `fetchium provider` — AI provider auth and routing chain
+- `fetchium plugin` — Plugin lifecycle commands
+- `fetchium config` — Configuration management
+- `fetchium cache` — Cache management
+- `fetchium tui` — Interactive terminal UI
+- `fetchium completions` — Shell completions
+
+## Completion Examples
+
 ```bash
-fetchium fetch https://doc.rust-lang.org/book/ch04-01.html
-fetchium fetch https://arxiv.org/abs/2106.09685 --tier detailed --format json
-```
-
-### `fetchium deep`
-
-Multi-agent deep research using AMRS (Adaptive Multi-Agent Research Swarm).
-
-```
-fetchium deep <QUERY> [OPTIONS]
-```
-
-**Examples:**
-```bash
-fetchium deep "Compare tokio vs async-std performance in 2026"
-fetchium deep "Rust embedded systems best practices" --format json
-```
-
-## Agent Commands (JSON output for AI frameworks)
-
-### `fetchium agent-search`
-
-Token-budgeted search returning structured JSON with segments.
-
-```
-fetchium agent-search <QUERY> [--budget N]
-```
-
-### `fetchium agent-fetch`
-
-Fetch with semantic extraction, returning JSON + content hash.
-
-```
-fetchium agent-fetch <URL> [--budget N] [--tier TIER]
-```
-
-### `fetchium agent-research`
-
-Full research pipeline returning structured AgentResearchOutput JSON.
-
-```
-fetchium agent-research <QUERY> [--budget N]
-```
-
-## Research & AI Commands
-
-### `fetchium research`
-
-Comprehensive multi-source research report with citations.
-
-```
-fetchium research <QUERY> [--format FORMAT] [--cite-style STYLE]
-```
-
-Citation styles: `inline`, `footnote`, `apa`, `mla`, `chicago`, `ieee`, `bibtex`
-
-### `fetchium ai`
-
-AI synthesis using Ollama. Streams response to stdout.
-
-```
-fetchium ai <QUERY> [--model MODEL]
-```
-
-## Index & Comparison Commands
-
-### `fetchium compare`
-
-Compare two or more items side-by-side.
-
-```
-fetchium compare "Tokio vs async-std" [--format FORMAT]
-```
-
-### `fetchium index`
-
-Manage the local document index.
-
-```
-fetchium index add <PATH>
-fetchium index search <QUERY>
-fetchium index stats
-fetchium index clear
-```
-
-### `fetchium monitor`
-
-Monitor URLs for changes.
-
-```
-fetchium monitor add <URL> [--interval INTERVAL]
-fetchium monitor list
-fetchium monitor check
-fetchium monitor diff <URL>
-fetchium monitor remove <ID>
-```
-
-Interval format: `30s`, `5m`, `1h`, `7d`
-
-## Intelligence Commands
-
-### `fetchium radar`
-
-Personalized research radar based on your search history.
-
-```
-fetchium radar [--limit N]
-```
-
-### `fetchium digest`
-
-Generate a research digest for topics.
-
-```
-fetchium digest --period weekly --topics "rust,wasm,llm"
-fetchium digest --period daily --topics "security" --output digest.md
-```
-
-### `fetchium subscribe`
-
-Subscribe to topic alerts.
-
-```
-fetchium subscribe add "Rust security advisories" --interval 1d
-fetchium subscribe list
-fetchium subscribe remove <ID>
-```
-
-## Export Commands
-
-```
-fetchium export --format pdf --output report.pdf
-fetchium export --format docx --output report.docx
-fetchium export --format bibtex --output refs.bib
-```
-
-## System Commands
-
-### `fetchium doctor`
-
-Check system health and dependencies.
-
-### `fetchium serve`
-
-Start MCP server or REST API.
-
-```
-fetchium serve --mcp           # MCP stdio server for AI frameworks
-fetchium serve --rest          # REST API on :8080
-fetchium serve --both          # Both simultaneously
-```
-
-### `fetchium completions`
-
-Generate shell completion scripts.
-
-```
 fetchium completions bash > ~/.bash_completion.d/fetchium
-fetchium completions zsh > ~/.zsh/completions/_hsx
+fetchium completions zsh > ~/.zsh/completions/_fetchium
 fetchium completions fish > ~/.config/fish/completions/fetchium.fish
 ```

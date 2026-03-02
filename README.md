@@ -743,21 +743,26 @@ fetchium serve --mode rest --port 3050
 #### Endpoints
 
 ```
-POST /search          — Federated search
-POST /fetch           — URL content extraction
-POST /ai              — AI answer with citations
-POST /research        — Deep research report
-POST /social/:platform — Social media search
+POST /v1/search        — Federated search
+POST /v1/fetch         — URL content extraction
+POST /v1/research      — Deep research report
+POST /v1/estimate      — Token/processing estimate
+POST /v1/youtube/search — YouTube search intelligence
+POST /v1/youtube/analyze — YouTube analysis
+POST /v1/social/research — Unified social intelligence
+POST /v1/social/reddit — Reddit search intelligence
+POST /v1/social/hackernews — Hacker News search intelligence
 GET  /health          — Health check (503 if SearXNG down)
+GET  /v1/health       — Versioned health check
 ```
 
 #### Example — search
 
 ```bash
-curl -X POST http://localhost:3050/search \
+curl -X POST http://localhost:3050/v1/search \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer fetchium_YOUR_API_KEY" \
-  -d '{"query": "rust async runtimes", "num": 5}'
+  -d '{"query": "rust async runtimes", "max_results": 5}'
 ```
 
 ```json
@@ -774,25 +779,26 @@ curl -X POST http://localhost:3050/search \
 }
 ```
 
-#### Example — AI answer
+#### Example — research
 
 ```bash
-curl -X POST http://localhost:3050/ai \
+curl -X POST http://localhost:3050/v1/research \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer fetchium_YOUR_API_KEY" \
-  -d '{"query": "What is quantum entanglement?"}'
+  -d '{"query": "What is quantum entanglement?", "max_sources": 5}'
 ```
 
 #### Admin API
 
 ```bash
 # Create an API key
-curl -X POST http://localhost:3050/admin/keys \
+curl -X POST http://localhost:3050/v1/keys \
   -H "X-Admin-Secret: YOUR_ADMIN_SECRET" \
-  -d '{"label": "my-app"}'
+  -H "Content-Type: application/json" \
+  -d '{"name": "my-app", "plan": "starter"}'
 
 # List keys
-curl http://localhost:3050/admin/keys \
+curl http://localhost:3050/v1/keys \
   -H "X-Admin-Secret: YOUR_ADMIN_SECRET"
 ```
 
