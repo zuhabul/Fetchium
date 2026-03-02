@@ -72,7 +72,7 @@ Coordinator orchestrates agents and merges findings with contradiction detection
 Cross-session learning via SQLite:
 - **Source trust**: domain reliability scores updated from validation outcomes
 - **Failure patterns**: failed URLs/domains tracked to avoid repeats
-- **Query prediction**: QPM (Query Prediction Model) learns from history to power `hsx radar`
+- **Query prediction**: QPM (Query Prediction Model) learns from history to power `fetchium radar`
 - **ToTR**: Time-of-Task Router — routes complex queries to deep research
 - **CCE**: Cross-Context Entity linking across sessions
 

@@ -47,8 +47,8 @@ fetchium --version
 |------|---------|---------|
 | [Ollama](https://ollama.com) | Local AI synthesis (`fetchium ai`, `fetchium deep`) | `brew install ollama` |
 | [Chromium](https://chromium.org) | JavaScript-rendered pages (CEP Layer 3) | `brew install chromium` |
-| [Pandoc](https://pandoc.org) | PDF/DOCX export (`fetchium export`) | `brew install pandoc` |
-| [Typst](https://typst.app) | Fast PDF export (preferred over LaTeX) | `brew install typst` |
+| [Pandoc](https://pandoc.org) | Advanced document conversion for research workflows | `brew install pandoc` |
+| [Typst](https://typst.app) | Fast PDF/report generation in custom pipelines | `brew install typst` |
 | [Tesseract](https://github.com/tesseract-ocr/tesseract) | OCR for image-heavy pages (CEP Layer 5) | `brew install tesseract` |
 
 Run `fetchium doctor` to check which tools are available on your system.
