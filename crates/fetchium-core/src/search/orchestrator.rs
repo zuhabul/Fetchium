@@ -683,9 +683,49 @@ impl SearchOrchestrator {
             }
         }
 
-        if all.is_empty() {
-            info!("Orchestrator: no results from any backend for {:?}", query);
-            return Ok(Vec::new());
+        let rescue_threshold = ((max as usize) / 2).max(3);
+        if all.len() <= rescue_threshold {
+            info!(
+                "Orchestrator: low recall from selected backends for {:?} ({} results) — running fallback sweep",
+                query
+                ,
+                all.len()
+            );
+            let mut rescue_handles = Vec::new();
+            for backend in &self.backends {
+                let id_str = format!("{:?}", backend.id());
+                if selected_set.contains(&id_str) {
+                    continue;
+                }
+                // Respect circuit breaker on fallback too.
+                if !self.circuit_breaker.should_allow(&id_str) {
+                    continue;
+                }
+                let backend = Arc::clone(backend);
+                let q = query.to_string();
+                let ctx = search_ctx.clone();
+                let timeout_dur = backend_timeout_for(&backend.id(), timeout_dur);
+                rescue_handles.push(tokio::spawn(async move {
+                    match timeout(
+                        timeout_dur,
+                        backend.search_with_context(&q, per_backend, &ctx),
+                    )
+                    .await
+                    {
+                        Ok(Ok(results)) => results,
+                        _ => Vec::new(),
+                    }
+                }));
+            }
+            for h in rescue_handles {
+                if let Ok(results) = h.await {
+                    all.extend(results);
+                }
+            }
+            if all.is_empty() {
+                info!("Orchestrator: no results from any backend for {:?}", query);
+                return Ok(Vec::new());
+            }
         }
 
         // Step 3: Deduplicate (URL normalization + SimHash)
@@ -841,6 +881,16 @@ impl SearchOrchestrator {
                     ranked.push(candidate.clone());
                 }
             }
+        }
+
+        // Step 5d: hard safety net — if filters produced zero but we had candidates,
+        // return the top pre-filter items to avoid empty responses.
+        if ranked.is_empty() && !ranked_before_filter.is_empty() {
+            ranked = ranked_before_filter
+                .iter()
+                .take(max as usize)
+                .cloned()
+                .collect();
         }
 
         // Step 6: Diversify domains in top-N, then take top N.

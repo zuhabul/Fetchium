@@ -187,6 +187,25 @@ fn intent_affinity(intent: &QueryIntent, backend: &BackendId) -> f64 {
     }
 }
 
+/// Hard precision guardrails: exclude backends that are consistently off-intent.
+///
+/// This runs before ranking so noisy sources are never selected for clearly
+/// mismatched intents (for example StackOverflow for medical or policy queries).
+fn intent_backend_allowed(intent: &QueryIntent, backend: &BackendId) -> bool {
+    match intent {
+        QueryIntent::CurrentEvents => !matches!(
+            backend,
+            BackendId::StackOverflow | BackendId::Github | BackendId::Arxiv
+        ),
+        QueryIntent::Factual | QueryIntent::Informational | QueryIntent::Verification => {
+            !matches!(backend, BackendId::StackOverflow | BackendId::Github)
+        }
+        QueryIntent::Academic | QueryIntent::Data => !matches!(backend, BackendId::Reddit),
+        QueryIntent::Opinion => !matches!(backend, BackendId::Arxiv),
+        _ => true,
+    }
+}
+
 /// Adaptive Backend Selector using UCB1 multi-armed bandit.
 #[derive(Clone)]
 pub struct AdaptiveBackendSelector {
@@ -227,6 +246,7 @@ impl AdaptiveBackendSelector {
         let healthy: Vec<&BackendId> = available_backends
             .iter()
             .filter(|b| !unhealthy_backends.contains(b))
+            .filter(|b| intent_backend_allowed(intent, b))
             .collect();
 
         if healthy.is_empty() {
@@ -490,5 +510,37 @@ mod tests {
         let abs = AdaptiveBackendSelector::default();
         let selection = abs.select(&QueryIntent::Factual, &[], &[]);
         assert!(selection.backends.is_empty());
+    }
+
+    #[test]
+    fn factual_excludes_code_backends() {
+        let abs = AdaptiveBackendSelector::default();
+        let backends = vec![
+            BackendId::StackOverflow,
+            BackendId::Github,
+            BackendId::Wikipedia,
+            BackendId::DuckDuckGo,
+            BackendId::Searxng,
+        ];
+        let selection = abs.select(&QueryIntent::Factual, &backends, &[]);
+        assert!(!selection.backends.contains(&BackendId::StackOverflow));
+        assert!(!selection.backends.contains(&BackendId::Github));
+    }
+
+    #[test]
+    fn current_events_excludes_static_dev_sources() {
+        let abs = AdaptiveBackendSelector::default();
+        let backends = vec![
+            BackendId::StackOverflow,
+            BackendId::Github,
+            BackendId::Arxiv,
+            BackendId::HackerNews,
+            BackendId::Searxng,
+            BackendId::DuckDuckGo,
+        ];
+        let selection = abs.select(&QueryIntent::CurrentEvents, &backends, &[]);
+        assert!(!selection.backends.contains(&BackendId::StackOverflow));
+        assert!(!selection.backends.contains(&BackendId::Github));
+        assert!(!selection.backends.contains(&BackendId::Arxiv));
     }
 }

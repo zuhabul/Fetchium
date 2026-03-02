@@ -129,11 +129,7 @@ impl SearchBackend for StackOverflowBackend {
         if !resp.status().is_success() {
             let status = resp.status();
             let body = resp.text().await.unwrap_or_default();
-            if status.as_u16() == 429
-                || body.contains("throttle_violation")
-                || body.contains("backoff")
-                || body.contains("quota")
-            {
+            if status.as_u16() == 429 || body.contains("throttle_violation") {
                 let until = now_ms() + SO_COOLDOWN_SECS * 1000;
                 SO_COOLDOWN_UNTIL_MS.store(until, Ordering::Relaxed);
                 return Err(HsxError::Search(format!(
