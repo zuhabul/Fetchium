@@ -1,4 +1,4 @@
-//! `hsx plugin` — plugin management (PRD §29).
+//! `fetchium plugin` — plugin management (PRD §29).
 
 use clap::Subcommand;
 use colored::Colorize;
@@ -45,7 +45,7 @@ pub fn run(cmd: PluginCommand) -> anyhow::Result<()> {
             let count = reg.discover(&plugin_dir)?;
             if count == 0 {
                 println!(
-                    "{} No plugins installed. Use `hsx plugin install <path>` to add one.",
+                    "{} No plugins installed. Use `fetchium plugin install <path>` to add one.",
                     "i".blue()
                 );
                 return Ok(());

@@ -1,4 +1,4 @@
-//! `hsx digest` — intelligent research digest (PRD §33).
+//! `fetchium digest` — intelligent research digest (PRD §33).
 
 use colored::Colorize;
 use fetchium_core::proactive::digest::{DigestBuilder, DigestPeriod};

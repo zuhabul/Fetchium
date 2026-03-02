@@ -1,4 +1,4 @@
-//! `hsx config` — configuration management.
+//! `fetchium config` — configuration management.
 
 use crate::cli::{ConfigAction, ConfigArgs};
 use fetchium_core::config::HsxConfig;

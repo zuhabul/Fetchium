@@ -1,4 +1,4 @@
-//! `hsx subscribe` — topic subscriptions (PRD §33).
+//! `fetchium subscribe` — topic subscriptions (PRD §33).
 
 use clap::Subcommand;
 use colored::Colorize;

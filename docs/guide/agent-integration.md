@@ -12,7 +12,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "fetchium": {
-      "command": "hsx",
+      "command": "fetchium",
       "args": ["serve", "--mcp"]
     }
   }
@@ -27,7 +27,7 @@ Add to `.mcp.json` in your project root:
 {
   "servers": {
     "fetchium": {
-      "command": "hsx",
+      "command": "fetchium",
       "args": ["serve", "--mcp"],
       "env": {}
     }
@@ -49,7 +49,7 @@ Add to `.mcp.json` in your project root:
 
 Start the REST server:
 ```bash
-hsx serve --rest --port 8080
+fetchium serve --rest --port 8080
 ```
 
 ### Endpoints
@@ -77,7 +77,7 @@ import subprocess, json
 
 def hsx_search(query: str) -> str:
     result = subprocess.run(
-        ["hsx", "agent-search", query, "--budget", "2000"],
+        ["fetchium", "agent-search", query, "--budget", "2000"],
         capture_output=True, text=True
     )
     return result.stdout
@@ -99,7 +99,7 @@ import subprocess
 def web_search(query: str) -> str:
     """Search the web using Fetchium and return structured results."""
     result = subprocess.run(
-        ["hsx", "agent-search", query],
+        ["fetchium", "agent-search", query],
         capture_output=True, text=True, timeout=30
     )
     return result.stdout
@@ -124,7 +124,7 @@ search_function = {
 def handle_function_call(name, args):
     if name == "web_search":
         result = subprocess.run(
-            ["hsx", "agent-search", args["query"], "--budget", str(args.get("budget", 2000))],
+            ["fetchium", "agent-search", args["query"], "--budget", str(args.get("budget", 2000))],
             capture_output=True, text=True
         )
         return result.stdout
@@ -132,7 +132,7 @@ def handle_function_call(name, args):
 
 ## Troubleshooting
 
-**`hsx: command not found`** — Add the binary to PATH or use the full path.
+**`fetchium: command not found`** — Add the binary to PATH or use the full path.
 
 **`Ollama not available`** — Start with `ollama serve`. Install at https://ollama.com.
 

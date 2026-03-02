@@ -1,6 +1,6 @@
 //! AI integration — multi-provider synthesis, model routing, sandwich layout (PRD §23).
 //!
-//! ## Pipeline (Mode D — `hsx ai`)
+//! ## Pipeline (Mode D — `fetchium ai`)
 //! `Search → QATBE Extract → Sandwich Layout → AI Provider → Citation Injection → Output`
 //!
 //! ## Supported Providers (2026)

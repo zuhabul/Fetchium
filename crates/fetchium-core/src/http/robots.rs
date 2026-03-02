@@ -112,7 +112,7 @@ pub fn parse_robots_txt(content: &str) -> RobotRules {
         }
         if let Some(agent) = line.strip_prefix("User-agent:") {
             let agent = agent.trim();
-            in_wildcard_block = agent == "*" || agent.eq_ignore_ascii_case("hypersearchx");
+            in_wildcard_block = agent == "*" || agent.eq_ignore_ascii_case("fetchium");
         } else if in_wildcard_block {
             if let Some(path) = line.strip_prefix("Disallow:") {
                 let path = path.trim();

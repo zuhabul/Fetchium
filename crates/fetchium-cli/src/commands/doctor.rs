@@ -1,4 +1,4 @@
-//! `hsx doctor` — system health check (PRD §13).
+//! `fetchium doctor` — system health check (PRD §13).
 
 use colored::Colorize;
 use fetchium_core::ai::providers::ProviderKind;
@@ -170,7 +170,7 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
     println!(
         "  Fallback chain: {}",
         if chain_str.is_empty() {
-            "(none configured — run `hsx provider setup`)"
+            "(none configured — run `fetchium provider setup`)"
                 .yellow()
                 .to_string()
         } else {
@@ -313,9 +313,9 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
             "{}",
             "Tip: Configure a cloud provider for instant AI (no GPU needed):".yellow()
         );
-        println!("  hsx provider setup gemini    # Free tier, gemini-2.0-flash");
-        println!("  hsx provider setup openai    # GPT-4o-mini");
-        println!("  hsx provider setup openrouter # 100+ models");
+        println!("  fetchium provider setup gemini    # Free tier, gemini-2.0-flash");
+        println!("  fetchium provider setup openai    # GPT-4o-mini");
+        println!("  fetchium provider setup openrouter # 100+ models");
         println!();
     }
 

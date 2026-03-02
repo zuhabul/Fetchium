@@ -10,7 +10,7 @@ use serde_json::Value;
 use std::time::Duration;
 
 /// User-agent Reddit requires to avoid 429s.
-const REDDIT_UA: &str = "Fetchium/1.0 (research tool; https://github.com/hypersearchx/hsx)";
+const REDDIT_UA: &str = "Fetchium/1.0 (research tool; https://github.com/fetchium/fetchium)";
 
 /// Search Reddit posts via a multi-tier approach:
 ///

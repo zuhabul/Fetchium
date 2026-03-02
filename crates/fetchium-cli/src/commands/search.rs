@@ -30,7 +30,7 @@ use std::collections::{HashMap, HashSet};
 use std::time::Instant;
 use tracing::info;
 
-/// Run the `hsx search "<query>"` command.
+/// Run the `fetchium search "<query>"` command.
 pub async fn run(
     args: SearchArgs,
     config: &HsxConfig,

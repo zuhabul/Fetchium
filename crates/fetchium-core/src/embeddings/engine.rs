@@ -2,7 +2,7 @@
 //!
 //! Uses a `OnceCell`-backed singleton to initialise the ONNX session exactly once.
 //! On first call, fastembed downloads the model (~90 MB) to:
-//!   `~/.cache/fastembed_cache/` (default) or `$HSX_MODEL_DIR` if set.
+//!   `~/.cache/fastembed_cache/` (default) or `$FETCHIUM_MODEL_DIR` if set.
 //!
 //! All output vectors are L2-normalised to unit length by fastembed.
 
@@ -17,7 +17,7 @@ static ENGINE: OnceCell<TextEmbedding> = OnceCell::new();
 
 /// Directory where fastembed caches downloaded models.
 fn model_cache_dir() -> PathBuf {
-    std::env::var("HSX_MODEL_DIR")
+    std::env::var("FETCHIUM_MODEL_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|_| {
             dirs::cache_dir()

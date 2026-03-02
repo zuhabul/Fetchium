@@ -2,10 +2,10 @@
 //!
 //! | Invocation             | What happens                                         |
 //! |------------------------|------------------------------------------------------|
-//! | `hsx setup`            | Full setup: check + Chrome + SearXNG (all-in-one)    |
-//! | `hsx setup --check`    | Print dependency status only, exit                   |
-//! | `hsx setup --headless` | Download Chrome for Testing only (~200 MB)           |
-//! | `hsx setup --searxng`  | Pull Docker image + start SearXNG on port 4040 only  |
+//! | `fetchium setup`            | Full setup: check + Chrome + SearXNG (all-in-one)    |
+//! | `fetchium setup --check`    | Print dependency status only, exit                   |
+//! | `fetchium setup --headless` | Download Chrome for Testing only (~200 MB)           |
+//! | `fetchium setup --searxng`  | Pull Docker image + start SearXNG on port 4040 only  |
 
 use colored::Colorize;
 use fetchium_core::{
@@ -99,7 +99,7 @@ pub async fn run(args: SetupArgs, config: &HsxConfig) -> anyhow::Result<()> {
             println!(
                 "    Source: {}",
                 if is_managed {
-                    "hsx-managed"
+                    "fetchium-managed"
                 } else {
                     "system Chrome/Chromium"
                 }
@@ -130,9 +130,7 @@ pub async fn run(args: SetupArgs, config: &HsxConfig) -> anyhow::Result<()> {
                     println!("  Binary : {}", binary.display().to_string().cyan());
                     println!();
                     println!("  Auto-resolved via priority chain:");
-                    println!(
-                        "    1. $FETCHIUM_CHROME_PATH env var (or $HSX_CHROME_PATH, deprecated)"
-                    );
+                    println!("    1. $FETCHIUM_CHROME_PATH env var");
                     println!("    2. headless.chrome_path in config.toml");
                     println!("    3. {}/chromium/  ← just installed", data_dir.display());
                     println!("    4. System /usr/bin/chromium-browser");
@@ -182,9 +180,9 @@ pub async fn run(args: SetupArgs, config: &HsxConfig) -> anyhow::Result<()> {
                 println!("  {} Already running at {}", "✓".green().bold(), url.cyan());
                 println!();
                 println!("  {} Nothing to do.", "✓".green().bold());
-                println!("    Logs:    docker logs hsx-searxng -f");
-                println!("    Restart: docker restart hsx-searxng");
-                println!("    Stop:    docker stop hsx-searxng");
+                println!("    Logs:    docker logs fetchium-searxng -f");
+                println!("    Restart: docker restart fetchium-searxng");
+                println!("    Stop:    docker stop fetchium-searxng");
             }
             _ => {
                 let data_dir = config
@@ -204,9 +202,9 @@ pub async fn run(args: SetupArgs, config: &HsxConfig) -> anyhow::Result<()> {
                         println!("           StackOverflow, GitHub, arXiv, Reddit, HackerNews");
                         println!();
                         println!(
-                            "  hsx already configured to use this instance (search.searxng_url)."
+                            "  fetchium already configured to use this instance (search.searxng_url)."
                         );
-                        println!("    Logs:    docker logs hsx-searxng -f");
+                        println!("    Logs:    docker logs fetchium-searxng -f");
                         println!("    Config:  {}/searxng/settings.yml", data_dir.display());
                     }
                     Err(e) => {
@@ -228,9 +226,12 @@ pub async fn run(args: SetupArgs, config: &HsxConfig) -> anyhow::Result<()> {
         println!("{}", "  Setup complete!".green().bold());
         println!();
         println!("  Try it:");
-        println!("    {}", "hsx search \"rust programming\"".cyan());
-        println!("    {}", "hsx fetch https://example.com".cyan());
-        println!("    {}", "hsx setup --check   # verify everything".cyan());
+        println!("    {}", "fetchium search \"rust programming\"".cyan());
+        println!("    {}", "fetchium fetch https://example.com".cyan());
+        println!(
+            "    {}",
+            "fetchium setup --check   # verify everything".cyan()
+        );
         println!();
     }
 

@@ -1,4 +1,4 @@
-//! `hsx workspace` — collaborative research workspaces (PRD §37).
+//! `fetchium workspace` — collaborative research workspaces (PRD §37).
 
 use clap::Subcommand;
 use colored::Colorize;
@@ -10,7 +10,7 @@ pub enum WorkspaceCommand {
     Create {
         /// Workspace name.
         name: String,
-        /// Directory path (defaults to ~/.hypersearchx/workspaces/<name>).
+        /// Directory path (defaults to ~/.fetchium/workspaces/<name>).
         #[arg(long)]
         path: Option<String>,
     },
@@ -62,7 +62,7 @@ pub fn run(cmd: WorkspaceCommand) -> anyhow::Result<()> {
             let workspaces = Workspace::list(&base)?;
             if workspaces.is_empty() {
                 println!(
-                    "{} No workspaces. Use `hsx workspace create <name>`.",
+                    "{} No workspaces. Use `fetchium workspace create <name>`.",
                     "i".blue()
                 );
             } else {

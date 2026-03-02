@@ -1,4 +1,4 @@
-//! `hsx completions` — shell completion script generation (PRD §42).
+//! `fetchium completions` — shell completion script generation (PRD §42).
 
 use clap::CommandFactory;
 use clap_complete::{generate, Shell};

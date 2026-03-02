@@ -6,7 +6,7 @@ use crate::plugin::manifest::PluginManifest;
 /// Install a plugin from a source directory into the plugin directory.
 ///
 /// Copies the entire source directory (which must contain `plugin.toml`) into
-/// `~/.hypersearchx/plugins/<plugin-name>/`.
+/// `~/.fetchium/plugins/<plugin-name>/`.
 pub fn install_plugin(
     source_path: &std::path::Path,
     plugin_dir: &std::path::Path,

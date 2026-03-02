@@ -12,4 +12,3 @@ export function admin_secret(): string {
   }
   return secret;
 }
-

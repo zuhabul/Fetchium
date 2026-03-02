@@ -49,9 +49,9 @@ pub struct ModelInfo {
     pub id: &'static str,
     /// Capability tier — controls default routing behavior.
     pub capability: ModelCapability,
-    /// Short aliases accepted by `hsx provider set <provider> --model <alias>`.
+    /// Short aliases accepted by `fetchium provider set <provider> --model <alias>`.
     pub aliases: &'static [&'static str],
-    /// One-line description shown in `hsx provider models`.
+    /// One-line description shown in `fetchium provider models`.
     pub note: &'static str,
 }
 
@@ -108,7 +108,7 @@ impl ModelRegistry {
 
     /// All known models for a provider, ordered fast → standard → powerful.
     ///
-    /// Used by `hsx provider models` and alias resolution.
+    /// Used by `fetchium provider models` and alias resolution.
     pub fn models_for(kind: ProviderKind) -> &'static [ModelInfo] {
         match kind {
             ProviderKind::GeminiCli => &[
