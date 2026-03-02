@@ -10,127 +10,90 @@ export default function CurlSDK() {
       <div className="text-xs text-slate-500 mb-2 font-mono">SDKs & Integrations</div>
       <h1>curl Examples</h1>
       <p>
-        All Fetchium API endpoints can be called from the command line with <code>curl</code>.
-        Set your API key once and copy-paste any example.
+        Use these copy-paste examples with your Fetchium API key.
       </p>
 
       <h2>Setup</h2>
-      <CodeBlock language="bash" code={`# Set your API key (add to ~/.bashrc or ~/.zshrc)
-export FETCHIUM_API_KEY="fetchium_your_key_here"
-
-# Optional: set base URL
+      <CodeBlock language="bash" code={`export FETCHIUM_API_KEY="fetchium_your_key_here"
 export FETCHIUM_BASE="***REMOVED***"`} />
 
       <h2>Search</h2>
-      <CodeBlock language="bash" code={`# Basic search
-curl -sX POST "$FETCHIUM_BASE/v1/search" \\
-  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{"query": "rust tokio best practices"}' | jq .
-
-# With options
-curl -sX POST "$FETCHIUM_BASE/v1/search" \\
+      <CodeBlock language="bash" code={`curl -sX POST "$FETCHIUM_BASE/v1/search" \\
   -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "query": "rust tokio best practices",
     "tier": "detailed",
-    "max_sources": 8,
-    "freshness": "year",
-    "backends": ["stackoverflow", "github", "brave"]
-  }' | jq '.results[] | {title, url, score}'`} />
+    "max_sources": 8
+  }' | jq .`} />
 
-      <h2>Scrape a URL</h2>
-      <CodeBlock language="bash" code={`# Extract content from any URL
-curl -sX POST "$FETCHIUM_BASE/v1/scrape" \\
-  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{"url": "https://tokio.rs/tokio/tutorial", "tier": "detailed"}' \\
-  | jq '.content'
-
-# Extract just the text
-curl -sX POST "$FETCHIUM_BASE/v1/scrape" \\
-  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{"url": "https://example.com/article", "tier": "summary"}' \\
-  | jq -r '.content.text'`} />
-
-      <h2>Deep research</h2>
-      <CodeBlock language="bash" code={`# Run a deep research query (may take 30–60s)
-curl -sX POST "$FETCHIUM_BASE/v1/research" \\
+      <h2>Scrape</h2>
+      <CodeBlock language="bash" code={`curl -sX POST "$FETCHIUM_BASE/v1/scrape" \\
   -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "query": "compare Rust async runtimes for production use",
-    "depth": "thorough"
+    "url": "https://tokio.rs/tokio/tutorial",
+    "format": "markdown",
+    "token_budget": 3000
+  }' | jq .`} />
+
+      <h2>Research</h2>
+      <CodeBlock language="bash" code={`curl -sX POST "$FETCHIUM_BASE/v1/research" \\
+  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "query": "compare Rust async runtimes for production",
+    "depth": "deep",
+    "citation_style": "inline"
   }' \\
   --max-time 120 | jq .`} />
 
-      <h2>Social research</h2>
-      <CodeBlock language="bash" code={`# Search Reddit and HackerNews
-curl -sX POST "$FETCHIUM_BASE/v1/social" \\
+      <h2>YouTube</h2>
+      <CodeBlock language="bash" code={`curl -sX POST "$FETCHIUM_BASE/v1/youtube/search" \\
   -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{
-    "query": "rust vs go 2025",
-    "platforms": ["reddit", "hackernews"],
-    "sort": "top",
-    "time_range": "year"
-  }' | jq '.results[] | {platform, title, score}'`} />
+  -d '{"query": "Java learning", "max_results": 10}' | jq .
 
-      <h2>YouTube search</h2>
-      <CodeBlock language="bash" code={`# Search YouTube videos
-curl -sX POST "$FETCHIUM_BASE/v1/youtube" \\
+curl -sX POST "$FETCHIUM_BASE/v1/youtube/analyze" \\
   -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{"query": "rust programming tutorial 2025", "max_results": 5}' \\
-  | jq '.results[] | {title, channel, views, url}'`} />
+  -d '{"url":"https://www.youtube.com/watch?v=dQw4w9WgXcQ","transcript":true,"comments":true}' | jq .`} />
 
-      <h2>Usage stats</h2>
-      <CodeBlock language="bash" code={`# Check your current usage
+      <h2>Social</h2>
+      <CodeBlock language="bash" code={`curl -sX POST "$FETCHIUM_BASE/v1/social/research" \\
+  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"query":"rust vs go","platforms":["reddit","hackernews"],"max_per_platform":20}' | jq .
+
+curl -sX POST "$FETCHIUM_BASE/v1/social/reddit" \\
+  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"query":"rust async","max_posts":25}' | jq .
+
+curl -sX POST "$FETCHIUM_BASE/v1/social/hackernews" \\
+  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"query":"rust async","max_results":20}' | jq .`} />
+
+      <h2>Estimate, usage, health</h2>
+      <CodeBlock language="bash" code={`curl -sX POST "$FETCHIUM_BASE/v1/estimate" \\
+  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"url":"https://tokio.rs/tokio/tutorial"}' | jq .
+
 curl -sH "Authorization: Bearer $FETCHIUM_API_KEY" \\
   "$FETCHIUM_BASE/v1/usage" | jq .
 
-# Health check
 curl -s "$FETCHIUM_BASE/health" | jq .`} />
-
-      <h2>Shell function wrappers</h2>
-      <CodeBlock language="bash" filename="~/.bashrc" code={`# Quick search function
-fetchium-search() {
-  curl -sX POST "***REMOVED***/v1/search" \\
-    -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
-    -H "Content-Type: application/json" \\
-    -d "{\\"query\\": \\"$*\\", \\"tier\\": \\"summary\\"}" \\
-    | jq -r '.results[] | "\\(.score | . * 100 | round / 100)  \\(.title)\\n   \\(.url)\\n"'
-}
-
-# Quick URL scraper
-fetchium-scrape() {
-  curl -sX POST "***REMOVED***/v1/scrape" \\
-    -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
-    -H "Content-Type: application/json" \\
-    -d "{\\"url\\": \\"$1\\", \\"tier\\": \\"summary\\"}" \\
-    | jq -r '.content.text'
-}
-
-# Usage: fetchium-search "rust async runtime"
-# Usage: fetchium-scrape https://tokio.rs/tokio/tutorial`} />
-
-      <h2>Or use the CLI directly</h2>
-      <CodeBlock language="bash" code={`# The fetchium CLI is even easier than curl
-fetchium search "rust tokio best practices"
-fetchium fetch https://tokio.rs/tokio/tutorial
-fetchium agent-search "compare Rust async runtimes"
-fetchium social reddit "rust performance"`} />
 
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/sdk/typescript", title: "TypeScript SDK", desc: "JavaScript/TS examples" },
-          { href: "/docs/sdk/python", title: "Python SDK", desc: "Python examples" },
-          { href: "/docs/api/search", title: "Search API", desc: "Full parameter reference" },
-          { href: "/docs/quickstart", title: "Quick Start", desc: "Get your API key" },
-        ].map(l => (
+          { href: "/docs/sdk/typescript", title: "TypeScript", desc: "TS/Node integration" },
+          { href: "/docs/sdk/python", title: "Python", desc: "Python integration" },
+          { href: "/docs/api/search", title: "Search API", desc: "Reference docs" },
+          { href: "/docs/sdk/mcp", title: "MCP Protocol", desc: "Model Context Protocol" },
+        ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>
             <div className="text-xs text-slate-500 mt-1">{l.desc}</div>

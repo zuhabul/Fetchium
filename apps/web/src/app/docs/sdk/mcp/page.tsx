@@ -9,27 +9,13 @@ export default function McpSDK() {
     <article className="docs-content max-w-3xl">
       <div className="text-xs text-slate-500 mb-2 font-mono">SDKs & Integrations</div>
 
-      <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold mb-4">
-        NEW
-      </div>
-
       <h1>MCP Protocol</h1>
       <p>
-        Fetchium implements the <strong>Model Context Protocol (MCP)</strong> — the open
-        standard for connecting AI models to external tools and data sources. Give any
-        MCP-compatible AI assistant (Claude, Cursor, Zed, etc.) direct access to
-        Fetchium search, scraping, and research capabilities.
+        Fetchium exposes an MCP server with tool schemas backed by the same core pipelines as
+        the REST API.
       </p>
 
-      <h2>What MCP gives you</h2>
-      <ul>
-        <li>Claude Desktop, Cursor, and Zed can call Fetchium as a native tool</li>
-        <li>No API calls in your prompt — the AI calls the tool directly</li>
-        <li>Fully typed tool schemas with automatic parameter validation</li>
-        <li>Real-time web search grounding for any AI workflow</li>
-      </ul>
-
-      <h2>Available MCP tools</h2>
+      <h2>Available MCP tools (12)</h2>
       <table>
         <thead><tr><th>Tool name</th><th>Description</th></tr></thead>
         <tbody>
@@ -37,18 +23,18 @@ export default function McpSDK() {
           <tr><td><code>hypersearch_fetch</code></td><td>Query-aware URL extraction</td></tr>
           <tr><td><code>hypersearch_research</code></td><td>Deep multi-source research</td></tr>
           <tr><td><code>hypersearch_estimate</code></td><td>Token cost estimate before fetch</td></tr>
-          <tr><td><code>hypersearch_expand</code></td><td>Progressive detail expansion (PDS)</td></tr>
-          <tr><td><code>youtube_search</code></td><td>YouTube search with ranking</td></tr>
-          <tr><td><code>youtube_analyze</code></td><td>Single-video analysis</td></tr>
-          <tr><td><code>social_research</code></td><td>Unified social research</td></tr>
-          <tr><td><code>reddit_search</code></td><td>Reddit search</td></tr>
-          <tr><td><code>hackernews_search</code></td><td>Hacker News search</td></tr>
+          <tr><td><code>hypersearch_expand</code></td><td>Progressive detail expansion</td></tr>
+          <tr><td><code>youtube_search</code></td><td>YouTube search with VideoFusion ranking</td></tr>
+          <tr><td><code>youtube_analyze</code></td><td>Single-video deep analysis</td></tr>
+          <tr><td><code>youtube_watch</code></td><td>Unified watch report (metadata + transcript + moments)</td></tr>
+          <tr><td><code>youtube_transcript</code></td><td>Transcript extraction with quality and key moments</td></tr>
+          <tr><td><code>social_research</code></td><td>Unified multi-platform social research</td></tr>
+          <tr><td><code>reddit_search</code></td><td>Reddit-focused search pipeline</td></tr>
+          <tr><td><code>hackernews_search</code></td><td>Hacker News search pipeline</td></tr>
         </tbody>
       </table>
 
       <h2>Claude Desktop setup</h2>
-      <p>Add Fetchium to your Claude Desktop config:</p>
-
       <CodeBlock language="json" filename="~/Library/Application Support/Claude/claude_desktop_config.json" code={`{
   "mcpServers": {
     "fetchium": {
@@ -68,49 +54,17 @@ export default function McpSDK() {
   }
 }`} />
 
-      <h2>Tool schema reference</h2>
-
-      <CodeBlock language="json" filename="hypersearch_search tool" code={`{
-  "name": "hypersearch_search",
-  "description": "Search the web with HyperFusion multi-signal ranking. Returns ranked results with extracted content.",
-  "inputSchema": {
-    "type": "object",
-    "required": ["query"],
-    "properties": {
-      "query": {
-        "type": "string",
-        "description": "The search query"
-      },
-      "tier": {
-        "type": "string",
-        "enum": ["key_facts", "summary", "detailed"],
-        "description": "Content detail level",
-        "default": "summary"
-      },
-      "max_sources": {
-        "type": "integer",
-        "description": "Maximum sources to search (1-20)",
-        "default": 5
-      }
-    }
-  }
-}`} />
-
-      <h2>Testing the MCP server</h2>
-      <CodeBlock language="bash" code={`# Start the MCP server manually to test
-fetchium serve --mode mcp
-
-# In another terminal, use the MCP inspector
-npx @modelcontextprotocol/inspector fetchium serve --mode mcp`} />
+      <h2>Smoke test</h2>
+      <CodeBlock language="bash" code={`fetchium serve --mode mcp`} />
 
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/sdk/typescript", title: "TypeScript SDK", desc: "REST API integration" },
-          { href: "/docs/sdk/python", title: "Python SDK", desc: "Python integration" },
-          { href: "/docs/api/search", title: "Search API", desc: "Full REST reference" },
-          { href: "/docs/quickstart", title: "Quick Start", desc: "Get started in 60 seconds" },
-        ].map(l => (
+          { href: "/docs/api/search", title: "Search API", desc: "REST endpoint reference" },
+          { href: "/docs/api/youtube", title: "YouTube API", desc: "Video search and analysis" },
+          { href: "/docs/api/social", title: "Social API", desc: "Cross-platform social research" },
+          { href: "/docs/quickstart", title: "Quick Start", desc: "Get started fast" },
+        ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>
             <div className="text-xs text-slate-500 mt-1">{l.desc}</div>

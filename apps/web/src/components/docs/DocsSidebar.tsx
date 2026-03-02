@@ -25,12 +25,14 @@ const NAV: NavItem[] = [
     title: "API Reference",
     items: [
       { title: "Search", href: "/docs/api/search", badge: "POST" },
-      { title: "Scrape", href: "/docs/api/scrape", badge: "POST" },
+      { title: "Scrape / Fetch", href: "/docs/api/scrape", badge: "POST" },
       { title: "Research", href: "/docs/api/research", badge: "POST" },
-      { title: "YouTube Search", href: "/docs/api/youtube", badge: "POST" },
-      { title: "Social Research", href: "/docs/api/social", badge: "POST" },
+      { title: "Estimate", href: "/docs/api/estimate", badge: "POST" },
+      { title: "YouTube", href: "/docs/api/youtube", badge: "POST" },
+      { title: "Social", href: "/docs/api/social", badge: "POST" },
       { title: "Usage Stats", href: "/docs/api/usage", badge: "GET" },
       { title: "Health Check", href: "/docs/api/health", badge: "GET" },
+      { title: "Admin Keys", href: "/docs/api/admin-keys", badge: "ADMIN" },
     ],
   },
   {
@@ -64,13 +66,13 @@ const NAV: NavItem[] = [
 function SectionGroup({ item, onLinkClick }: { item: NavItem; onLinkClick?: () => void }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(
-    item.items?.some(i => pathname === i.href || pathname.startsWith(i.href + "/")) ?? true
+    item.items?.some((i) => pathname === i.href || pathname.startsWith(i.href + "/")) ?? true,
   );
 
   return (
     <div className="mb-1">
       <button
-        onClick={() => setOpen(o => !o)}
+        onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 hover:text-slate-400 transition-colors"
       >
         {item.title}
@@ -78,7 +80,9 @@ function SectionGroup({ item, onLinkClick }: { item: NavItem; onLinkClick?: () =
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.2 }}
           className="w-3 h-3 shrink-0"
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
         </motion.svg>
@@ -92,7 +96,7 @@ function SectionGroup({ item, onLinkClick }: { item: NavItem; onLinkClick?: () =
             transition={{ duration: 0.25, ease: "easeInOut" }}
             style={{ overflow: "hidden" }}
           >
-            {item.items?.map(link => {
+            {item.items?.map((link) => {
               const active = pathname === link.href;
               return (
                 <Link
@@ -107,11 +111,17 @@ function SectionGroup({ item, onLinkClick }: { item: NavItem; onLinkClick?: () =
                 >
                   <span>{link.title}</span>
                   {link.badge && (
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${
-                      link.badge === "NEW" ? "bg-emerald-500/15 text-emerald-400"
-                      : link.badge === "POST" ? "bg-indigo-500/15 text-indigo-400"
-                      : "bg-sky-500/15 text-sky-400"
-                    }`}>
+                    <span
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${
+                        link.badge === "NEW"
+                          ? "bg-emerald-500/15 text-emerald-400"
+                          : link.badge === "POST"
+                            ? "bg-indigo-500/15 text-indigo-400"
+                            : link.badge === "GET"
+                              ? "bg-sky-500/15 text-sky-400"
+                              : "bg-amber-500/15 text-amber-400"
+                      }`}
+                    >
                       {link.badge}
                     </span>
                   )}
@@ -137,8 +147,12 @@ function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
       <div className="mt-6 mx-3 p-3 rounded-xl border border-indigo-500/20 bg-indigo-500/5">
         <div className="text-xs font-medium text-indigo-300 mb-1">Need help?</div>
         <div className="text-[11px] text-slate-500 mb-2">Join our Discord or open an issue on GitHub.</div>
-        <a href="https://github.com/zuhabul/Fetchium" target="_blank" rel="noopener noreferrer"
-          className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors">
+        <a
+          href="https://github.com/zuhabul/Fetchium"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors"
+        >
           GitHub →
         </a>
       </div>
@@ -154,16 +168,13 @@ interface DocsSidebarProps {
 export default function DocsSidebar({ isOpen = false, onClose }: DocsSidebarProps) {
   return (
     <>
-      {/* Desktop sidebar — stays in flex flow, hidden on mobile */}
       <nav className="hidden sm:block w-60 shrink-0 sticky top-14 self-start h-[calc(100vh-3.5rem)] overflow-y-auto py-6 pr-4 border-r border-white/[0.06]">
         <SidebarContent />
       </nav>
 
-      {/* Mobile sidebar — fixed overlay, completely outside flex flow */}
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -172,7 +183,6 @@ export default function DocsSidebar({ isOpen = false, onClose }: DocsSidebarProp
               className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm sm:hidden"
               onClick={onClose}
             />
-            {/* Drawer */}
             <motion.nav
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
