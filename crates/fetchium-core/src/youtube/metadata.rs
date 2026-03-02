@@ -245,13 +245,61 @@ pub async fn fetch_metadata(
     // Close our sender — channel ends when all spawns drop their senders
     drop(tx);
 
-    // Wait for first result; 4s cap — oEmbed always responds in ~150ms
-    match tokio::time::timeout(Duration::from_secs(4), rx.recv()).await {
-        Ok(Some(meta)) => Ok(meta),
-        _ => Err(HsxError::YouTube(format!(
-            "All metadata sources timed out for {video_id}"
-        ))),
+    // Quality-aware selection:
+    // oEmbed is often first but sparse; allow a short window for richer metadata.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(4);
+    let mut best: Option<VideoMetadata> = None;
+    let mut best_score: u8 = 0;
+
+    loop {
+        let next = tokio::time::timeout_at(deadline, rx.recv()).await;
+        let Some(meta) = (match next {
+            Ok(Some(m)) => Some(m),
+            _ => None,
+        }) else {
+            break;
+        };
+
+        let score = metadata_richness(&meta);
+        if score > best_score {
+            best_score = score;
+            best = Some(meta);
+            // Rich enough metadata found; return early.
+            if best_score >= 6 {
+                break;
+            }
+        } else if best.is_none() {
+            best = Some(meta);
+        }
     }
+
+    best.ok_or_else(|| HsxError::YouTube(format!("All metadata sources timed out for {video_id}")))
+}
+
+fn metadata_richness(meta: &VideoMetadata) -> u8 {
+    let mut score = 0u8;
+    if !meta.title.trim().is_empty() {
+        score += 1;
+    }
+    if !meta.description.trim().is_empty() {
+        score += 1;
+    }
+    if meta.duration_secs > 0 {
+        score += 2;
+    }
+    if meta.view_count > 0 {
+        score += 2;
+    }
+    if meta.like_count > 0 {
+        score += 1;
+    }
+    if !meta.published.trim().is_empty() {
+        score += 1;
+    }
+    if !meta.channel.id.trim().is_empty() {
+        score += 1;
+    }
+    score
 }
 
 /// Fetch full video metadata via YouTube Innertube player API.
