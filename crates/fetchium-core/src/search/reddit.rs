@@ -3,16 +3,21 @@
 //! Reddit's public JSON API appends `.json` to the search URL. No auth is
 //! required, but a descriptive `User-Agent` must be provided to avoid 429s.
 
-use crate::error::HsxResult;
+use crate::error::{HsxError, HsxResult};
 use crate::http::HttpClient;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
 use serde::Deserialize;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::debug;
 
 /// Reddit search JSON endpoint.
 const REDDIT_SEARCH: &str = "https://www.reddit.com/search.json";
+/// Backoff window for Reddit rate-limit / anti-bot bursts.
+const REDDIT_COOLDOWN_SECS: u64 = 180;
+static REDDIT_COOLDOWN_UNTIL_MS: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug, Deserialize)]
 struct RedditResponse {
@@ -73,6 +78,13 @@ impl SearchBackend for RedditBackend {
     }
 
     async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+        let now = now_ms();
+        let cooldown_until = REDDIT_COOLDOWN_UNTIL_MS.load(Ordering::Relaxed);
+        if now < cooldown_until {
+            debug!("Reddit in cooldown window, skipping request");
+            return Ok(vec![]);
+        }
+
         let limit = max_results.min(25);
         let url = format!(
             "{REDDIT_SEARCH}?q={}&limit={limit}&sort=relevance&type=link",
@@ -82,13 +94,25 @@ impl SearchBackend for RedditBackend {
         let resp = match self.client.get(&url).send().await {
             Ok(r) => r,
             Err(e) => {
-                tracing::warn!("Reddit request failed: {e}");
-                return Ok(vec![]);
+                let until = now_ms() + 30_000;
+                REDDIT_COOLDOWN_UNTIL_MS.store(until, Ordering::Relaxed);
+                return Err(HsxError::Search(format!(
+                    "Reddit request failed: {e} (cooldown 30s)"
+                )));
             }
         };
 
         if !resp.status().is_success() {
-            tracing::warn!("Reddit HTTP {}", resp.status());
+            let status = resp.status();
+            if status.as_u16() == 429 || status.as_u16() == 403 {
+                let until = now_ms() + REDDIT_COOLDOWN_SECS * 1000;
+                REDDIT_COOLDOWN_UNTIL_MS.store(until, Ordering::Relaxed);
+                return Err(HsxError::Search(format!(
+                    "Reddit HTTP {status} — cooling down for {}s",
+                    REDDIT_COOLDOWN_SECS
+                )));
+            }
+            debug!("Reddit non-success HTTP {status}, skipping");
             return Ok(vec![]);
         }
 
@@ -151,6 +175,13 @@ impl SearchBackend for RedditBackend {
         debug!("Reddit: {} results for {:?}", results.len(), query);
         Ok(results)
     }
+}
+
+fn now_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
 }
 
 /// Build a human-readable snippet from post metadata.

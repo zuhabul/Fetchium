@@ -745,7 +745,19 @@ async fn fetch_via_whisper(video_id: &str) -> HsxResult<(Vec<TranscriptEntry>, S
         .arg("--output_dir")
         .arg(tmp_dir.to_str().unwrap_or("/tmp"))
         .arg("--fp16")
-        .arg("False");
+        .arg("False")
+        .arg("--temperature")
+        .arg("0")
+        .arg("--best_of")
+        .arg("1")
+        .arg("--beam_size")
+        .arg("1");
+    if let Ok(threads) = std::env::var("FETCHIUM_WHISPER_THREADS") {
+        let valid_threads = threads.parse::<u32>().ok().filter(|t| *t > 0).is_some();
+        if valid_threads {
+            whisper_cmd.arg("--threads").arg(threads);
+        }
+    }
     let whisper_out = tokio::time::timeout(
         Duration::from_secs(whisper_timeout_secs),
         whisper_cmd.output(),
