@@ -20,6 +20,7 @@ use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
 use serde::Deserialize;
+use std::time::Duration;
 #[allow(unused_imports)]
 use tracing::info;
 use tracing::{debug, warn};
@@ -36,6 +37,11 @@ const PUBLIC_SEARXNG_INSTANCES: &[&str] = &[
     "https://searx.be",          // Historical; occasionally offline or CF-blocked
     "https://search.sapti.me",   // Intermittent; kept as last resort
 ];
+
+/// Fast high-signal engines for ultra-low latency with strong quality.
+///
+/// Includes Google as requested, plus other robust web engines.
+const FAST_ENGINE_SET: &str = "google,bing,brave,duckduckgo";
 
 #[derive(Debug, Deserialize)]
 struct SearxResponse {
@@ -142,6 +148,7 @@ impl SearxngBackend {
         max_results: u32,
         time_range: Option<TimeRange>,
         categories: Option<&str>,
+        engines: Option<&str>,
     ) -> HsxResult<Vec<ResultItem>> {
         let instances = self.instance_list();
         let is_local_first = self.custom_url.is_none();
@@ -158,18 +165,23 @@ impl SearxngBackend {
             Some(cats) => format!("&categories={cats}"),
             None => String::new(),
         };
+        let engines_param = match engines {
+            Some(es) if !es.trim().is_empty() => format!("&engines={es}"),
+            _ => String::new(),
+        };
 
         for (i, instance) in instances.iter().enumerate() {
             let is_local = instance.contains("localhost") || instance.contains("127.0.0.1");
-            let url = format!(
-                "{}/search?q={}&format=json&pageno=1&language=en{}{}",
+            let url_primary = format!(
+                "{}/search?q={}&format=json&pageno=1&language=en{}{}{}",
                 instance,
                 urlencoding_encode(query),
                 time_param,
                 cat_param,
+                engines_param,
             );
 
-            match self.http.fetch_text(&url).await {
+            match self.http.fetch_text(&url_primary).await {
                 Ok(body) => {
                     if let Some(results) = Self::parse_response(&body, max_results as usize) {
                         if is_local && is_local_first && i == 0 {
@@ -189,6 +201,35 @@ impl SearxngBackend {
                     }
                 }
             }
+
+            // If fast engine restriction produced no usable results, retry once without
+            // restriction on the same instance for recall.
+            if !engines_param.is_empty() {
+                let url_fallback = format!(
+                    "{}/search?q={}&format=json&pageno=1&language=en{}{}",
+                    instance,
+                    urlencoding_encode(query),
+                    time_param,
+                    cat_param,
+                );
+                match self.http.fetch_text(&url_fallback).await {
+                    Ok(body) => {
+                        if let Some(results) = Self::parse_response(&body, max_results as usize) {
+                            if !results.is_empty() {
+                                debug!(
+                                    "SearXNG {}: recovered {} results via unrestricted fallback",
+                                    instance,
+                                    results.len()
+                                );
+                                return Ok(results);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        debug!("SearXNG {instance} unrestricted fallback failed: {e}");
+                    }
+                }
+            }
         }
 
         warn!("SearXNG: all instances exhausted for query {:?}", query);
@@ -203,7 +244,8 @@ impl SearchBackend for SearxngBackend {
     }
 
     async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
-        self.search_inner(query, max_results, None, None).await
+        self.search_inner(query, max_results, None, None, Some(FAST_ENGINE_SET))
+            .await
     }
 
     async fn search_with_context(
@@ -216,28 +258,73 @@ impl SearchBackend for SearxngBackend {
 
         match ctx.intent {
             QueryIntent::CurrentEvents => {
-                // Fire two parallel SearXNG queries for temporal coverage:
-                // 1. News category → actual news articles (highest quality for temporal)
-                // 2. General + time_range → time-filtered web results
-                let (news, general) = tokio::join!(
-                    self.search_inner(query, max_results, ctx.time_range, Some("news")),
-                    self.search_inner(query, max_results, ctx.time_range, Some("general")),
-                );
-                let mut results = news.unwrap_or_default();
-                results.extend(general.unwrap_or_default());
+                // Current-events queries can trigger slow/brittle public instances.
+                // Use bounded sequential fallbacks to avoid long-tail stalls.
+                let news = tokio::time::timeout(
+                    Duration::from_secs(5),
+                    self.search_inner(
+                        query,
+                        max_results,
+                        ctx.time_range,
+                        Some("news"),
+                        Some(FAST_ENGINE_SET),
+                    ),
+                )
+                .await
+                .ok()
+                .and_then(Result::ok)
+                .unwrap_or_default();
+                if !news.is_empty() {
+                    return Ok(news);
+                }
+
+                let general = tokio::time::timeout(
+                    Duration::from_secs(5),
+                    self.search_inner(
+                        query,
+                        max_results,
+                        ctx.time_range,
+                        Some("general"),
+                        Some(FAST_ENGINE_SET),
+                    ),
+                )
+                .await
+                .ok()
+                .and_then(Result::ok)
+                .unwrap_or_default();
+                let mut results = Vec::new();
+                results.extend(general);
                 Ok(results)
             }
             QueryIntent::Code => {
-                self.search_inner(query, max_results, ctx.time_range, Some("it,general"))
-                    .await
+                self.search_inner(
+                    query,
+                    max_results,
+                    ctx.time_range,
+                    Some("it,general"),
+                    Some(FAST_ENGINE_SET),
+                )
+                .await
             }
             QueryIntent::Academic => {
-                self.search_inner(query, max_results, ctx.time_range, Some("science,general"))
-                    .await
+                self.search_inner(
+                    query,
+                    max_results,
+                    ctx.time_range,
+                    Some("science,general"),
+                    Some(FAST_ENGINE_SET),
+                )
+                .await
             }
             _ => {
-                self.search_inner(query, max_results, ctx.time_range, None)
-                    .await
+                self.search_inner(
+                    query,
+                    max_results,
+                    ctx.time_range,
+                    None,
+                    Some(FAST_ENGINE_SET),
+                )
+                .await
             }
         }
     }
@@ -334,5 +421,10 @@ mod tests {
             "Expected '+' or '%20' in {:?}",
             encoded
         );
+    }
+
+    #[test]
+    fn fast_engine_set_includes_google() {
+        assert!(FAST_ENGINE_SET.split(',').any(|e| e == "google"));
     }
 }

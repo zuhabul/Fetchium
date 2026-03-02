@@ -1,7 +1,20 @@
-# SearXNG settings for Fetchium local instance
-# Optimized for JSON API access with maximum engine coverage
+# SearXNG settings for Fetchium local/prod use
+# Optimized for low tail-latency + high quality JSON API retrieval.
 
-use_default_settings: true
+use_default_settings:
+  engines:
+    # Keep a fast, high-signal engine set (Google included per requirement).
+    keep_only:
+      - google
+      - bing
+      - duckduckgo
+      - brave
+      - wikipedia
+      - stackoverflow
+      - github
+      - arxiv
+      - reddit
+      - hackernews
 
 general:
   instance_name: "Fetchium Local"
@@ -13,6 +26,8 @@ general:
 server:
   # Generate: openssl rand -hex 32
   secret_key: "hsx-searxng-local-secret-key-replace-in-prod-7f8d92a1b3e4c5d6"
+  # Keep false for single-node local setup.
+  # For production behind a public endpoint, set true + valkey.url.
   limiter: false
   image_proxy: false
   http_protocol_version: "1.0"
@@ -46,67 +61,49 @@ search:
     - html
     - json
 
-# Override engines to enable the most reliable ones
+# Override kept engines with tighter per-engine timeouts.
 engines:
   - name: google
-    engine: google
-    shortcut: g
-    disabled: false
-    timeout: 6.0
-    proxies: {}
+    timeout: 4.0
 
   - name: bing
-    engine: bing
-    shortcut: b
-    disabled: false
-    timeout: 6.0
+    timeout: 4.0
 
   - name: duckduckgo
-    engine: duckduckgo
-    shortcut: d
-    disabled: false
-    timeout: 6.0
+    timeout: 4.0
 
   - name: brave
-    engine: brave
-    shortcut: br
-    disabled: false
-    timeout: 6.0
+    timeout: 4.0
 
   - name: wikipedia
-    engine: wikipedia
-    shortcut: w
-    disabled: false
-    timeout: 6.0
+    timeout: 4.0
 
   - name: stackoverflow
-    engine: stackoverflow
-    shortcut: so
-    disabled: false
-    timeout: 6.0
+    timeout: 4.0
 
   - name: github
-    engine: github
-    shortcut: gh
-    disabled: false
-    timeout: 6.0
+    timeout: 4.0
 
   - name: arxiv
-    engine: arxiv
-    shortcut: arx
-    disabled: false
-    timeout: 8.0
+    timeout: 5.0
 
   - name: reddit
-    engine: reddit
-    shortcut: re
-    disabled: false
-    timeout: 6.0
+    timeout: 4.0
+
+  - name: hackernews
+    timeout: 4.0
 
 outgoing:
-  request_timeout: 6.0
-  max_request_timeout: 10.0
+  # Global timeout guard. Engine timeouts above can still override downward.
+  request_timeout: 4.0
+  max_request_timeout: 7.0
   useragent_suffix: ""
-  pool_connections: 100
-  pool_maxsize: 20
+  pool_connections: 200
+  pool_maxsize: 64
+  keepalive_expiry: 15.0
+  retries: 1
   enable_http2: true
+
+# Optional production hardening (recommended for public endpoints):
+# valkey:
+#   url: "valkey://valkey:6379/0"

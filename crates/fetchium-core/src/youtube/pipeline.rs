@@ -169,9 +169,8 @@ pub async fn analyze_single_video(
 /// and oEmbed winning, a batch of 10 completes in ~200ms.
 const MAX_CONCURRENT_FETCHES: usize = 10;
 
-/// Per-handle timeout — generous enough for slow networks but prevents hangs.
-/// With semaphore(10) and 50 videos: 5 batches × 8s = 40s max total.
-const HANDLE_TIMEOUT_SECS: u64 = 8;
+/// Timeout cap for the full parallel fetch phase.
+const FETCH_PHASE_TIMEOUT_SECS: u64 = 10;
 
 /// Fetch data for all search results with bounded concurrency.
 ///
@@ -186,9 +185,10 @@ async fn fetch_all_video_data(
 ) -> Vec<VideoAnalysis> {
     use std::sync::Arc;
     use tokio::sync::Semaphore;
+    use tokio::task::JoinSet;
 
     let sem = Arc::new(Semaphore::new(MAX_CONCURRENT_FETCHES));
-    let mut handles = Vec::new();
+    let mut tasks: JoinSet<HsxResult<VideoAnalysis>> = JoinSet::new();
 
     for result in search_results.iter().take(pipeline_config.max_videos) {
         let video_id = result.video_id.clone();
@@ -198,7 +198,7 @@ async fn fetch_all_video_data(
         let fetch_comments_flag = pipeline_config.fetch_comments;
         let sem = sem.clone();
 
-        handles.push(tokio::spawn(async move {
+        tasks.spawn(async move {
             // Acquire slot before fetching; auto-released when _permit drops
             let _permit = sem.acquire_owned().await.ok();
             fetch_single_video_data(
@@ -209,19 +209,30 @@ async fn fetch_all_video_data(
                 fetch_comments_flag,
             )
             .await
-        }));
+        });
     }
 
-    // Collect results; 30s global cap so the pipeline always terminates
+    // Collect results as tasks complete. Use a hard deadline for the whole phase
+    // so one straggler doesn't block all already-finished analyses.
+    let fetch_deadline =
+        tokio::time::Instant::now() + std::time::Duration::from_secs(FETCH_PHASE_TIMEOUT_SECS);
     let mut analyses = Vec::new();
-    for handle in handles {
-        match tokio::time::timeout(std::time::Duration::from_secs(HANDLE_TIMEOUT_SECS), handle)
-            .await
-        {
-            Ok(Ok(Ok(analysis))) => analyses.push(analysis),
-            Ok(Ok(Err(e))) => tracing::debug!("Video analysis failed: {e}"),
-            Ok(Err(e)) => tracing::debug!("Video task panicked: {e}"),
-            Err(_) => tracing::debug!("Video fetch timed out"),
+    while !tasks.is_empty() {
+        let wait_next = tokio::time::timeout_at(fetch_deadline, tasks.join_next()).await;
+        match wait_next {
+            Ok(Some(Ok(Ok(analysis)))) => analyses.push(analysis),
+            Ok(Some(Ok(Err(e)))) => tracing::debug!("Video analysis failed: {e}"),
+            Ok(Some(Err(e))) => tracing::debug!("Video task panicked: {e}"),
+            Ok(None) => break,
+            Err(_) => {
+                tracing::debug!(
+                    "Video fetch phase hit {}s deadline; aborting remaining {} task(s)",
+                    FETCH_PHASE_TIMEOUT_SECS,
+                    tasks.len()
+                );
+                tasks.abort_all();
+                break;
+            }
         }
     }
 

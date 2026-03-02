@@ -752,6 +752,12 @@ pub struct YouTubeArgs {
 pub enum YouTubeAction {
     /// Search YouTube for videos
     Search(YtSearchArgs),
+    /// Fetch YouTube video metadata (Supadata parity: /youtube/video)
+    Video(YtVideoArgs),
+    /// Fetch YouTube channel metadata/videos (Supadata parity: /youtube/channel*)
+    Channel(YtChannelArgs),
+    /// Fetch YouTube playlist videos (Supadata parity: /youtube/playlist/videos)
+    Playlist(YtPlaylistArgs),
     /// Analyze a specific YouTube video
     Analyze(YtAnalyzeArgs),
     /// Extract transcript from a YouTube video
@@ -768,6 +774,33 @@ pub struct YtSearchArgs {
     pub query: String,
     /// Maximum number of results
     #[arg(short = 'n', long, default_value = "10")]
+    pub max_results: usize,
+}
+
+#[derive(Debug, Parser)]
+pub struct YtVideoArgs {
+    /// YouTube video URL or video id
+    pub input: String,
+}
+
+#[derive(Debug, Parser)]
+pub struct YtChannelArgs {
+    /// Channel URL, channel id (UC...), or handle (@name)
+    pub input: String,
+    /// Include channel video ids (yt-dlp flat playlist)
+    #[arg(long)]
+    pub videos: bool,
+    /// Max video ids when --videos is set
+    #[arg(short = 'n', long, default_value = "50")]
+    pub max_results: usize,
+}
+
+#[derive(Debug, Parser)]
+pub struct YtPlaylistArgs {
+    /// Playlist URL or playlist id
+    pub input: String,
+    /// Max playlist video ids
+    #[arg(short = 'n', long, default_value = "100")]
     pub max_results: usize,
 }
 
@@ -793,6 +826,15 @@ pub struct YtTranscriptArgs {
     /// Align transcript to video chapters
     #[arg(long)]
     pub chapters: bool,
+    /// Output transcript text only (no metadata/moments)
+    #[arg(long)]
+    pub text: bool,
+    /// Output transcript in chunked segments
+    #[arg(long)]
+    pub chunks: bool,
+    /// Approximate chunk size in characters (used with --chunks)
+    #[arg(long, default_value = "500")]
+    pub chunk_size: usize,
 }
 
 #[derive(Debug, Parser)]
@@ -1163,6 +1205,15 @@ pub struct TranscribeArgs {
     /// Align transcript to video chapters (YouTube only)
     #[arg(long)]
     pub chapters: bool,
+    /// Output text only (no metadata wrapper)
+    #[arg(long)]
+    pub text: bool,
+    /// Output chunked transcript segments
+    #[arg(long)]
+    pub chunks: bool,
+    /// Approximate chunk size in characters (used with --chunks)
+    #[arg(long, default_value = "500")]
+    pub chunk_size: usize,
 }
 
 // ─── Summarize ───────────────────────────────────────────────────
