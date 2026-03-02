@@ -144,7 +144,7 @@ impl IntoResponse for AuthError {
         let mut response = (
             status,
             Json(serde_json::json!({
-                "type": format!("https://docs.hypersearchx.com/errors/{error_type}"),
+                "type": format!("https://docs.fetchium.com/errors/{error_type}"),
                 "title": message,
                 "status": status.as_u16(),
             })),

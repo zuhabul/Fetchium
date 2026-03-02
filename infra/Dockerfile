@@ -40,6 +40,6 @@ RUN mkdir -p /data
 VOLUME ["/data"]
 
 EXPOSE 3000
-ENV HSX_DATA_DIR=/data
+ENV FETCHIUM_DATA_DIR=/data
 
 CMD ["fetchium", "serve", "--mode", "rest"]

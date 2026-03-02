@@ -46,7 +46,7 @@ async fn api_root() -> axum::Json<serde_json::Value> {
     axum::Json(serde_json::json!({
         "name": "Fetchium API",
         "version": env!("CARGO_PKG_VERSION"),
-        "docs": "https://docs.hypersearchx.com",
+        "docs": "https://docs.fetchium.com",
         "endpoints": {
             "search":   "POST /v1/search",
             "scrape":   "POST /v1/scrape",

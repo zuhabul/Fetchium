@@ -3,14 +3,14 @@
 //! All platforms use a single flat interface:
 //!
 //! ```text
-//! hsx social "query"                    # unified (all platforms, default)
-//! hsx social "query" --twitter          # Twitter/X only
-//! hsx social "query" --reddit           # Reddit only
-//! hsx social "query" --tiktok           # TikTok only
-//! hsx social "query" --hackernews       # Hacker News only
-//! hsx social "query" --facebook         # Facebook only
-//! hsx social "query" --unified --ideas  # Unified + content ideas
-//! hsx social "query" --reddit --subreddits r/ML,r/AI  # Reddit subreddits
+//! fetchium social "query"                    # unified (all platforms, default)
+//! fetchium social "query" --twitter          # Twitter/X only
+//! fetchium social "query" --reddit           # Reddit only
+//! fetchium social "query" --tiktok           # TikTok only
+//! fetchium social "query" --hackernews       # Hacker News only
+//! fetchium social "query" --facebook         # Facebook only
+//! fetchium social "query" --unified --ideas  # Unified + content ideas
+//! fetchium social "query" --reddit --subreddits r/ML,r/AI  # Reddit subreddits
 //! ```
 
 use anyhow::Result;
@@ -67,7 +67,7 @@ fn resolve_platform(mut args: SocialArgs) -> SocialArgs {
     args
 }
 
-/// Run the `hsx social` command.
+/// Run the `fetchium social` command.
 pub async fn run(args: SocialArgs, config: &HsxConfig, format: Format) -> Result<()> {
     let args = resolve_platform(args);
     let http = HttpClient::new(config)?;

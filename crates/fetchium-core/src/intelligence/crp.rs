@@ -279,7 +279,7 @@ fn step_investigation(c: &CrpContradiction) -> ResolutionStep {
             "⚠ High-severity contradiction — manual verification strongly recommended."
         }
         Severity::Medium => {
-            "Consider running `hsx research` with both claims to gather more evidence."
+            "Consider running `fetchium research` with both claims to gather more evidence."
         }
         Severity::Low => "Low-severity contradiction — likely a minor phrasing difference.",
     };

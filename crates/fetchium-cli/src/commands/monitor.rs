@@ -1,4 +1,4 @@
-//! `hsx monitor` — watch a URL for content changes.
+//! `fetchium monitor` — watch a URL for content changes.
 
 use anyhow::{Context, Result};
 use fetchium_core::config::HsxConfig;
@@ -98,7 +98,7 @@ pub async fn run(args: MonitorArgs, config: &HsxConfig) -> Result<()> {
             _ => {
                 eprintln!(
                     "Not enough snapshots for {url}. \
-                         Run `hsx monitor check {url}` first."
+                         Run `fetchium monitor check {url}` first."
                 );
             }
         },

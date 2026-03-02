@@ -63,11 +63,11 @@ pub struct LayerStats {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/// Returns the default intelligence data directory: `~/.hypersearchx/intelligence/`.
+/// Returns the default intelligence data directory: `~/.fetchium/intelligence/`.
 pub fn intelligence_data_dir() -> std::path::PathBuf {
     dirs::home_dir()
         .unwrap_or_else(|| std::path::PathBuf::from("."))
-        .join(".hypersearchx")
+        .join(".fetchium")
         .join("intelligence")
 }
 

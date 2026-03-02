@@ -20,7 +20,7 @@ pub struct IndexedDocument {
     pub fetched_at: DateTime<Utc>,
     /// SHA-256 of the extracted content (change-detection).
     pub content_hash: String,
-    /// Pre-computed embedding, present after `hsx index build`.
+    /// Pre-computed embedding, present after `fetchium index build`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub embedding: Option<Vec<f32>>,
 }

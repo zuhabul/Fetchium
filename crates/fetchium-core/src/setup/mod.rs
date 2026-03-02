@@ -1,6 +1,6 @@
 //! Environment setup utilities — Chromium download, path resolution, dependency checks.
 //!
-//! These functions power `hsx setup` and are also used internally by the browser
+//! These functions power `fetchium setup` and are also used internally by the browser
 //! pool to locate Chrome without manual configuration.
 
 pub mod checker;

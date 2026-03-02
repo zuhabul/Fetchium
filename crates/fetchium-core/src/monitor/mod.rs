@@ -2,11 +2,11 @@
 //!
 //! ## Commands
 //! ```bash
-//! hsx monitor <url>                     # one-shot check for changes
-//! hsx monitor <url> --diff              # show diff since last snapshot
-//! hsx monitor <url> --interval 1h       # register for periodic polling
-//! hsx monitor list                      # list all monitored URLs
-//! hsx monitor remove <url>              # stop monitoring
+//! fetchium monitor <url>                     # one-shot check for changes
+//! fetchium monitor <url> --diff              # show diff since last snapshot
+//! fetchium monitor <url> --interval 1h       # register for periodic polling
+//! fetchium monitor list                      # list all monitored URLs
+//! fetchium monitor remove <url>              # stop monitoring
 //! ```
 
 pub mod diff;

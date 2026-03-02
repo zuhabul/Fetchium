@@ -2,7 +2,7 @@
 //!
 //! Feature-gated behind `vector-search`. Enable with:
 //! ```bash
-//! cargo build -p hsx-core --features vector-search
+//! cargo build -p fetchium-core --features vector-search
 //! ```
 //!
 //! Uses SIMD-accelerated approximate nearest neighbour search with cosine distance.

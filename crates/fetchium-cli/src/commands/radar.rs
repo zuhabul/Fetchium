@@ -1,4 +1,4 @@
-//! `hsx radar` — personalized research radar (PRD §33).
+//! `fetchium radar` — personalized research radar (PRD §33).
 
 use colored::Colorize;
 use fetchium_core::intelligence::intelligence_data_dir;

@@ -1,4 +1,4 @@
-//! `hsx agent-fetch` — agent-optimized URL fetch (JSON segments).
+//! `fetchium agent-fetch` — agent-optimized URL fetch (JSON segments).
 //!
 //! Fetches a URL, runs the CEP extraction pipeline, applies QATBE and PDS,
 //! and returns a structured JSON payload for AI agent consumption.

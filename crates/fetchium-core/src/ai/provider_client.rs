@@ -50,7 +50,7 @@ pub async fn chat_with_fallback(
 
     if chain.is_empty() {
         return Err(HsxError::AiUnavailable(
-            "No AI providers configured. Run `hsx provider setup` to get started.".into(),
+            "No AI providers configured. Run `fetchium provider setup` to get started.".into(),
         ));
     }
 
@@ -123,7 +123,7 @@ async fn call_provider(
                      Options:\n  \
                      • Set OPENAI_API_KEY env var\n  \
                      • Log in via Codex CLI: codex auth login\n  \
-                     • Run `hsx provider setup openai`"
+                     • Run `fetchium provider setup openai`"
                         .into(),
                 ));
             };
@@ -158,7 +158,7 @@ async fn call_provider(
                      Options:\n  \
                      • Set ANTHROPIC_API_KEY env var\n  \
                      • Run `claude` once to log in (uses your Claude Max/Pro subscription)\n  \
-                     • Run `hsx provider setup anthropic`"
+                     • Run `fetchium provider setup anthropic`"
                         .into(),
                 ));
             };
@@ -196,8 +196,8 @@ async fn call_provider(
                         Err(HsxError::AiUnavailable(
                             "Gemini: no API keys configured and OAuth session expired.\n  \
                              Fix (choose one):\n  \
-                             • hsx provider set gemini --key AIza...        (set primary key)\n  \
-                             • hsx provider set gemini --add-key AIza...    (add to key pool)\n  \
+                             • fetchium provider set gemini --key AIza...        (set primary key)\n  \
+                             • fetchium provider set gemini --add-key AIza...    (add to key pool)\n  \
                              • export GEMINI_API_KEY=AIza...                (env var)\n  \
                              • gemini auth login                            (re-authenticate OAuth)\n  \
                              Get a free key: https://aistudio.google.com/app/apikey".into(),
@@ -214,7 +214,7 @@ async fn call_provider(
             let key = entry.resolve_api_key("OPENROUTER_API_KEY")
                 .or_else(crate::ai::credentials::read_openrouter_key)
                 .ok_or_else(|| HsxError::AiUnavailable(
-                    "OpenRouter API key not set. Set OPENROUTER_API_KEY or run `hsx provider setup openrouter`.".into(),
+                    "OpenRouter API key not set. Set OPENROUTER_API_KEY or run `fetchium provider setup openrouter`.".into(),
                 ))?;
             let base = entry
                 .base_url
@@ -237,7 +237,7 @@ async fn call_provider(
                     "Antigravity: no OpenCode account found.\n  \
                      Install OpenCode and add an account: https://opencode.ai\n  \
                      Then install the plugin: npm i -g opencode-antigravity-auth\n  \
-                     Run `hsx provider setup antigravity` to verify."
+                     Run `fetchium provider setup antigravity` to verify."
                         .into(),
                 )
             })?;
@@ -373,10 +373,7 @@ async fn call_openai_compat(
     // OpenRouter requires these headers for proper attribution
     if kind == ProviderKind::OpenRouter {
         req = req
-            .header(
-                "HTTP-Referer",
-                "https://github.com/hypersearchx/hypersearchx",
-            )
+            .header("HTTP-Referer", "https://github.com/fetchium/fetchium")
             .header("X-Title", "Fetchium");
     }
 
@@ -1039,9 +1036,9 @@ async fn call_gemini_oauth(
             return Err(HsxError::AiUnavailable(
                 "Gemini OAuth token has insufficient scopes for the REST API.
                    Fix (choose one):
-                   • hsx provider auth gemini       (interactive setup — API key or OAuth)
+                   • fetchium provider auth gemini       (interactive setup — API key or OAuth)
                    • export GEMINI_API_KEY=AIza...   (free key: aistudio.google.com/app/apikey)
-                   • hsx provider chain gemini_cli   (use the local `gemini` CLI instead)"
+                   • fetchium provider chain gemini_cli   (use the local `gemini` CLI instead)"
                     .into(),
             ));
         }
@@ -1385,7 +1382,7 @@ async fn call_gemini_cli(
 
 // ─── Provider availability check ─────────────────────────────────────────────
 
-/// Status of an AI provider for display in `hsx provider list` / `hsx doctor`.
+/// Status of an AI provider for display in `fetchium provider list` / `fetchium doctor`.
 #[derive(Debug)]
 pub enum ProviderStatus {
     /// Provider is reachable and configured.
@@ -1479,7 +1476,7 @@ pub async fn check_provider(
                 ProviderStatus::Unavailable {
                     reason: "No API key or valid OAuth session.\n    \
                              Fix: run `gemini auth login`  OR  \
-                             `hsx provider set gemini --key AIza...`"
+                             `fetchium provider set gemini --key AIza...`"
                         .into(),
                 }
             }
@@ -1493,7 +1490,7 @@ pub async fn check_provider(
             } else {
                 ProviderStatus::Unavailable {
                     reason:
-                        "No API key (set OPENROUTER_API_KEY or run `hsx provider setup openrouter`)"
+                        "No API key (set OPENROUTER_API_KEY or run `fetchium provider setup openrouter`)"
                             .into(),
                 }
             }

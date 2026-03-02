@@ -1,4 +1,4 @@
-//! Environment checks for `hsx setup --check` and `hsx doctor`.
+//! Environment checks for `fetchium setup --check` and `fetchium doctor`.
 
 use crate::config::HsxConfig;
 
@@ -48,14 +48,14 @@ pub fn run_checks(config: &HsxConfig) -> Vec<CheckItem> {
         detail: chrome
             .as_ref()
             .map(|p| p.display().to_string())
-            .unwrap_or_else(|| "Not found — run: hsx setup --headless".into()),
+            .unwrap_or_else(|| "Not found — run: fetchium setup --headless".into()),
     });
 
-    // Show whether Chrome is hsx-managed or system
+    // Show whether Chrome is fetchium-managed or system
     if let Some(ref p) = chrome {
         let managed = config.data_dir().join("chromium");
         let source = if p.starts_with(&managed) {
-            "(hsx-managed)"
+            "(fetchium-managed)"
         } else if p.to_string_lossy().contains("snap") {
             "(snap)"
         } else {

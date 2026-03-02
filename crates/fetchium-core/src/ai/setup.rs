@@ -298,12 +298,14 @@ pub fn format_setup_guide(spec: &DeviceSpec) -> String {
     out.push_str("  Quick-start (best model for your device):\n\n");
     out.push_str("    ollama serve &\n");
     out.push_str(&format!("    ollama pull {best}\n"));
-    out.push_str("    hsx ai \"your question\"\n\n");
+    out.push_str("    fetchium ai \"your question\"\n\n");
 
     out.push_str(
-        "  After pulling a model, re-run your command — hsx will detect it automatically.\n",
+        "  After pulling a model, re-run your command — fetchium will detect it automatically.\n",
     );
-    out.push_str("  Tip: Add `default_model = \"{best}\"` to ~/.hypersearchx/config.toml to always use it.\n");
+    out.push_str(
+        "  Tip: Add `default_model = \"{best}\"` to ~/.fetchium/config.toml to always use it.\n",
+    );
 
     out
 }
@@ -313,7 +315,7 @@ pub fn format_no_models_hint(spec: &DeviceSpec) -> String {
     let best = best_model_name(spec.usable_ram_gb);
     format!(
         "No models installed. Run: ollama pull {best}\n  \
-         Then re-run your command. Use `hsx doctor` for a full setup guide."
+         Then re-run your command. Use `fetchium doctor` for a full setup guide."
     )
 }
 

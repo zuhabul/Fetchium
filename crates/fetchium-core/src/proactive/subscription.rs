@@ -145,11 +145,11 @@ impl SubscriptionStore {
             .collect())
     }
 
-    /// Default database path: `~/.hypersearchx/subscriptions.db`.
+    /// Default database path: `~/.fetchium/subscriptions.db`.
     pub fn default_db_path() -> std::path::PathBuf {
         dirs::home_dir()
             .unwrap_or_else(|| std::path::PathBuf::from("."))
-            .join(".hypersearchx")
+            .join(".fetchium")
             .join("subscriptions.db")
     }
 

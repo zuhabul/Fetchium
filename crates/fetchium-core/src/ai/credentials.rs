@@ -597,11 +597,10 @@ impl SubscriptionAuth {
 //   "anthropic":  { "type": "oauth", "access": "...", "refresh": "...", "expires": 1234567890000 }
 // }
 //
-// Path resolution:
-// 1. ~/.fetchium/auth.json  (new canonical location)
-// 2. ~/.hypersearchx/auth.json  (legacy — used if the new path doesn't exist yet)
+// Path:
+// ~/.fetchium/auth.json
 
-/// Credential stored in `~/.fetchium/auth.json` (or legacy `~/.hypersearchx/auth.json`).
+/// Credential stored in `~/.fetchium/auth.json`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum HsxAuth {
@@ -609,7 +608,7 @@ pub enum HsxAuth {
     Api { key: String },
     /// Multiple API keys — random selection with 429/rate-limit failover.
     ///
-    /// Store additional keys with `hsx provider set <name> --add-key KEY`.
+    /// Store additional keys with `fetchium provider set <name> --add-key KEY`.
     /// Keys are tried in random order; on HTTP 429 the next key is tried.
     ApiPool { keys: Vec<String> },
     /// OAuth token credential (access + refresh).
@@ -678,26 +677,10 @@ impl HsxAuth {
 
 /// Path to the unified auth store file.
 ///
-/// Returns `~/.fetchium/auth.json` (new canonical location).
-/// If that file doesn't exist but `~/.hypersearchx/auth.json` does,
-/// the legacy path is returned for backward compatibility.
-/// New writes always go to `~/.fetchium/auth.json`.
+/// Returns `~/.fetchium/auth.json`.
 pub fn hsx_auth_path() -> std::path::PathBuf {
     let home = dirs::home_dir().unwrap_or_default();
-    let new_path = home.join(".fetchium").join("auth.json");
-    if new_path.exists() {
-        return new_path;
-    }
-    let legacy_path = home.join(".hypersearchx").join("auth.json");
-    if legacy_path.exists() {
-        tracing::debug!(
-            "Using legacy auth store ~/.hypersearchx/auth.json — \
-             it will be migrated to ~/.fetchium/auth.json on next write"
-        );
-        return legacy_path;
-    }
-    // Neither exists — return new canonical path (will be created on first write)
-    new_path
+    home.join(".fetchium").join("auth.json")
 }
 
 /// Read all entries from the auth store.
@@ -721,14 +704,12 @@ pub fn hsx_auth_get(provider: &str) -> Option<HsxAuth> {
 
 /// Write one entry to the auth store (creates the file if absent, 0o600 permissions).
 ///
-/// Always writes to `~/.fetchium/auth.json` (new canonical location),
-/// reading from the legacy path first if it exists so existing keys are preserved.
+/// Always writes to `~/.fetchium/auth.json`.
 pub fn hsx_auth_set(provider: &str, auth: HsxAuth) -> Result<(), Box<dyn std::error::Error>> {
-    // Always write to the new canonical location
     let home = dirs::home_dir().unwrap_or_default();
     let path = home.join(".fetchium").join("auth.json");
 
-    let mut map = hsx_auth_all(); // reads from whichever path currently exists
+    let mut map = hsx_auth_all();
     map.insert(provider.to_string(), auth);
 
     if let Some(parent) = path.parent() {

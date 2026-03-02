@@ -143,7 +143,7 @@ async fn handle_message(
                         "tools": {}
                     },
                     "serverInfo": {
-                        "name": "hypersearchx",
+                        "name": "fetchium",
                         "version": env!("CARGO_PKG_VERSION"),
                     }
                 }),
@@ -428,8 +428,8 @@ mod tests {
     #[test]
     fn tool_definitions_has_correct_count() {
         let tools = tools::tool_definitions();
-        // 5 original + 2 YouTube + 3 social (social_research, reddit_search, hackernews_search)
-        assert_eq!(tools.len(), 10);
+        // 5 original + 4 YouTube + 3 social tools
+        assert_eq!(tools.len(), 12);
     }
 
     #[test]

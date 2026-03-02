@@ -4,7 +4,7 @@
 
 ### Ollama Not Found
 
-**Symptom:** `hsx ai` or `hsx deep` fails with "AI engine unavailable"
+**Symptom:** `fetchium ai` or `fetchium deep` fails with "AI engine unavailable"
 
 **Fix:**
 ```bash
@@ -19,7 +19,7 @@ ollama serve
 ollama pull deepseek-r1:7b
 
 # Test
-hsx ai "Hello"
+fetchium ai "Hello"
 ```
 
 ### Chromium Not Found
@@ -32,7 +32,7 @@ brew install chromium  # macOS
 # or: apt install chromium-browser  # Debian/Ubuntu
 
 # Test
-hsx fetch https://react.dev --tier complete
+fetchium fetch https://react.dev --tier complete
 ```
 
 ### Rate Limiting
@@ -50,7 +50,7 @@ hsx fetch https://react.dev --tier complete
 
 **Diagnostics:**
 ```bash
-hsx doctor  # Check resource tier and available tools
+fetchium doctor  # Check resource tier and available tools
 ```
 
 **Fixes:**
@@ -65,7 +65,7 @@ hsx doctor  # Check resource tier and available tools
 **Fix:**
 ```bash
 export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
-cargo build -p hsx-cli
+cargo build -p fetchium-cli
 ```
 
 ### Token Budget Exceeded
@@ -74,8 +74,8 @@ cargo build -p hsx-cli
 
 **Fix:**
 ```bash
-hsx fetch <url> --budget 8000   # Increase budget
-hsx fetch <url> --tier key_facts  # Use smaller tier
+fetchium fetch <url> --budget 8000   # Increase budget
+fetchium fetch <url> --tier key_facts  # Use smaller tier
 ```
 
 ### Timeout Errors
@@ -88,20 +88,20 @@ hsx fetch <url> --tier key_facts  # Use smaller tier
 echo 'timeout_secs = 30' >> ~/.fetchium/config.toml
 
 # Or per-command (if supported)
-export HSX_TIMEOUT=30
+export FETCHIUM_TIMEOUT=30
 ```
 
 ## Diagnostic Commands
 
 ```bash
 # Full system health check
-hsx doctor
+fetchium doctor
 
 # Check version
-hsx --version
+fetchium --version
 
 # Test basic search (offline)
-hsx search "test" --format json 2>&1 | head -20
+fetchium search "test" --format json 2>&1 | head -20
 
 # Check config
 cat ~/.fetchium/config.toml

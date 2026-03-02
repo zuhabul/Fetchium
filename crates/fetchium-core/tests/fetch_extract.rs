@@ -7,7 +7,7 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 fn load_fixture(name: &str) -> String {
-    // CARGO_MANIFEST_DIR = crates/hsx-core, fixtures are at workspace root tests/fixtures/
+    // CARGO_MANIFEST_DIR = crates/fetchium-core, fixtures are at workspace root tests/fixtures/
     let p = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .unwrap() // crates/

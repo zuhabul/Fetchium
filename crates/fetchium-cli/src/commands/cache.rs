@@ -1,4 +1,4 @@
-//! `hsx cache` — cache management.
+//! `fetchium cache` — cache management.
 
 use crate::cli::{CacheAction, CacheArgs};
 use fetchium_core::config::HsxConfig;

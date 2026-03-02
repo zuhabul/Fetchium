@@ -1,4 +1,4 @@
-//! `hsx provider` — manage AI provider authentication and fallback chain.
+//! `fetchium provider` — manage AI provider authentication and fallback chain.
 //!
 //! ## Subcommands
 //! - `list`                      Show all providers with status
@@ -48,7 +48,7 @@ async fn list(config: &HsxConfig) -> anyhow::Result<()> {
     if chain.is_empty() {
         println!(
             "  {}",
-            "Fallback chain: (empty — run `hsx provider setup` to get started)".yellow()
+            "Fallback chain: (empty — run `fetchium provider setup` to get started)".yellow()
         );
     } else {
         let chain_str: Vec<&str> = chain.iter().map(|k| k.slug()).collect();
@@ -117,17 +117,17 @@ async fn list(config: &HsxConfig) -> anyhow::Result<()> {
     println!(
         "  {} Quick setup:  {}",
         "→".dimmed(),
-        "hsx provider setup".cyan()
+        "fetchium provider setup".cyan()
     );
     println!(
         "  {} Set order:    {}",
         "→".dimmed(),
-        "hsx provider chain gemini openai ollama".cyan()
+        "fetchium provider chain gemini openai ollama".cyan()
     );
     println!(
         "  {} Connectivity: {}",
         "→".dimmed(),
-        "hsx provider test".cyan()
+        "fetchium provider test".cyan()
     );
 
     Ok(())
@@ -219,7 +219,9 @@ fn setup_wizard(config: &HsxConfig) -> anyhow::Result<()> {
     println!("{}", "Fetchium AI Provider Setup Wizard".bold().cyan());
     println!("{}", "─".repeat(70));
     println!();
-    println!("Configures AI providers for `hsx ai`, `hsx research`, and all AI commands.");
+    println!(
+        "Configures AI providers for `fetchium ai`, `fetchium research`, and all AI commands."
+    );
     println!(
         "Config saved to: {}",
         HsxConfig::config_file_path().display().to_string().cyan()
@@ -397,13 +399,13 @@ fn setup_wizard(config: &HsxConfig) -> anyhow::Result<()> {
         println!();
         println!(
             "{}",
-            "No providers configured. Run `hsx provider setup <name>` to add one.".yellow()
+            "No providers configured. Run `fetchium provider setup <name>` to add one.".yellow()
         );
         println!("  Examples:");
-        println!("    hsx provider setup antigravity   # free via OpenCode");
-        println!("    hsx provider setup gemini        # free API key");
-        println!("    hsx provider setup anthropic     # Claude Code OAuth auto-detected");
-        println!("    hsx provider setup ollama        # local, no key needed");
+        println!("    fetchium provider setup antigravity   # free via OpenCode");
+        println!("    fetchium provider setup gemini        # free API key");
+        println!("    fetchium provider setup anthropic     # Claude Code OAuth auto-detected");
+        println!("    fetchium provider setup ollama        # local, no key needed");
         return Ok(());
     }
 
@@ -418,14 +420,14 @@ fn setup_wizard(config: &HsxConfig) -> anyhow::Result<()> {
         chain_choice.join(" → ").cyan().bold()
     );
     println!();
-    println!("  Test now:  {}", "hsx provider test".cyan());
+    println!("  Test now:  {}", "fetchium provider test".cyan());
     println!(
         "  Try it:    {}",
-        "hsx ai \"What is quantum computing?\"".cyan()
+        "fetchium ai \"What is quantum computing?\"".cyan()
     );
     println!(
         "  Reorder:   {}",
-        "hsx provider chain antigravity gemini anthropic openai ollama".dimmed()
+        "fetchium provider chain antigravity gemini anthropic openai ollama".dimmed()
     );
 
     Ok(())
@@ -494,7 +496,7 @@ fn setup_one(config: &HsxConfig, kind: ProviderKind) -> anyhow::Result<()> {
                 "  {} Antigravity added to fallback chain.",
                 "✓".green().bold()
             );
-            println!("  Test: {}", "hsx provider test antigravity".cyan());
+            println!("  Test: {}", "fetchium provider test antigravity".cyan());
             return Ok(());
         } else {
             println!("  {} No Antigravity account found.", "✗".red().bold());
@@ -511,7 +513,7 @@ fn setup_one(config: &HsxConfig, kind: ProviderKind) -> anyhow::Result<()> {
             println!("    3. Authenticate:      {}", "opencode auth".cyan());
             println!(
                 "    4. Re-run this setup: {}",
-                "hsx provider setup antigravity".cyan()
+                "fetchium provider setup antigravity".cyan()
             );
             println!();
             println!("  This gives you FREE access to Gemini 3 Pro/Flash and Claude Sonnet/Opus.");
@@ -676,7 +678,7 @@ fn setup_one(config: &HsxConfig, kind: ProviderKind) -> anyhow::Result<()> {
     println!();
     println!(
         "  Test: {}",
-        format!("hsx provider test {}", kind.slug()).cyan()
+        format!("fetchium provider test {}", kind.slug()).cyan()
     );
 
     Ok(())
@@ -786,7 +788,7 @@ fn set_provider(config: &HsxConfig, args: &ProviderSetArgs) -> anyhow::Result<()
     println!(
         "  {} Test now:  {}",
         "→".dimmed(),
-        format!("hsx provider test {}", kind.slug()).cyan()
+        format!("fetchium provider test {}", kind.slug()).cyan()
     );
 
     Ok(())
@@ -868,7 +870,7 @@ async fn test(config: &HsxConfig, provider_slug: Option<&str>) -> anyhow::Result
     if kinds.is_empty() {
         println!(
             "{}",
-            "No providers in fallback chain. Run `hsx provider setup` first.".yellow()
+            "No providers in fallback chain. Run `fetchium provider setup` first.".yellow()
         );
         return Ok(());
     }
@@ -918,7 +920,7 @@ fn show_keys(config: &HsxConfig) -> anyhow::Result<()> {
     println!("    {}", cfg_path.display().to_string().cyan().bold());
     println!(
         "    Edit directly  OR  use: {}",
-        "hsx provider set <name> --key <KEY>".cyan()
+        "fetchium provider set <name> --key <KEY>".cyan()
     );
     println!();
 
@@ -1075,17 +1077,19 @@ fn show_keys(config: &HsxConfig) -> anyhow::Result<()> {
     println!(
         "    {} Set primary key:    {}",
         "•".cyan(),
-        "hsx provider set gemini --key AIza...".cyan().bold()
+        "fetchium provider set gemini --key AIza...".cyan().bold()
     );
     println!(
         "    {} Add key to pool:    {}",
         "•".cyan(),
-        "hsx provider set gemini --add-key AIza...".cyan().bold()
+        "fetchium provider set gemini --add-key AIza..."
+            .cyan()
+            .bold()
     );
     println!(
         "    {} Add multiple:       {}",
         "•".cyan(),
-        "hsx provider set gemini --add-key KEY1 --add-key KEY2".cyan()
+        "fetchium provider set gemini --add-key KEY1 --add-key KEY2".cyan()
     );
     println!(
         "    {} Current pool:       {}",
@@ -1111,25 +1115,25 @@ fn show_keys(config: &HsxConfig) -> anyhow::Result<()> {
             "Gemini",
             "aistudio.google.com/app/apikey",
             "FREE, 15 req/min per key",
-            "hsx provider set gemini --key AIza...  (or --add-key for pool)",
+            "fetchium provider set gemini --key AIza...  (or --add-key for pool)",
         ),
         (
             "Anthropic",
             "console.anthropic.com/settings/keys",
             "$5 credit on signup",
-            "hsx provider set anthropic --key sk-ant-...",
+            "fetchium provider set anthropic --key sk-ant-...",
         ),
         (
             "OpenRouter",
             "openrouter.ai/keys",
             "100+ models, pay-per-use",
-            "hsx provider set openrouter --key sk-or-...",
+            "fetchium provider set openrouter --key sk-or-...",
         ),
         (
             "OpenAI",
             "platform.openai.com/api-keys",
             "pay-per-use",
-            "hsx provider set openai --key sk-...",
+            "fetchium provider set openai --key sk-...",
         ),
         (
             "OpenCode",
@@ -1158,7 +1162,7 @@ fn show_keys(config: &HsxConfig) -> anyhow::Result<()> {
     );
     println!(
         "    {}",
-        "hsx provider chain gemini anthropic openrouter ollama".cyan()
+        "fetchium provider chain gemini anthropic openrouter ollama".cyan()
     );
     println!();
     println!(
@@ -1388,7 +1392,10 @@ async fn auth_gemini(config: &HsxConfig) -> anyhow::Result<()> {
         );
         println!("  {} Gemini added to fallback chain", "✓".green().bold());
         println!();
-        println!("  Test now: {}", "./target/debug/hsx ai \"Hello\"".cyan());
+        println!(
+            "  Test now: {}",
+            "./target/debug/fetchium ai \"Hello\"".cyan()
+        );
         Ok(())
     }
 }
@@ -1487,7 +1494,7 @@ async fn auth_gemini_oauth(config: &HsxConfig) -> anyhow::Result<()> {
         if tokio::time::Instant::now() > deadline {
             println!();
             return Err(anyhow::anyhow!(
-                "OAuth authorization timed out. Run `hsx provider auth gemini` to try again."
+                "OAuth authorization timed out. Run `fetchium provider auth gemini` to try again."
             ));
         }
         print!("●");
@@ -1524,7 +1531,7 @@ async fn auth_gemini_oauth(config: &HsxConfig) -> anyhow::Result<()> {
                 "expired_token" => {
                     println!();
                     return Err(anyhow::anyhow!(
-                        "Authorization code expired. Run `hsx provider auth gemini` to try again."
+                        "Authorization code expired. Run `fetchium provider auth gemini` to try again."
                     ));
                 }
                 other => {
@@ -1582,7 +1589,10 @@ async fn auth_gemini_oauth(config: &HsxConfig) -> anyhow::Result<()> {
         );
         println!("  {} Gemini added to fallback chain", "✓".green().bold());
         println!();
-        println!("  Test now: {}", "./target/debug/hsx ai \"Hello\"".cyan());
+        println!(
+            "  Test now: {}",
+            "./target/debug/fetchium ai \"Hello\"".cyan()
+        );
         return Ok(());
     }
 }
@@ -1674,7 +1684,7 @@ fn auth_api_key(
     println!();
     println!(
         "  Test now: {}",
-        format!("./target/debug/hsx provider test {}", kind.slug()).cyan()
+        format!("./target/debug/fetchium provider test {}", kind.slug()).cyan()
     );
     Ok(())
 }
@@ -1710,7 +1720,9 @@ fn auth_antigravity() -> anyhow::Result<()> {
     println!("  {} Verify setup:", "4.".cyan().bold());
     println!(
         "     {}",
-        "./target/debug/hsx provider test antigravity".cyan().bold()
+        "./target/debug/fetchium provider test antigravity"
+            .cyan()
+            .bold()
     );
     println!();
 
@@ -1728,7 +1740,7 @@ fn auth_antigravity() -> anyhow::Result<()> {
         println!("  {} No Antigravity account found yet.", "→".yellow());
         println!(
             "     Complete the steps above, then run: {}",
-            "./target/debug/hsx provider auth antigravity".cyan()
+            "./target/debug/fetchium provider auth antigravity".cyan()
         );
     }
     Ok(())
@@ -1752,7 +1764,7 @@ fn auth_gemini_cli() -> anyhow::Result<()> {
     println!();
     println!(
         "  Test: {}",
-        "./target/debug/hsx provider test gemini_cli".cyan()
+        "./target/debug/fetchium provider test gemini_cli".cyan()
     );
     Ok(())
 }
@@ -1844,7 +1856,7 @@ fn prompt_hidden(question: &str) -> String {
 
 // ─── models ───────────────────────────────────────────────────────────────────
 
-/// `hsx provider models [provider]` — list known models, tiers, and aliases.
+/// `fetchium provider models [provider]` — list known models, tiers, and aliases.
 fn show_models(provider_slug: Option<&str>) -> anyhow::Result<()> {
     const ALL: &[ProviderKind] = &[
         ProviderKind::GeminiCli,
@@ -1871,7 +1883,7 @@ fn show_models(provider_slug: Option<&str>) -> anyhow::Result<()> {
     println!("{}", "AI Model Registry".bold().cyan());
     println!(
         "{}",
-        "Models are centrally managed — use short aliases with `hsx provider set`".dimmed()
+        "Models are centrally managed — use short aliases with `fetchium provider set`".dimmed()
     );
     println!("{}", "─".repeat(72));
     println!();
@@ -1917,17 +1929,17 @@ fn show_models(provider_slug: Option<&str>) -> anyhow::Result<()> {
     println!(
         "  {} Set a model:  {}",
         "→".dimmed(),
-        "hsx provider set gemini_cli --model gemini-3-flash-preview".cyan()
+        "fetchium provider set gemini_cli --model gemini-3-flash-preview".cyan()
     );
     println!(
         "  {} Use an alias: {}",
         "→".dimmed(),
-        "hsx provider set anthropic --model haiku".cyan()
+        "fetchium provider set anthropic --model haiku".cyan()
     );
     println!(
         "  {} Reset to default: {}",
         "→".dimmed(),
-        "hsx provider set gemini_cli --model \"\"".cyan()
+        "fetchium provider set gemini_cli --model \"\"".cyan()
     );
 
     Ok(())
