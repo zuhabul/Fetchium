@@ -6,16 +6,22 @@
 //! StackExchange returns gzip-compressed responses by default; reqwest handles
 //! decompression automatically when built with the `gzip` feature.
 
+use crate::error::HsxError;
 use crate::error::HsxResult;
 use crate::http::HttpClient;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
 use serde::Deserialize;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::debug;
 
 /// StackExchange API v2.3 search endpoint.
 const SO_API: &str = "https://api.stackexchange.com/2.3/search";
+/// Backoff window when StackExchange starts rate-limiting aggressively.
+const SO_COOLDOWN_SECS: u64 = 300;
+static SO_COOLDOWN_UNTIL_MS: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug, Deserialize)]
 struct SoResponse {
@@ -89,6 +95,13 @@ impl SearchBackend for StackOverflowBackend {
     }
 
     async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+        let now = now_ms();
+        let cooldown_until = SO_COOLDOWN_UNTIL_MS.load(Ordering::Relaxed);
+        if now < cooldown_until {
+            debug!("StackOverflow in cooldown window, skipping request");
+            return Ok(vec![]);
+        }
+
         let page_size = max_results.min(30);
         let mut url = format!(
             "{SO_API}?intitle={}&site=stackoverflow&order=desc&sort=relevance\
@@ -114,7 +127,26 @@ impl SearchBackend for StackOverflowBackend {
         };
 
         if !resp.status().is_success() {
-            tracing::warn!("StackOverflow HTTP {}", resp.status());
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            if status.as_u16() == 429
+                || body.contains("throttle_violation")
+                || body.contains("backoff")
+                || body.contains("quota")
+            {
+                let until = now_ms() + SO_COOLDOWN_SECS * 1000;
+                SO_COOLDOWN_UNTIL_MS.store(until, Ordering::Relaxed);
+                return Err(HsxError::Search(format!(
+                    "StackOverflow rate-limited (HTTP {status}) — cooling down for {}s",
+                    SO_COOLDOWN_SECS
+                )));
+            }
+            if status.is_server_error() {
+                return Err(HsxError::Search(format!(
+                    "StackOverflow upstream server error: HTTP {status}"
+                )));
+            }
+            debug!("StackOverflow non-success HTTP {status}, skipping");
             return Ok(vec![]);
         }
 
@@ -159,6 +191,13 @@ impl SearchBackend for StackOverflowBackend {
         debug!("StackOverflow: {} results for {:?}", results.len(), query);
         Ok(results)
     }
+}
+
+fn now_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
 }
 
 /// Build a human-readable snippet from question metadata.
