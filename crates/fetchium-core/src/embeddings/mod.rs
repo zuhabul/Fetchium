@@ -2,7 +2,7 @@
 //!
 //! Feature-gated behind `embeddings`. Enable with:
 //! ```bash
-//! cargo build -p hsx-core --features embeddings
+//! cargo build -p fetchium-core --features embeddings
 //! ```
 //!
 //! ## Pipeline

@@ -3,7 +3,7 @@
 //! AI-native search engine for humans and agents.
 //!
 //! `fetchium-core` contains all algorithms, pipelines, and data structures that power the
-//! `hsx` CLI and MCP/REST API servers. Everything in this crate is designed for both
+//! `fetchium` CLI and MCP/REST API servers. Everything in this crate is designed for both
 //! interactive use (humans) and programmatic use (AI agents).
 //!
 //! ## Architecture

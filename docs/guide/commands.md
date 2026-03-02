@@ -4,12 +4,12 @@ All 25+ Fetchium commands, grouped by category.
 
 ## Search Commands
 
-### `hsx search`
+### `fetchium search`
 
 Search the web using multiple engines with intelligent ranking.
 
 ```
-hsx search <QUERY> [OPTIONS]
+fetchium search <QUERY> [OPTIONS]
 ```
 
 | Flag | Default | Description |
@@ -21,17 +21,17 @@ hsx search <QUERY> [OPTIONS]
 
 **Examples:**
 ```bash
-hsx search "Rust async runtime comparison"
-hsx search "quantum computing 2026" --format json --max-results 5
-hsx search "site:arxiv.org transformer attention" --engines scholar
+fetchium search "Rust async runtime comparison"
+fetchium search "quantum computing 2026" --format json --max-results 5
+fetchium search "site:arxiv.org transformer attention" --engines scholar
 ```
 
-### `hsx fetch`
+### `fetchium fetch`
 
 Fetch and extract content from a URL using CEP.
 
 ```
-hsx fetch <URL> [OPTIONS]
+fetchium fetch <URL> [OPTIONS]
 ```
 
 | Flag | Default | Description |
@@ -42,164 +42,164 @@ hsx fetch <URL> [OPTIONS]
 
 **Examples:**
 ```bash
-hsx fetch https://doc.rust-lang.org/book/ch04-01.html
-hsx fetch https://arxiv.org/abs/2106.09685 --tier detailed --format json
+fetchium fetch https://doc.rust-lang.org/book/ch04-01.html
+fetchium fetch https://arxiv.org/abs/2106.09685 --tier detailed --format json
 ```
 
-### `hsx deep`
+### `fetchium deep`
 
 Multi-agent deep research using AMRS (Adaptive Multi-Agent Research Swarm).
 
 ```
-hsx deep <QUERY> [OPTIONS]
+fetchium deep <QUERY> [OPTIONS]
 ```
 
 **Examples:**
 ```bash
-hsx deep "Compare tokio vs async-std performance in 2026"
-hsx deep "Rust embedded systems best practices" --format json
+fetchium deep "Compare tokio vs async-std performance in 2026"
+fetchium deep "Rust embedded systems best practices" --format json
 ```
 
 ## Agent Commands (JSON output for AI frameworks)
 
-### `hsx agent-search`
+### `fetchium agent-search`
 
 Token-budgeted search returning structured JSON with segments.
 
 ```
-hsx agent-search <QUERY> [--budget N]
+fetchium agent-search <QUERY> [--budget N]
 ```
 
-### `hsx agent-fetch`
+### `fetchium agent-fetch`
 
 Fetch with semantic extraction, returning JSON + content hash.
 
 ```
-hsx agent-fetch <URL> [--budget N] [--tier TIER]
+fetchium agent-fetch <URL> [--budget N] [--tier TIER]
 ```
 
-### `hsx agent-research`
+### `fetchium agent-research`
 
 Full research pipeline returning structured AgentResearchOutput JSON.
 
 ```
-hsx agent-research <QUERY> [--budget N]
+fetchium agent-research <QUERY> [--budget N]
 ```
 
 ## Research & AI Commands
 
-### `hsx research`
+### `fetchium research`
 
 Comprehensive multi-source research report with citations.
 
 ```
-hsx research <QUERY> [--format FORMAT] [--cite-style STYLE]
+fetchium research <QUERY> [--format FORMAT] [--cite-style STYLE]
 ```
 
 Citation styles: `inline`, `footnote`, `apa`, `mla`, `chicago`, `ieee`, `bibtex`
 
-### `hsx ai`
+### `fetchium ai`
 
 AI synthesis using Ollama. Streams response to stdout.
 
 ```
-hsx ai <QUERY> [--model MODEL]
+fetchium ai <QUERY> [--model MODEL]
 ```
 
 ## Index & Comparison Commands
 
-### `hsx compare`
+### `fetchium compare`
 
 Compare two or more items side-by-side.
 
 ```
-hsx compare "Tokio vs async-std" [--format FORMAT]
+fetchium compare "Tokio vs async-std" [--format FORMAT]
 ```
 
-### `hsx index`
+### `fetchium index`
 
 Manage the local document index.
 
 ```
-hsx index add <PATH>
-hsx index search <QUERY>
-hsx index stats
-hsx index clear
+fetchium index add <PATH>
+fetchium index search <QUERY>
+fetchium index stats
+fetchium index clear
 ```
 
-### `hsx monitor`
+### `fetchium monitor`
 
 Monitor URLs for changes.
 
 ```
-hsx monitor add <URL> [--interval INTERVAL]
-hsx monitor list
-hsx monitor check
-hsx monitor diff <URL>
-hsx monitor remove <ID>
+fetchium monitor add <URL> [--interval INTERVAL]
+fetchium monitor list
+fetchium monitor check
+fetchium monitor diff <URL>
+fetchium monitor remove <ID>
 ```
 
 Interval format: `30s`, `5m`, `1h`, `7d`
 
 ## Intelligence Commands
 
-### `hsx radar`
+### `fetchium radar`
 
 Personalized research radar based on your search history.
 
 ```
-hsx radar [--limit N]
+fetchium radar [--limit N]
 ```
 
-### `hsx digest`
+### `fetchium digest`
 
 Generate a research digest for topics.
 
 ```
-hsx digest --period weekly --topics "rust,wasm,llm"
-hsx digest --period daily --topics "security" --output digest.md
+fetchium digest --period weekly --topics "rust,wasm,llm"
+fetchium digest --period daily --topics "security" --output digest.md
 ```
 
-### `hsx subscribe`
+### `fetchium subscribe`
 
 Subscribe to topic alerts.
 
 ```
-hsx subscribe add "Rust security advisories" --interval 1d
-hsx subscribe list
-hsx subscribe remove <ID>
+fetchium subscribe add "Rust security advisories" --interval 1d
+fetchium subscribe list
+fetchium subscribe remove <ID>
 ```
 
 ## Export Commands
 
 ```
-hsx export --format pdf --output report.pdf
-hsx export --format docx --output report.docx
-hsx export --format bibtex --output refs.bib
+fetchium export --format pdf --output report.pdf
+fetchium export --format docx --output report.docx
+fetchium export --format bibtex --output refs.bib
 ```
 
 ## System Commands
 
-### `hsx doctor`
+### `fetchium doctor`
 
 Check system health and dependencies.
 
-### `hsx serve`
+### `fetchium serve`
 
 Start MCP server or REST API.
 
 ```
-hsx serve --mcp           # MCP stdio server for AI frameworks
-hsx serve --rest          # REST API on :8080
-hsx serve --both          # Both simultaneously
+fetchium serve --mcp           # MCP stdio server for AI frameworks
+fetchium serve --rest          # REST API on :8080
+fetchium serve --both          # Both simultaneously
 ```
 
-### `hsx completions`
+### `fetchium completions`
 
 Generate shell completion scripts.
 
 ```
-hsx completions bash > ~/.bash_completion.d/hsx
-hsx completions zsh > ~/.zsh/completions/_hsx
-hsx completions fish > ~/.config/fish/completions/hsx.fish
+fetchium completions bash > ~/.bash_completion.d/fetchium
+fetchium completions zsh > ~/.zsh/completions/_hsx
+fetchium completions fish > ~/.config/fish/completions/fetchium.fish
 ```

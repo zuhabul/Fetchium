@@ -6,7 +6,7 @@
 //! - FPM: Failure Pattern Memory
 //! - QPM: Query Prediction Model
 //!
-//! Data stored in `~/.hypersearchx/intelligence/`.
+//! Data stored in `~/.fetchium/intelligence/`.
 
 pub mod fpm;
 pub mod pkg;

@@ -1,7 +1,7 @@
 //! Plugin system — manifest-based registry + CLI lifecycle (PRD §29).
 //!
 //! Supports 6 plugin types: Backend, Extractor, Ranker, Formatter, Validator, AiProvider.
-//! Plugins are discovered from `~/.hypersearchx/plugins/` via `plugin.toml` manifests.
+//! Plugins are discovered from `~/.fetchium/plugins/` via `plugin.toml` manifests.
 //! Native (.so/.dylib) and WASM loading are planned but currently handled through the
 //! manifest/registry layer only.
 

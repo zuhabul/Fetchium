@@ -1,6 +1,6 @@
 # Installation
 
-Fetchium (`hsx`) is available via npm, Cargo, or as a pre-built binary.
+Fetchium (`fetchium`) is available via npm, Cargo, or as a pre-built binary.
 
 ## npm (Recommended)
 
@@ -8,7 +8,7 @@ The easiest way to install on any platform:
 
 ```bash
 npm install -g fetchium
-hsx --version
+fetchium --version
 ```
 
 This downloads a pre-built binary for your platform (Linux x64/ARM64, macOS x64/ARM64, Windows x64).
@@ -18,8 +18,8 @@ This downloads a pre-built binary for your platform (Linux x64/ARM64, macOS x64/
 Install from crates.io (requires Rust 1.75+):
 
 ```bash
-cargo install hsx-cli
-hsx --version
+cargo install fetchium-cli
+fetchium --version
 ```
 
 ## Pre-built Binaries
@@ -37,21 +37,21 @@ Download the latest release from [GitHub Releases](https://github.com/fetchium/f
 ```bash
 # Example: macOS ARM64
 curl -fsSL https://github.com/fetchium/fetchium/releases/latest/download/fetchium-aarch64-apple-darwin.tar.gz | tar xz
-sudo mv hsx /usr/local/bin/
-hsx --version
+sudo mv fetchium /usr/local/bin/
+fetchium --version
 ```
 
 ## Optional Dependencies
 
 | Tool | Purpose | Install |
 |------|---------|---------|
-| [Ollama](https://ollama.com) | Local AI synthesis (`hsx ai`, `hsx deep`) | `brew install ollama` |
+| [Ollama](https://ollama.com) | Local AI synthesis (`fetchium ai`, `fetchium deep`) | `brew install ollama` |
 | [Chromium](https://chromium.org) | JavaScript-rendered pages (CEP Layer 3) | `brew install chromium` |
-| [Pandoc](https://pandoc.org) | PDF/DOCX export (`hsx export`) | `brew install pandoc` |
+| [Pandoc](https://pandoc.org) | PDF/DOCX export (`fetchium export`) | `brew install pandoc` |
 | [Typst](https://typst.app) | Fast PDF export (preferred over LaTeX) | `brew install typst` |
 | [Tesseract](https://github.com/tesseract-ocr/tesseract) | OCR for image-heavy pages (CEP Layer 5) | `brew install tesseract` |
 
-Run `hsx doctor` to check which tools are available on your system.
+Run `fetchium doctor` to check which tools are available on your system.
 
 ## Configuration
 

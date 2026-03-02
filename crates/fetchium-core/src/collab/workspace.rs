@@ -64,11 +64,11 @@ impl Workspace {
         Ok(workspaces)
     }
 
-    /// Default workspace base directory: `~/.hypersearchx/workspaces/`.
+    /// Default workspace base directory: `~/.fetchium/workspaces/`.
     pub fn default_base_dir() -> std::path::PathBuf {
         dirs::home_dir()
             .unwrap_or_else(|| std::path::PathBuf::from("."))
-            .join(".hypersearchx")
+            .join(".fetchium")
             .join("workspaces")
     }
 

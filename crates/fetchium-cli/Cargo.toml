@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 description = "Fetchium CLI — the universal retrieval layer for the internet"
 
-# cargo-binstall: `cargo binstall hsx` downloads a pre-built binary instead of compiling.
+# cargo-binstall: `cargo binstall fetchium` downloads a pre-built binary instead of compiling.
 # Maps platform names to GitHub Release artifact filenames.
 [package.metadata.binstall]
 pkg-url = "https://github.com/zuhabul/Fetchium/releases/download/v{ version }/fetchium-{ target-family }-{ target-arch }.tar.gz"

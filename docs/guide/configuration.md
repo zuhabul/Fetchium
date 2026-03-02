@@ -79,11 +79,11 @@ All settings can be overridden via environment variables:
 
 | Variable | Config Key | Example |
 |----------|-----------|---------|
-| `HSX_MAX_RESULTS` | `general.max_results` | `HSX_MAX_RESULTS=20` |
-| `HSX_TIMEOUT` | `fetch.timeout_secs` | `HSX_TIMEOUT=30` |
-| `HSX_OLLAMA_HOST` | `ai.ollama_host` | `HSX_OLLAMA_HOST=http://192.168.1.5:11434` |
-| `HSX_DEFAULT_MODEL` | `ai.default_model` | `HSX_DEFAULT_MODEL=llama3.2:3b` |
-| `HSX_DATA_DIR` | `general.data_dir` | `HSX_DATA_DIR=/var/lib/hsx` |
+| `FETCHIUM_MAX_RESULTS` | `general.max_results` | `FETCHIUM_MAX_RESULTS=20` |
+| `FETCHIUM_TIMEOUT` | `fetch.timeout_secs` | `FETCHIUM_TIMEOUT=30` |
+| `FETCHIUM_OLLAMA_HOST` | `ai.ollama_host` | `FETCHIUM_OLLAMA_HOST=http://192.168.1.5:11434` |
+| `FETCHIUM_DEFAULT_MODEL` | `ai.default_model` | `FETCHIUM_DEFAULT_MODEL=llama3.2:3b` |
+| `FETCHIUM_DATA_DIR` | `general.data_dir` | `FETCHIUM_DATA_DIR=/var/lib/fetchium` |
 
 ## API Keys
 
@@ -98,6 +98,6 @@ google_cx = "partner-pub-..."
 
 Or via environment variables:
 ```bash
-export HSX_BRAVE_API_KEY="BSA..."
-export HSX_GOOGLE_API_KEY="AIza..."
+export FETCHIUM_BRAVE_API_KEY="BSA..."
+export FETCHIUM_GOOGLE_API_KEY="AIza..."
 ```

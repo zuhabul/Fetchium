@@ -869,7 +869,7 @@ default_budget = 4096
 
 ### Environment Variables
 
-All config values can be overridden with environment variables. The `HSX_` prefix is supported for backward compatibility; `FETCHIUM_` is preferred.
+All config values can be overridden with environment variables using the `FETCHIUM_` prefix.
 
 ```bash
 FETCHIUM_SEARXNG_URL=***REMOVED***

@@ -2,10 +2,9 @@
 //!
 //! ## Priority chain for Chrome binary resolution
 //!
-//! 1. `FETCHIUM_CHROME_PATH` env var (or `HSX_CHROME_PATH`, deprecated)
+//! 1. `FETCHIUM_CHROME_PATH` env var
 //! 2. `config.headless.chrome_path` (config.toml `[headless]` section)
 //! 3. fetchium-managed: `~/.fetchium/chromium/<platform>/chrome`
-//!    (falls back to `~/.hypersearchx/chromium/` if `~/.fetchium/chromium/` is absent)
 //! 4. System paths: `/usr/bin/chromium-browser`, `/usr/bin/chromium`, etc.
 //!
 //! ## Download
@@ -34,17 +33,10 @@ const MANIFEST_URL: &str = "https://googlechromelabs.github.io/chrome-for-testin
 ///
 /// Returns `None` if no Chrome/Chromium is found anywhere on the system.
 pub fn resolve_chrome_path(config: &HsxConfig) -> Option<PathBuf> {
-    // 1. Env var override — FETCHIUM_CHROME_PATH preferred, HSX_CHROME_PATH deprecated
+    // 1. Env var override
     if let Ok(val) = std::env::var("FETCHIUM_CHROME_PATH") {
         let p = PathBuf::from(&val);
         if p.exists() {
-            return Some(p);
-        }
-    }
-    if let Ok(val) = std::env::var("HSX_CHROME_PATH") {
-        let p = PathBuf::from(&val);
-        if p.exists() {
-            tracing::warn!("HSX_CHROME_PATH is deprecated — rename it to FETCHIUM_CHROME_PATH");
             return Some(p);
         }
     }
@@ -61,16 +53,6 @@ pub fn resolve_chrome_path(config: &HsxConfig) -> Option<PathBuf> {
     let new_managed = chrome_binary_in(&home.join(".fetchium").join("chromium"));
     if new_managed.exists() {
         return Some(new_managed);
-    }
-
-    // 3b. Legacy hsx-managed download (`~/.hypersearchx/chromium/`) — backward compat
-    let legacy_managed = chrome_binary_in(&home.join(".hypersearchx").join("chromium"));
-    if legacy_managed.exists() {
-        tracing::warn!(
-            "Using Chrome from legacy ~/.hypersearchx/chromium/ — \
-             re-run `fetchium setup --headless` to install to ~/.fetchium/chromium/"
-        );
-        return Some(legacy_managed);
     }
 
     // 4. System-installed Chrome/Chromium

@@ -33,7 +33,7 @@ fn map_tier(tier: Tier) -> PdsTier {
     }
 }
 
-/// Run the `hsx fetch <url>` / `hsx view <url>` command.
+/// Run the `fetchium fetch <url>` / `fetchium view <url>` command.
 pub async fn run(args: FetchArgs, config: &HsxConfig, format: Format) -> anyhow::Result<()> {
     // ── Step 1: Validate URL ──────────────────────────────────────────────
     let url = args.url.trim();

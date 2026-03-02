@@ -20,7 +20,7 @@
 //! ## Headless Browser Note
 //!
 //! For maximum data richness on Facebook, enable the `headless` feature and
-//! use `hsx-core::browser` — Chromium can render JS-gated content. This is
+//! use `fetchium-core::browser` — Chromium can render JS-gated content. This is
 //! the most reliable approach but requires ~200MB of browser binary.
 
 pub mod analysis;

@@ -84,11 +84,11 @@ impl PluginRegistry {
         self.entries.remove(name)
     }
 
-    /// Default plugin directory: `~/.hypersearchx/plugins/`.
+    /// Default plugin directory: `~/.fetchium/plugins/`.
     pub fn default_dir() -> std::path::PathBuf {
         dirs::home_dir()
             .unwrap_or_else(|| std::path::PathBuf::from("."))
-            .join(".hypersearchx")
+            .join(".fetchium")
             .join("plugins")
     }
 }

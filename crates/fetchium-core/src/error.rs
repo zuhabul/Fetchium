@@ -54,7 +54,7 @@ impl std::fmt::Display for StructuredError {
 
 impl std::error::Error for StructuredError {}
 
-/// Main error type for hsx-core.
+/// Main error type for fetchium-core.
 #[derive(Debug, thiserror::Error)]
 pub enum HsxError {
     #[error("Network error: {0}")]

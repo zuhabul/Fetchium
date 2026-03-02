@@ -42,32 +42,26 @@ use tower_http::trace::TraceLayer;
 pub struct ApiServerConfig {
     pub host: String,
     pub port: u16,
-    /// Directory for auth.db (default: ~/.fetchium/, falls back to ~/.hypersearchx/)
+    /// Directory for auth.db (default: ~/.fetchium/)
     pub data_dir: PathBuf,
-    /// Allowed CORS origins (default: all hypersearchx subdomains)
+    /// Allowed CORS origins (default: Fetchium and production app domains)
     pub allowed_origins: Vec<String>,
 }
 
 impl Default for ApiServerConfig {
     fn default() -> Self {
-        // Use ~/.fetchium/ if it exists, otherwise fall back to legacy ~/.hypersearchx/
         let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
-        let new_dir = home.join(".fetchium");
-        let legacy_dir = home.join(".hypersearchx");
-        let data_dir = if new_dir.exists() {
-            new_dir
-        } else if legacy_dir.exists() {
-            legacy_dir
-        } else {
-            new_dir // default to new canonical location when neither exists
-        };
+        let data_dir = home.join(".fetchium");
         Self {
             host: "0.0.0.0".into(),
             port: 3000,
             data_dir,
             allowed_origins: vec![
-                "https://hypersearchx.zuhabul.com".into(),
-                "https://app.hypersearchx.zuhabul.com".into(),
+                "https://fetchium.com".into(),
+                "https://app.fetchium.com".into(),
+                "***REMOVED***".into(),
+                "https://app.ogroshor.com".into(),
+                "https://admin.ogroshor.com".into(),
                 "http://localhost:3200".into(),
                 "http://localhost:3100".into(),
             ],

@@ -1,4 +1,4 @@
-//! `hsx agent-research` — structured research output for AI agents.
+//! `fetchium agent-research` — structured research output for AI agents.
 
 use crate::cli::AgentResearchArgs;
 use fetchium_core::citation::evidence_graph::EvidenceGraph;

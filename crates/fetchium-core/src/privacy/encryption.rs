@@ -13,7 +13,7 @@ const NONCE_LEN: usize = 12;
 
 /// Fixed 16-byte salt for deterministic key derivation.
 /// Uniqueness is ensured by per-message random nonces, not the salt.
-const KDF_SALT: &[u8] = b"hypersearchxcach";
+const KDF_SALT: &[u8] = b"fetchiumcache__";
 
 /// AES-256-GCM encryption engine, keyed from a passphrase via Argon2id.
 pub struct CacheEncryption {

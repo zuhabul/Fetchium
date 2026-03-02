@@ -32,12 +32,12 @@ services:
     volumes:
       - fetchium-data:/data
     environment:
-      - HSX_API_HOST=0.0.0.0
-      - HSX_API_PORT=3000
-      - HSX_DATA_DIR=/data
+      - FETCHIUM_API_HOST=0.0.0.0
+      - FETCHIUM_API_PORT=3000
+      - FETCHIUM_DATA_DIR=/data
       - SEARXNG_URL=http://searxng:8080
       # Copy from .env:
-      - HSX_ADMIN_SECRET=${HSX_ADMIN_SECRET}
+      - ***REMOVED***=${***REMOVED***}
       - BRAVE_API_KEY=${BRAVE_API_KEY:-}
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
     depends_on:

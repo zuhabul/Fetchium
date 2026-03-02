@@ -18,7 +18,7 @@ fn err(status: StatusCode, kind: &str, msg: &str) -> (StatusCode, Json<serde_jso
     (
         status,
         Json(serde_json::json!({
-            "type": format!("https://docs.hypersearchx.com/errors/{kind}"),
+            "type": format!("https://docs.fetchium.com/errors/{kind}"),
             "title": msg,
             "status": status.as_u16(),
         })),
@@ -27,24 +27,12 @@ fn err(status: StatusCode, kind: &str, msg: &str) -> (StatusCode, Json<serde_jso
 
 /// Validate the admin secret from `X-Admin-Secret`.
 ///
-/// Reads `***REMOVED***` first; falls back to `HSX_ADMIN_SECRET` (deprecated).
+/// Reads `***REMOVED***` from the environment.
 /// Panics at startup if neither is set in the environment,
 /// preventing insecure "changeme" defaults in production.
 fn check_admin(headers: &HeaderMap) -> bool {
     let secret = std::env::var("***REMOVED***")
-        .or_else(|_| {
-            let val = std::env::var("HSX_ADMIN_SECRET");
-            if val.is_ok() {
-                tracing::warn!(
-                    "HSX_ADMIN_SECRET is deprecated — rename it to ***REMOVED***"
-                );
-            }
-            val
-        })
-        .expect(
-            "***REMOVED*** must be set (generate with: openssl rand -hex 32). \
-             The legacy HSX_ADMIN_SECRET is also accepted but deprecated.",
-        );
+        .expect("***REMOVED*** must be set (generate with: openssl rand -hex 32).");
     let provided = headers
         .get("X-Admin-Secret")
         .and_then(|v| v.to_str().ok())
@@ -244,7 +232,7 @@ pub async fn get_usage(
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(serde_json::json!({
-                        "type": "https://docs.hypersearchx.com/errors/internal_error",
+                        "type": "https://docs.fetchium.com/errors/internal_error",
                         "title": "Failed to serialize usage data",
                         "status": 500,
                     })),
@@ -257,7 +245,7 @@ pub async fn get_usage(
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({
-                    "type": "https://docs.hypersearchx.com/errors/db_error",
+                    "type": "https://docs.fetchium.com/errors/db_error",
                     "title": "Failed to retrieve usage statistics",
                     "status": 500,
                 })),

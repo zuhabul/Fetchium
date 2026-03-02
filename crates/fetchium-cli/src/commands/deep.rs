@@ -1,4 +1,4 @@
-//! `hsx deep` — deep multi-agent research with evidence graphs (Mode E, PRD §8.8).
+//! `fetchium deep` — deep multi-agent research with evidence graphs (Mode E, PRD §8.8).
 
 use crate::cli::DeepArgs;
 use console::style;

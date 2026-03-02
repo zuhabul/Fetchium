@@ -1,4 +1,4 @@
-//! `hsx index` — manage the local document index.
+//! `fetchium index` — manage the local document index.
 
 use anyhow::{Context, Result};
 use fetchium_core::config::HsxConfig;

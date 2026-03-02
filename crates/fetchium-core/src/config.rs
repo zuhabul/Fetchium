@@ -1,7 +1,7 @@
 //! Configuration system for Fetchium (PRD §11).
 //!
 //! Layered: defaults → config file → env vars → CLI args.
-//! Config file: `~/.fetchium/config.toml` (falls back to `~/.hypersearchx/config.toml`)
+//! Config file: `~/.fetchium/config.toml`
 
 use crate::ai::providers::ProvidersConfig;
 use crate::types::{OutputFormat, PdsTier, ResourceTier};
@@ -32,8 +32,8 @@ pub struct HsxConfig {
 pub struct HeadlessConfig {
     /// Override path to Chrome/Chromium binary.
     ///
-    /// Priority: `FETCHIUM_CHROME_PATH` env var > `HSX_CHROME_PATH` (deprecated) >
-    /// this value > fetchium-managed (`~/.fetchium/chromium/`) > system Chrome/Chromium.
+    /// Priority: `FETCHIUM_CHROME_PATH` env var > this value >
+    /// fetchium-managed (`~/.fetchium/chromium/`) > system Chrome/Chromium.
     pub chrome_path: Option<PathBuf>,
 }
 
@@ -46,7 +46,7 @@ pub struct GeneralConfig {
     pub format: OutputFormat,
     /// Verbose logging.
     pub verbose: bool,
-    /// Data directory (default: ~/.fetchium, falls back to ~/.hypersearchx).
+    /// Data directory (default: ~/.fetchium).
     pub data_dir: Option<PathBuf>,
 }
 
@@ -200,20 +200,12 @@ pub struct SocialConfig {
 impl HsxConfig {
     /// Returns the Facebook Graph API token from config or env var.
     ///
-    /// Checks `FETCHIUM_FACEBOOK_TOKEN` first, then `HSX_FACEBOOK_TOKEN` (deprecated),
-    /// then the config file value.
+    /// Checks `FETCHIUM_FACEBOOK_TOKEN`, then the config file value.
     pub fn facebook_graph_token(&self) -> Option<String> {
-        self.social.facebook_graph_token.clone().or_else(|| {
-            std::env::var("FETCHIUM_FACEBOOK_TOKEN").ok().or_else(|| {
-                let val = std::env::var("HSX_FACEBOOK_TOKEN").ok();
-                if val.is_some() {
-                    tracing::warn!(
-                        "HSX_FACEBOOK_TOKEN is deprecated — use FETCHIUM_FACEBOOK_TOKEN"
-                    );
-                }
-                val
-            })
-        })
+        self.social
+            .facebook_graph_token
+            .clone()
+            .or_else(|| std::env::var("FETCHIUM_FACEBOOK_TOKEN").ok())
     }
 }
 
@@ -308,7 +300,7 @@ impl Default for FetchConfig {
     fn default() -> Self {
         Self {
             user_agent: format!(
-                "Fetchium/{} (https://github.com/hypersearchx/hypersearchx)",
+                "Fetchium/{} (https://github.com/fetchium/fetchium)",
                 env!("CARGO_PKG_VERSION")
             ),
             respect_robots: true,
@@ -450,33 +442,14 @@ impl HsxConfig {
     /// Resolution order:
     /// 1. Explicit override in config (`general.data_dir`)
     /// 2. `~/.fetchium/` (new canonical location)
-    /// 3. `~/.hypersearchx/` (deprecated — emits a warning if used)
+    /// 2. `~/.fetchium/`
     pub fn data_dir(&self) -> PathBuf {
         if let Some(ref dir) = self.general.data_dir {
             return dir.clone();
         }
 
         let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
-
-        // Prefer the new ~/.fetchium/ directory if it exists
-        let new_dir = home.join(".fetchium");
-        if new_dir.exists() {
-            return new_dir;
-        }
-
-        // Fall back to legacy ~/.hypersearchx/ if it exists (backward compat)
-        let legacy_dir = home.join(".hypersearchx");
-        if legacy_dir.exists() {
-            tracing::warn!(
-                "Using legacy data directory ~/.hypersearchx — \
-                 migrate to ~/.fetchium by moving its contents: \
-                 `mv ~/.hypersearchx ~/.fetchium`"
-            );
-            return legacy_dir;
-        }
-
-        // Neither exists — use the new canonical location (will be created on demand)
-        new_dir
+        home.join(".fetchium")
     }
 
     /// Load config from the default location.
@@ -488,24 +461,11 @@ impl HsxConfig {
     ///
     /// Config file resolution (when no explicit path is given):
     /// 1. `~/.fetchium/config.toml` (new canonical location)
-    /// 2. `~/.hypersearchx/config.toml` (deprecated — emits a warning if used)
+    /// 2. Default values if file does not exist
     pub fn load_from(path: Option<&std::path::Path>) -> Self {
         let config_path = path.map(|p| p.to_path_buf()).unwrap_or_else(|| {
             let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
-            let new_path = home.join(".fetchium").join("config.toml");
-            if new_path.exists() {
-                return new_path;
-            }
-            let legacy_path = home.join(".hypersearchx").join("config.toml");
-            if legacy_path.exists() {
-                tracing::warn!(
-                    "Loading config from deprecated location ~/.hypersearchx/config.toml — \
-                     migrate to ~/.fetchium/config.toml"
-                );
-                return legacy_path;
-            }
-            // Neither exists — use new location as default (will be absent = use defaults)
-            new_path
+            home.join(".fetchium").join("config.toml")
         });
 
         let mut config = if config_path.exists() {
@@ -561,72 +521,59 @@ impl HsxConfig {
 
     /// Apply environment variable overrides.
     ///
-    /// Checks `FETCHIUM_*` first; falls back to deprecated `HSX_*` with a warning.
+    /// Reads `FETCHIUM_*` environment variables.
     ///
     /// Examples:
     ///   `FETCHIUM_SEARCH_DEFAULT_BUDGET=8000`
     ///   `FETCHIUM_CACHE_ENABLED=false`
-    ///   `HSX_SEARCH_DEFAULT_BUDGET=8000`  (deprecated — use FETCHIUM_ prefix)
     pub fn apply_env_overrides(&mut self) {
-        // Helper: read env var, preferring FETCHIUM_ prefix over deprecated HSX_
+        // Helper: read env var string.
         macro_rules! env_str {
-            ($new:expr, $old:expr) => {
-                std::env::var($new).ok().or_else(|| {
-                    let v = std::env::var($old).ok();
-                    if v.is_some() {
-                        tracing::warn!(concat!($old, " is deprecated — use ", $new));
-                    }
-                    v
-                })
+            ($name:expr) => {
+                std::env::var($name).ok()
             };
         }
 
-        if let Some(val) = env_str!(
-            "FETCHIUM_SEARCH_DEFAULT_BUDGET",
-            "HSX_SEARCH_DEFAULT_BUDGET"
-        ) {
+        if let Some(val) = env_str!("FETCHIUM_SEARCH_DEFAULT_BUDGET") {
             if let Ok(budget) = val.parse::<u32>() {
                 self.search.default_budget = budget;
             }
         }
-        if let Some(val) = env_str!(
-            "FETCHIUM_SEARCH_MAX_CONCURRENT",
-            "HSX_SEARCH_MAX_CONCURRENT"
-        ) {
+        if let Some(val) = env_str!("FETCHIUM_SEARCH_MAX_CONCURRENT") {
             if let Ok(n) = val.parse::<u32>() {
                 self.search.max_concurrent = n;
             }
         }
-        if let Some(val) = env_str!("FETCHIUM_SEARCH_TIMEOUT_SECS", "HSX_SEARCH_TIMEOUT_SECS") {
+        if let Some(val) = env_str!("FETCHIUM_SEARCH_TIMEOUT_SECS") {
             if let Ok(n) = val.parse::<u64>() {
                 self.search.timeout_secs = n;
             }
         }
-        if let Some(val) = env_str!("FETCHIUM_CACHE_ENABLED", "HSX_CACHE_ENABLED") {
+        if let Some(val) = env_str!("FETCHIUM_CACHE_ENABLED") {
             if let Ok(b) = val.parse::<bool>() {
                 self.cache.enabled = b;
             }
         }
-        if let Some(val) = env_str!("FETCHIUM_CACHE_TTL_SECS", "HSX_CACHE_TTL_SECS") {
+        if let Some(val) = env_str!("FETCHIUM_CACHE_TTL_SECS") {
             if let Ok(n) = val.parse::<u64>() {
                 self.cache.ttl_secs = n;
             }
         }
-        if let Some(val) = env_str!("FETCHIUM_AI_OLLAMA_HOST", "HSX_AI_OLLAMA_HOST") {
+        if let Some(val) = env_str!("FETCHIUM_AI_OLLAMA_HOST") {
             self.ai.ollama_host = val;
         }
-        if let Some(val) = env_str!("FETCHIUM_AI_DEFAULT_MODEL", "HSX_AI_DEFAULT_MODEL") {
+        if let Some(val) = env_str!("FETCHIUM_AI_DEFAULT_MODEL") {
             self.ai.default_model = val;
         }
-        if let Some(val) = env_str!("FETCHIUM_GENERAL_VERBOSE", "HSX_GENERAL_VERBOSE") {
+        if let Some(val) = env_str!("FETCHIUM_GENERAL_VERBOSE") {
             if let Ok(b) = val.parse::<bool>() {
                 self.general.verbose = b;
             }
         }
-        if let Some(val) = env_str!("FETCHIUM_FETCH_USER_AGENT", "HSX_FETCH_USER_AGENT") {
+        if let Some(val) = env_str!("FETCHIUM_FETCH_USER_AGENT") {
             self.fetch.user_agent = val;
         }
-        if let Some(val) = env_str!("FETCHIUM_FETCH_RESPECT_ROBOTS", "HSX_FETCH_RESPECT_ROBOTS") {
+        if let Some(val) = env_str!("FETCHIUM_FETCH_RESPECT_ROBOTS") {
             if let Ok(b) = val.parse::<bool>() {
                 self.fetch.respect_robots = b;
             }
@@ -674,13 +621,13 @@ impl HsxConfig {
             }
         }
         // Primary provider override (prepends to chain)
-        if let Some(val) = env_str!("FETCHIUM_AI_PROVIDER", "HSX_AI_PROVIDER") {
+        if let Some(val) = env_str!("FETCHIUM_AI_PROVIDER") {
             if !val.is_empty() {
                 self.ai.providers.fallback_chain.insert(0, val);
             }
         }
-        // Chrome binary override (FETCHIUM_CHROME_PATH > HSX_CHROME_PATH)
-        if let Some(val) = env_str!("FETCHIUM_CHROME_PATH", "HSX_CHROME_PATH") {
+        // Chrome binary override
+        if let Some(val) = env_str!("FETCHIUM_CHROME_PATH") {
             if !val.is_empty() {
                 self.headless.chrome_path = Some(PathBuf::from(val));
             }
@@ -698,21 +645,10 @@ impl HsxConfig {
 
     /// Get the path to the config file.
     ///
-    /// Returns `~/.fetchium/config.toml` if it exists, otherwise falls back to
-    /// `~/.hypersearchx/config.toml` (deprecated). When neither exists, returns
-    /// the new canonical path so new files are written there.
+    /// Returns the canonical Fetchium config path.
     pub fn config_file_path() -> PathBuf {
         let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
-        let new_path = home.join(".fetchium").join("config.toml");
-        if new_path.exists() {
-            return new_path;
-        }
-        let legacy_path = home.join(".hypersearchx").join("config.toml");
-        if legacy_path.exists() {
-            return legacy_path;
-        }
-        // Default to new canonical location for writes
-        new_path
+        home.join(".fetchium").join("config.toml")
     }
 
     /// Write the current config to the config file (for `fetchium config set`).
@@ -753,10 +689,9 @@ mod tests {
     fn data_dir_default() {
         let config = HsxConfig::default();
         let dir = config.data_dir();
-        // When neither ~/.fetchium nor ~/.hypersearchx exists in the test env,
-        // the new canonical ~/.fetchium is returned.
+        // The canonical default is ~/.fetchium.
         let s = dir.to_string_lossy();
-        assert!(s.contains(".fetchium") || s.contains(".hypersearchx"));
+        assert!(s.contains(".fetchium"));
     }
 
     #[test]
@@ -766,15 +701,6 @@ mod tests {
         config.apply_env_overrides();
         assert_eq!(config.search.default_budget, 8000);
         std::env::remove_var("FETCHIUM_SEARCH_DEFAULT_BUDGET");
-    }
-
-    #[test]
-    fn env_override_budget_legacy_prefix() {
-        std::env::set_var("HSX_SEARCH_DEFAULT_BUDGET", "7777");
-        let mut config = HsxConfig::default();
-        config.apply_env_overrides();
-        assert_eq!(config.search.default_budget, 7777);
-        std::env::remove_var("HSX_SEARCH_DEFAULT_BUDGET");
     }
 
     #[test]
@@ -804,10 +730,10 @@ mod tests {
     }
 
     #[test]
-    fn config_file_path_contains_fetchium_or_hypersearchx() {
+    fn config_file_path_is_fetchium() {
         let path = HsxConfig::config_file_path();
         let s = path.to_string_lossy();
-        assert!(s.contains(".fetchium") || s.contains(".hypersearchx"));
+        assert!(s.contains(".fetchium"));
         assert!(s.ends_with("config.toml"));
     }
 }

@@ -114,7 +114,7 @@ pub async fn run(args: AiArgs, config: &HsxConfig) -> anyhow::Result<()> {
             style("gemini-2.0-flash").green()
         );
         eprintln!("    1. Get key: https://aistudio.google.com/app/apikey");
-        eprintln!("    2. Run:     hsx provider setup gemini");
+        eprintln!("    2. Run:     fetchium provider setup gemini");
         eprintln!();
         eprintln!(
             "  {} {} (local, private, no API key)",
@@ -123,10 +123,13 @@ pub async fn run(args: AiArgs, config: &HsxConfig) -> anyhow::Result<()> {
         );
         eprintln!("    1. Install: curl -fsSL https://ollama.ai/install.sh | sh");
         eprintln!("    2. Run:     ollama serve && ollama pull {best_ollama}");
-        eprintln!("    3. Run:     hsx provider setup ollama");
+        eprintln!("    3. Run:     fetchium provider setup ollama");
         eprintln!();
-        eprintln!("  See all options: {}", style("hsx provider list").cyan());
-        eprintln!("  Full guide:      {}", style("hsx doctor").cyan());
+        eprintln!(
+            "  See all options: {}",
+            style("fetchium provider list").cyan()
+        );
+        eprintln!("  Full guide:      {}", style("fetchium doctor").cyan());
     }
 
     Ok(())

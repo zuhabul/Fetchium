@@ -1,4 +1,4 @@
-//! `hsx intelligence` sub-commands — manage the Persistent Intelligence Engine.
+//! `fetchium intelligence` sub-commands — manage the Persistent Intelligence Engine.
 //!
 //! Sub-commands:
 //! - `stats`  — show counts for all 4 PIE layers
@@ -255,7 +255,7 @@ fn cmd_totr(
     // Heuristic sync run (no async LLM required at CLI level).
     let result = run_totr_sync(query, &config, |_q| {
         // In the CLI, we don't do live search here — just decompose.
-        // For full research, use `hsx deep "query" --tree-of-thoughts`.
+        // For full research, use `fetchium deep "query" --tree-of-thoughts`.
         vec![]
     });
 

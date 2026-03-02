@@ -1,4 +1,4 @@
-//! `hsx agent-search` — agent-optimized search (JSON segments).
+//! `fetchium agent-search` — agent-optimized search (JSON segments).
 //!
 //! Searches the web, extracts and token-budgets content from each result,
 //! and outputs a structured JSON payload for AI agent consumption.

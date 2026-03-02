@@ -7,10 +7,10 @@
 //!
 //! ## Usage
 //! ```bash
-//! hsx index add <url>          # fetch + extract + embed + store
-//! hsx index build              # (re-)compute embeddings for all stored docs
-//! hsx index search "query"     # search local index
-//! hsx index stats              # show document count, embedding coverage
+//! fetchium index add <url>          # fetch + extract + embed + store
+//! fetchium index build              # (re-)compute embeddings for all stored docs
+//! fetchium index search "query"     # search local index
+//! fetchium index stats              # show document count, embedding coverage
 //! ```
 
 pub mod document;

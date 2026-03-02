@@ -6,15 +6,15 @@ Get from zero to your first search in under 60 seconds.
 
 **From crates.io** (recommended):
 ```bash
-cargo install hsx-cli
+cargo install fetchium-cli
 ```
 
 **From source** (latest main branch):
 ```bash
 git clone https://github.com/zuhabul/Fetchium
 cd Fetchium
-cargo build --release -p hsx-cli
-# Binary is at ./target/release/hsx
+cargo build --release -p fetchium-cli
+# Binary is at ./target/release/fetchium
 ```
 
 **macOS via Homebrew** (when formula is available):
@@ -25,7 +25,7 @@ brew install fetchium
 ## 2. Your First Search
 
 ```bash
-hsx search "Rust async runtime comparison"
+fetchium search "Rust async runtime comparison"
 ```
 
 Output: Ranked search results with titles, URLs, and snippets.
@@ -33,7 +33,7 @@ Output: Ranked search results with titles, URLs, and snippets.
 ## 3. Fetch a URL
 
 ```bash
-hsx fetch https://doc.rust-lang.org/book/ch04-01.html
+fetchium fetch https://doc.rust-lang.org/book/ch04-01.html
 ```
 
 Output: Clean, structured content with boilerplate removed.
@@ -48,7 +48,7 @@ ollama pull deepseek-r1:7b
 
 Then:
 ```bash
-hsx research "What are the tradeoffs between async Rust runtimes in 2026?"
+fetchium research "What are the tradeoffs between async Rust runtimes in 2026?"
 ```
 
 Output: Multi-source research report with citations.
@@ -57,16 +57,16 @@ Output: Multi-source research report with citations.
 
 ```bash
 # Machine-readable JSON output for LLM consumption
-hsx agent-search "latest Rust async developments" --budget 2000
+fetchium agent-search "latest Rust async developments" --budget 2000
 
 # Fetch with semantic extraction
-hsx agent-fetch https://blog.rust-lang.org/inside-rust/2026/01/tokio-update
+fetchium agent-fetch https://blog.rust-lang.org/inside-rust/2026/01/tokio-update
 ```
 
 ## 6. Check Your Setup
 
 ```bash
-hsx doctor
+fetchium doctor
 ```
 
 Shows available tools, system resources, and configuration status.

@@ -231,7 +231,7 @@ fn sha256_hex(content: &str) -> String {
 fn default_db_path() -> PathBuf {
     dirs::data_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join("hypersearchx")
+        .join("fetchium")
         .join("monitor.db")
 }
 
