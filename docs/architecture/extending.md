@@ -2,7 +2,7 @@
 
 ## Adding a New Search Backend
 
-1. Create `crates/hsx-core/src/search/myengine.rs`:
+1. Create `crates/fetchium-core/src/search/myengine.rs`:
 
 ```rust
 //! MyEngine search backend.
@@ -36,7 +36,7 @@ impl MyEngineBackend {
 }
 ```
 
-2. Register in `crates/hsx-core/src/search/orchestrator.rs`:
+2. Register in `crates/fetchium-core/src/search/orchestrator.rs`:
 
 ```rust
 use crate::search::myengine::MyEngineBackend;
@@ -48,11 +48,11 @@ handles.push(tokio::spawn(async move {
 }));
 ```
 
-3. Add `BackendId::MyEngine` to `crates/hsx-core/src/types.rs`.
+3. Add `BackendId::MyEngine` to `crates/fetchium-core/src/types.rs`.
 
 ## Adding a Plugin
 
-Implement the `HsxPlugin` trait from `crates/hsx-core/src/plugin/traits.rs`:
+Implement the `HsxPlugin` trait from `crates/fetchium-core/src/plugin/traits.rs`:
 
 ```rust
 use hsx_core::plugin::traits::{HsxPlugin, PluginContext, PluginResult};
@@ -81,10 +81,10 @@ Build as a dynamic library (`.so` / `.dylib` / `.dll`) and place in
 
 ## Adding a New CLI Command
 
-1. Create `crates/hsx-cli/src/commands/mycmd.rs`:
+1. Create `crates/fetchium-cli/src/commands/mycmd.rs`:
 
 ```rust
-//! `hsx mycmd` — description.
+//! `fetchium mycmd` — description.
 
 pub fn run(args: &MyArgs) -> anyhow::Result<()> {
     // Your implementation
@@ -92,18 +92,18 @@ pub fn run(args: &MyArgs) -> anyhow::Result<()> {
 }
 ```
 
-2. Add to `crates/hsx-cli/src/commands/mod.rs`:
+2. Add to `crates/fetchium-cli/src/commands/mod.rs`:
 ```rust
 pub mod mycmd;
 ```
 
-3. Add to `crates/hsx-cli/src/cli.rs` (Commands enum):
+3. Add to `crates/fetchium-cli/src/cli.rs` (Commands enum):
 ```rust
 /// My command description
 MyCMD(MyArgs),
 ```
 
-4. Dispatch in `crates/hsx-cli/src/main.rs`:
+4. Dispatch in `crates/fetchium-cli/src/main.rs`:
 ```rust
 Commands::MyCMD(args) => commands::mycmd::run(&args)?,
 ```
@@ -122,5 +122,5 @@ Optional heavy dependencies use Cargo features:
 
 Build with a feature:
 ```bash
-cargo build -p hsx-core --features headless,embeddings
+cargo build -p fetchium-core --features headless,embeddings
 ```

@@ -7,12 +7,12 @@ Fetchium is a Cargo workspace with 4 crates:
 ```
 fetchium/
 ├── crates/
-│   ├── hsx-core/     # All algorithms and business logic
-│   ├── hsx-cli/      # The `hsx` binary — clap CLI
-│   ├── hsx-mcp/      # MCP stdio server (Model Context Protocol)
-│   └── hsx-api/      # REST API server (axum 0.7)
+│   ├── fetchium-core/     # All algorithms and business logic
+│   ├── fetchium-cli/      # The `fetchium` binary — clap CLI
+│   ├── fetchium-mcp/      # MCP stdio server (Model Context Protocol)
+│   └── fetchium-api/      # REST API server (axum 0.7)
 ├── tests/            # Integration + E2E tests
-├── benches/          # Criterion benchmarks (in hsx-core)
+├── benches/          # Criterion benchmarks (in fetchium-core)
 ├── fuzz/             # cargo-fuzz targets
 └── docs/             # This documentation
 ```
@@ -23,10 +23,10 @@ fetchium/
 User query
     │
     ▼
-hsx-cli (clap parse + HsxConfig)
+fetchium-cli (clap parse + HsxConfig)
     │
     ▼
-hsx-core pipeline:
+fetchium-core pipeline:
     │
     ├─ search/ ──────► SearchOrchestrator
     │                   ├─ DuckDuckGo, Google, Bing, Brave
@@ -54,10 +54,10 @@ hsx-core pipeline:
     └─ output/ ──────► markdown / JSON / text / segments
 ```
 
-## hsx-core Module Map
+## fetchium-core Module Map
 
 ```
-hsx-core/src/
+fetchium-core/src/
 ├── lib.rs            # Crate root, module declarations
 ├── types.rs          # All shared data types
 ├── config.rs         # HsxConfig (TOML + env var loading)
@@ -131,8 +131,8 @@ hsx-core/src/
 
 | Operation | Cached | Uncached |
 |-----------|--------|---------|
-| `hsx agent-fetch` | <300ms | <3s |
-| `hsx search` | <1s | <5s |
-| `hsx fetch` | <200ms | <3s |
+| `fetchium agent-fetch` | <300ms | <3s |
+| `fetchium search` | <1s | <5s |
+| `fetchium fetch` | <200ms | <3s |
 | Token estimation 1MB | <100ms | — |
 | BM25 rank 100 docs | <10ms | — |

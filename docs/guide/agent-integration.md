@@ -13,7 +13,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "fetchium": {
       "command": "fetchium",
-      "args": ["serve", "--mcp"]
+      "args": ["serve", "--mode", "mcp"]
     }
   }
 }
@@ -28,7 +28,7 @@ Add to `.mcp.json` in your project root:
   "servers": {
     "fetchium": {
       "command": "fetchium",
-      "args": ["serve", "--mcp"],
+      "args": ["serve", "--mode", "mcp"],
       "env": {}
     }
   }
@@ -44,28 +44,36 @@ Add to `.mcp.json` in your project root:
 | `hypersearch_research` | Multi-source research with citations |
 | `hypersearch_estimate` | Pre-fetch token estimation |
 | `hypersearch_expand` | Tier expansion without re-fetching |
+| `youtube_search` | YouTube ranked search |
+| `youtube_analyze` | Single-video analysis |
+| `youtube_watch` | Unified watch report |
+| `youtube_transcript` | Transcript extraction |
+| `social_research` | Unified cross-platform social research |
+| `reddit_search` | Reddit search intelligence |
+| `hackernews_search` | Hacker News search intelligence |
 
 ## REST API
 
 Start the REST server:
 ```bash
-fetchium serve --rest --port 8080
+fetchium serve --mode rest --port 3000
 ```
 
 ### Endpoints
 
 ```
-POST /api/search
-POST /api/fetch
-POST /api/research
-POST /api/estimate
+POST /v1/search
+POST /v1/fetch
+POST /v1/research
+POST /v1/estimate
 GET  /health
 ```
 
 Example:
 ```bash
-curl -X POST http://localhost:8080/api/search \
+curl -X POST http://localhost:3000/v1/search \
   -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer fetchium_YOUR_API_KEY' \
   -d '{"query": "Rust ownership", "max_results": 5}'
 ```
 
@@ -75,7 +83,7 @@ curl -X POST http://localhost:8080/api/search \
 from langchain.tools import Tool
 import subprocess, json
 
-def hsx_search(query: str) -> str:
+def fetchium_search(query: str) -> str:
     result = subprocess.run(
         ["fetchium", "agent-search", query, "--budget", "2000"],
         capture_output=True, text=True
@@ -84,7 +92,7 @@ def hsx_search(query: str) -> str:
 
 search_tool = Tool(
     name="Fetchium",
-    func=hsx_search,
+    func=fetchium_search,
     description="Search the web with AI-native token-budgeted results"
 )
 ```
