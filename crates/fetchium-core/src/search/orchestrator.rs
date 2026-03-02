@@ -948,6 +948,8 @@ fn should_cap_static_sources(multilingual_query: bool, ranked: &[ResultItem]) ->
 fn backend_timeout_for(id: &BackendId, default_timeout: Duration) -> Duration {
     let cap = match id {
         BackendId::DuckDuckGo | BackendId::Google | BackendId::Bing => Duration::from_secs(7),
+        BackendId::Reddit => Duration::from_secs(3),
+        BackendId::StackOverflow => Duration::from_secs(4),
         BackendId::Searxng => Duration::from_secs(3),
         _ => default_timeout,
     };
@@ -1106,6 +1108,14 @@ mod tests {
         assert_eq!(
             backend_timeout_for(&BackendId::DuckDuckGo, default),
             Duration::from_secs(7)
+        );
+        assert_eq!(
+            backend_timeout_for(&BackendId::Reddit, default),
+            Duration::from_secs(3)
+        );
+        assert_eq!(
+            backend_timeout_for(&BackendId::StackOverflow, default),
+            Duration::from_secs(4)
         );
         assert_eq!(
             backend_timeout_for(&BackendId::Searxng, default),
