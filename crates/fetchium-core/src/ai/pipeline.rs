@@ -10,6 +10,7 @@ use crate::error::HsxError;
 use crate::extract::pipeline::extract;
 use crate::http::client::HttpClient;
 use crate::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
+use std::collections::HashSet;
 use std::io::Write;
 use std::time::Instant;
 
@@ -41,7 +42,25 @@ pub async fn run_ai_pipeline(
     let search_start = Instant::now();
     let orch_config = OrchestratorConfig::from_hsx_config(hsx_config, max_sources as u32);
     let orchestrator = SearchOrchestrator::new(http_client.clone(), orch_config);
-    let search_results = orchestrator.search(query, Some(max_sources as u32)).await?;
+    let mut search_results = orchestrator.search(query, Some(max_sources as u32)).await?;
+    let quality = crate::rank::quality::assess_quality(&search_results, query);
+    if matches!(
+        quality.confidence,
+        crate::rank::quality::ConfidenceLevel::Low | crate::rank::quality::ConfidenceLevel::VeryLow
+    ) {
+        let mut seen_urls: HashSet<String> = search_results.iter().map(|r| r.url.clone()).collect();
+        for cq in generate_corrective_queries(query).into_iter().take(2) {
+            if let Ok(extra) = orchestrator.search(&cq, Some(6)).await {
+                for r in extra {
+                    if seen_urls.insert(r.url.clone()) {
+                        search_results.push(r);
+                    }
+                }
+            }
+        }
+        search_results = crate::rank::rerank(search_results, query);
+        search_results.truncate(max_sources);
+    }
     let search_ms = search_start.elapsed().as_millis() as u64;
 
     let top_n = search_results.len().min(max_sources);
@@ -198,6 +217,22 @@ pub async fn run_ai_pipeline(
     .await
     {
         Ok(result) => {
+            let grounding = grounding_score(&result.content, &context);
+            if grounding < 0.12 {
+                let spec = DeviceSpec::detect();
+                return Ok(AiPreviewResult {
+                    answer: format_fallback(&ordered, query, &spec),
+                    model_used: format!("{}/{}", result.provider.slug(), result.model_used),
+                    sources_used,
+                    streaming: false,
+                    fallback: true,
+                    total_ms: wall_start.elapsed().as_millis() as u64,
+                    search_ms,
+                    fetch_ms,
+                    ai_ms: ai_start.elapsed().as_millis() as u64,
+                    fast_mode: fast,
+                });
+            }
             let ai_ms = ai_start.elapsed().as_millis() as u64;
             Ok(AiPreviewResult {
                 answer: result.content,
@@ -229,6 +264,45 @@ pub async fn run_ai_pipeline(
             })
         }
         Err(e) => Err(e),
+    }
+}
+
+fn generate_corrective_queries(query: &str) -> Vec<String> {
+    let q = query.trim();
+    let lower = q.to_lowercase();
+    let mut out = Vec::new();
+    if !lower.contains("overview") {
+        out.push(format!("{q} overview"));
+    }
+    if !lower.contains("explained") {
+        out.push(format!("{q} explained"));
+    }
+    out
+}
+
+fn grounding_score(answer: &str, source_context: &str) -> f64 {
+    let src = source_context.to_lowercase();
+    let mut total = 0usize;
+    let mut supported = 0usize;
+    for sentence in answer.split(['.', '!', '?']) {
+        let terms = sentence
+            .split(|c: char| !c.is_alphanumeric())
+            .filter(|t| t.len() >= 4)
+            .map(|t| t.to_lowercase())
+            .collect::<Vec<_>>();
+        if terms.is_empty() {
+            continue;
+        }
+        total += 1;
+        let hits = terms.iter().filter(|t| src.contains(t.as_str())).count();
+        if hits >= 2 {
+            supported += 1;
+        }
+    }
+    if total == 0 {
+        0.0
+    } else {
+        supported as f64 / total as f64
     }
 }
 
@@ -277,5 +351,14 @@ mod tests {
         assert!(result.contains("Example"));
         assert!(result.contains("https://example.com"));
         assert!(result.contains("ollama pull"));
+    }
+
+    #[test]
+    fn grounding_score_higher_when_supported() {
+        let src =
+            "Rust is a systems programming language with memory safety and zero cost abstractions.";
+        let good = "Rust is a systems programming language with memory safety.";
+        let bad = "Rust was invented on Mars by aliens.";
+        assert!(grounding_score(good, src) > grounding_score(bad, src));
     }
 }

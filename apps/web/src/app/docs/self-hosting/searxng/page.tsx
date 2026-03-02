@@ -64,16 +64,16 @@ docker rm -f fetchium-searxng && fetchium setup --searxng`} />
       <table>
         <thead><tr><th>Engine</th><th>Category</th><th>Shortcut</th><th>Timeout</th></tr></thead>
         <tbody>
-          <tr><td>Google</td><td>General</td><td><code>!g</code></td><td>6s</td></tr>
-          <tr><td>Bing</td><td>General</td><td><code>!b</code></td><td>6s</td></tr>
-          <tr><td>DuckDuckGo</td><td>General</td><td><code>!d</code></td><td>6s</td></tr>
-          <tr><td>Brave</td><td>General</td><td><code>!br</code></td><td>6s</td></tr>
-          <tr><td>Wikipedia</td><td>General</td><td><code>!w</code></td><td>6s</td></tr>
-          <tr><td>StackOverflow</td><td>IT</td><td><code>!so</code></td><td>6s</td></tr>
-          <tr><td>GitHub</td><td>IT</td><td><code>!gh</code></td><td>6s</td></tr>
-          <tr><td>arXiv</td><td>Science</td><td><code>!arx</code></td><td>8s</td></tr>
-          <tr><td>Reddit</td><td>Social</td><td><code>!re</code></td><td>6s</td></tr>
-          <tr><td>HackerNews</td><td>Social</td><td><code>!hn</code></td><td>6s</td></tr>
+          <tr><td>Google</td><td>General</td><td><code>!g</code></td><td>4s</td></tr>
+          <tr><td>Bing</td><td>General</td><td><code>!b</code></td><td>4s</td></tr>
+          <tr><td>DuckDuckGo</td><td>General</td><td><code>!d</code></td><td>4s</td></tr>
+          <tr><td>Brave</td><td>General</td><td><code>!br</code></td><td>4s</td></tr>
+          <tr><td>Wikipedia</td><td>General</td><td><code>!w</code></td><td>4s</td></tr>
+          <tr><td>StackOverflow</td><td>IT</td><td><code>!so</code></td><td>4s</td></tr>
+          <tr><td>GitHub</td><td>IT</td><td><code>!gh</code></td><td>4s</td></tr>
+          <tr><td>arXiv</td><td>Science</td><td><code>!arx</code></td><td>5s</td></tr>
+          <tr><td>Reddit</td><td>Social</td><td><code>!re</code></td><td>4s</td></tr>
+          <tr><td>HackerNews</td><td>Social</td><td><code>!hn</code></td><td>4s</td></tr>
         </tbody>
       </table>
 
@@ -83,7 +83,11 @@ docker rm -f fetchium-searxng && fetchium setup --searxng`} />
         You can edit it freely — the container mounts it as a volume.
       </p>
 
-      <CodeBlock language="yaml" filename="settings.yml (key sections)" code={`server:
+      <CodeBlock language="yaml" filename="settings.yml (key sections)" code={`use_default_settings:
+  engines:
+    keep_only: [google, bing, duckduckgo, brave, wikipedia, stackoverflow, github, arxiv, reddit, hackernews]
+
+server:
   secret_key: "auto-generated-64-hex-chars"
   limiter: false          # No rate limiting (local use)
   image_proxy: false
@@ -96,9 +100,10 @@ search:
     - json              # Required for Fetchium JSON API calls
 
 outgoing:
-  request_timeout: 6.0
-  max_request_timeout: 10.0
-  pool_connections: 100
+  request_timeout: 4.0
+  max_request_timeout: 7.0
+  pool_connections: 200
+  pool_maxsize: 64
   enable_http2: true`} />
 
       <h2>Manual Docker setup</h2>

@@ -245,6 +245,16 @@ fn adjust_authority_for_intent(url: &str, base: f64, intent: QueryIntent) -> f64
         };
     }
 
+    // ArXiv bias: excellent for academic/verification, often off-topic for
+    // opinion/comparison "best X" queries where community benchmarks matter more.
+    if url.contains("arxiv.org/") {
+        return match intent {
+            QueryIntent::Academic | QueryIntent::Verification | QueryIntent::Data => base,
+            QueryIntent::Opinion | QueryIntent::Comparison => base * 0.45,
+            _ => base * 0.75,
+        };
+    }
+
     base
 }
 
@@ -385,6 +395,37 @@ fn min_max_normalize(scores: Vec<RawScores>) -> Vec<RawScores> {
 /// Used when the caller doesn't specify intent explicitly.
 pub fn detect_intent(query: &str) -> QueryIntent {
     let q = query.to_lowercase();
+    let has_recent_year = q.contains("2025") || q.contains("2026");
+    let has_news_signal = q.contains("today")
+        || q.contains("latest")
+        || q.contains("news")
+        || q.contains("recent")
+        || q.contains("this year")
+        || q.contains("this month")
+        || q.contains("this week")
+        || q.contains("breaking")
+        || q.contains("update")
+        || q.contains("announcement")
+        || q.contains("released")
+        || q.contains("launched")
+        || q.contains("new in ");
+    let is_technical_eval = q.contains("benchmark")
+        || q.contains("performance")
+        || q.contains("vs ")
+        || q.contains(" vs")
+        || q.contains("compare")
+        || q.contains("runtime")
+        || q.contains("framework")
+        || q.contains("latency")
+        || q.contains("throughput");
+    let is_preference_query = q.contains("best ")
+        || q.starts_with("best ")
+        || q.contains("top ")
+        || q.contains("recommended")
+        || q.contains("which is better")
+        || q.contains("should i use")
+        || q.contains("worth it")
+        || q.contains("pros and cons");
 
     // Code intent: explicit code/repo signals
     if q.contains("code")
@@ -400,22 +441,9 @@ pub fn detect_intent(query: &str) -> QueryIntent {
 
     // CurrentEvents: temporal signals — checked early so "breakthroughs 2025" doesn't
     // fall through to Factual. Year patterns, recency keywords, and news signals.
-    if q.contains("today")
-        || q.contains("2025")
-        || q.contains("2026")
-        || q.contains("latest")
-        || q.contains("news")
-        || q.contains("recent")
-        || q.contains("this year")
-        || q.contains("this month")
-        || q.contains("this week")
-        || q.contains("breaking")
-        || q.contains("update")
-        || q.contains("announcement")
-        || q.contains("breakthrough")
-        || q.contains("released")
-        || q.contains("launched")
-        || q.contains("new in ")
+    if has_news_signal
+        || (has_recent_year && !is_technical_eval && !is_preference_query)
+        || (q.contains("breakthrough") && !is_technical_eval)
     {
         return QueryIntent::CurrentEvents;
     }
@@ -454,15 +482,7 @@ pub fn detect_intent(query: &str) -> QueryIntent {
     }
 
     // Opinion: "best X", "top X", "recommended", "should I use"
-    if q.contains("best ")
-        || q.starts_with("best ")
-        || q.contains("top ")
-        || q.contains("recommended")
-        || q.contains("which is better")
-        || q.contains("should i use")
-        || q.contains("worth it")
-        || q.contains("pros and cons")
-    {
+    if is_preference_query {
         return QueryIntent::Opinion;
     }
 
@@ -650,6 +670,19 @@ mod tests {
             detect_intent("GPT-5 announcement"),
             QueryIntent::CurrentEvents
         );
+    }
+
+    #[test]
+    fn detect_intent_technical_year_query_not_forced_to_current_events() {
+        let intent =
+            detect_intent("best rust async runtime for high-throughput web api in 2025 benchmark");
+        assert_ne!(intent, QueryIntent::CurrentEvents);
+    }
+
+    #[test]
+    fn detect_intent_consumer_best_year_query_prefers_opinion() {
+        let intent = detect_intent("best noise cancelling headphones for office calls 2026");
+        assert_eq!(intent, QueryIntent::Opinion);
     }
 
     #[test]
