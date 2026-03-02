@@ -180,10 +180,17 @@ export FIRECRAWL_API_KEY=...
 
 ```bash
 ./target/debug/fetchium youtube search "rust async tutorial" -n 3 -f json
+./target/debug/fetchium youtube search "rust async tutorial" --compact --open 1
+./target/debug/fetchium youtube watch "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --highlights 5
 ./target/debug/fetchium youtube video dQw4w9WgXcQ -f json
 ./target/debug/fetchium youtube channel UCuAXFkgsw1L7xaCfnd5JJOw --videos -n 5 -f json
 ./target/debug/fetchium youtube playlist UUuAXFkgsw1L7xaCfnd5JJOw -n 5 -f json
-./target/debug/fetchium youtube transcript "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --text
+./target/debug/fetchium youtube transcript "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --semantic --highlights 5
+./target/debug/fetchium youtube transcript "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --translate es
+./target/debug/fetchium youtube compare "<url1>" "<url2>"
+./target/debug/fetchium youtube playlist-analyze "<playlist_id>" --learning-path
+./target/debug/fetchium youtube channel-audit "<channel_id>" -n 10
+./scripts/youtube_regression_suite.sh
 ```
 
 ### Social Intelligence
@@ -599,13 +606,28 @@ fetchium hn research "startup funding trends"
 ```bash
 fetchium youtube search "rust tutorial"
 fetchium youtube search "query" -n 20
+fetchium youtube search "query" --compact               # compact score table
+fetchium youtube search "query" --open 1                # open ranked result in browser
+fetchium youtube search "query" --copy-url 1            # copy ranked URL
+fetchium youtube watch <url-or-video-id>                # metadata + transcript + summary + moments + comments
 fetchium youtube transcript https://www.youtube.com/watch?v=...
 fetchium youtube transcript <url> --chapters     # with chapter alignment
+fetchium youtube transcript <url> --semantic --highlights 5
+fetchium youtube transcript <url> --language en --translate es
 fetchium youtube analyze https://www.youtube.com/watch?v=...
 fetchium youtube analyze <url> --transcript --comments
 fetchium youtube research "machine learning 2025"
 fetchium youtube research "query" --max-videos 10 --fact-check
 fetchium youtube compare <url1> <url2>           # compare 2 videos
+fetchium youtube playlist-analyze <playlist_id> --learning-path
+fetchium youtube channel-audit <channel_id> -n 10
+```
+
+YouTube quality regression:
+
+```bash
+scripts/youtube_regression_suite.sh
+QUERY="java learning roadmap" TOP_K=10 scripts/youtube_regression_suite.sh
 ```
 
 #### `fetchium facebook` / `fetchium fb`
