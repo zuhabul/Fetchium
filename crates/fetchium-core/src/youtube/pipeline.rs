@@ -191,7 +191,7 @@ async fn fetch_all_video_data(
     let mut tasks: JoinSet<HsxResult<VideoAnalysis>> = JoinSet::new();
 
     for result in search_results.iter().take(pipeline_config.max_videos) {
-        let video_id = result.video_id.clone();
+        let seed = result.clone();
         let config = config.clone();
         let http = http.clone();
         let fetch_transcript_flag = pipeline_config.fetch_transcript;
@@ -202,7 +202,7 @@ async fn fetch_all_video_data(
             // Acquire slot before fetching; auto-released when _permit drops
             let _permit = sem.acquire_owned().await.ok();
             fetch_single_video_data(
-                &video_id,
+                &seed,
                 &config,
                 &http,
                 fetch_transcript_flag,
@@ -241,12 +241,13 @@ async fn fetch_all_video_data(
 
 /// Fetch metadata + transcript + comments for a single video.
 async fn fetch_single_video_data(
-    video_id: &str,
+    seed: &YouTubeSearchResult,
     config: &HsxConfig,
     http: &HttpClient,
     fetch_transcript_flag: bool,
     fetch_comments_flag: bool,
 ) -> HsxResult<VideoAnalysis> {
+    let video_id = &seed.video_id;
     // Parallel fetch: metadata + transcript + comments
     let (meta_result, transcript_result, comments_result) = tokio::join!(
         metadata::fetch_metadata(video_id, http, config),
@@ -270,7 +271,8 @@ async fn fetch_single_video_data(
         }
     );
 
-    let meta = meta_result?;
+    let mut meta = meta_result?;
+    hydrate_metadata_from_search_seed(&mut meta, seed);
     let credibility = metadata::score_channel_credibility(&meta.channel);
     let comment_analysis = comments_result.map(|c| comments::analyze_comments(&c));
 
@@ -280,6 +282,30 @@ async fn fetch_single_video_data(
         comments: comment_analysis,
         credibility,
     })
+}
+
+fn hydrate_metadata_from_search_seed(meta: &mut VideoMetadata, seed: &YouTubeSearchResult) {
+    if meta.title.trim().is_empty() {
+        meta.title = seed.title.clone();
+    }
+    if meta.description.trim().is_empty() {
+        meta.description = seed.description.clone();
+    }
+    if meta.channel.name.trim().is_empty() {
+        meta.channel.name = seed.channel.clone();
+    }
+    if meta.duration_secs == 0 {
+        meta.duration_secs = seed.duration_secs;
+    }
+    if meta.view_count == 0 {
+        meta.view_count = seed.view_count;
+    }
+    if meta.published.trim().is_empty() {
+        meta.published = seed.published.clone();
+    }
+    if meta.thumbnail_url.is_none() {
+        meta.thumbnail_url = seed.thumbnail_url.clone();
+    }
 }
 
 /// Intelligence pipeline output: fact checks, timeline, learning path, teaching.
@@ -352,6 +378,10 @@ pub fn format_result_markdown(result: &YouTubePipelineResult) -> String {
     for video in &result.videos {
         let meta = &video.metadata;
         out.push_str(&format!("### {}\n", meta.title));
+        out.push_str(&format!(
+            "- **URL:** https://www.youtube.com/watch?v={}\n",
+            meta.video_id
+        ));
         out.push_str(&format!("- **Channel:** {}\n", meta.channel.name));
         out.push_str(&format!(
             "- **Views:** {} | **Likes:** {}\n",
