@@ -623,6 +623,13 @@ fetchium youtube playlist-analyze <playlist_id> --learning-path
 fetchium youtube channel-audit <channel_id> -n 10
 ```
 
+Latest implementation notes:
+
+- `youtube watch` now includes enriched metadata (absolute publish date, likes/views), summary, chapter list, transcript preview, highlights, and top comments in one report.
+- Search ranking now uses intent-aware weights (`learn/news/review/comparison`), view velocity, recency decay, stronger title-mismatch penalties, and harder clickbait downranking.
+- Transcript UX includes semantic chunks, jump timestamps, highlights, language/translation controls, and chapter-aligned output.
+- Compact search table includes score + URL, with `--open <n>` and `--copy-url <n>` utilities.
+
 YouTube quality regression:
 
 ```bash

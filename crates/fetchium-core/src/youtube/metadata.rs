@@ -280,7 +280,8 @@ pub async fn fetch_metadata(
 
     // Final enrichment pass: if important fields are still sparse, try yt-dlp.
     if metadata_needs_enrichment(&best) {
-        if let Ok(extra) = fetch_metadata_ytdlp(video_id, timeout).await {
+        let enrich_timeout = std::cmp::max(timeout, Duration::from_secs(6));
+        if let Ok(extra) = fetch_metadata_ytdlp(video_id, enrich_timeout).await {
             enrich_metadata(&mut best, extra);
         }
     }
