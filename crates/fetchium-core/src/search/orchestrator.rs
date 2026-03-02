@@ -843,7 +843,8 @@ impl SearchOrchestrator {
             }
         }
 
-        // Step 6: Take top N
+        // Step 6: Diversify domains in top-N, then take top N.
+        ranked = diversify_by_domain(ranked, max as usize);
         ranked.truncate(max as usize);
 
         info!(
@@ -942,6 +943,56 @@ fn should_cap_static_sources(multilingual_query: bool, ranked: &[ResultItem]) ->
     ranked
         .iter()
         .any(|r| !r.url.contains("wikipedia.org") && !r.url.contains("arxiv.org"))
+}
+
+/// Reorder results to improve top-page domain diversity without reducing recall.
+///
+/// Keeps per-domain relevance order and round-robins across domains.
+fn diversify_by_domain(results: Vec<ResultItem>, max: usize) -> Vec<ResultItem> {
+    use std::collections::VecDeque;
+
+    if results.len() <= 2 || max <= 2 {
+        return results;
+    }
+
+    let mut buckets: HashMap<String, VecDeque<ResultItem>> = HashMap::new();
+    let mut domain_order: Vec<String> = Vec::new();
+
+    for item in results {
+        let key = domain_key(&item.url);
+        let bucket = buckets.entry(key.clone()).or_insert_with(|| {
+            domain_order.push(key.clone());
+            VecDeque::new()
+        });
+        bucket.push_back(item);
+    }
+
+    let mut out = Vec::with_capacity(max);
+    loop {
+        let mut progressed = false;
+        for key in &domain_order {
+            if out.len() >= max {
+                break;
+            }
+            if let Some(bucket) = buckets.get_mut(key) {
+                if let Some(item) = bucket.pop_front() {
+                    out.push(item);
+                    progressed = true;
+                }
+            }
+        }
+        if !progressed || out.len() >= max {
+            break;
+        }
+    }
+    out
+}
+
+fn domain_key(url: &str) -> String {
+    url::Url::parse(url)
+        .ok()
+        .and_then(|u| u.host_str().map(|h| h.to_ascii_lowercase()))
+        .unwrap_or_else(|| url.to_ascii_lowercase())
 }
 
 /// Per-backend timeout cap to avoid long tail latency from flaky scrapers.
@@ -1125,5 +1176,30 @@ mod tests {
             backend_timeout_for(&BackendId::Wikipedia, default),
             Duration::from_secs(30)
         );
+    }
+
+    #[test]
+    fn diversify_by_domain_round_robins() {
+        let mk = |url: &str, rank: u32| ResultItem {
+            title: format!("t{rank}"),
+            url: url.to_string(),
+            snippet: String::new(),
+            rank,
+            backend: BackendId::Searxng,
+            score: Some(1.0),
+            published_date: None,
+        };
+        let input = vec![
+            mk("https://a.com/1", 1),
+            mk("https://a.com/2", 2),
+            mk("https://a.com/3", 3),
+            mk("https://b.com/1", 4),
+            mk("https://c.com/1", 5),
+        ];
+        let out = diversify_by_domain(input, 5);
+        let hosts: Vec<String> = out.iter().map(|r| domain_key(&r.url)).collect();
+        assert_eq!(hosts[0], "a.com");
+        assert_eq!(hosts[1], "b.com");
+        assert_eq!(hosts[2], "c.com");
     }
 }
