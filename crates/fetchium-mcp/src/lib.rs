@@ -16,10 +16,12 @@ pub mod tools;
 use crate::tools::{
     EstimateInput, ExpandInput, FetchInput, HackerNewsSearchInput, RedditSearchInput,
     ResearchInput, SearchInput, SocialResearchInput, YouTubeAnalyzeInput, YouTubeSearchInput,
+    YouTubeTranscriptInput, YouTubeWatchInput,
 };
 use fetchium_core::cache::MemoryCache;
 use fetchium_core::config::HsxConfig;
 use fetchium_core::http::client::HttpClient;
+use fetchium_core::summarize::SummarizeConfig;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::io::{self, BufRead, Write};
@@ -249,6 +251,79 @@ async fn dispatch_tool(
                 {
                     Ok(result) => {
                         serde_json::to_value(&result).unwrap_or(json!({"error": "serialization"}))
+                    }
+                    Err(e) => json!({ "error": e.to_string() }),
+                }
+            }
+            Err(e) => json!({ "error": format!("Invalid input: {e}") }),
+        },
+        "youtube_watch" => match serde_json::from_value::<YouTubeWatchInput>(args) {
+            Ok(input) => {
+                match fetchium_core::youtube::pipeline::analyze_single_video(
+                    &input.url,
+                    config,
+                    http,
+                    input.comments.unwrap_or(true),
+                    input.transcript.unwrap_or(true),
+                    false,
+                )
+                .await
+                {
+                    Ok(result) => {
+                        let summary = fetchium_core::summarize::summarize(
+                            &input.url,
+                            &SummarizeConfig::default(),
+                            config,
+                        )
+                        .await
+                        .ok()
+                        .map(|s| s.summary);
+                        let highlights = result
+                            .videos
+                            .first()
+                            .and_then(|v| v.transcript.as_ref())
+                            .map(|t| {
+                                let mut moments = t.key_moments.clone();
+                                moments.sort_by(|a, b| {
+                                    b.importance
+                                        .partial_cmp(&a.importance)
+                                        .unwrap_or(std::cmp::Ordering::Equal)
+                                });
+                                moments
+                                    .into_iter()
+                                    .take(input.highlights.unwrap_or(5))
+                                    .collect::<Vec<_>>()
+                            })
+                            .unwrap_or_default();
+                        json!({
+                            "analysis": result,
+                            "summary": summary,
+                            "highlights": highlights
+                        })
+                    }
+                    Err(e) => json!({ "error": e.to_string() }),
+                }
+            }
+            Err(e) => json!({ "error": format!("Invalid input: {e}") }),
+        },
+        "youtube_transcript" => match serde_json::from_value::<YouTubeTranscriptInput>(args) {
+            Ok(input) => {
+                match fetchium_core::youtube::universal::fetch_universal_transcript(
+                    &input.url, http, config,
+                )
+                .await
+                {
+                    Ok(transcript) => {
+                        let mut highlights = transcript.key_moments.clone();
+                        highlights.sort_by(|a, b| {
+                            b.importance
+                                .partial_cmp(&a.importance)
+                                .unwrap_or(std::cmp::Ordering::Equal)
+                        });
+                        json!({
+                            "transcript": transcript,
+                            "highlights": highlights.into_iter().take(input.highlights.unwrap_or(5)).collect::<Vec<_>>()
+                        })
                     }
                     Err(e) => json!({ "error": e.to_string() }),
                 }
