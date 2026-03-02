@@ -131,6 +131,105 @@ fetchium serve --mode mcp
 
 ---
 
+## Verified Terminal Use Cases (Manual Audit)
+
+The commands below were manually executed in terminal on **March 2, 2026** against the local binary (`./target/debug/fetchium`) with real network calls.
+
+### Prerequisites
+
+```bash
+# Build
+cargo build -p fetchium-cli
+
+# Optional but recommended for full feature parity
+pip install --user yt-dlp openai-whisper
+
+# Optional premium backends
+export SERPER_API_KEY=...
+export EXA_API_KEY=...
+export TAVILY_API_KEY=...
+export FIRECRAWL_API_KEY=...
+```
+
+### Core Retrieval
+
+```bash
+./target/debug/fetchium doctor
+./target/debug/fetchium search "rust async runtime benchmark" -n 5 -f json
+./target/debug/fetchium fetch "https://example.com" --budget 1200
+./target/debug/fetchium view "https://example.com" --budget 1200
+./target/debug/fetchium compare "rust vs go for backend"
+./target/debug/fetchium summarize "https://example.com"
+./target/debug/fetchium transcribe "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --text
+```
+
+### AI and Research
+
+```bash
+./target/debug/fetchium research "rust async runtime benchmark" --validate fast
+./target/debug/fetchium ai "rust async runtime benchmark" --fast
+./target/debug/fetchium deep "rust async runtime benchmark" --max-depth 1 --max-agents 2 --timeout 30
+./target/debug/fetchium agent-search "rust async runtime benchmark" -n 5
+./target/debug/fetchium agent-fetch "https://example.com" --budget 1200
+./target/debug/fetchium agent-research "rust async runtime benchmark"
+./target/debug/fetchium digest --topics "ai,rust,search" --period weekly
+./target/debug/fetchium radar
+```
+
+### YouTube Intelligence
+
+```bash
+./target/debug/fetchium youtube search "rust async tutorial" -n 3 -f json
+./target/debug/fetchium youtube video dQw4w9WgXcQ -f json
+./target/debug/fetchium youtube channel UCuAXFkgsw1L7xaCfnd5JJOw --videos -n 5 -f json
+./target/debug/fetchium youtube playlist UUuAXFkgsw1L7xaCfnd5JJOw -n 5 -f json
+./target/debug/fetchium youtube transcript "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --text
+```
+
+### Social Intelligence
+
+```bash
+./target/debug/fetchium social "ai tools" --unified -n 5
+./target/debug/fetchium twitter search "openai" -n 5
+./target/debug/fetchium reddit search "rustlang" -n 5
+./target/debug/fetchium hackernews top -n 5
+./target/debug/fetchium facebook search "open source ai" -n 5
+./target/debug/fetchium tiktok trends -n 5
+```
+
+### System and Operations
+
+```bash
+./target/debug/fetchium config show
+./target/debug/fetchium cache stats
+./target/debug/fetchium provider list
+./target/debug/fetchium setup --check
+./target/debug/fetchium monitor list
+./target/debug/fetchium index stats
+./target/debug/fetchium intelligence stats
+./target/debug/fetchium plugin list
+./target/debug/fetchium workspace list
+./target/debug/fetchium subscribe list
+./target/debug/fetchium completions bash
+```
+
+### Server and TUI
+
+```bash
+# Start REST API server
+./target/debug/fetchium serve
+
+# Start interactive terminal UI (requires a real TTY session)
+./target/debug/fetchium tui
+```
+
+Notes:
+- `serve` is long-running; stop with `Ctrl+C`.
+- `tui` now returns a clear error if run in a non-interactive shell.
+- `ai` and `deep` require at least one working AI provider (`fetchium provider list`).
+
+---
+
 ## Why Fetchium?
 
 | Capability | Fetchium | Perplexity | Tavily | Exa | Firecrawl |
