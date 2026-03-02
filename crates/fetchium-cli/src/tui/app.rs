@@ -14,6 +14,7 @@ use ratatui::{
     Terminal,
 };
 use std::io;
+use std::io::IsTerminal;
 
 #[derive(Debug, PartialEq)]
 enum Panel {
@@ -191,6 +192,12 @@ impl App {
 
 /// Launch the interactive TUI.
 pub fn run_tui() -> anyhow::Result<()> {
+    if !io::stdin().is_terminal() || !io::stdout().is_terminal() {
+        anyhow::bail!(
+            "TUI requires an interactive terminal (TTY). Run `fetchium tui` directly in a terminal session."
+        );
+    }
+
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
