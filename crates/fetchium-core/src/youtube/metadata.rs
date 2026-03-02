@@ -5,6 +5,7 @@
 use crate::error::{HsxError, HsxResult};
 use crate::http::client::HttpClient;
 use crate::youtube::types::*;
+use chrono::{Duration as ChronoDuration, Utc};
 use serde_json::Value;
 use std::time::Duration;
 
@@ -273,7 +274,18 @@ pub async fn fetch_metadata(
         }
     }
 
-    best.ok_or_else(|| HsxError::YouTube(format!("All metadata sources timed out for {video_id}")))
+    let mut best = best.ok_or_else(|| {
+        HsxError::YouTube(format!("All metadata sources timed out for {video_id}"))
+    })?;
+
+    // Final enrichment pass: if important fields are still sparse, try yt-dlp.
+    if metadata_needs_enrichment(&best) {
+        if let Ok(extra) = fetch_metadata_ytdlp(video_id, timeout).await {
+            enrich_metadata(&mut best, extra);
+        }
+    }
+
+    Ok(best)
 }
 
 fn metadata_richness(meta: &VideoMetadata) -> u8 {
@@ -300,6 +312,138 @@ fn metadata_richness(meta: &VideoMetadata) -> u8 {
         score += 1;
     }
     score
+}
+
+fn metadata_needs_enrichment(meta: &VideoMetadata) -> bool {
+    meta.like_count == 0
+        || meta.published.trim().is_empty()
+        || meta.channel.subscriber_count.is_none()
+}
+
+fn enrich_metadata(base: &mut VideoMetadata, extra: VideoMetadata) {
+    if base.title.trim().is_empty() && !extra.title.trim().is_empty() {
+        base.title = extra.title;
+    }
+    if base.description.trim().is_empty() && !extra.description.trim().is_empty() {
+        base.description = extra.description;
+    }
+    if base.duration_secs == 0 && extra.duration_secs > 0 {
+        base.duration_secs = extra.duration_secs;
+    }
+    if base.view_count == 0 && extra.view_count > 0 {
+        base.view_count = extra.view_count;
+    }
+    if base.like_count == 0 && extra.like_count > 0 {
+        base.like_count = extra.like_count;
+    }
+    if base.published.trim().is_empty() && !extra.published.trim().is_empty() {
+        base.published = extra.published;
+    }
+    if base.channel.name.trim().is_empty() && !extra.channel.name.trim().is_empty() {
+        base.channel.name = extra.channel.name;
+    }
+    if base.channel.id.trim().is_empty() && !extra.channel.id.trim().is_empty() {
+        base.channel.id = extra.channel.id;
+    }
+    if base.channel.subscriber_count.is_none() {
+        base.channel.subscriber_count = extra.channel.subscriber_count;
+    }
+    if !base.channel.verified {
+        base.channel.verified = extra.channel.verified;
+    }
+    if base.thumbnail_url.is_none() {
+        base.thumbnail_url = extra.thumbnail_url;
+    }
+}
+
+async fn fetch_metadata_ytdlp(video_id: &str, timeout: Duration) -> HsxResult<VideoMetadata> {
+    use tokio::process::Command;
+
+    let url = format!("https://www.youtube.com/watch?v={video_id}");
+    let fut = Command::new("yt-dlp")
+        .arg("--dump-single-json")
+        .arg("--no-warnings")
+        .arg("--no-playlist")
+        .arg(&url)
+        .output();
+
+    let out = tokio::time::timeout(timeout, fut)
+        .await
+        .map_err(|_| HsxError::YouTube(format!("yt-dlp metadata timeout for {video_id}")))?
+        .map_err(|e| HsxError::YouTube(format!("yt-dlp metadata spawn failed: {e}")))?;
+
+    if !out.status.success() {
+        return Err(HsxError::YouTube(format!(
+            "yt-dlp metadata failed for {video_id}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        )));
+    }
+
+    let v: Value = serde_json::from_slice(&out.stdout)
+        .map_err(|e| HsxError::YouTube(format!("yt-dlp metadata JSON parse error: {e}")))?;
+
+    let title = v["title"].as_str().unwrap_or("").to_string();
+    if title.is_empty() {
+        return Err(HsxError::YouTube(format!(
+            "yt-dlp metadata empty title for {video_id}"
+        )));
+    }
+
+    let upload_date = v["upload_date"].as_str().unwrap_or("");
+    let published = if upload_date.len() == 8 && upload_date.chars().all(|c| c.is_ascii_digit()) {
+        format!(
+            "{}-{}-{}",
+            &upload_date[0..4],
+            &upload_date[4..6],
+            &upload_date[6..8]
+        )
+    } else {
+        normalize_published(upload_date)
+    };
+
+    Ok(VideoMetadata {
+        video_id: video_id.to_string(),
+        title,
+        description: v["description"].as_str().unwrap_or("").to_string(),
+        channel: ChannelInfo {
+            name: v["channel"].as_str().unwrap_or("").to_string(),
+            id: v["channel_id"].as_str().unwrap_or("").to_string(),
+            subscriber_count: v["channel_follower_count"].as_u64(),
+            verified: v["channel_is_verified"].as_bool().unwrap_or(false),
+        },
+        duration_secs: v["duration"].as_u64().unwrap_or(0),
+        view_count: v["view_count"].as_u64().unwrap_or(0),
+        like_count: v["like_count"].as_u64().unwrap_or(0),
+        published,
+        keywords: v["tags"]
+            .as_array()
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|x| x.as_str().map(|s| s.to_string()))
+                    .collect()
+            })
+            .unwrap_or_default(),
+        chapters: v["chapters"]
+            .as_array()
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|ch| {
+                        let title = ch["title"].as_str()?.to_string();
+                        let start_secs = ch["start_time"].as_u64()?;
+                        let end_secs = ch["end_time"].as_u64();
+                        Some(Chapter {
+                            title,
+                            start_secs,
+                            end_secs,
+                        })
+                    })
+                    .collect()
+            })
+            .unwrap_or_default(),
+        links: extract_links(v["description"].as_str().unwrap_or("")),
+        thumbnail_url: v["thumbnail"].as_str().map(|s| s.to_string()),
+        is_live: v["is_live"].as_bool().unwrap_or(false),
+    })
 }
 
 /// Fetch full video metadata via YouTube Innertube player API.
@@ -412,7 +556,7 @@ fn parse_innertube_player_metadata(json_str: &str, video_id: &str) -> HsxResult<
         duration_secs,
         view_count,
         like_count: 0, // videoDetails doesn't include likes (privacy policy)
-        published: vd["publishDate"].as_str().unwrap_or("").to_string(),
+        published: normalize_published(vd["publishDate"].as_str().unwrap_or("")),
         keywords,
         chapters,
         links,
@@ -498,7 +642,7 @@ fn parse_invidious_video(json_str: &str, video_id: &str) -> HsxResult<VideoMetad
     let duration_secs = v["lengthSeconds"].as_u64().unwrap_or(0);
     let view_count = v["viewCount"].as_u64().unwrap_or(0);
     let like_count = v["likeCount"].as_u64().unwrap_or(0);
-    let published = v["publishedText"].as_str().unwrap_or("").to_string();
+    let published = normalize_published(v["publishedText"].as_str().unwrap_or(""));
 
     let channel = ChannelInfo {
         name: v["author"].as_str().unwrap_or("").to_string(),
@@ -554,7 +698,7 @@ fn parse_piped_video(json_str: &str, video_id: &str) -> HsxResult<VideoMetadata>
     let duration_secs = v["duration"].as_u64().unwrap_or(0);
     let view_count = v["views"].as_u64().unwrap_or(0);
     let like_count = v["likes"].as_u64().unwrap_or(0);
-    let published = v["uploadDate"].as_str().unwrap_or("").to_string();
+    let published = normalize_published(v["uploadDate"].as_str().unwrap_or(""));
 
     let channel = ChannelInfo {
         name: v["uploader"].as_str().unwrap_or("").to_string(),
@@ -605,6 +749,39 @@ fn parse_subscriber_count(s: &str) -> Option<u64> {
     } else {
         cleaned.parse().ok()
     }
+}
+
+fn normalize_published(raw: &str) -> String {
+    let s = raw.trim();
+    if s.is_empty() {
+        return String::new();
+    }
+    if s.len() >= 10 && s.chars().nth(4) == Some('-') {
+        return s.chars().take(10).collect();
+    }
+    relative_to_absolute_date(s).unwrap_or_else(|| s.to_string())
+}
+
+fn relative_to_absolute_date(s: &str) -> Option<String> {
+    let lower = s.to_lowercase();
+    let n: i64 = lower
+        .split_whitespace()
+        .find_map(|w| w.parse::<i64>().ok())?;
+    let now = Utc::now().date_naive();
+    let d = if lower.contains("minute") || lower.contains("hour") {
+        now
+    } else if lower.contains("day") {
+        now.checked_sub_signed(ChronoDuration::days(n))?
+    } else if lower.contains("week") {
+        now.checked_sub_signed(ChronoDuration::days(n * 7))?
+    } else if lower.contains("month") {
+        now.checked_sub_signed(ChronoDuration::days(n * 30))?
+    } else if lower.contains("year") {
+        now.checked_sub_signed(ChronoDuration::days(n * 365))?
+    } else {
+        return None;
+    };
+    Some(d.format("%Y-%m-%d").to_string())
 }
 
 #[cfg(test)]

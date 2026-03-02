@@ -752,12 +752,20 @@ pub struct YouTubeArgs {
 pub enum YouTubeAction {
     /// Search YouTube for videos
     Search(YtSearchArgs),
+    /// Unified watch mode: metadata + transcript + summary + moments + comments
+    Watch(YtWatchArgs),
     /// Fetch YouTube video metadata (Supadata parity: /youtube/video)
     Video(YtVideoArgs),
     /// Fetch YouTube channel metadata/videos (Supadata parity: /youtube/channel*)
     Channel(YtChannelArgs),
     /// Fetch YouTube playlist videos (Supadata parity: /youtube/playlist/videos)
     Playlist(YtPlaylistArgs),
+    /// Analyze a playlist end-to-end and generate ranking + learning path
+    #[command(name = "playlist-analyze")]
+    PlaylistAnalyze(YtPlaylistAnalyzeArgs),
+    /// Audit a channel for quality trends and content strategy signals
+    #[command(name = "channel-audit")]
+    ChannelAudit(YtChannelAuditArgs),
     /// Analyze a specific YouTube video
     Analyze(YtAnalyzeArgs),
     /// Extract transcript from a YouTube video
@@ -775,12 +783,39 @@ pub struct YtSearchArgs {
     /// Maximum number of results
     #[arg(short = 'n', long, default_value = "10")]
     pub max_results: usize,
+    /// Compact terminal table with URL, duration, views, age and score
+    #[arg(long)]
+    pub compact: bool,
+    /// Open a ranked result index in browser (1-based)
+    #[arg(long)]
+    pub open: Option<usize>,
+    /// Copy ranked result URL (1-based) to clipboard
+    #[arg(long = "copy-url")]
+    pub copy_url: Option<usize>,
 }
 
 #[derive(Debug, Parser)]
 pub struct YtVideoArgs {
     /// YouTube video URL or video id
     pub input: String,
+}
+
+#[derive(Debug, Parser)]
+pub struct YtWatchArgs {
+    /// YouTube video URL or video id
+    pub input: String,
+    /// Include comments analysis
+    #[arg(long)]
+    pub comments: bool,
+    /// Include transcript and key moments
+    #[arg(long, default_value_t = true)]
+    pub transcript: bool,
+    /// Number of key highlights to show
+    #[arg(long, default_value = "5")]
+    pub highlights: usize,
+    /// Optional translation target language (ISO code, e.g. es, fr, hi)
+    #[arg(long)]
+    pub translate: Option<String>,
 }
 
 #[derive(Debug, Parser)]
@@ -801,6 +836,27 @@ pub struct YtPlaylistArgs {
     pub input: String,
     /// Max playlist video ids
     #[arg(short = 'n', long, default_value = "100")]
+    pub max_results: usize,
+}
+
+#[derive(Debug, Parser)]
+pub struct YtPlaylistAnalyzeArgs {
+    /// Playlist URL or id
+    pub input: String,
+    /// Max videos to analyze from the playlist
+    #[arg(short = 'n', long, default_value = "10")]
+    pub max_results: usize,
+    /// Build learning path from playlist videos
+    #[arg(long)]
+    pub learning_path: bool,
+}
+
+#[derive(Debug, Parser)]
+pub struct YtChannelAuditArgs {
+    /// Channel URL, id, or handle
+    pub input: String,
+    /// Number of recent videos to audit
+    #[arg(short = 'n', long, default_value = "12")]
     pub max_results: usize,
 }
 
@@ -832,9 +888,21 @@ pub struct YtTranscriptArgs {
     /// Output transcript in chunked segments
     #[arg(long)]
     pub chunks: bool,
+    /// Use semantic chunking (topic/moment-aware) instead of fixed-size chunks
+    #[arg(long)]
+    pub semantic: bool,
     /// Approximate chunk size in characters (used with --chunks)
     #[arg(long, default_value = "500")]
     pub chunk_size: usize,
+    /// Preferred transcript language (ISO code, e.g. en, es, hi)
+    #[arg(long)]
+    pub language: Option<String>,
+    /// Translate transcript to target language (ISO code)
+    #[arg(long)]
+    pub translate: Option<String>,
+    /// Number of key highlights to show
+    #[arg(long, default_value = "5")]
+    pub highlights: usize,
 }
 
 #[derive(Debug, Parser)]

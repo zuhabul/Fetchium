@@ -1,0 +1,6 @@
+# Stable public videos for YouTube regression checks.
+https://www.youtube.com/watch?v=dQw4w9WgXcQ
+https://www.youtube.com/watch?v=kqtD5dpn9C8
+https://www.youtube.com/watch?v=rfscVS0vtbw
+https://www.youtube.com/watch?v=PkZNo7MFNFg
+https://www.youtube.com/watch?v=8hly31xKli0
