@@ -672,18 +672,14 @@ async fn fetch_via_whisper(video_id: &str) -> HsxResult<(Vec<TranscriptEntry>, S
     let tmp_dir = std::env::temp_dir().join(format!("fetchium_whisper_{video_id}"));
     let _ = tokio::fs::create_dir_all(&tmp_dir).await;
     let audio_template = format!("{}/audio.%(ext)s", tmp_dir.display());
-    let audio_wav = tmp_dir.join("audio.wav");
-
-    // Step 1: Download audio only (no video).
+    // Step 1: Download best audio only (no video) without forced WAV conversion.
+    // Avoiding WAV post-processing significantly reduces fallback latency.
     let yt_out = tokio::time::timeout(
         Duration::from_secs(120),
         Command::new("yt-dlp")
             .args([
-                "-x",
-                "--audio-format",
-                "wav",
-                "--audio-quality",
-                "0",
+                "-f",
+                "bestaudio/best",
                 "--no-playlist",
                 "--quiet",
                 "--output",
@@ -704,32 +700,61 @@ async fn fetch_via_whisper(video_id: &str) -> HsxResult<(Vec<TranscriptEntry>, S
         )));
     }
 
+    // Resolve downloaded audio file path (`audio.m4a`, `audio.webm`, ...).
+    let mut audio_path: Option<std::path::PathBuf> = None;
+    let mut rd = tokio::fs::read_dir(&tmp_dir)
+        .await
+        .map_err(|e| HsxError::YouTube(format!("failed to read ASR temp dir: {e}")))?;
+    while let Ok(Some(entry)) = rd.next_entry().await {
+        let p = entry.path();
+        if p.is_file() {
+            let ext = p
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("")
+                .to_ascii_lowercase();
+            if matches!(
+                ext.as_str(),
+                "m4a" | "webm" | "opus" | "mp3" | "aac" | "wav" | "ogg" | "flac"
+            ) {
+                audio_path = Some(p);
+                break;
+            }
+        }
+    }
+    let audio_path = audio_path.ok_or_else(|| {
+        HsxError::YouTube("yt-dlp did not produce an audio file for Whisper".into())
+    })?;
+
     // Step 2: Run Whisper transcription.
-    // Use `base` model — best balance of speed and accuracy for unknown video lengths.
+    // Default to `tiny` for low-latency fallback. Override with FETCHIUM_WHISPER_MODEL.
     // `--fp16 False` ensures CPU compatibility (avoids GPU-only FP16 error).
+    let model = whisper_model_from_env();
+    let whisper_timeout_secs = match model.as_str() {
+        "tiny" | "base" | "turbo" => 240,
+        "small" => 420,
+        _ => 600,
+    };
+    let mut whisper_cmd = Command::new("whisper");
+    whisper_cmd
+        .arg(audio_path.to_str().unwrap_or("audio"))
+        .arg("--model")
+        .arg(&model)
+        .arg("--output_format")
+        .arg("json")
+        .arg("--output_dir")
+        .arg(tmp_dir.to_str().unwrap_or("/tmp"))
+        .arg("--fp16")
+        .arg("False");
     let whisper_out = tokio::time::timeout(
-        Duration::from_secs(600), // 10 min cap (handles videos up to ~2h on `base`)
-        Command::new("whisper")
-            .args([
-                audio_wav.to_str().unwrap_or("audio.wav"),
-                "--model",
-                "base",
-                "--output_format",
-                "json",
-                "--output_dir",
-                tmp_dir.to_str().unwrap_or("/tmp"),
-                "--fp16",
-                "False",
-                // No --language flag: Whisper auto-detects any of 99 languages
-                // (English, Bengali, Hindi, Spanish, etc.) from audio content.
-            ])
-            .output(),
+        Duration::from_secs(whisper_timeout_secs),
+        whisper_cmd.output(),
     )
     .await
-    .map_err(|_| HsxError::YouTube("Whisper timed out (10 min)".into()))?
+    .map_err(|_| HsxError::YouTube(format!("Whisper timed out ({whisper_timeout_secs}s)")))?
     .map_err(|e| HsxError::YouTube(format!("Whisper failed: {e}")))?;
 
-    let _ = tokio::fs::remove_file(&audio_wav).await;
+    let _ = tokio::fs::remove_file(&audio_path).await;
 
     if !whisper_out.status.success() {
         let _ = tokio::fs::remove_dir_all(&tmp_dir).await;
@@ -748,6 +773,16 @@ async fn fetch_via_whisper(video_id: &str) -> HsxResult<(Vec<TranscriptEntry>, S
     let _ = tokio::fs::remove_dir_all(&tmp_dir).await;
 
     parse_whisper_json(&json_content)
+}
+
+fn whisper_model_from_env() -> String {
+    let raw = std::env::var("FETCHIUM_WHISPER_MODEL")
+        .unwrap_or_else(|_| "tiny".to_string())
+        .to_lowercase();
+    match raw.as_str() {
+        "tiny" | "base" | "small" | "medium" | "large" | "turbo" => raw,
+        _ => "tiny".to_string(),
+    }
 }
 
 /// Parse Whisper's JSON output into transcript entries plus detected language.

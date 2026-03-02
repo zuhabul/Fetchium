@@ -52,7 +52,9 @@ impl StackOverflowBackend {
     pub fn new(_http: HttpClient) -> Self {
         let api_key = std::env::var("STACKEXCHANGE_KEY").ok();
         let client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(15))
+            // Keep StackOverflow fail-fast to avoid long-tail latency in aggregate search.
+            .timeout(std::time::Duration::from_secs(4))
+            .connect_timeout(std::time::Duration::from_secs(2))
             .user_agent("Fetchium/0.1")
             .gzip(true)
             .pool_max_idle_per_host(4)
@@ -65,7 +67,8 @@ impl StackOverflowBackend {
     /// Create a StackOverflow backend with an explicit API key.
     pub fn with_key(_http: HttpClient, api_key: impl Into<String>) -> Self {
         let client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(15))
+            .timeout(std::time::Duration::from_secs(4))
+            .connect_timeout(std::time::Duration::from_secs(2))
             .user_agent("Fetchium/0.1")
             .gzip(true)
             .pool_max_idle_per_host(4)

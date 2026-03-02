@@ -88,10 +88,11 @@ echo
 echo "== Channel/Playlist Parity Check =="
 if command -v yt-dlp >/dev/null 2>&1; then
   echo "yt-dlp: installed"
+  channel_limit="${CMP_CHANNEL_LIMIT:-30}"
   if [[ -n "${SUPA_CHANNEL_ID:-}" ]]; then
     s_count="$(curl -sS -m 20 "https://api.supadata.ai/v1/youtube/channel/videos?id=${SUPA_CHANNEL_ID}" -H "x-api-key: ${SUPADATA_API_KEY}" | jq -r '(.videoIds // []) | length')"
-    f_count="$("$BIN" youtube channel "${SUPA_CHANNEL_ID}" --videos -n 50 -f json | jq -r '(.videos // []) | length')"
-    echo "channel_videos_count supadata=${s_count} fetchium=${f_count}"
+    f_count="$("$BIN" youtube channel "${SUPA_CHANNEL_ID}" --videos -n "${channel_limit}" -f json | jq -r '(.videos // []) | length')"
+    echo "channel_videos_count(limit=${channel_limit}) supadata=${s_count} fetchium=${f_count}"
   else
     echo "channel_videos_count skipped (set SUPA_CHANNEL_ID)"
   fi
