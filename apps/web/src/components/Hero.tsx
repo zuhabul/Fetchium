@@ -46,14 +46,14 @@ function WordRotator() {
 
 const STATS = [
   { value: "17",     label: "Novel algorithms" },
-  { value: "11",     label: "Search backends"  },
-  { value: "930+",   label: "Tests passing"    },
-  { value: "<200ms", label: "Median latency"   },
+  { value: "11+",    label: "Search backends"  },
+  { value: "563+",   label: "Tests passing"    },
+  { value: "~500ms", label: "P50 search latency" },
 ];
 
 const RESPONSE_LINES = [
   { k: '"query"',       v: '"best async rust patterns"'         },
-  { k: '"latency_ms"',  v: "183"                                 },
+  { k: '"latency_ms"',  v: "487"                                 },
   { k: '"results"',     v: "[ 11 sources × top 30 results ]"    },
   { k: '"ranked"',      v: "[ HyperFusion 8-signal score ]"     },
   { k: '"content"',     v: '"4 096 tokens extracted + cleaned"' },
@@ -72,7 +72,7 @@ function ApiDemo() {
           <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
         </div>
         <span className="text-[11px] text-slate-500 font-mono">POST /v1/search → 200 OK</span>
-        <span className="text-[11px] text-emerald-400 font-mono font-semibold">183ms</span>
+        <span className="text-[11px] text-emerald-400 font-mono font-semibold">~500ms</span>
       </div>
 
       {/* Response lines */}
@@ -90,7 +90,7 @@ function ApiDemo() {
 
       {/* Footer */}
       <div className="flex items-center justify-between px-4 py-2 border-t border-white/[0.04] bg-white/[0.01]">
-        <span className="text-[10px] text-slate-600 font-mono">11 backends · 30 results · 4 096 tokens</span>
+        <span className="text-[10px] text-slate-600 font-mono">11 backends · 30 results · 4 096 tokens · ~500ms P50</span>
         <Link href="/docs/api" className="text-[10px] text-indigo-400 hover:text-indigo-300 font-mono transition-colors">
           API docs →
         </Link>
@@ -133,8 +133,8 @@ export default function Hero() {
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-indigo-500/25 bg-indigo-500/8 text-indigo-300 text-xs mb-6 sm:mb-8 cursor-default"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="hidden sm:inline">Open Beta · 17 novel algorithms · 11 backends · Free to start</span>
-          <span className="sm:hidden">17 algorithms · Free to start</span>
+          <span className="hidden sm:inline">Open Beta · 17 novel algorithms · 11+ backends · Free forever — no credit card</span>
+          <span className="sm:hidden">Open Beta · Free to start</span>
         </motion.div>
 
         {/* ── Headline ─────────────────────────────────────────────────────────
@@ -159,9 +159,9 @@ export default function Hero() {
           transition={{ duration: 0.7, delay: 0.2 }}
           className="text-base sm:text-xl text-slate-400 max-w-2xl mx-auto mb-8 leading-relaxed"
         >
-          One API call. 11 federated search backends, 8-signal neural ranking,
-          5-layer content extraction, and token-budgeted context with evidence graphs
-          — in under 200ms.
+          Stop stitching together scrapers, rankers, and extractors.
+          One call returns search + extracted content + citations — ready to drop
+          into your RAG pipeline or AI agent. Cheaper than any competitor.
         </motion.p>
 
         {/* CTAs */}
@@ -171,8 +171,10 @@ export default function Hero() {
           className="flex flex-col sm:flex-row gap-3 justify-center mb-12"
         >
           <Link
-            href="https://app.fetchium.com"
-            className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all duration-200 shadow-[0_0_30px_rgba(99,102,241,0.3)] hover:shadow-[0_0_50px_rgba(99,102,241,0.5)] min-h-[48px]"
+            href="https://app.fetchium.com/register"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white font-semibold text-sm transition-all duration-200 shadow-[0_0_30px_rgba(99,102,241,0.3)] hover:shadow-[0_0_50px_rgba(99,102,241,0.5)] min-h-[48px]"
           >
             Get API Key — Free
             <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,6 +189,18 @@ export default function Hero() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             View Docs
+          </Link>
+          <Link
+            href="https://app.fetchium.com/playground"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-white/10 text-slate-400 font-semibold text-sm transition-all duration-200 hover:border-indigo-500/30 hover:text-slate-200 min-h-[48px]"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Try Playground
           </Link>
         </motion.div>
 
