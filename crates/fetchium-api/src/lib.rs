@@ -54,7 +54,7 @@ impl Default for ApiServerConfig {
         let data_dir = home.join(".fetchium");
         Self {
             host: "0.0.0.0".into(),
-            port: 3000,
+            port: 3050,
             data_dir,
             allowed_origins: vec![
                 "https://fetchium.com".into(),

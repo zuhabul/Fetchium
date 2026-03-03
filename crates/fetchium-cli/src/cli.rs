@@ -471,7 +471,7 @@ pub struct ServeArgs {
     pub mode: ServerMode,
 
     /// Port to listen on
-    #[arg(short, long, default_value = "3000")]
+    #[arg(short, long, default_value = "3050")]
     pub port: u16,
 
     /// Transport for MCP server (stdio or sse)

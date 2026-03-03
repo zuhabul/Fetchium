@@ -39,7 +39,7 @@ COPY --from=builder /build/target/release/fetchium /usr/local/bin/fetchium
 RUN mkdir -p /data
 VOLUME ["/data"]
 
-EXPOSE 3000
+EXPOSE 3050
 ENV FETCHIUM_DATA_DIR=/data
 
 CMD ["fetchium", "serve", "--mode", "rest"]
