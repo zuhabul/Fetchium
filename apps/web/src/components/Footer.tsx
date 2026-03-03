@@ -6,30 +6,41 @@ import { Zap, Github, Twitter, Circle } from "lucide-react";
 
 const nav: Record<string, { label: string; href: string }[]> = {
   Product: [
-    { label: "Features", href: "#features" },
-    { label: "Pricing", href: "#pricing" },
+    { label: "Search API", href: "/product/search" },
+    { label: "Extract API", href: "/product/extract" },
+    { label: "Research API", href: "/product/research" },
+    { label: "MCP Tools", href: "/product/mcp" },
+    { label: "Pricing", href: "/pricing" },
     { label: "Changelog", href: "/changelog" },
     { label: "Roadmap", href: "/roadmap" },
     { label: "Status", href: "/status" },
   ],
   Developers: [
     { label: "Documentation", href: "/docs" },
-    { label: "API Reference", href: "/docs/api" },
-    { label: "TypeScript SDK", href: "https://www.npmjs.com/package/@fetchium/sdk" },
-    { label: "Python SDK", href: "https://pypi.org/project/fetchium" },
+    { label: "API Reference", href: "/docs/api/search" },
+    { label: "Quickstart", href: "/docs/quickstart" },
+    { label: "TypeScript SDK", href: "/docs/sdk/typescript" },
+    { label: "Python SDK", href: "/docs/sdk/python" },
     { label: "Algorithm Docs", href: "/docs/algorithms" },
+    { label: "Self-hosting", href: "/docs/self-hosting/docker" },
+  ],
+  Compare: [
+    { label: "vs Tavily", href: "/compare/tavily" },
+    { label: "vs Exa", href: "/compare/exa" },
+    { label: "vs SerpAPI", href: "/compare/serpapi" },
+    { label: "vs Firecrawl", href: "/compare/firecrawl" },
+    { label: "vs Perplexity", href: "/compare/perplexity" },
   ],
   Company: [
     { label: "About", href: "/about" },
     { label: "Blog", href: "/blog" },
-    { label: "Discord", href: "https://discord.gg/fetchium" },
+    { label: "Security", href: "/security" },
+    { label: "Contact", href: "/contact" },
     { label: "GitHub", href: "https://github.com/zuhabul/Fetchium" },
-    { label: "Contact", href: "mailto:hello@fetchium.com" },
   ],
   Legal: [
     { label: "Privacy Policy", href: "/privacy" },
     { label: "Terms of Service", href: "/terms" },
-    { label: "Security", href: "/security" },
     { label: "Cookie Policy", href: "/cookies" },
   ],
 };
@@ -55,10 +66,10 @@ export default function Footer() {
 
       <div className="relative mx-auto max-w-7xl">
         {/* Main grid */}
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-6">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-7">
           {/* Brand column — spans 2 */}
           <motion.div
-            className="lg:col-span-2"
+            className="lg:col-span-2 sm:col-span-2"
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -79,8 +90,8 @@ export default function Footer() {
             </Link>
 
             <p className="mt-4 max-w-[220px] text-[12px] sm:text-[13px] leading-relaxed text-slate-500">
-              The search API that thinks. 17 novel algorithms. 11 federated
-              backends. AI-ready context in under 200ms.
+              The search API that thinks. 17 novel algorithms. 11+ federated
+              backends. Cheapest full-pipeline search API on the market.
             </p>
 
             {/* Status indicator */}
@@ -156,7 +167,7 @@ export default function Footer() {
 
           {/* Tech badges */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            {["Rust", "930+ tests", "17 algos", "< 200ms"].map(
+            {["Rust", "563+ tests", "17 algos", "~500ms P50"].map(
               (badge) => (
                 <span
                   key={badge}
