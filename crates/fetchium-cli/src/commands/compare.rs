@@ -34,7 +34,7 @@ pub async fn run(args: CompareArgs, config: &HsxConfig, format: Format) -> Resul
     spinner.enable_steady_tick(std::time::Duration::from_millis(100));
 
     let http = HttpClient::new(config).context("Failed to build HTTP client")?;
-    let orch_config = OrchestratorConfig::from_hsx_config(config, args.max_sources as u32);
+    let orch_config = OrchestratorConfig::from_fetchium_config(config, args.max_sources as u32);
     let orchestrator = Arc::new(SearchOrchestrator::new(http.clone(), orch_config));
 
     // Detect the comparison domain from the original query for disambiguation.

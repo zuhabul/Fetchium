@@ -20,7 +20,7 @@ pub async fn search(
 ) -> Result<Value, HsxError> {
     let start = Instant::now();
 
-    let orch_config = OrchestratorConfig::from_hsx_config(config, max_sources);
+    let orch_config = OrchestratorConfig::from_fetchium_config(config, max_sources);
     let orchestrator = SearchOrchestrator::new(http.clone(), orch_config);
     let results = orchestrator.search(query, Some(max_sources)).await?;
 

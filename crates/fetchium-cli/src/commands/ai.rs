@@ -9,7 +9,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use std::time::Duration;
 
 pub async fn run(args: AiArgs, config: &HsxConfig) -> anyhow::Result<()> {
-    let ai_config = AiConfig::from_hsx_config(config);
+    let ai_config = AiConfig::from_fetchium_config(config);
     let http_client = HttpClient::new(config)?;
     let streaming = !args.no_stream;
 

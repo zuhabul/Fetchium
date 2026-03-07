@@ -282,7 +282,7 @@ A single page explaining all 7 modes with:
 
 ### Task 3.14 — API Reference Page
 
-Auto-generate from the OpenAPI spec (the hsx-api already has typed request/response
+Auto-generate from the OpenAPI spec (the fetchium-api already has typed request/response
 structs — generate `openapi.json` and render with Redoc or Scalar).
 
 ---

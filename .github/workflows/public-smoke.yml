@@ -1,0 +1,88 @@
+name: Public Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/30 * * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  rest-and-mcp:
+    name: Public REST and MCP smoke test
+    runs-on: ubuntu-latest
+    env:
+      FETCHIUM_BASE: ${{ vars.PUBLIC_FETCHIUM_BASE_URL || '***REMOVED***' }}
+      FETCHIUM_API_KEY: ${{ secrets.PUBLIC_FETCHIUM_API_KEY }}
+      FETCHIUM_MCP_URL: ${{ vars.PUBLIC_FETCHIUM_MCP_URL }}
+    steps:
+      - name: Check required API key
+        run: |
+          if [ -z "${FETCHIUM_API_KEY}" ]; then
+            echo "::error::PUBLIC_FETCHIUM_API_KEY secret is required"
+            exit 1
+          fi
+
+      - name: Probe REST health
+        run: |
+          curl --fail --silent --show-error --max-time 10 \
+            "${FETCHIUM_BASE}/v1/health" | tee /tmp/fetchium-health.json
+
+      - name: Probe authenticated usage
+        run: |
+          curl --fail --silent --show-error --max-time 10 \
+            -H "Authorization: Bearer ${FETCHIUM_API_KEY}" \
+            "${FETCHIUM_BASE}/v1/usage" | tee /tmp/fetchium-usage.json
+
+      - name: Probe search
+        run: |
+          curl --fail --silent --show-error --max-time 20 \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${FETCHIUM_API_KEY}" \
+            -d '{"query":"Rust async runtimes","max_sources":2,"tier":"summary","token_budget":600}' \
+            "${FETCHIUM_BASE}/v1/search" | tee /tmp/fetchium-search.json
+
+      - name: Probe fetch
+        run: |
+          curl --fail --silent --show-error --max-time 20 \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${FETCHIUM_API_KEY}" \
+            -d '{"url":"https://example.com/","format":"text","token_budget":200}' \
+            "${FETCHIUM_BASE}/v1/fetch" | tee /tmp/fetchium-fetch.json
+
+      - name: Probe research async job
+        run: |
+          JOB_ID=$(
+            curl --fail --silent --show-error --max-time 20 \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer ${FETCHIUM_API_KEY}" \
+              -d '{"query":"What is Rust programming language?","max_sources":3,"token_budget":1500}' \
+              "${FETCHIUM_BASE}/v1/research/jobs" | python3 -c 'import json,sys; print(json.load(sys.stdin)["job_id"])'
+          )
+          export JOB_ID
+          for _ in $(seq 1 20); do
+            STATUS_JSON=$(curl --fail --silent --show-error --max-time 10 \
+              -H "Authorization: Bearer ${FETCHIUM_API_KEY}" \
+              "${FETCHIUM_BASE}/v1/jobs/${JOB_ID}")
+            echo "${STATUS_JSON}" | tee /tmp/fetchium-job.json
+            STATUS=$(echo "${STATUS_JSON}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["status"])')
+            if [ "${STATUS}" = "completed" ]; then
+              exit 0
+            fi
+            if [ "${STATUS}" = "failed" ]; then
+              echo "::error::Research job failed"
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "::error::Research job did not complete in time"
+          exit 1
+
+      - name: Probe MCP endpoint
+        run: |
+          MCP_URL="${FETCHIUM_MCP_URL:-${FETCHIUM_BASE}/mcp}"
+          curl --fail --silent --show-error --max-time 10 \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' \
+            "${MCP_URL}" | tee /tmp/fetchium-mcp-init.json

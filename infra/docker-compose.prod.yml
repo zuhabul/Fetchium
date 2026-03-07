@@ -1,0 +1,92 @@
+# Fetchium production stack
+# Usage:
+#   cp .env.example .env
+#   docker compose -f infra/docker-compose.prod.yml up -d --build
+
+services:
+  searxng:
+    image: searxng/searxng:latest
+    container_name: fetchium-searxng
+    restart: unless-stopped
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    environment:
+      - SEARXNG_BASE_URL=http://searxng:8080/
+    networks:
+      - fetchium-internal
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    container_name: fetchium-api
+    restart: unless-stopped
+    command: ["fetchium", "serve", "--mode", "rest", "--port", "3050"]
+    ports:
+      - "127.0.0.1:3050:3050"
+    volumes:
+      - fetchium-data:/data
+    environment:
+      - FETCHIUM_DATA_DIR=/data
+      - HOME=/data
+      - ***REMOVED***=${***REMOVED***:?set in .env or deployment secret}
+      - SEARXNG_URL=http://searxng:8080
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - SERPER_API_KEY=${SERPER_API_KEY:-}
+      - EXA_API_KEY=${EXA_API_KEY:-}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY:-}
+      - BRAVE_API_KEY=${BRAVE_API_KEY:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY:-}
+      - RUST_LOG=${RUST_LOG:-info}
+    depends_on:
+      - searxng
+    networks:
+      - fetchium-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "***REMOVED***/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  mcp:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    container_name: fetchium-mcp
+    restart: unless-stopped
+    command: ["fetchium", "serve", "--mode", "mcp", "--transport", "http", "--port", "3471"]
+    ports:
+      - "127.0.0.1:3471:3471"
+    environment:
+      - FETCHIUM_DATA_DIR=/data
+      - HOME=/data
+      - SEARXNG_URL=http://searxng:8080
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - SERPER_API_KEY=${SERPER_API_KEY:-}
+      - EXA_API_KEY=${EXA_API_KEY:-}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY:-}
+      - BRAVE_API_KEY=${BRAVE_API_KEY:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY:-}
+      - RUST_LOG=${RUST_LOG:-info}
+    volumes:
+      - fetchium-data:/data
+    depends_on:
+      - searxng
+    networks:
+      - fetchium-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3471/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+networks:
+  fetchium-internal:
+    driver: bridge
+
+volumes:
+  fetchium-data:

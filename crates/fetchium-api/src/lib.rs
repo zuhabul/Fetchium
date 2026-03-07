@@ -35,7 +35,7 @@ use tower_http::cors::{AllowHeaders, AllowMethods, AllowOrigin, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::timeout::TimeoutLayer;
-use tower_http::trace::TraceLayer;
+use tower_http::trace::{DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 
 /// Configuration for the REST API server.
 #[derive(Debug, Clone)]
@@ -119,7 +119,12 @@ pub async fn start_api_server(
         .layer(RequestBodyLimitLayer::new(1024 * 1024))
         // Kill requests that take longer than 60 s
         .layer(TimeoutLayer::new(Duration::from_secs(60)))
-        .layer(TraceLayer::new_for_http());
+        .layer(
+            TraceLayer::new_for_http()
+                .on_request(DefaultOnRequest::new().level(tracing::Level::INFO))
+                .on_response(DefaultOnResponse::new().level(tracing::Level::INFO))
+                .on_failure(DefaultOnFailure::new().level(tracing::Level::ERROR)),
+        );
 
     let addr = format!("{}:{}", server_config.host, server_config.port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;

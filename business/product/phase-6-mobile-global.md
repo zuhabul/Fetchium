@@ -159,7 +159,7 @@ Safari requires a native app wrapper. Distribute as "Fetchium for Safari" Mac ap
 
 ### Cross-Lingual Query Expansion (CLQB)
 
-The CLQB algorithm (already built in hsx-core) expands queries across languages:
+The CLQB algorithm (already built in fetchium-core) expands queries across languages:
 
 ```bash
 # User searches in Japanese → Fetchium also searches in English

@@ -1,0 +1,30 @@
+http:
+  routers:
+    fetchium-api:
+      rule: "Host(`api.fetchium.com`) && (PathPrefix(`/v1`) || Path(`/`) || Path(`/health`))"
+      entryPoints:
+        - websecure
+      tls: {}
+      service: fetchium-api
+      middlewares:
+        - secure-headers
+
+    fetchium-mcp:
+      rule: "Host(`api.fetchium.com`) && Path(`/mcp`)"
+      entryPoints:
+        - websecure
+      tls: {}
+      service: fetchium-mcp
+      middlewares:
+        - secure-headers
+
+  services:
+    fetchium-api:
+      loadBalancer:
+        servers:
+          - url: "***REMOVED***"
+
+    fetchium-mcp:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:3471"

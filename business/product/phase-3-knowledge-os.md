@@ -281,7 +281,7 @@ Phase 4: PostgreSQL migration (> 10K users threshold)
 ```
 
 ### Vector Embeddings (Phase 3 Preview)
-- Enable `embeddings` feature flag in hsx-core
+- Enable `embeddings` feature flag in fetchium-core
 - ONNX Runtime (ort crate) for local embedding generation
 - Model: `all-MiniLM-L6-v2` (22MB, runs on CPU, 384-dim vectors)
 - Used for: KB semantic search, topic clustering, "Find related" feature

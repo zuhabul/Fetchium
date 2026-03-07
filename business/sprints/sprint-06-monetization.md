@@ -62,7 +62,7 @@ In Stripe Dashboard → Products:
 
 ### Day 1–2: Stripe Integration
 
-**Task 6.1 — Add Stripe SDK to hsx-api**
+**Task 6.1 — Add Stripe SDK to fetchium-api**
 
 ```toml
 # In Cargo.toml workspace dependencies
@@ -237,7 +237,7 @@ pub async fn create_portal_session(
 
 **Task 6.7 — Usage meter in dashboard**
 
-In the `hsx-dashboard` web app, add a usage meter to the sidebar:
+In the `fetchium-dashboard` web app, add a usage meter to the sidebar:
 
 ```tsx
 // components/UsageMeter.tsx

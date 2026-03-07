@@ -1,6 +1,6 @@
 [general]
 max_results = 10
-data_dir = "/tmp/hsx"
+data_dir = "/tmp/fetchium"
 
 [fetch]
 timeout_secs = 15

@@ -262,7 +262,7 @@ export default function CodeDemo() {
             First result in{" "}
             <span className="gradient-text">60 seconds</span>
           </h2>
-          <p className="mt-3 sm:mt-4 text-sm sm:text-lg text-slate-500">
+          <p className="mt-3 sm:mt-4 text-sm sm:text-lg text-slate-400">
             Install the SDK, paste your key, ship. Real multi-source search with
             zero boilerplate.
           </p>
@@ -277,9 +277,9 @@ export default function CodeDemo() {
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
           {/* Code panel */}
-          <div className="flex flex-col overflow-hidden rounded-2xl border border-[rgba(99,102,241,0.15)] bg-[rgba(13,17,23,0.9)] shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
+          <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-[rgba(9,12,18,0.98)] shadow-[0_24px_80px_rgba(0,0,0,0.7)]">
             {/* Tab bar */}
-            <div className="flex items-center justify-between border-b border-white/6 bg-[rgba(6,7,13,0.6)] px-3 sm:px-4">
+            <div className="flex items-center justify-between border-b border-slate-800 bg-[rgba(6,8,14,0.8)] px-3 sm:px-4">
               <div className="flex">
                 {(Object.keys(examples) as Lang[]).map((l) => (
                   <button
@@ -288,7 +288,7 @@ export default function CodeDemo() {
                     className={`relative px-3 sm:px-4 py-3 text-xs sm:text-[13px] font-medium transition-colors duration-150 ${
                       lang === l
                         ? "text-indigo-300"
-                        : "text-slate-500 hover:text-slate-300"
+                        : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
                     {lang === l && (
@@ -305,12 +305,12 @@ export default function CodeDemo() {
 
               {/* Filename + copy */}
               <div className="flex items-center gap-2 sm:gap-3">
-                <span className="text-[10px] sm:text-[11px] text-slate-600 hidden xs:block">
+                <span className="text-[11px] sm:text-[12px] font-medium text-slate-300 hidden xs:block">
                   search{examples[lang].ext}
                 </span>
                 <button
                   onClick={handleCopy}
-                  className="flex items-center gap-1.5 rounded-lg border border-white/8 px-2.5 py-1.5 text-[11px] sm:text-[12px] text-slate-500 transition-all hover:border-indigo-500/30 hover:text-slate-200 min-h-[32px]"
+                  className="flex items-center gap-1.5 rounded-lg border border-indigo-500/35 bg-indigo-500/10 px-2.5 py-1.5 text-[11px] sm:text-[12px] text-indigo-300 font-medium transition-all hover:border-indigo-500/60 hover:text-white hover:bg-indigo-500/25 min-h-[32px]"
                 >
                   <AnimatePresence mode="wait" initial={false}>
                     {copied ? (
@@ -350,7 +350,7 @@ export default function CodeDemo() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -8 }}
                   transition={{ duration: 0.2 }}
-                  className="table w-full font-mono text-[11px] sm:text-[13px] leading-[1.7]"
+                  className="table w-full font-mono text-[12px] sm:text-[13px] leading-[1.75]"
                 >
                   {renderCode(examples[lang].code, lang)}
                 </motion.pre>
@@ -358,10 +358,10 @@ export default function CodeDemo() {
             </div>
 
             {/* Install strip */}
-            <div className="border-t border-white/6 bg-[rgba(6,7,13,0.4)] px-3 sm:px-5 py-2 sm:py-3">
-              <div className="flex items-center gap-2 font-mono text-[11px] sm:text-[12px]">
+            <div className="border-t border-slate-800 bg-[rgba(6,8,14,0.7)] px-3 sm:px-5 py-2.5 sm:py-3">
+              <div className="flex items-center gap-2 font-mono text-[12px] sm:text-[13px]">
                 <Terminal className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
-                <span className="text-slate-600">$</span>
+                <span className="text-slate-400">$</span>
                 <AnimatePresence mode="wait">
                   <motion.span
                     key={lang}
@@ -383,20 +383,20 @@ export default function CodeDemo() {
           </div>
 
           {/* Response panel */}
-          <div className="overflow-hidden rounded-2xl border border-[rgba(99,102,241,0.15)] bg-[rgba(13,17,23,0.9)] shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
+          <div className="overflow-hidden rounded-2xl border border-slate-800 bg-[rgba(9,12,18,0.98)] shadow-[0_24px_80px_rgba(0,0,0,0.7)]">
             {/* Panel header */}
-            <div className="flex items-center justify-between border-b border-white/6 bg-[rgba(6,7,13,0.6)] px-3 sm:px-5 py-2.5 sm:py-3.5">
+            <div className="flex items-center justify-between border-b border-slate-800 bg-[rgba(6,8,14,0.8)] px-3 sm:px-5 py-2.5 sm:py-3.5">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]" />
-                <span className="text-xs sm:text-[13px] font-medium text-slate-300">
+                <span className="text-[13px] sm:text-[14px] font-semibold text-slate-200">
                   API Response
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-slate-600">
-                <span className="rounded-md border border-white/6 bg-white/3 px-1.5 sm:px-2 py-0.5">
+              <div className="flex items-center gap-2 text-[13px] sm:text-[14px] text-slate-300">
+                <span className="rounded-md border border-emerald-500/40 bg-emerald-500/12 px-2 sm:px-2.5 py-0.5 text-emerald-300 font-bold tracking-wide">
                   200 OK
                 </span>
-                <span className="text-emerald-500">
+                <span className="font-semibold text-emerald-400">
                   {mockResponse.meta.latencyMs}ms
                 </span>
               </div>
@@ -416,10 +416,10 @@ export default function CodeDemo() {
                 ].map((m) => (
                   <div
                     key={m.label}
-                    className="rounded-xl border border-white/6 bg-white/2 p-2 sm:p-3 text-center"
+                    className="rounded-xl border border-slate-700/50 bg-slate-900/60 p-2 sm:p-3 text-center"
                   >
-                    <div className="text-[10px] sm:text-[11px] text-slate-600">{m.label}</div>
-                    <div className="mt-0.5 text-[11px] sm:text-[13px] font-semibold text-slate-200">
+                    <div className="text-[12px] sm:text-[13px] font-medium text-slate-400">{m.label}</div>
+                    <div className="mt-0.5 text-[14px] sm:text-[16px] font-bold text-slate-100">
                       {m.value}
                     </div>
                   </div>
@@ -428,8 +428,8 @@ export default function CodeDemo() {
 
               {/* Token bar */}
               <div className="mb-5">
-                <div className="mb-1.5 flex items-center justify-between text-[11px]">
-                  <span className="text-slate-600">Token budget usage</span>
+                <div className="mb-1.5 flex items-center justify-between text-[13px] sm:text-[14px]">
+                  <span className="font-medium text-slate-300">Token budget usage</span>
                   <span className="text-indigo-400">
                     {Math.round(
                       (mockResponse.meta.tokensUsed /
@@ -439,7 +439,7 @@ export default function CodeDemo() {
                     %
                   </span>
                 </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
                   <motion.div
                     className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
                     initial={{ width: 0 }}
@@ -461,40 +461,40 @@ export default function CodeDemo() {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.5 + i * 0.1, duration: 0.4 }}
-                    className="rounded-xl border border-white/6 bg-white/2 p-3 sm:p-4 transition-colors hover:border-indigo-500/20 hover:bg-white/4"
+                    className="rounded-xl border border-slate-700/40 bg-slate-900/50 p-3 sm:p-4 transition-colors hover:border-indigo-500/35 hover:bg-slate-800/60"
                   >
                     <div className="mb-1 flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-indigo-500/15 text-[10px] font-bold text-indigo-400">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-indigo-500/20 text-[12px] font-bold text-indigo-300">
                           {item.rank}
                         </span>
-                        <span className="text-[11px] sm:text-[12px] font-medium text-slate-200 leading-tight truncate">
+                        <span className="text-[14px] sm:text-[15px] font-semibold text-slate-100 leading-tight truncate">
                           {item.title}
                         </span>
                       </div>
-                      <span className="shrink-0 rounded-md border border-white/6 bg-white/3 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-medium text-indigo-400">
+                      <span className="shrink-0 rounded-md border border-indigo-500/35 bg-indigo-500/15 px-2 py-0.5 text-[11px] sm:text-[12px] font-semibold text-indigo-300">
                         {item.source}
                       </span>
                     </div>
-                    <p className="mb-2 text-[10px] sm:text-[11px] leading-relaxed text-slate-600 line-clamp-2">
+                    <p className="mb-2 text-[12px] sm:text-[14px] leading-relaxed text-slate-300 line-clamp-2">
                       {item.snippet}
                     </p>
                     <div className="flex items-center gap-2 sm:gap-3">
                       <div className="flex items-center gap-1">
-                        <span className="text-[10px] sm:text-[11px] text-slate-600">score</span>
-                        <div className="h-1 w-10 sm:w-12 overflow-hidden rounded-full bg-white/5">
+                        <span className="text-[12px] sm:text-[13px] font-medium text-slate-400">score</span>
+                        <div className="h-2 w-14 sm:w-20 overflow-hidden rounded-full bg-slate-800">
                           <div
                             className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
                             style={{ width: `${item.score * 100}%` }}
                           />
                         </div>
-                        <span className="text-[10px] sm:text-[11px] text-indigo-400">
+                        <span className="text-[12px] sm:text-[14px] font-semibold text-indigo-300">
                           {item.score}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span className="text-[10px] sm:text-[11px] text-slate-600">trust</span>
-                        <span className="text-[10px] sm:text-[11px] text-emerald-400">
+                        <span className="text-[12px] sm:text-[13px] font-medium text-slate-400">trust</span>
+                        <span className="text-[12px] sm:text-[14px] font-semibold text-emerald-400">
                           {item.trustScore}
                         </span>
                       </div>
@@ -504,11 +504,11 @@ export default function CodeDemo() {
               </div>
 
               {/* Evidence graph summary */}
-              <div className="mt-3 sm:mt-4 rounded-xl border border-indigo-500/15 bg-indigo-500/5 p-3 sm:p-4">
-                <div className="mb-2 text-[10px] sm:text-[11px] font-semibold text-indigo-300">
+              <div className="mt-3 sm:mt-4 rounded-xl border border-indigo-500/25 bg-indigo-500/8 p-3 sm:p-4">
+                <div className="mb-2 text-[14px] sm:text-[15px] font-bold text-indigo-300">
                   Evidence Graph
                 </div>
-                <div className="flex gap-3 sm:gap-4 text-[10px] sm:text-[11px] text-slate-500">
+                <div className="flex gap-3 sm:gap-4 text-[13px] sm:text-[14px] text-slate-300">
                   <span>
                     <span className="text-slate-300">
                       {mockResponse.evidenceGraph.nodes}

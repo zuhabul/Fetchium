@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import TrustBar from "@/components/TrustBar";
+import WorkflowSection from "@/components/WorkflowSection";
 import Features from "@/components/Features";
 import UseCases from "@/components/UseCases";
 import HowItWorks from "@/components/HowItWorks";
@@ -40,6 +41,7 @@ export default function Home() {
       <Navbar />
       <Hero />
       <TrustBar />
+      <WorkflowSection />
       <Features />
       <UseCases />
       <HowItWorks />

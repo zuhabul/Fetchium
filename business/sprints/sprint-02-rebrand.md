@@ -9,14 +9,14 @@
 
 ## Context
 
-The codebase is currently named HyperSearchX with the `hsx` binary and `hsx-*` crates.
+The codebase is currently named HyperSearchX with the `fetchium` binary and `fetchium-*` crates.
 This sprint renames everything to Fetchium / `fetchium` / `fxm` (short form) while
 preserving all functionality and keeping CI green throughout.
 
 **The rebrand touches:**
 - Cargo workspace: crate names, binary names, package metadata
 - Source code: module paths, type names, error types, config paths
-- CLI: binary name `hsx` → `fetchium`, command names
+- CLI: binary name `fetchium` → `fetchium`, command names
 - Config file paths: `~/.hypersearchx/` → `~/.fetchium/`
 - Documentation: all references
 - CI/CD: GitHub Actions workflows
@@ -44,20 +44,20 @@ Before touching a single file:
 **File: `Cargo.toml` (workspace root)**
 ```toml
 # Before
-members = ["crates/hsx-core", "crates/hsx-cli", "crates/hsx-mcp", "crates/hsx-api"]
+members = ["crates/fetchium-core", "crates/fetchium-cli", "crates/fetchium-mcp", "crates/fetchium-api"]
 
 # After
 members = ["crates/fetchium-core", "crates/fetchium-cli", "crates/fetchium-mcp", "crates/fetchium-api"]
 ```
 
-**File: `crates/hsx-cli/Cargo.toml`**
+**File: `crates/fetchium-cli/Cargo.toml`**
 ```toml
 # Before
 [package]
-name = "hsx-cli"
+name = "fetchium-cli"
 
 [[bin]]
-name = "hsx"
+name = "fetchium"
 
 # After
 [package]
@@ -70,10 +70,10 @@ name = "fetchium"
 **Rename all crate directories:**
 ```bash
 cd crates/
-mv hsx-core fetchium-core
-mv hsx-cli fetchium-cli
-mv hsx-mcp fetchium-mcp
-mv hsx-api fetchium-api
+mv fetchium-core fetchium-core
+mv fetchium-cli fetchium-cli
+mv fetchium-mcp fetchium-mcp
+mv fetchium-api fetchium-api
 ```
 
 **Update all inter-crate dependencies:**
@@ -135,9 +135,9 @@ let config_dir = dirs::home_dir().unwrap().join(".fetchium");
 
 ### Task 2.5 — Update Error Messages and Log Output
 
-Search for any user-facing strings containing "HyperSearchX" or "hsx":
+Search for any user-facing strings containing "HyperSearchX" or "fetchium":
 ```bash
-grep -r "HyperSearchX\|hypersearchx\|hsx" crates/ --include="*.rs" -n
+grep -r "HyperSearchX\|hypersearchx\|fetchium" crates/ --include="*.rs" -n
 ```
 
 Update:
@@ -158,18 +158,18 @@ Fix any remaining compilation errors before proceeding.
 
 ### Task 2.7 — CLI Binary and Help Text
 
-The `hsx` binary becomes `fetchium`. Update in `fetchium-cli/src/main.rs`:
+The `fetchium` binary becomes `fetchium`. Update in `fetchium-cli/src/main.rs`:
 
 ```rust
 // Before
-#[command(name = "hsx", about = "HyperSearchX — AI-powered search CLI")]
+#[command(name = "fetchium", about = "HyperSearchX — AI-powered search CLI")]
 
 // After
 #[command(name = "fetchium", about = "Fetchium — typed web fetch for AI agents")]
 ```
 
 Update all `--help` descriptions, command names, and examples to reference `fetchium`
-instead of `hsx`.
+instead of `fetchium`.
 
 **Shell completions:** The completion scripts must be regenerated with the new binary name.
 ```rust
@@ -195,8 +195,8 @@ Update all references from `hypersearchx` to `fetchium` in the npm package files
 Update all environment variable names:
 ```bash
 # Before → After
-HSX_ADMIN_SECRET → ***REMOVED***
-HSX_CHROME_PATH  → FETCHIUM_CHROME_PATH
+***REMOVED*** → ***REMOVED***
+FETCHIUM_CHROME_PATH  → FETCHIUM_CHROME_PATH
 GEMINI_API_KEYS  → (keep — third-party)
 ```
 
@@ -209,9 +209,9 @@ Update in: `.env.example`, documentation, systemd service files, GitHub Actions 
 ### Task 2.10 — Systemd Service Files
 
 Rename and update the three systemd services:
-- `hsx-api.service` → `fetchium-api.service`
-- `hsx-web.service` → `fetchium-web.service`
-- `hsx-dashboard.service` → `fetchium-dashboard.service`
+- `fetchium-api.service` → `fetchium-api.service`
+- `fetchium-web.service` → `fetchium-web.service`
+- `fetchium-dashboard.service` → `fetchium-dashboard.service`
 
 Update service file contents: `ExecStart`, `Description`, `WorkingDirectory`, environment variables.
 
@@ -220,8 +220,8 @@ Update service file contents: `ExecStart`, `Description`, `WorkingDirectory`, en
 ```yaml
 # Before
 services:
-  hsx-searxng:
-    container_name: hsx-searxng
+  fetchium-searxng:
+    container_name: fetchium-searxng
 
 # After
 services:
@@ -230,16 +230,16 @@ services:
 ```
 
 Update:
-- All container names from `hsx-*` to `fetchium-*`
+- All container names from `fetchium-*` to `fetchium-*`
 - Image names if we publish custom images
-- Docker network names: `hsx-net` → `fetchium-net`
+- Docker network names: `fetchium-net` → `fetchium-net`
 
 ### Task 2.12 — Traefik Route Configuration
 
 Update Traefik dynamic configuration:
 ```yaml
 # Update router names, service names, middleware names
-# hsx-api-router → fetchium-api-router
+# fetchium-api-router → fetchium-api-router
 # api.hypersearchx.zuhabul.com → api.fetchium.com (once DNS propagates)
 ```
 
@@ -247,10 +247,10 @@ Update Traefik dynamic configuration:
 
 Update all `.github/workflows/` files:
 - Workflow names and job names referencing old brand
-- Binary artifact names: `hsx-linux-x64.tar.gz` → `fetchium-linux-x64.tar.gz`
+- Binary artifact names: `fetchium-linux-x64.tar.gz` → `fetchium-linux-x64.tar.gz`
 - GitHub release title format
-- Cache keys containing `hsx`
-- Secret references: `HSX_ADMIN_SECRET` → `***REMOVED***` (update in GitHub Settings too)
+- Cache keys containing `fetchium`
+- Secret references: `***REMOVED***` → `***REMOVED***` (update in GitHub Settings too)
 
 ---
 
@@ -261,20 +261,20 @@ Update all `.github/workflows/` files:
 In `apps/web/` and `apps/dashboard/`:
 ```bash
 # Find all occurrences
-grep -r "HyperSearchX\|hypersearchx\|hsx\|HsxConfig" apps/ --include="*.tsx" --include="*.ts" -l
+grep -r "HyperSearchX\|hypersearchx\|fetchium\|HsxConfig" apps/ --include="*.tsx" --include="*.ts" -l
 ```
 
 Update:
 - Page titles: `"HyperSearchX Docs"` → `"Fetchium Docs"`
 - Meta descriptions and OG tags
-- API endpoint references: `/api/hsx/` → `/api/fetchium/` (or keep routes stable for backwards compat)
+- API endpoint references: `/api/fetchium/` → `/api/fetchium/` (or keep routes stable for backwards compat)
 - Import paths if any reference old crate names
 
 ### Task 2.15 — Documentation Files
 
 ```bash
 # Update all markdown files
-find . -name "*.md" -exec grep -l "HyperSearchX\|hypersearchx\|hsx" {} \;
+find . -name "*.md" -exec grep -l "HyperSearchX\|hypersearchx\|fetchium" {} \;
 ```
 
 Key files:
@@ -335,7 +335,7 @@ ls ~/.fetchium/   # Should exist (migrated or created fresh)
 ### Task 2.19 — Update GitHub Secrets
 
 In GitHub Repository Settings → Secrets → Actions:
-- Rename `HSX_ADMIN_SECRET` → `***REMOVED***`
+- Rename `***REMOVED***` → `***REMOVED***`
 - Add any new secrets required by renamed workflows
 
 ### Task 2.20 — Deploy to Production
@@ -359,7 +359,7 @@ curl ***REMOVED***/health
 git add -A
 git commit -m "feat!: rebrand HyperSearchX to Fetchium
 
-BREAKING CHANGE: binary renamed from hsx to fetchium;
+BREAKING CHANGE: binary renamed from fetchium to fetchium;
 config directory moved from ~/.hypersearchx to ~/.fetchium;
 auto-migration runs on first startup"
 
@@ -371,8 +371,8 @@ gh pr create --title "feat!: rebrand HyperSearchX to Fetchium"
 
 ## Deliverables Checklist
 
-- [ ] All crate directories renamed from `hsx-*` to `fetchium-*`
-- [ ] Binary is now `fetchium` (not `hsx`)
+- [ ] All crate directories renamed from `fetchium-*` to `fetchium-*`
+- [ ] Binary is now `fetchium` (not `fetchium`)
 - [ ] `cargo test` passes with 0 failures
 - [ ] `cargo clippy -- -D warnings` passes with 0 warnings
 - [ ] `fetchium --help` shows Fetchium branding
@@ -390,7 +390,7 @@ gh pr create --title "feat!: rebrand HyperSearchX to Fetchium"
 
 If something breaks catastrophically:
 1. Keep the old branch (`main` before rebrand) for 30 days
-2. Systemd service rollback: `sudo systemctl restart hsx-api` (old service still on disk)
+2. Systemd service rollback: `sudo systemctl restart fetchium-api` (old service still on disk)
 3. Database compatibility: SQLite auth.db is not renamed — both old and new binary can read it
 4. Config migration is one-way: `~/.hypersearchx` folder is renamed, not deleted
 
@@ -399,7 +399,7 @@ If something breaks catastrophically:
 ## Breaking Change Notice
 
 This is a `feat!` commit (BREAKING CHANGE). The release notes must document:
-- Old binary `hsx` → new binary `fetchium`
-- Old env vars `HSX_*` → new env vars `FETCHIUM_*`
+- Old binary `fetchium` → new binary `fetchium`
+- Old env vars `FETCHIUM_*` → new env vars `FETCHIUM_*`
 - Config directory migration (automatic on first run)
 - npm package rename from `hypersearchx` to `fetchium`

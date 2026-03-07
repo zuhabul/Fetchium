@@ -198,7 +198,7 @@ rate_limit_hit     { tier, endpoint }
 1. **Month 1:** Structured logs (stdout JSON) → Loki + Grafana (already on server)
 2. **Month 2:** PostHog (self-hosted) for product analytics — free, open-source
 3. **Month 4:** Stripe Dashboard for revenue metrics
-4. **Month 6:** Custom metrics dashboard in hsx-dashboard app
+4. **Month 6:** Custom metrics dashboard in fetchium-dashboard app
 
 ### Weekly Metrics Review (Solo Founder Process)
 Every Monday, 30 minutes:

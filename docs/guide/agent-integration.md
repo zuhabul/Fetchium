@@ -4,6 +4,8 @@ Fetchium supports 6 integration modes for AI frameworks.
 
 ## MCP (Model Context Protocol)
 
+Fetchium supports both local stdio MCP and an HTTP JSON-RPC MCP endpoint at `/mcp`.
+
 ### Claude Desktop
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
@@ -35,15 +37,31 @@ Add to `.mcp.json` in your project root:
 }
 ```
 
+### HTTP MCP
+
+Start the HTTP MCP server:
+
+```bash
+fetchium serve --mode mcp --transport http --port 3471
+```
+
+Probe it:
+
+```bash
+curl -X POST http://127.0.0.1:3471/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
+```
+
 ### Available MCP Tools
 
 | Tool | Description |
 |------|-------------|
-| `hypersearch_search` | Token-budgeted web search |
-| `hypersearch_fetch` | Query-aware content extraction |
-| `hypersearch_research` | Multi-source research with citations |
-| `hypersearch_estimate` | Pre-fetch token estimation |
-| `hypersearch_expand` | Tier expansion without re-fetching |
+| `fetchium_search` | Token-budgeted web search |
+| `fetchium_fetch` | Query-aware content extraction |
+| `fetchium_research` | Multi-source research with citations |
+| `fetchium_estimate` | Pre-fetch token estimation |
+| `fetchium_expand` | Tier expansion without re-fetching |
 | `youtube_search` | YouTube ranked search |
 | `youtube_analyze` | Single-video analysis |
 | `youtube_watch` | Unified watch report |

@@ -5,14 +5,26 @@ use serde::{Deserialize, Serialize};
 // ─── Shared ───────────────────────────────────────────────────────
 
 /// Common metadata included in every API response.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ResponseMeta {
-    pub query: String,
-    pub tier: String,
-    pub tokens_used: usize,
-    pub sources_count: usize,
+    #[serde(default)]
+    pub request_id: String,
+    #[serde(default)]
+    pub status: String,
+    #[serde(default)]
+    pub endpoint: String,
+    #[serde(default)]
     pub duration_ms: u64,
-    pub result_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub query: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tier: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tokens_used: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sources_count: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub result_id: Option<String>,
 }
 
 /// Structured API error.
@@ -23,9 +35,43 @@ pub struct ApiError {
     pub status: u16,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum JobState {
+    Queued,
+    Running,
+    Completed,
+    Failed,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JobAcceptedResponse {
+    pub meta: ResponseMeta,
+    pub job_id: String,
+    pub status: JobState,
+    pub status_url: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JobStatusResponse {
+    pub meta: ResponseMeta,
+    pub job_id: String,
+    pub job_type: String,
+    pub status: JobState,
+    pub created_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub started_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub completed_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub result: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
 // ─── Search ───────────────────────────────────────────────────────
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct SearchRequest {
     pub query: String,
     /// Token budget: 100–10,000 (default 2,000)
@@ -68,6 +114,7 @@ impl SearchRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchResponse {
+    #[serde(default)]
     pub meta: ResponseMeta,
     pub results: Vec<SearchResultItem>,
 }
@@ -82,7 +129,7 @@ pub struct SearchResultItem {
 
 // ─── Fetch ────────────────────────────────────────────────────────
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct FetchRequest {
     pub url: String,
     pub query: Option<String>,
@@ -117,6 +164,8 @@ impl FetchRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FetchResponse {
+    #[serde(default)]
+    pub meta: ResponseMeta,
     pub url: String,
     pub title: Option<String>,
     pub content: String,
@@ -127,7 +176,7 @@ pub struct FetchResponse {
 
 // ─── Research ─────────────────────────────────────────────────────
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ResearchRequest {
     pub query: String,
     /// Token budget: 1,000–50,000 (default 10,000)
@@ -187,13 +236,14 @@ pub struct SourceInfo {
 
 // ─── Estimate ─────────────────────────────────────────────────────
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct EstimateRequest {
     pub url: String,
 }
 
 #[derive(Debug, Serialize)]
 pub struct EstimateResponse {
+    pub meta: ResponseMeta,
     pub url: String,
     pub estimated_tokens: usize,
     pub estimated_relevant_tokens: usize,
@@ -201,16 +251,28 @@ pub struct EstimateResponse {
     pub content_type: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DataResponse<T> {
+    pub meta: ResponseMeta,
+    pub data: T,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UsageResponse {
+    pub meta: ResponseMeta,
+    pub usage: serde_json::Value,
+}
+
 // ─── YouTube ─────────────────────────────────────────────────────
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct YouTubeSearchRequest {
     pub query: String,
     pub max_results: Option<usize>,
     pub fact_check: Option<bool>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct YouTubeAnalyzeRequest {
     pub url: String,
     pub transcript: Option<bool>,
@@ -220,7 +282,7 @@ pub struct YouTubeAnalyzeRequest {
 
 // ─── Social ───────────────────────────────────────────────────────
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct SocialResearchRequest {
     pub query: String,
     pub platforms: Option<Vec<String>>,
@@ -228,14 +290,14 @@ pub struct SocialResearchRequest {
     pub generate_ideas: Option<bool>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct RedditSearchRequest {
     pub query: String,
     pub subreddits: Option<Vec<String>>,
     pub max_posts: Option<usize>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct HackerNewsSearchRequest {
     pub query: String,
     pub max_results: Option<usize>,

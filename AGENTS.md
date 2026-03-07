@@ -8,20 +8,20 @@ Guidelines for AI agents (Claude Code, OpenAI Codex, Gemini CLI, etc.) working o
 # Check compilation (fast, no linking)
 cargo check
 
-# Build the hsx binary
-cargo build -p hsx-cli
+# Build the fetchium binary
+cargo build -p fetchium-cli
 
 # Build release binary
-cargo build -p hsx-cli --release
+cargo build -p fetchium-cli --release
 
 # Run all tests (currently 563, target: 0 failures)
 cargo test
 
 # Run tests for a specific crate
-cargo test -p hsx-core
+cargo test -p fetchium-core
 
 # Run a single test by name
-cargo test -p hsx-core segment_type_roundtrip
+cargo test -p fetchium-core segment_type_roundtrip
 
 # Lint (zero warnings policy — enforced in CI)
 cargo clippy -- -D warnings
@@ -30,30 +30,30 @@ cargo clippy -- -D warnings
 cargo fmt
 
 # Run the binary
-./target/debug/hsx --help
-./target/debug/hsx doctor
-./target/debug/hsx provider list
+./target/debug/fetchium --help
+./target/debug/fetchium doctor
+./target/debug/fetchium provider list
 ```
 
 ## Current Status
 
 - **Tests**: 563 passing, 0 failing, 0 clippy warnings
 - **Phases complete**: 0–8 + Multi-provider AI system
-- **Binary**: `./target/debug/hsx` with 26 commands
+- **Binary**: `./target/debug/fetchium` with 26 commands
 
 ## Architecture
 
 ```
 crates/
-├── hsx-core/     # All algorithms: search, extract, rank, validate, cache, AI, intelligence
-├── hsx-cli/      # Binary: clap derive CLI, one file per command in commands/
-├── hsx-mcp/      # Manual JSON-RPC 2.0 stdio MCP server (5 tools)
-└── hsx-api/      # axum 0.7 REST API server
+├── fetchium-core/     # All algorithms: search, extract, rank, validate, cache, AI, intelligence
+├── fetchium-cli/      # Binary: clap derive CLI, one file per command in commands/
+├── fetchium-mcp/      # Manual JSON-RPC 2.0 stdio MCP server (5 tools)
+└── fetchium-api/      # axum 0.7 REST API server
 ```
 
-Data flow: `CLI args → HsxConfig → hsx-core pipeline → formatted output`
+Data flow: `CLI args → HsxConfig → fetchium-core pipeline → formatted output`
 
-## Key Module Map (hsx-core/src/)
+## Key Module Map (fetchium-core/src/)
 
 ```
 ai/
@@ -138,7 +138,7 @@ qadd/pipeline.rs     5-step DOM pruning, chunked embed_batch (EMBED_BATCH_SIZE=1
 - `ProviderKind` — enum: Ollama, OpenAi, Anthropic, Gemini, GeminiCli, OpenRouter
 - `ProvidersConfig.fallback_chain: Vec<String>` — ordered slugs, tried in sequence
 - `chat_with_fallback()` — tries each provider, returns first success
-- `check_provider()` — availability check without LLM call (used by `hsx doctor` and `hsx provider list`)
+- `check_provider()` — availability check without LLM call (used by `fetchium doctor` and `fetchium provider list`)
 
 ### Anthropic OAuth vs API key
 ```rust
@@ -204,12 +204,12 @@ pub enum Status { Active, Pending, Completed }
 | Functions | snake_case | `fetch_text` |
 | Variables | snake_case | `max_results` |
 | Constants | SCREAMING_SNAKE | `MAX_REDIRECTS` |
-| Crate prefix | hsx- | `hsx-core`, `hsx-cli` |
+| Crate prefix | fetchium- | `fetchium-core`, `fetchium-cli` |
 
 ### Error Handling
 
 ```rust
-// Use HsxResult<T> for fallible operations in hsx-core
+// Use HsxResult<T> for fallible operations in fetchium-core
 use crate::error::{HsxError, HsxResult};
 
 pub fn do_something() -> HsxResult<String> {
@@ -235,7 +235,7 @@ pub fn function_name() {}
 ### Module Organization
 
 - Keep files under 500 lines — split into submodules when exceeding
-- One file per CLI command in `crates/hsx-cli/src/commands/`
+- One file per CLI command in `crates/fetchium-cli/src/commands/`
 - Tests go in the same file with `#[cfg(test)] mod tests { }`
 
 ### Async Patterns
@@ -259,7 +259,7 @@ All shared dependencies go in the workspace `Cargo.toml`:
 [workspace.dependencies]
 tokio = { version = "1", features = ["full"] }
 
-# In crates/hsx-core/Cargo.toml
+# In crates/fetchium-core/Cargo.toml
 [dependencies]
 tokio.workspace = true
 ```
@@ -274,3 +274,8 @@ tokio.workspace = true
 4. All public APIs must have `///` doc comments
 5. Reference PRD sections in comments: `(PRD §16)`
 6. After any change: verify `cargo test` shows 563+ tests, 0 failures
+
+## Global Infrastructure SSOT
+- Canonical infrastructure source: `/home/echo/INFRASTRUCTURE_SOURCE_OF_TRUTH.md`
+- Endpoint registry (machine-friendly): `/home/echo/INFRASTRUCTURE_ENDPOINTS.tsv`
+- Before infra changes: read SSOT, apply changes, then update SSOT + endpoint registry in same task.

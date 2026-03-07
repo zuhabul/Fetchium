@@ -162,7 +162,7 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
     // ---- AI Providers ----
     println!("{}", "AI Providers".bold());
 
-    let ai_config = AiConfig::from_hsx_config(config);
+    let ai_config = AiConfig::from_fetchium_config(config);
     let providers_cfg = &config.ai.providers;
     let chain = providers_cfg.resolved_chain();
 
