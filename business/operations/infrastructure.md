@@ -14,7 +14,7 @@
 - Reverse proxy: Traefik (TLS termination, routing)
 - Auth: Authelia (SSO)
 - Search backend: SearXNG (Docker, port 4040)
-- API: hsx-api (axum, port 3050)
+- API: fetchium-api (axum, port 3050)
 - Web apps: Next.js on Node 24 (ports 3100, 3200)
 - Database: SQLite (auth.db, usage.db) — local files
 
@@ -37,7 +37,7 @@
 - **Cost:** $0 (free tier) → $20/month (Pro for analytics + custom rules)
 
 ### Observability — Grafana Stack
-- Prometheus for metrics scraping (hsx-api exposes `/metrics` endpoint)
+- Prometheus for metrics scraping (fetchium-api exposes `/metrics` endpoint)
 - Loki for log aggregation (structured JSON from all services)
 - Grafana for dashboards (already partially deployed on server)
 - Alertmanager for PagerDuty/Discord alerts on error rate spikes
@@ -57,8 +57,8 @@
 ### Security Hardening
 - Fail2ban on SSH and API endpoints (already partially configured)
 - UFW firewall: only ports 22, 80, 443 open externally
-- API rate limiting: already in hsx-api (`hsx-ip-rate-limit` middleware via Traefik)
-- Secret rotation: document rotation procedure for HSX_ADMIN_SECRET, API keys
+- API rate limiting: already in fetchium-api (`fetchium-ip-rate-limit` middleware via Traefik)
+- Secret rotation: document rotation procedure for FETCHIUM_ADMIN_SECRET, API keys
 - Dependency auditing: `cargo audit` in CI weekly
 
 **Phase 1 Total Cost:** ~$50–100/month (existing server + Cloudflare Pro + backup storage)
@@ -79,7 +79,7 @@
 
 ### Second Region — EU-West
 - Deploy a second server in Europe (Hetzner Frankfurt or Contabo EU)
-- Run: hsx-api + SearXNG + Redis
+- Run: fetchium-api + SearXNG + Redis
 - Configure: US server for US/Americas, EU server for EU/APAC (Cloudflare Load Balancing geo-routing)
 - Database: SQLite replicated via Litestream to S3-compatible storage (Backblaze B2)
   - Primary: US server; EU is read-replica until writes scale enough for primary-primary
@@ -114,7 +114,7 @@
 - Choose: k3s (lightweight, self-hosted) vs. managed Kubernetes (GKE Autopilot, EKS)
 - **Recommendation for solo-founder phase:** k3s on 2-3 VPS nodes — no cloud lock-in, lower cost
 - Deploy all services as Kubernetes Deployments with resource limits
-- HPA (Horizontal Pod Autoscaler) for hsx-api based on CPU + request queue depth
+- HPA (Horizontal Pod Autoscaler) for fetchium-api based on CPU + request queue depth
 
 ### Service Architecture on Kubernetes
 
@@ -126,7 +126,7 @@
              US Cluster           EU Cluster
              (3 nodes)            (2 nodes)
                 ↓                     ↓
-          hsx-api (3 pods)      hsx-api (2 pods)
+          fetchium-api (3 pods)      fetchium-api (2 pods)
           SearXNG (2 pods)      SearXNG (1 pod)
           Redis (1 pod)         Redis (1 pod)
                 ↓

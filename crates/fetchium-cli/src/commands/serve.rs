@@ -10,8 +10,8 @@ pub async fn run(args: ServeArgs, config: &HsxConfig) -> anyhow::Result<()> {
                 eprintln!("Starting Fetchium MCP server (stdio transport)...");
                 fetchium_mcp::run_mcp_stdio(config.clone()).await?;
             } else {
-                eprintln!("SSE transport for MCP is planned for a future release.");
-                eprintln!("Use `--transport stdio` for now.");
+                eprintln!("Starting Fetchium MCP server (HTTP transport) on /mcp...");
+                fetchium_mcp::run_mcp_http(config.clone(), args.port).await?;
             }
         }
 
@@ -30,10 +30,7 @@ pub async fn run(args: ServeArgs, config: &HsxConfig) -> anyhow::Result<()> {
         }
 
         ServerMode::Both => {
-            eprintln!(
-                "Starting REST API on port {} and MCP on stdio...",
-                args.port
-            );
+            eprintln!("Starting REST API on port {}...", args.port);
             let config_clone = config.clone();
             let config2 = config.clone();
             let port = args.port;
@@ -48,7 +45,18 @@ pub async fn run(args: ServeArgs, config: &HsxConfig) -> anyhow::Result<()> {
                     eprintln!("REST API error: {e}");
                 }
             });
-            fetchium_mcp::run_mcp_stdio(config_clone).await?;
+
+            if args.transport == McpTransport::Stdio {
+                eprintln!("Starting Fetchium MCP server (stdio transport)...");
+                fetchium_mcp::run_mcp_stdio(config_clone).await?;
+            } else {
+                let mcp_port = args.port.saturating_add(1);
+                eprintln!(
+                    "Starting Fetchium MCP server (HTTP transport) on port {}...",
+                    mcp_port
+                );
+                fetchium_mcp::run_mcp_http(config_clone, mcp_port).await?;
+            }
         }
     }
     Ok(())

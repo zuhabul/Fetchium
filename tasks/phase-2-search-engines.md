@@ -37,7 +37,7 @@ All of the following must be `DONE` before starting any Phase 2 task:
 ## Epic 2.1: Headless Chromium Pool + Google + Bing + Scholar
 
 > **PRD Sections:** SS8.3 (CEP layers 3-5), SS14 (Parallel Execution)
-> **Crate:** `hsx-core` -- `src/browser/`, `src/search/`
+> **Crate:** `fetchium-core` -- `src/browser/`, `src/search/`
 > **Priority:** P0 | **Tasks:** 4
 
 ### P2-E1-T1: Chromiumoxide Pool Manager
@@ -59,7 +59,7 @@ Implement a managed pool of headless Chromium browser instances using `chromiumo
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/browser/
+crates/fetchium-core/src/browser/
   mod.rs              -- Module root with re-exports
   pool.rs             -- Browser pool manager
   tab.rs              -- Tab wrapper with auto-cleanup
@@ -67,7 +67,7 @@ crates/hsx-core/src/browser/
 
 **Step-by-step implementation:**
 
-**Step 1: Add dependency to `hsx-core/Cargo.toml`**
+**Step 1: Add dependency to `fetchium-core/Cargo.toml`**
 
 ```toml
 chromiumoxide = { version = "0.7", features = ["tokio-runtime"] }
@@ -136,12 +136,12 @@ Key implementation details:
 - [x] Tab concurrency enforced: beyond-limit requests block until release
 - [x] `ManagedTab::navigate()` respects timeout
 - [x] `BrowserPool::shutdown()` cleans up all resources
-- [x] All tests pass: `cargo test -p hsx-core browser`
+- [x] All tests pass: `cargo test -p fetchium-core browser`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core browser::pool::tests
+cargo test -p fetchium-core browser::pool::tests
 # Integration: launch pool, acquire tab, navigate to httpbin.org, verify content
 # Concurrency: acquire max tabs, verify next blocks, release one, verify unblock
 ```
@@ -162,7 +162,7 @@ Google search backend using headless Chromium. Scrapes SERPs, parses titles/snip
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/search/
+crates/fetchium-core/src/search/
   google.rs           -- Google SERP scraper
   mod.rs              -- Update with new exports
 ```
@@ -216,12 +216,12 @@ CSS selectors for Google SERP: `div.g` (result container), `h3` (title), `a[href
 - [x] Pagination up to 3 pages (30 results max)
 - [x] Anti-detection delay between page loads
 - [x] Graceful handling of CAPTCHA/blocks
-- [x] All tests pass: `cargo test -p hsx-core search::google`
+- [x] All tests pass: `cargo test -p fetchium-core search::google`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core search::google::tests
+cargo test -p fetchium-core search::google::tests
 # Unit: parse_serp with saved SERP HTML fixture
 # Integration: search for known query, verify results have title+url+snippet
 ```
@@ -242,7 +242,7 @@ Bing search backend using headless Chromium. Same pattern as Google with Bing-sp
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/search/
+crates/fetchium-core/src/search/
   bing.rs             -- Bing SERP scraper
 ```
 
@@ -269,12 +269,12 @@ impl BingBackend {
 - [x] `BingBackend` implements `SearchBackend` trait
 - [x] Parses Bing SERP correctly (title, URL, snippet)
 - [x] Pagination up to 3 pages
-- [x] All tests pass: `cargo test -p hsx-core search::bing`
+- [x] All tests pass: `cargo test -p fetchium-core search::bing`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core search::bing::tests
+cargo test -p fetchium-core search::bing::tests
 # Unit: parse saved Bing SERP HTML fixture
 ```
 
@@ -294,7 +294,7 @@ Google Scholar backend with extra metadata: authors, publication year, citation 
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/search/
+crates/fetchium-core/src/search/
   scholar.rs          -- Google Scholar scraper
 ```
 
@@ -335,12 +335,12 @@ Key: parse `div.gs_a` text line "A Smith, B Jones - Nature, 2024" for metadata. 
 - [x] Parses title, URL, snippet, citation count
 - [x] Citation count extracted from "Cited by N" links
 - [x] Pagination up to 2 pages (20 results)
-- [x] All tests pass: `cargo test -p hsx-core search::scholar`
+- [x] All tests pass: `cargo test -p fetchium-core search::scholar`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core search::scholar::tests
+cargo test -p fetchium-core search::scholar::tests
 # Unit: parse saved Scholar SERP HTML fixture, verify citation_count
 ```
 
@@ -349,7 +349,7 @@ cargo test -p hsx-core search::scholar::tests
 ## Epic 2.2: HTTP-Based Search Backends
 
 > **PRD Sections:** SS14, SS21 -- Multi-backend search without browser overhead
-> **Crate:** `hsx-core` -- `src/search/`
+> **Crate:** `fetchium-core` -- `src/search/`
 > **Priority:** P1 | **Tasks:** 3
 
 ### P2-E2-T1: SearXNG Backend
@@ -366,7 +366,7 @@ SearXNG meta-search backend using its JSON API. Free, self-hostable, aggregates 
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/search/
+crates/fetchium-core/src/search/
   searxng.rs          -- SearXNG API backend
 ```
 
@@ -403,12 +403,12 @@ impl SearchBackend for SearxngBackend {
 - [x] Configurable instance URL
 - [x] Parses title, URL, snippet, engine, published date
 - [x] Graceful fallback if primary instance is down
-- [x] All tests pass: `cargo test -p hsx-core search::searxng`
+- [x] All tests pass: `cargo test -p fetchium-core search::searxng`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core search::searxng::tests
+cargo test -p fetchium-core search::searxng::tests
 # Unit: parse saved SearXNG JSON response fixture
 ```
 
@@ -428,7 +428,7 @@ Wikipedia search via MediaWiki API. High authority signal for factual queries. R
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/search/
+crates/fetchium-core/src/search/
   wikipedia.rs        -- Wikipedia API backend
 ```
 
@@ -458,12 +458,12 @@ impl SearchBackend for WikipediaBackend {
 - [x] Clean snippets with HTML tags stripped
 - [x] Correct Wikipedia article URLs from titles
 - [x] Respects `max_results` (capped at 20)
-- [x] All tests pass: `cargo test -p hsx-core search::wikipedia`
+- [x] All tests pass: `cargo test -p fetchium-core search::wikipedia`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core search::wikipedia::tests
+cargo test -p fetchium-core search::wikipedia::tests
 # Unit: parse saved Wikipedia API response, verify HTML stripped from snippets
 ```
 
@@ -483,7 +483,7 @@ Six additional HTTP-based search backends, each implementing `SearchBackend`.
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/search/
+crates/fetchium-core/src/search/
   brave.rs            -- Brave Search API (free tier: 2000 req/month)
   hackernews.rs       -- HackerNews Algolia API (hn.algolia.com/api/v1/search)
   arxiv.rs            -- ArXiv API (Atom XML, parse with quick-xml)
@@ -538,13 +538,13 @@ pub mod github; pub mod reddit; pub mod stackoverflow;
 - [x] Reddit appends `.json` and parses listing format
 - [x] GitHub uses unauthenticated search (respects rate limit)
 - [x] StackOverflow handles gzip-compressed responses
-- [x] All tests pass: `cargo test -p hsx-core search`
+- [x] All tests pass: `cargo test -p fetchium-core search`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core search::brave::tests
-cargo test -p hsx-core search::hackernews::tests
+cargo test -p fetchium-core search::brave::tests
+cargo test -p fetchium-core search::hackernews::tests
 # ... etc. Each with saved API response fixtures
 ```
 
@@ -553,7 +553,7 @@ cargo test -p hsx-core search::hackernews::tests
 ## Epic 2.3: Full Parallel Search Orchestrator
 
 > **PRD Sections:** SS14 (Parallel Execution Engine), SS8.1 (HyperFusion)
-> **Crate:** `hsx-core` -- `src/search/orchestrator.rs`
+> **Crate:** `fetchium-core` -- `src/search/orchestrator.rs`
 > **Priority:** P0 | **Tasks:** 3
 
 ### P2-E3-T1: Parallel Execution Across All Backends
@@ -570,7 +570,7 @@ Parallel search orchestrator dispatching to all backends via `tokio::JoinSet`. P
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/search/
+crates/fetchium-core/src/search/
   orchestrator.rs     -- Parallel search orchestrator
 ```
 
@@ -634,12 +634,12 @@ impl SearchOrchestrator {
 - [x] Failed backends produce `BackendResult` with error, not panic
 - [x] `enabled_backends` filter works
 - [x] Results include timing metadata
-- [x] All tests pass: `cargo test -p hsx-core search::orchestrator`
+- [x] All tests pass: `cargo test -p fetchium-core search::orchestrator`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core search::orchestrator::tests
+cargo test -p fetchium-core search::orchestrator::tests
 # Mock backends (fast, slow, failing), verify parallel execution
 # Verify timeout behavior and partial results on failure
 ```
@@ -665,7 +665,7 @@ Two-strategy deduplication: (1) URL dedup with normalization (strip tracking par
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/search/
+crates/fetchium-core/src/search/
   dedup.rs            -- Deduplication engine
 ```
 
@@ -713,12 +713,12 @@ pub fn deduplicate(results: Vec<SearchResult>, simhash_threshold: u32) -> Vec<Se
 - [x] `SimHash::distance()` measures Hamming distance correctly
 - [x] `deduplicate()` merges URL-identical results from different backends
 - [x] `deduplicate()` detects near-duplicate content via SimHash
-- [x] All tests pass: `cargo test -p hsx-core search::dedup`
+- [x] All tests pass: `cargo test -p fetchium-core search::dedup`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core search::dedup::tests
+cargo test -p fetchium-core search::dedup::tests
 # Test normalize_url with utm_source, fbclid, trailing slash, fragment
 # Test SimHash: identical text -> 0 distance, different text -> high distance
 # Test deduplicate: feed duplicate URLs from different backends, verify merge
@@ -744,7 +744,7 @@ Fallback chains: when primary backends fail, secondary backends are tried. If a 
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/search/
+crates/fetchium-core/src/search/
   fallback.rs         -- Fallback chain logic
 ```
 
@@ -786,12 +786,12 @@ pub fn web_search_chain(backends: &HashMap<String, Arc<dyn SearchBackend + Send 
 - [x] Backend errors trigger fallback
 - [x] Returns error when all backends exhausted
 - [x] `web_search_chain()` builds correct priority order
-- [x] All tests pass: `cargo test -p hsx-core search::fallback`
+- [x] All tests pass: `cargo test -p fetchium-core search::fallback`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core search::fallback::tests
+cargo test -p fetchium-core search::fallback::tests
 # Mock: first fails, second succeeds -> second's results returned
 # Mock: all fail -> exhausted error
 ```
@@ -801,7 +801,7 @@ cargo test -p hsx-core search::fallback::tests
 ## Epic 2.4: HyperFusion 8-Signal Ranking
 
 > **PRD Sections:** SS8.1 (HyperFusion Ranking Algorithm), SS21 (Ranking)
-> **Crate:** `hsx-core` -- `src/rank/`
+> **Crate:** `fetchium-core` -- `src/rank/`
 > **Priority:** P0 | **Tasks:** 3
 
 ### P2-E4-T1: Eight Ranking Signals Implementation
@@ -822,7 +822,7 @@ Implement all 8 HyperFusion signals. Phase 1 provides BM25. This adds the remain
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/rank/
+crates/fetchium-core/src/rank/
   signals.rs          -- Individual signal implementations
 ```
 
@@ -866,12 +866,12 @@ Authority domain tiers:
 - [x] `evidence_score` detects statistical/citation patterns
 - [x] `diversity_score` penalizes same-domain results
 - [x] `consensus_score` measures agreement across results
-- [x] All tests pass: `cargo test -p hsx-core rank::signals`
+- [x] All tests pass: `cargo test -p fetchium-core rank::signals`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core rank::signals::tests
+cargo test -p fetchium-core rank::signals::tests
 # Test each signal with known inputs and expected ranges
 # authority_score: wikipedia.org (0.9) vs random-blog.xyz (0.5)
 # temporal_score: 1 day old vs 365 days old with freshness=1.0
@@ -897,7 +897,7 @@ Combine 8 signals into HyperFusion score. Min-max normalize across result set, t
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/rank/
+crates/fetchium-core/src/rank/
   fusion.rs           -- HyperFusion score computation
 ```
 
@@ -968,12 +968,12 @@ fn min_max_normalize(scores: &[RawScores]) -> Vec<RawScores> {
 - [x] `min_max_normalize()` scales all signals to [0, 1]
 - [x] `hyperfusion_rank()` sorts results by fused score descending
 - [x] Results have `fusion_score` populated after ranking
-- [x] All tests pass: `cargo test -p hsx-core rank::fusion`
+- [x] All tests pass: `cargo test -p fetchium-core rank::fusion`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core rank::fusion::tests
+cargo test -p fetchium-core rank::fusion::tests
 # 3 results with known signals -> verify correct ranking order
 # All-identical scores -> 0.5 after normalization
 # CurrentEvents intent -> temporal signal upweighted
@@ -995,8 +995,8 @@ Allow weight overrides via config file (`[ranking]` section) and CLI flags (`--b
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/config.rs  -- Add RankingConfig with weight_overrides
-crates/hsx-core/src/rank/fusion.rs -- IntentWeights::with_overrides()
+crates/fetchium-core/src/config.rs  -- Add RankingConfig with weight_overrides
+crates/fetchium-core/src/rank/fusion.rs -- IntentWeights::with_overrides()
 ```
 
 **Step-by-step implementation:**
@@ -1027,16 +1027,16 @@ impl IntentWeights {
 
 **Acceptance criteria:**
 
-- [x] Weight overrides from `~/.config/hsx/config.toml` under `[ranking]`
+- [x] Weight overrides from `~/.config/fetchium/config.toml` under `[ranking]`
 - [x] CLI flag `--boost-signal temporal=0.5` overrides individual weights
 - [x] Overrides merge with intent defaults
 - [x] Invalid values produce config validation error
-- [x] All tests pass: `cargo test -p hsx-core rank`
+- [x] All tests pass: `cargo test -p fetchium-core rank`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core rank::fusion::tests
+cargo test -p fetchium-core rank::fusion::tests
 # with_overrides: set temporal=0.9, verify it persists
 # Config round-trip: serialize -> deserialize -> verify
 ```
@@ -1046,7 +1046,7 @@ cargo test -p hsx-core rank::fusion::tests
 ## Epic 2.5: CEP Layers 3-5 + QADD
 
 > **PRD Sections:** SS8.3 (CEP), SS8.10 (QADD)
-> **Crate:** `hsx-core` -- `src/extract/`, `src/qadd/`
+> **Crate:** `fetchium-core` -- `src/extract/`, `src/qadd/`
 > **Priority:** P1 | **Tasks:** 3
 
 ### P2-E5-T1: CEP Layer 3 -- JavaScript Rendering via Headless
@@ -1067,7 +1067,7 @@ Extend CEP with Layer 3: headless Chromium rendering for JS-heavy pages. Trigger
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/extract/
+crates/fetchium-core/src/extract/
   layer3.rs           -- Headless rendering extraction
   pipeline.rs         -- Update CEP pipeline with Layer 3 escalation
 ```
@@ -1106,12 +1106,12 @@ Update `pipeline.rs` to escalate to Layer 3 when layers 1-2 yield `content.len()
 - [x] CEP pipeline auto-escalates to Layer 3 when Layers 1-2 insufficient
 - [x] `was_beneficial()` detects significant content difference
 - [x] Timeout prevents hanging on slow pages
-- [x] All tests pass: `cargo test -p hsx-core extract::layer3`
+- [x] All tests pass: `cargo test -p fetchium-core extract::layer3`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core extract::layer3::tests
+cargo test -p fetchium-core extract::layer3::tests
 # Integration: extract from known SPA, verify more content than layers 1-2
 # Timeout test: page that never finishes loading
 ```
@@ -1136,7 +1136,7 @@ Layer 4: PDF/document extraction via `pdf-extract`/`lopdf`. Layer 5: screenshot 
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/extract/
+crates/fetchium-core/src/extract/
   layer4.rs           -- PDF/document extraction
   layer5.rs           -- Screenshot OCR extraction
   pipeline.rs         -- Update with Layer 4-5 escalation
@@ -1193,13 +1193,13 @@ async fn run_tesseract_ocr(png_bytes: &[u8]) -> anyhow::Result<String> {
 - [x] Layer 5 scrolls to trigger lazy loading before screenshot
 - [x] Graceful fallback when tesseract not installed
 - [x] Pipeline escalates to Layer 4 for documents, Layer 5 as last resort
-- [x] All tests pass: `cargo test -p hsx-core extract::layer4 extract::layer5`
+- [x] All tests pass: `cargo test -p fetchium-core extract::layer4 extract::layer5`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core extract::layer4::tests   # Parse test PDF fixture
-cargo test -p hsx-core extract::layer5::tests   # Requires tesseract installed
+cargo test -p fetchium-core extract::layer4::tests   # Parse test PDF fixture
+cargo test -p fetchium-core extract::layer5::tests   # Requires tesseract installed
 ```
 
 ---
@@ -1223,7 +1223,7 @@ QADD reduces DOM to query-relevant nodes BEFORE extraction. 5-step pipeline: str
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/qadd/
+crates/fetchium-core/src/qadd/
   mod.rs              -- Module root
   pipeline.rs         -- QADD 5-step pipeline
   pruning.rs          -- Structural and relevance pruning
@@ -1291,12 +1291,12 @@ impl QaddPipeline {
 - [x] Step 5: greedy knapsack packs within token budget
 - [x] `QaddResult` reports original vs distilled token counts
 - [x] Achieves 10-20x token reduction on typical pages
-- [x] All tests pass: `cargo test -p hsx-core qadd`
+- [x] All tests pass: `cargo test -p fetchium-core qadd`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core qadd::pipeline::tests
+cargo test -p fetchium-core qadd::pipeline::tests
 # Test with large HTML fixture, query "specific topic"
 # Verify output fits within token_budget
 # Verify relevant content preserved, boilerplate removed

@@ -158,9 +158,9 @@ Answer + citations + confidence score
 ```
 VPS (Hetzner CX21 — 4 vCPU, 8GB RAM, ~$10/mo)
 ├── Traefik (TLS termination, rate limiting)
-├── hsx-api (port 3050) — systemd service
-├── hsx-web (port 3100) — Next.js landing
-├── hsx-dashboard (port 3200) — Next.js app
+├── fetchium-api (port 3050) — systemd service
+├── fetchium-web (port 3100) — Next.js landing
+├── fetchium-dashboard (port 3200) — Next.js app
 └── SearXNG (port 4040) — Docker container
 
 CDN: Cloudflare (free tier)

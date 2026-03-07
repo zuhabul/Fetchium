@@ -8,7 +8,7 @@ use predicates::prelude::*;
 #[test]
 #[ignore = "requires network access"]
 fn agent_fetch_json_output_is_valid_json() {
-    let output = Command::cargo_bin("hsx")
+    let output = Command::cargo_bin("fetchium")
         .unwrap()
         .args(["agent-fetch", "https://example.com"])
         .output()
@@ -29,7 +29,7 @@ fn agent_fetch_json_output_is_valid_json() {
 
 #[test]
 fn search_help_does_not_crash() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .args(["search", "--help"])
         .assert()
@@ -38,7 +38,7 @@ fn search_help_does_not_crash() {
 
 #[test]
 fn fetch_help_does_not_crash() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .args(["fetch", "--help"])
         .assert()
@@ -47,7 +47,7 @@ fn fetch_help_does_not_crash() {
 
 #[test]
 fn agent_search_help_does_not_crash() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .args(["agent-search", "--help"])
         .assert()
@@ -56,7 +56,7 @@ fn agent_search_help_does_not_crash() {
 
 #[test]
 fn research_help_does_not_crash() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .args(["research", "--help"])
         .assert()
@@ -65,7 +65,7 @@ fn research_help_does_not_crash() {
 
 #[test]
 fn compare_help_does_not_crash() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .args(["compare", "--help"])
         .assert()
@@ -74,7 +74,7 @@ fn compare_help_does_not_crash() {
 
 #[test]
 fn monitor_help_does_not_crash() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .args(["monitor", "--help"])
         .assert()
@@ -83,7 +83,7 @@ fn monitor_help_does_not_crash() {
 
 #[test]
 fn index_help_does_not_crash() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .args(["index", "--help"])
         .assert()

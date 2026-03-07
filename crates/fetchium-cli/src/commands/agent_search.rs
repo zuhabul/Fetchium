@@ -59,7 +59,7 @@ pub async fn run(args: AgentSearchArgs, config: &HsxConfig) -> anyhow::Result<()
     let cache = MemoryCache::from_config(&config.cache);
 
     // Step 1: Search
-    let orch_config = OrchestratorConfig::from_hsx_config(config, args.max_results);
+    let orch_config = OrchestratorConfig::from_fetchium_config(config, args.max_results);
     let orchestrator = SearchOrchestrator::new(http_client.clone(), orch_config);
 
     let cache_key = search_key(&args.query, "all", args.max_results);

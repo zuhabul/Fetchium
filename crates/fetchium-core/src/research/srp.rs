@@ -22,7 +22,7 @@ use tokio::sync::mpsc;
 pub fn run_srp_pipeline(
     query: String,
     config: SrpConfig,
-    hsx_config: HsxConfig,
+    fetchium_config: HsxConfig,
     http_client: HttpClient,
 ) -> mpsc::Receiver<SrpChunk> {
     let (tx, rx) = mpsc::channel::<SrpChunk>(64);
@@ -30,7 +30,7 @@ pub fn run_srp_pipeline(
     tokio::spawn(async move {
         let start = Instant::now();
 
-        let orch_config = OrchestratorConfig::from_hsx_config(&hsx_config, 10);
+        let orch_config = OrchestratorConfig::from_fetchium_config(&fetchium_config, 10);
         let orchestrator = SearchOrchestrator::new(http_client.clone(), orch_config);
 
         // Search

@@ -8,10 +8,10 @@
 
 ## Overview
 
-Phase 6 implements the 7 novel intelligence algorithms that make Fetchium unique. Each algorithm is a standalone module in `crates/hsx-core/src/intelligence/` with well-defined traits so they can be composed, tested, and evolved independently.
+Phase 6 implements the 7 novel intelligence algorithms that make Fetchium unique. Each algorithm is a standalone module in `crates/fetchium-core/src/intelligence/` with well-defined traits so they can be composed, tested, and evolved independently.
 
 ```
-crates/hsx-core/src/intelligence/
+crates/fetchium-core/src/intelligence/
   mod.rs         -- Module root, shared traits
   pie.rs         -- Persistent Intelligence Engine
   totr.rs        -- Tree-of-Thoughts Research
@@ -39,14 +39,14 @@ crates/hsx-core/src/intelligence/
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/intelligence/mod.rs` | Module root with shared traits |
-| `crates/hsx-core/src/intelligence/pie.rs` | PIE engine core |
-| `crates/hsx-core/src/intelligence/pie/pkg.rs` | Personal Knowledge Graph layer |
-| `crates/hsx-core/src/intelligence/pie/stm.rs` | Source Trust Memory layer |
-| `crates/hsx-core/src/intelligence/pie/fpm.rs` | Failure Pattern Memory layer |
-| `crates/hsx-core/src/intelligence/pie/qpm.rs` | Query Prediction Model layer |
-| `crates/hsx-core/src/intelligence/pie/storage.rs` | SQLite storage for all 4 layers |
-| `crates/hsx-cli/src/commands/intelligence.rs` | CLI: `hsx intelligence stats/reset/export/suggest` |
+| `crates/fetchium-core/src/intelligence/mod.rs` | Module root with shared traits |
+| `crates/fetchium-core/src/intelligence/pie.rs` | PIE engine core |
+| `crates/fetchium-core/src/intelligence/pie/pkg.rs` | Personal Knowledge Graph layer |
+| `crates/fetchium-core/src/intelligence/pie/stm.rs` | Source Trust Memory layer |
+| `crates/fetchium-core/src/intelligence/pie/fpm.rs` | Failure Pattern Memory layer |
+| `crates/fetchium-core/src/intelligence/pie/qpm.rs` | Query Prediction Model layer |
+| `crates/fetchium-core/src/intelligence/pie/storage.rs` | SQLite storage for all 4 layers |
+| `crates/fetchium-cli/src/commands/intelligence.rs` | CLI: `fetchium intelligence stats/reset/export/suggest` |
 
 #### Architecture
 
@@ -84,7 +84,7 @@ PIE (Persistent Intelligence Engine)
 **Step 1: Define shared traits and storage**
 
 ```rust
-// crates/hsx-core/src/intelligence/mod.rs
+// crates/fetchium-core/src/intelligence/mod.rs
 pub mod pie;
 
 /// Trait for any intelligence layer that persists knowledge.
@@ -137,7 +137,7 @@ pub enum Observation {
 **Step 2: Source Trust Memory (STM) with Bayesian updates**
 
 ```rust
-// crates/hsx-core/src/intelligence/pie/stm.rs
+// crates/fetchium-core/src/intelligence/pie/stm.rs
 use rusqlite::Connection;
 use std::sync::Mutex;
 
@@ -246,7 +246,7 @@ impl SourceTrustMemory {
 **Step 3: Failure Pattern Memory (FPM)**
 
 ```rust
-// crates/hsx-core/src/intelligence/pie/fpm.rs
+// crates/fetchium-core/src/intelligence/pie/fpm.rs
 
 pub struct FailurePatternMemory {
     conn: Mutex<Connection>,
@@ -316,7 +316,7 @@ impl FailurePatternMemory {
 **Step 4: Query Prediction Model (QPM)**
 
 ```rust
-// crates/hsx-core/src/intelligence/pie/qpm.rs
+// crates/fetchium-core/src/intelligence/pie/qpm.rs
 
 pub struct QueryPredictionModel {
     conn: Mutex<Connection>,
@@ -387,7 +387,7 @@ impl QueryPredictionModel {
 **Step 5: Personal Knowledge Graph (PKG)**
 
 ```rust
-// crates/hsx-core/src/intelligence/pie/pkg.rs
+// crates/fetchium-core/src/intelligence/pie/pkg.rs
 
 pub struct PersonalKnowledgeGraph {
     conn: Mutex<Connection>,
@@ -461,7 +461,7 @@ impl PersonalKnowledgeGraph {
 **Step 6: PIE orchestrator and CLI**
 
 ```rust
-// crates/hsx-core/src/intelligence/pie.rs
+// crates/fetchium-core/src/intelligence/pie.rs
 
 pub struct PersistentIntelligenceEngine {
     pub pkg: pkg::PersonalKnowledgeGraph,
@@ -527,9 +527,9 @@ impl PersistentIntelligenceEngine {
 - [x] FPM: `recommend_layer("spa-site.com")` returns Layer 3 after repeated Layer 1 failures
 - [x] QPM: After researching "Rust" 5 times, `predict_follow_ups("Rust")` returns relevant suggestions
 - [x] PKG: Entities and relationships accumulate across sessions
-- [x] `hsx intelligence stats` shows counts for all 4 layers
-- [x] `hsx intelligence reset` clears all learned data
-- [x] `hsx intelligence export` exports data as JSON
+- [x] `fetchium intelligence stats` shows counts for all 4 layers
+- [x] `fetchium intelligence reset` clears all learned data
+- [x] `fetchium intelligence export` exports data as JSON
 - [x] Trust scores use Bayesian Beta distribution (not simple averages)
 - [x] All DBs use WAL mode for concurrent read/write
 
@@ -538,7 +538,7 @@ impl PersistentIntelligenceEngine {
 - **SQLite concurrent access**: PIE is accessed from multiple async tasks simultaneously. Use `Mutex<Connection>` and enable WAL mode.
 - **Entity extraction quality**: Simple regex-based entity extraction will produce noise. Start with named entity patterns (capitalized phrases, domain-specific terms) and improve incrementally.
 - **Trust score drift**: Without decay, trust scores become "stuck" at extreme values. Implement a time-weighted decay that slowly pulls scores toward 0.5 when a domain hasn't been accessed recently.
-- **Privacy**: All data is local but may contain sensitive query history. Ensure `hsx intelligence reset` truly purges everything (VACUUM after DELETE).
+- **Privacy**: All data is local but may contain sensitive query history. Ensure `fetchium intelligence reset` truly purges everything (VACUUM after DELETE).
 
 ---
 
@@ -557,16 +557,16 @@ impl PersistentIntelligenceEngine {
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/intelligence/totr.rs` | ToTR engine |
-| `crates/hsx-core/src/intelligence/totr/branch.rs` | Branch generation and management |
-| `crates/hsx-core/src/intelligence/totr/scorer.rs` | Branch scoring and pruning |
-| `crates/hsx-core/src/intelligence/totr/synthesis.rs` | Cross-path synthesis |
-| `crates/hsx-core/src/intelligence/totr/debate.rs` | Self-debate protocol |
+| `crates/fetchium-core/src/intelligence/totr.rs` | ToTR engine |
+| `crates/fetchium-core/src/intelligence/totr/branch.rs` | Branch generation and management |
+| `crates/fetchium-core/src/intelligence/totr/scorer.rs` | Branch scoring and pruning |
+| `crates/fetchium-core/src/intelligence/totr/synthesis.rs` | Cross-path synthesis |
+| `crates/fetchium-core/src/intelligence/totr/debate.rs` | Self-debate protocol |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/intelligence/totr.rs
+// crates/fetchium-core/src/intelligence/totr.rs
 
 use tokio::sync::mpsc;
 
@@ -717,7 +717,7 @@ fn score_and_prune(branches: &mut Vec<ThoughtBranch>, threshold: f64) {
 **Step 5 (Self-Debate Protocol):**
 
 ```rust
-// crates/hsx-core/src/intelligence/totr/debate.rs
+// crates/fetchium-core/src/intelligence/totr/debate.rs
 
 #[derive(Debug, Clone)]
 pub struct DebateResult {
@@ -779,7 +779,7 @@ pub async fn self_debate(
 - [x] Cross-path synthesis produces a unified conclusion referencing multiple perspectives
 - [x] Self-debate (`--self-debate`) produces Advocate, Critic, and Judge outputs
 - [x] All branches execute concurrently (visible in `--profile` timing)
-- [x] `hsx deep "query" --tree-of-thoughts` activates ToTR mode
+- [x] `fetchium deep "query" --tree-of-thoughts` activates ToTR mode
 - [x] ToTR results include per-branch scores, source counts, and synthesis
 - [x] Graceful degradation: if LLM is unavailable, fall back to keyword-based decomposition
 
@@ -807,12 +807,12 @@ pub async fn self_debate(
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/intelligence/crp.rs` | CRP engine |
+| `crates/fetchium-core/src/intelligence/crp.rs` | CRP engine |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/intelligence/crp.rs
+// crates/fetchium-core/src/intelligence/crp.rs
 
 #[derive(Debug, Clone)]
 pub struct Contradiction {
@@ -972,13 +972,13 @@ fn check_dates(contradiction: &Contradiction) -> ResolutionStep {
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/intelligence/edf.rs` | EDF implementation |
+| `crates/fetchium-core/src/intelligence/edf.rs` | EDF implementation |
 | `data/domain_half_lives.toml` | Default half-life configuration |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/intelligence/edf.rs
+// crates/fetchium-core/src/intelligence/edf.rs
 
 use std::collections::HashMap;
 
@@ -1129,14 +1129,14 @@ pub enum Staleness {
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/intelligence/sgt.rs` | SGT engine |
-| `crates/hsx-core/src/intelligence/sgt/chain.rs` | Citation chain builder |
-| `crates/hsx-core/src/intelligence/sgt/mutation.rs` | Mutation detection |
+| `crates/fetchium-core/src/intelligence/sgt.rs` | SGT engine |
+| `crates/fetchium-core/src/intelligence/sgt/chain.rs` | Citation chain builder |
+| `crates/fetchium-core/src/intelligence/sgt/mutation.rs` | Mutation detection |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/intelligence/sgt.rs
+// crates/fetchium-core/src/intelligence/sgt.rs
 
 #[derive(Debug, Clone)]
 pub struct GenealogyNode {
@@ -1268,7 +1268,7 @@ fn detect_mutations(chain: &[GenealogyNode]) -> Vec<Mutation> {
 - [x] Mutations detected when claim text changes significantly between hops
 - [x] Trust cascade shows degrading trust: [0.97, 0.85, 0.62, 0.41]
 - [x] Output includes genealogy tree visualization in both human and JSON formats
-- [x] `hsx research "topic" --trace-sources` enables SGT for all claims
+- [x] `fetchium research "topic" --trace-sources` enables SGT for all claims
 - [x] Mutation severity classified as Low/Medium/High
 
 #### Pitfalls
@@ -1295,12 +1295,12 @@ fn detect_mutations(chain: &[GenealogyNode]) -> Vec<Mutation> {
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/intelligence/cce.rs` | CCE implementation |
+| `crates/fetchium-core/src/intelligence/cce.rs` | CCE implementation |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/intelligence/cce.rs
+// crates/fetchium-core/src/intelligence/cce.rs
 
 pub struct ConfidenceCalibrationEngine {
     conn: Mutex<rusqlite::Connection>,
@@ -1481,13 +1481,13 @@ pub struct CalibratedConfidence {
 - [x] Calibration bins update incrementally with each verified prediction
 - [x] Minimum 10 samples per bin before calibration is applied
 - [x] Per-domain calibration: medical and tech domains have separate tables
-- [x] `hsx intelligence stats` shows calibration table summary
+- [x] `fetchium intelligence stats` shows calibration table summary
 - [x] Isotonic regression produces monotonically increasing calibration curve
 
 #### Pitfalls
 
 - **Cold start**: Calibration is meaningless with < 50 total predictions. Show "uncalibrated" until sufficient data.
-- **Verification challenge**: How do we know if a prediction was correct? Automated verification via follow-up searches, or user feedback. Start with user feedback (`hsx verify <claim-id> --correct/--incorrect`).
+- **Verification challenge**: How do we know if a prediction was correct? Automated verification via follow-up searches, or user feedback. Start with user feedback (`fetchium verify <claim-id> --correct/--incorrect`).
 - **Domain boundary**: What is a "domain" for calibration? Start with broad categories (tech, medical, financial) rather than per-website.
 
 ---
@@ -1507,16 +1507,16 @@ pub struct CalibratedConfidence {
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/intelligence/acs.rs` | ACS engine |
-| `crates/hsx-core/src/intelligence/acs/ai_detector.rs` | AI content detection |
-| `crates/hsx-core/src/intelligence/acs/bot_detector.rs` | Bot farm signals |
-| `crates/hsx-core/src/intelligence/acs/manipulation_detector.rs` | Source manipulation |
-| `crates/hsx-core/src/intelligence/acs/trust_aggregator.rs` | Trust score aggregation |
+| `crates/fetchium-core/src/intelligence/acs.rs` | ACS engine |
+| `crates/fetchium-core/src/intelligence/acs/ai_detector.rs` | AI content detection |
+| `crates/fetchium-core/src/intelligence/acs/bot_detector.rs` | Bot farm signals |
+| `crates/fetchium-core/src/intelligence/acs/manipulation_detector.rs` | Source manipulation |
+| `crates/fetchium-core/src/intelligence/acs/trust_aggregator.rs` | Trust score aggregation |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/intelligence/acs.rs
+// crates/fetchium-core/src/intelligence/acs.rs
 
 pub struct AdversarialContentShield {
     ai_detector: ai_detector::AiContentDetector,
@@ -1592,7 +1592,7 @@ impl AdversarialContentShield {
     }
 }
 
-// crates/hsx-core/src/intelligence/acs/ai_detector.rs
+// crates/fetchium-core/src/intelligence/acs/ai_detector.rs
 
 pub struct AiContentDetector;
 
@@ -1672,8 +1672,8 @@ impl AiContentDetector {
 - [x] Bot farm detection checks domain age, publishing velocity, and cross-site duplication
 - [x] Trust score aggregation: `trust = 1 - max(ai_prob, bot_prob, manip_prob)`
 - [x] `trust > 0.8`: include normally; `0.5-0.8`: include with warning; `< 0.5`: exclude
-- [x] `hsx search "query" --trust-verify` enables ACS
-- [x] `hsx fetch <url> --check-ai` reports AI generation probability
+- [x] `fetchium search "query" --trust-verify` enables ACS
+- [x] `fetchium fetch <url> --check-ai` reports AI generation probability
 - [x] Shadow mode logs all flags without affecting results
 - [x] After 30 days, ACS auto-transitions to active mode (configurable)
 

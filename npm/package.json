@@ -1,21 +1,31 @@
 {
   "name": "fetchium",
-  "version": "0.1.0",
-  "description": "AI-native search engine for humans and agents",
-  "license": "MIT OR Apache-2.0",
+  "version": "1.0.0",
+  "description": "Fetchium CLI — AI-native federated search. Federated multi-backend search with neural ranking, token-budgeted extraction, and a full research pipeline.",
+  "keywords": [
+    "search",
+    "ai",
+    "cli",
+    "federated-search",
+    "rag",
+    "rust",
+    "fetchium"
+  ],
+  "homepage": "https://fetchium.com",
+  "bugs": "https://github.com/zuhabul/fetchium/issues",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zuhabul/fetchium"
+    "url": "https://github.com/zuhabul/fetchium.git"
   },
-  "keywords": ["search", "ai", "agent", "mcp", "rust", "cli"],
+  "license": "SEE LICENSE IN LICENSE",
   "bin": {
     "fetchium": "./bin/fetchium"
   },
   "scripts": {
     "postinstall": "node scripts/install-binary.js"
   },
-  "files": ["bin/", "scripts/"],
-  "engines": {"node": ">=16.0.0"},
+  "files": ["bin/", "scripts/", "README.md"],
+  "engines": {"node": ">=18"},
   "os": ["linux", "darwin", "win32"],
   "cpu": ["x64", "arm64"]
 }

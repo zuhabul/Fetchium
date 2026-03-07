@@ -12,15 +12,37 @@ pub fn build_router(state: AppState) -> Router {
     // Authenticated endpoints (require Bearer fetchium_xxx)
     let v1_authed = Router::new()
         .route("/search", post(handlers::search))
-        .route("/scrape", post(handlers::fetch))
-        .route("/fetch", post(handlers::fetch)) // alias
+        .route("/scrape", post(handlers::scrape))
+        .route("/fetch", post(handlers::fetch))
         .route("/research", post(handlers::research))
         .route("/youtube/search", post(handlers::youtube_search))
         .route("/youtube/analyze", post(handlers::youtube_analyze))
         .route("/social/research", post(handlers::social_research))
+        .route(
+            "/social/research/jobs",
+            post(handlers::submit_social_research_job),
+        )
         .route("/social/reddit", post(handlers::reddit_search))
+        .route(
+            "/social/reddit/jobs",
+            post(handlers::submit_reddit_search_job),
+        )
         .route("/social/hackernews", post(handlers::hackernews_search))
+        .route(
+            "/social/hackernews/jobs",
+            post(handlers::submit_hackernews_search_job),
+        )
         .route("/estimate", post(handlers::estimate))
+        .route("/research/jobs", post(handlers::submit_research_job))
+        .route(
+            "/youtube/search/jobs",
+            post(handlers::submit_youtube_search_job),
+        )
+        .route(
+            "/youtube/analyze/jobs",
+            post(handlers::submit_youtube_analyze_job),
+        )
+        .route("/jobs/:id", get(handlers::get_job_status))
         .route("/usage", get(handlers_auth::get_usage));
 
     // Admin endpoints (require X-Admin-Secret header, for MVP)
@@ -51,6 +73,8 @@ async fn api_root() -> axum::Json<serde_json::Value> {
             "search":   "POST /v1/search",
             "scrape":   "POST /v1/scrape",
             "research": "POST /v1/research",
+            "research_jobs": "POST /v1/research/jobs",
+            "job_status": "GET /v1/jobs/:id",
             "usage":    "GET  /v1/usage",
             "health":   "GET  /v1/health",
             "keys":     "POST /v1/keys  (X-Admin-Secret required)",

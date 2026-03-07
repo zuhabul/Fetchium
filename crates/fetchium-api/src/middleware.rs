@@ -1,6 +1,7 @@
 //! REST API middleware — auth extraction, rate limiting, request logging.
 
 use crate::auth::{ApiKeyRecord, AuthDb, PlanLimits};
+use crate::types::{JobState, JobStatusResponse};
 use axum::{
     async_trait,
     extract::{FromRef, FromRequestParts},
@@ -25,6 +26,7 @@ pub struct AppState {
     pub cache: MemoryCache,
     pub auth_db: Arc<AuthDb>,
     pub rate_limiter: Arc<PerKeyRateLimiter>,
+    pub jobs: Arc<JobStore>,
 }
 
 impl AppState {
@@ -41,6 +43,100 @@ impl AppState {
             cache,
             auth_db,
             rate_limiter: Arc::new(PerKeyRateLimiter::new()),
+            jobs: Arc::new(JobStore::new()),
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+struct StoredJob {
+    owner_key_id: String,
+    payload: JobStatusResponse,
+}
+
+pub struct JobStore {
+    jobs: Mutex<HashMap<String, StoredJob>>,
+}
+
+impl Default for JobStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl JobStore {
+    pub fn new() -> Self {
+        Self {
+            jobs: Mutex::new(HashMap::new()),
+        }
+    }
+
+    pub fn create(&self, owner_key_id: String, job_id: String, job_type: String) {
+        let payload = JobStatusResponse {
+            meta: crate::types::ResponseMeta {
+                request_id: job_id.clone(),
+                status: "queued".into(),
+                endpoint: "/v1/jobs/:id".into(),
+                duration_ms: 0,
+                query: None,
+                tier: None,
+                tokens_used: None,
+                sources_count: None,
+                result_id: Some(job_id.clone()),
+            },
+            job_id: job_id.clone(),
+            job_type,
+            status: JobState::Queued,
+            created_at: chrono::Utc::now().to_rfc3339(),
+            started_at: None,
+            completed_at: None,
+            result: None,
+            error: None,
+        };
+        self.jobs.lock().insert(
+            job_id,
+            StoredJob {
+                owner_key_id,
+                payload,
+            },
+        );
+    }
+
+    pub fn mark_running(&self, job_id: &str) {
+        if let Some(job) = self.jobs.lock().get_mut(job_id) {
+            job.payload.status = JobState::Running;
+            job.payload.meta.status = "running".into();
+            job.payload.started_at = Some(chrono::Utc::now().to_rfc3339());
+        }
+    }
+
+    pub fn complete(&self, job_id: &str, result: serde_json::Value) {
+        if let Some(job) = self.jobs.lock().get_mut(job_id) {
+            job.payload.status = JobState::Completed;
+            job.payload.meta.status = "completed".into();
+            job.payload.completed_at = Some(chrono::Utc::now().to_rfc3339());
+            job.payload.result = Some(result);
+            job.payload.error = None;
+        }
+    }
+
+    pub fn fail(&self, job_id: &str, error: String) {
+        if let Some(job) = self.jobs.lock().get_mut(job_id) {
+            job.payload.status = JobState::Failed;
+            job.payload.meta.status = "failed".into();
+            job.payload.completed_at = Some(chrono::Utc::now().to_rfc3339());
+            job.payload.error = Some(error);
+            job.payload.result = None;
+        }
+    }
+
+    pub fn get_owned(&self, job_id: &str, owner_key_id: &str) -> Option<JobStatusResponse> {
+        self.jobs.lock().get(job_id).and_then(|job| {
+            if job.owner_key_id == owner_key_id {
+                Some(job.payload.clone())
+            } else {
+                None
+            }
         })
     }
 }

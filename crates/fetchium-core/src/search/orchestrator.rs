@@ -127,8 +127,11 @@ impl OrchestratorConfig {
     /// Always ensures reliable API-based backends (Wikipedia, HN, Reddit, SO,
     /// Arxiv) are included even when the user's config only lists scrapers.
     /// This prevents total search failure when scrapers are CAPTCHA-blocked.
-    pub fn from_hsx_config(hsx: &crate::config::HsxConfig, max_results: u32) -> Self {
-        let mut enabled_backends = hsx
+    pub fn from_fetchium_config(
+        fetchium_config: &crate::config::HsxConfig,
+        max_results: u32,
+    ) -> Self {
+        let mut enabled_backends = fetchium_config
             .search
             .backends
             .iter()
@@ -149,10 +152,13 @@ impl OrchestratorConfig {
         // Auto-include premium backends when their API keys are configured,
         // even if the user's config file doesn't list them explicitly.
         let premium_backends: &[(BackendId, &Option<String>)] = &[
-            (BackendId::Tavily, &hsx.search.tavily_api_key),
-            (BackendId::Serper, &hsx.search.serper_api_key),
-            (BackendId::Exa, &hsx.search.exa_api_key),
-            (BackendId::Firecrawl, &hsx.search.firecrawl_api_key),
+            (BackendId::Tavily, &fetchium_config.search.tavily_api_key),
+            (BackendId::Serper, &fetchium_config.search.serper_api_key),
+            (BackendId::Exa, &fetchium_config.search.exa_api_key),
+            (
+                BackendId::Firecrawl,
+                &fetchium_config.search.firecrawl_api_key,
+            ),
         ];
         for (backend_id, api_key) in premium_backends {
             if api_key.is_some() && !enabled_backends.contains(backend_id) {
@@ -164,15 +170,15 @@ impl OrchestratorConfig {
         Self {
             max_results_per_backend: max_results + 5,
             max_total_results: max_results,
-            backend_timeout: Duration::from_secs(hsx.search.timeout_secs),
+            backend_timeout: Duration::from_secs(fetchium_config.search.timeout_secs),
             enabled_backends,
-            simhash_threshold: hsx.ranking.simhash_threshold,
-            freshness_need: hsx.ranking.freshness_need,
+            simhash_threshold: fetchium_config.ranking.simhash_threshold,
+            freshness_need: fetchium_config.ranking.freshness_need,
             use_hyperfusion: true,
-            tavily_api_key: hsx.search.tavily_api_key.clone(),
-            serper_api_key: hsx.search.serper_api_key.clone(),
-            exa_api_key: hsx.search.exa_api_key.clone(),
-            firecrawl_api_key: hsx.search.firecrawl_api_key.clone(),
+            tavily_api_key: fetchium_config.search.tavily_api_key.clone(),
+            serper_api_key: fetchium_config.search.serper_api_key.clone(),
+            exa_api_key: fetchium_config.search.exa_api_key.clone(),
+            firecrawl_api_key: fetchium_config.search.firecrawl_api_key.clone(),
         }
     }
 }
@@ -1185,11 +1191,11 @@ mod tests {
 
     #[test]
     fn orchestrator_config_from_hsx() {
-        let mut hsx = crate::config::HsxConfig::default();
-        hsx.search.backends = vec!["duckduckgo".to_string(), "wikipedia".to_string()];
-        hsx.ranking.simhash_threshold = 8;
-        hsx.ranking.freshness_need = 0.8;
-        let cfg = OrchestratorConfig::from_hsx_config(&hsx, 20);
+        let mut fetchium_config = crate::config::HsxConfig::default();
+        fetchium_config.search.backends = vec!["duckduckgo".to_string(), "wikipedia".to_string()];
+        fetchium_config.ranking.simhash_threshold = 8;
+        fetchium_config.ranking.freshness_need = 0.8;
+        let cfg = OrchestratorConfig::from_fetchium_config(&fetchium_config, 20);
         assert_eq!(cfg.max_total_results, 20);
         assert_eq!(cfg.simhash_threshold, 8);
         assert!((cfg.freshness_need - 0.8).abs() < 1e-9);

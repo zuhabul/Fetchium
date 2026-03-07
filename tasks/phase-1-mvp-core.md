@@ -11,10 +11,10 @@
 
 Phase 1 builds the **working MVP** of Fetchium. After this phase, users can run:
 
-1. **`hsx fetch <url>`** -- Extract content from any webpage using CEP layers 1-2
-2. **`hsx search "query"`** -- Search the web via DuckDuckGo and display ranked results
-3. **`hsx agent-search "query" --budget N`** -- Agent-optimized search with token budgets
-4. **`hsx agent-fetch <url> --query "..." --budget N`** -- Agent-optimized fetch with QATBE
+1. **`fetchium fetch <url>`** -- Extract content from any webpage using CEP layers 1-2
+2. **`fetchium search "query"`** -- Search the web via DuckDuckGo and display ranked results
+3. **`fetchium agent-search "query" --budget N`** -- Agent-optimized search with token budgets
+4. **`fetchium agent-fetch <url> --query "..." --budget N`** -- Agent-optimized fetch with QATBE
 
 This phase implements the core algorithms that differentiate Fetchium:
 
@@ -34,8 +34,8 @@ All of the following must be `DONE` before starting any Phase 1 task:
 | Dependency              | Phase   | What It Provides                                 |
 | ----------------------- | ------- | ------------------------------------------------ |
 | P0-E1-T1 (Workspace)    | Phase 0 | Cargo workspace with all crates                  |
-| P0-E1-T2 (Types)        | Phase 0 | Core data types in `hsx-core/src/types.rs`       |
-| P0-E1-T3 (Config)       | Phase 0 | Configuration system in `hsx-core/src/config.rs` |
+| P0-E1-T2 (Types)        | Phase 0 | Core data types in `fetchium-core/src/types.rs`       |
+| P0-E1-T3 (Config)       | Phase 0 | Configuration system in `fetchium-core/src/config.rs` |
 | P0-E3-T1 (CLI skeleton) | Phase 0 | clap definitions and command dispatch            |
 
 ---
@@ -43,7 +43,7 @@ All of the following must be `DONE` before starting any Phase 1 task:
 ## Epic 1.1: HTTP Client + Content Extraction
 
 > **PRD Sections:** SS14 (Parallel Execution), SS16 (CEP layers 1-2)
-> **Crate:** `hsx-core` -- `src/http/`, `src/extract/`
+> **Crate:** `fetchium-core` -- `src/http/`, `src/extract/`
 > **Priority:** P0 | **Tasks:** 3
 
 ### P1-E1-T1: HTTP Client with Connection Pooling & Retries
@@ -55,7 +55,7 @@ All of the following must be `DONE` before starting any Phase 1 task:
 **Dependencies:** P0-E1-T1 (workspace), P0-E1-T3 (config)
 
 **Description:**
-Extend the scaffolded `HttpClient` in `hsx-core/src/http/client.rs` with production-quality retry logic (exponential backoff with jitter), per-domain rate limiting, response size enforcement, and structured error mapping. The HTTP client is the foundation for every network operation in Fetchium.
+Extend the scaffolded `HttpClient` in `fetchium-core/src/http/client.rs` with production-quality retry logic (exponential backoff with jitter), per-domain rate limiting, response size enforcement, and structured error mapping. The HTTP client is the foundation for every network operation in Fetchium.
 
 **PRD References:**
 
@@ -66,7 +66,7 @@ Extend the scaffolded `HttpClient` in `hsx-core/src/http/client.rs` with product
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/http/
+crates/fetchium-core/src/http/
   mod.rs              -- Module root (already exists, update re-exports)
   client.rs           -- Extended HTTP client with retries + rate limiting
 ```
@@ -432,13 +432,13 @@ pub use client::{FetchResult, HttpClient};
 - [ ] Per-domain rate limiting with 200ms minimum between requests
 - [ ] Response size enforcement (rejects >10MB)
 - [ ] Structured error mapping for 403, 429, 5xx
-- [ ] All unit tests pass: `cargo test -p hsx-core http`
-- [ ] No clippy warnings: `cargo clippy -p hsx-core`
+- [ ] All unit tests pass: `cargo test -p fetchium-core http`
+- [ ] No clippy warnings: `cargo clippy -p fetchium-core`
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core http::client::tests
+cargo test -p fetchium-core http::client::tests
 # Integration test with wiremock (in tests/integration/):
 # - Mock 429 response, verify 3 retries with increasing delays
 # - Mock 200 response, verify body and metadata
@@ -467,7 +467,7 @@ Implement CEP (Cascade Extraction Protocol) layers 1 and 2 for static HTML conte
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/extract/
+crates/fetchium-core/src/extract/
   mod.rs              -- Module root (update with new exports)
   layer1.rs           -- CSS selector extraction (scraper)
   layer2.rs           -- Readability-style extraction (lol_html)
@@ -1260,13 +1260,13 @@ pub struct ContentMetadata {
 - [ ] Pipeline auto-escalates from L1 to L2 when content is insufficient
 - [ ] Boilerplate removal achieves ~30% token reduction vs raw text
 - [ ] `estimate_tokens()` returns reasonable approximation (~4 chars/token)
-- [ ] All unit tests pass: `cargo test -p hsx-core extract`
+- [ ] All unit tests pass: `cargo test -p fetchium-core extract`
 - [ ] No clippy warnings
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core extract
+cargo test -p fetchium-core extract
 # Create HTML fixtures in tests/fixtures/ for comprehensive testing
 # Test with: blog article, docs page, sparse page, JS-heavy placeholder
 ```
@@ -1282,23 +1282,23 @@ cargo test -p hsx-core extract
 **Dependencies:** P1-E1-T1 (HTTP client), P1-E1-T2 (CEP extraction)
 
 **Description:**
-Wire up the `hsx fetch <url>` and `hsx view <url>` CLI commands to use the HTTP client and CEP extraction pipeline. The fetch command downloads a URL, extracts content via CEP layers 1-2, and displays the result in the selected output format.
+Wire up the `fetchium fetch <url>` and `fetchium view <url>` CLI commands to use the HTTP client and CEP extraction pipeline. The fetch command downloads a URL, extracts content via CEP layers 1-2, and displays the result in the selected output format.
 
 **PRD References:**
 
 - SS10 "Modes" -- Mode D (fetch/view): clean readable extraction
-- SS11 "CLI Interface" -- `hsx fetch <url>` with --budget, --tier, --query options
+- SS11 "CLI Interface" -- `fetchium fetch <url>` with --budget, --tier, --query options
 
 **Files to modify:**
 
 ```
-crates/hsx-cli/src/commands/fetch.rs  -- Full implementation
+crates/fetchium-cli/src/commands/fetch.rs  -- Full implementation
 ```
 
 **Step-by-step implementation:**
 
 ```rust
-//! `hsx fetch` / `hsx view` -- URL content extraction (Mode D).
+//! `fetchium fetch` / `fetchium view` -- URL content extraction (Mode D).
 //!
 //! Downloads a URL, extracts content via CEP pipeline, and displays
 //! the result in the selected output format.
@@ -1367,19 +1367,19 @@ pub async fn run(args: FetchArgs, config: &HsxConfig) -> anyhow::Result<()> {
 
 **Acceptance criteria:**
 
-- [ ] `hsx fetch <url>` downloads and extracts content from any URL
+- [ ] `fetchium fetch <url>` downloads and extracts content from any URL
 - [ ] Progress spinner shows during fetch and extraction
 - [ ] Output shows title, metadata, token count, and extracted text
-- [ ] `hsx view <url>` is an alias for `hsx fetch <url>`
+- [ ] `fetchium view <url>` is an alias for `fetchium fetch <url>`
 - [ ] Errors display structured messages (network, 403, 429, etc.)
-- [ ] `cargo build -p hsx-cli` compiles successfully
+- [ ] `cargo build -p fetchium-cli` compiles successfully
 
 **Testing instructions:**
 
 ```bash
-cargo run -p hsx-cli -- fetch https://example.com
-cargo run -p hsx-cli -- fetch https://en.wikipedia.org/wiki/Rust_(programming_language)
-cargo run -p hsx-cli -- view https://news.ycombinator.com
+cargo run -p fetchium-cli -- fetch https://example.com
+cargo run -p fetchium-cli -- fetch https://en.wikipedia.org/wiki/Rust_(programming_language)
+cargo run -p fetchium-cli -- view https://news.ycombinator.com
 ```
 
 ---
@@ -1387,7 +1387,7 @@ cargo run -p hsx-cli -- view https://news.ycombinator.com
 ## Epic 1.2: DuckDuckGo Search
 
 > **PRD Sections:** SS15 (Search Backend Orchestrator -- Tier 2: DuckDuckGo)
-> **Crate:** `hsx-core` -- `src/search/`
+> **Crate:** `fetchium-core` -- `src/search/`
 > **Priority:** P0 | **Tasks:** 3
 
 ### P1-E2-T1: DuckDuckGo HTML Scraper Backend
@@ -1409,7 +1409,7 @@ Implement the DuckDuckGo search backend by scraping `html.duckduckgo.com` (the l
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/search/
+crates/fetchium-core/src/search/
   mod.rs              -- Update with new module declarations
   duckduckgo.rs       -- DDG HTML scraper backend
 ```
@@ -1768,15 +1768,15 @@ pub trait SearchBackend: Send + Sync {
 - [ ] Parses title, URL, and snippet from each result
 - [ ] Handles DDG redirect wrapper URLs (uddg= parameter)
 - [ ] Returns up to `max_results` results
-- [ ] All unit tests pass: `cargo test -p hsx-core search::duckduckgo`
+- [ ] All unit tests pass: `cargo test -p fetchium-core search::duckduckgo`
 - [ ] No clippy warnings
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core search::duckduckgo::tests
+cargo test -p fetchium-core search::duckduckgo::tests
 # Manual integration test:
-# cargo run -p hsx-cli -- search "rust programming language"
+# cargo run -p fetchium-cli -- search "rust programming language"
 ```
 
 ---
@@ -1800,7 +1800,7 @@ Build the search orchestrator that manages multiple search backends, dispatches 
 **Files to create:**
 
 ```
-crates/hsx-core/src/search/
+crates/fetchium-core/src/search/
   orchestrator.rs     -- Search orchestrator with parallel dispatch
 ```
 
@@ -2090,13 +2090,13 @@ mod tests {
 - [ ] Results are deduplicated by canonical URL
 - [ ] Canonical URL normalization strips tracking params, fragments, trailing slashes
 - [ ] Gracefully handles backend failures (returns partial results)
-- [ ] All unit tests pass: `cargo test -p hsx-core search::orchestrator`
+- [ ] All unit tests pass: `cargo test -p fetchium-core search::orchestrator`
 - [ ] No clippy warnings
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core search::orchestrator::tests
+cargo test -p fetchium-core search::orchestrator::tests
 ```
 
 ---
@@ -2110,23 +2110,23 @@ cargo test -p hsx-core search::orchestrator::tests
 **Dependencies:** P1-E2-T2 (Search orchestrator)
 
 **Description:**
-Wire up the `hsx search "query"` CLI command to use the search orchestrator. Display results in a human-friendly format with titles, URLs, and snippets.
+Wire up the `fetchium search "query"` CLI command to use the search orchestrator. Display results in a human-friendly format with titles, URLs, and snippets.
 
 **PRD References:**
 
 - SS10 "Modes" -- Mode A: human-friendly search
-- SS11 "CLI Interface" -- `hsx search "query"` with --max-results, --backends
+- SS11 "CLI Interface" -- `fetchium search "query"` with --max-results, --backends
 
 **Files to modify:**
 
 ```
-crates/hsx-cli/src/commands/search.rs  -- Full implementation
+crates/fetchium-cli/src/commands/search.rs  -- Full implementation
 ```
 
 **Step-by-step implementation:**
 
 ```rust
-//! `hsx search` -- web search (Mode A: human-friendly).
+//! `fetchium search` -- web search (Mode A: human-friendly).
 //!
 //! Dispatches the query to enabled backends via the orchestrator,
 //! then displays results in a readable terminal format.
@@ -2290,20 +2290,20 @@ mod tests {
 
 **Acceptance criteria:**
 
-- [ ] `hsx search "query"` searches via DDG and displays formatted results
+- [ ] `fetchium search "query"` searches via DDG and displays formatted results
 - [ ] Results show rank, title (bold), URL (blue/underlined), snippet (dimmed)
 - [ ] Progress spinner during search
 - [ ] Shows total count and elapsed time
 - [ ] Handles empty results with a warning message
 - [ ] Supports `--max-results` and `--backends` flags
-- [ ] `cargo build -p hsx-cli` compiles successfully
+- [ ] `cargo build -p fetchium-cli` compiles successfully
 
 **Testing instructions:**
 
 ```bash
-cargo run -p hsx-cli -- search "rust programming language"
-cargo run -p hsx-cli -- search "latest news" -n 5
-cargo run -p hsx-cli -- search "tokio async rust" --backends ddg
+cargo run -p fetchium-cli -- search "rust programming language"
+cargo run -p fetchium-cli -- search "latest news" -n 5
+cargo run -p fetchium-cli -- search "tokio async rust" --backends ddg
 ```
 
 ---
@@ -2311,7 +2311,7 @@ cargo run -p hsx-cli -- search "tokio async rust" --backends ddg
 ## Epic 1.3: Token System
 
 > **PRD Sections:** SS17 (QATBE), SS18 (SCS), SS20 (Token Efficiency), SS27 (PDS)
-> **Crate:** `hsx-core` -- `src/token/`
+> **Crate:** `fetchium-core` -- `src/token/`
 > **Priority:** P1 | **Tasks:** 4
 
 ### P1-E3-T1: Tokenizer & Budget Tracking
@@ -2333,7 +2333,7 @@ Implement a fast token counter and budget tracker. Uses a whitespace+punctuation
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/token/
+crates/fetchium-core/src/token/
   mod.rs              -- Module root (update)
   counter.rs          -- Token counter (heuristic + budget tracker)
 ```
@@ -2521,7 +2521,7 @@ pub use counter::{count_tokens, estimate_tokens_fast, TokenBudget};
 - [ ] `count_tokens()` approximates GPT-4 token counts within ~10%
 - [ ] `TokenBudget` tracks consumption and reports remaining/exhausted
 - [ ] `try_consume()` returns false when budget is exceeded
-- [ ] All unit tests pass: `cargo test -p hsx-core token::counter`
+- [ ] All unit tests pass: `cargo test -p fetchium-core token::counter`
 - [ ] No clippy warnings
 
 ---
@@ -2546,7 +2546,7 @@ Implement Query-Aware Token-Budgeted Extraction (QATBE) -- the core algorithm th
 **Files to create:**
 
 ```
-crates/hsx-core/src/token/
+crates/fetchium-core/src/token/
   qatbe.rs            -- QATBE 4-stage pipeline
 ```
 
@@ -3020,7 +3020,7 @@ mod tests {
 - [ ] Partial segments are truncated at word boundaries to fill remaining budget
 - [ ] `relevance_coverage` reports what fraction of relevant content was captured
 - [ ] BM25 scoring correctly ranks relevant text higher than irrelevant
-- [ ] All unit tests pass: `cargo test -p hsx-core token::qatbe`
+- [ ] All unit tests pass: `cargo test -p fetchium-core token::qatbe`
 - [ ] No clippy warnings
 
 ---
@@ -3044,7 +3044,7 @@ Implement Semantic Content Segmentation (SCS) -- the algorithm that segments ext
 **Files to create:**
 
 ```
-crates/hsx-core/src/token/
+crates/fetchium-core/src/token/
   scs.rs              -- Semantic Content Segmentation
 ```
 
@@ -3524,7 +3524,7 @@ mod tests {
 - [ ] Lists are represented as JSON arrays (not markdown bullets)
 - [ ] Code blocks preserve language annotation
 - [ ] Token count of SCS output <= original text tokens
-- [ ] All unit tests pass: `cargo test -p hsx-core token::scs`
+- [ ] All unit tests pass: `cargo test -p fetchium-core token::scs`
 - [ ] No clippy warnings
 
 ---
@@ -3548,7 +3548,7 @@ Implement Progressive Detail Streaming (PDS) tier 1 -- the `key_facts` and `summ
 **Files to create:**
 
 ```
-crates/hsx-core/src/token/
+crates/fetchium-core/src/token/
   pds.rs              -- Progressive Detail Streaming tiers
 ```
 
@@ -3850,7 +3850,7 @@ mod tests {
 - [ ] Tier sizes are monotonically increasing: key_facts <= summary <= detailed <= complete
 - [ ] Query-aware tiers use QATBE for relevance-based selection
 - [ ] Position-based tiers prioritize headings and early content
-- [ ] All unit tests pass: `cargo test -p hsx-core token::pds`
+- [ ] All unit tests pass: `cargo test -p fetchium-core token::pds`
 - [ ] No clippy warnings
 
 ---
@@ -3858,7 +3858,7 @@ mod tests {
 ## Epic 1.4: Agent Commands
 
 > **PRD Sections:** SS9 (AI-Native Agent Architecture), SS10 (Modes), SS17 (QATBE)
-> **Crate:** `hsx-cli` -- `src/commands/`
+> **Crate:** `fetchium-cli` -- `src/commands/`
 > **Priority:** P1 | **Tasks:** 2
 
 ### P1-E4-T1: `agent-search` Command
@@ -3870,7 +3870,7 @@ mod tests {
 **Dependencies:** P1-E2-T2 (orchestrator), P1-E3-T2 (QATBE), P1-E3-T4 (PDS)
 
 **Description:**
-Implement the `hsx agent-search` command -- the primary interface for AI agents. Always outputs JSON. Searches via the orchestrator, applies QATBE to extract relevant content from top results, generates PDS tiers, and returns a structured `AgentSearchResult` JSON response.
+Implement the `fetchium agent-search` command -- the primary interface for AI agents. Always outputs JSON. Searches via the orchestrator, applies QATBE to extract relevant content from top results, generates PDS tiers, and returns a structured `AgentSearchResult` JSON response.
 
 **PRD References:**
 
@@ -3881,13 +3881,13 @@ Implement the `hsx agent-search` command -- the primary interface for AI agents.
 **Files to modify:**
 
 ```
-crates/hsx-cli/src/commands/agent_search.rs  -- Full implementation
+crates/fetchium-cli/src/commands/agent_search.rs  -- Full implementation
 ```
 
 **Step-by-step implementation:**
 
 ```rust
-//! `hsx agent-search` -- agent-optimized search (JSON segments output).
+//! `fetchium agent-search` -- agent-optimized search (JSON segments output).
 //!
 //! Always outputs JSON. Combines search orchestration with QATBE
 //! extraction and PDS tiering for token-efficient agent consumption.
@@ -4039,21 +4039,21 @@ fn tier_to_string(tier: crate::cli::Tier) -> &'static str {
 
 **Acceptance criteria:**
 
-- [ ] `hsx agent-search "query"` outputs JSON to stdout (never human-formatted text)
+- [ ] `fetchium agent-search "query"` outputs JSON to stdout (never human-formatted text)
 - [ ] JSON includes `meta`, `segments`, `sources`, and `search_results`
 - [ ] `meta.tokens_used` respects `--budget` limit
 - [ ] Fetches up to 3 top search results and applies QATBE to each
 - [ ] Segments are tagged with `source_ref` back to their source
 - [ ] Errors in individual source fetches are logged but do not fail the command
-- [ ] `cargo build -p hsx-cli` compiles successfully
+- [ ] `cargo build -p fetchium-cli` compiles successfully
 
 **Testing instructions:**
 
 ```bash
-cargo run -p hsx-cli -- agent-search "rust async programming" --budget 2000
-cargo run -p hsx-cli -- agent-search "climate change effects" --budget 500 --tier key_facts
+cargo run -p fetchium-cli -- agent-search "rust async programming" --budget 2000
+cargo run -p fetchium-cli -- agent-search "climate change effects" --budget 500 --tier key_facts
 # Pipe output through jq to verify JSON structure:
-cargo run -p hsx-cli -- agent-search "test" | jq '.meta.tokens_used'
+cargo run -p fetchium-cli -- agent-search "test" | jq '.meta.tokens_used'
 ```
 
 ---
@@ -4067,23 +4067,23 @@ cargo run -p hsx-cli -- agent-search "test" | jq '.meta.tokens_used'
 **Dependencies:** P1-E4-T1 (agent-search pattern), P1-E3-T2 (QATBE)
 
 **Description:**
-Implement the `hsx agent-fetch` command -- fetches a single URL with QATBE query-aware extraction and outputs structured JSON. This is the agent equivalent of `hsx fetch`.
+Implement the `fetchium agent-fetch` command -- fetches a single URL with QATBE query-aware extraction and outputs structured JSON. This is the agent equivalent of `fetchium fetch`.
 
 **PRD References:**
 
-- SS17 "QATBE" -- `hsx agent-fetch <url> --query "..." --budget 1500`
+- SS17 "QATBE" -- `fetchium agent-fetch <url> --query "..." --budget 1500`
 - SS8.2 "QATBE" -- Returns segments with relevance scores and token counts
 
 **Files to modify:**
 
 ```
-crates/hsx-cli/src/commands/agent_fetch.rs  -- Full implementation
+crates/fetchium-cli/src/commands/agent_fetch.rs  -- Full implementation
 ```
 
 **Step-by-step implementation:**
 
 ```rust
-//! `hsx agent-fetch` -- agent-optimized URL fetch (JSON segments output).
+//! `fetchium agent-fetch` -- agent-optimized URL fetch (JSON segments output).
 //!
 //! Fetches a single URL, applies QATBE extraction with optional query
 //! awareness, and returns structured JSON with typed segments.
@@ -4172,20 +4172,20 @@ pub async fn run(args: AgentFetchArgs, config: &HsxConfig) -> anyhow::Result<()>
 
 **Acceptance criteria:**
 
-- [ ] `hsx agent-fetch <url>` outputs JSON with extracted segments
+- [ ] `fetchium agent-fetch <url>` outputs JSON with extracted segments
 - [ ] `--query` enables QATBE query-aware extraction
 - [ ] Without `--query`, uses PDS tier-based extraction
 - [ ] `--budget` limits total tokens in output
 - [ ] JSON includes `meta` (with content_hash), `segments`, and `source` info
 - [ ] Reports CEP layer used, fetch status, and timing
-- [ ] `cargo build -p hsx-cli` compiles successfully
+- [ ] `cargo build -p fetchium-cli` compiles successfully
 
 **Testing instructions:**
 
 ```bash
-cargo run -p hsx-cli -- agent-fetch https://example.com
-cargo run -p hsx-cli -- agent-fetch https://en.wikipedia.org/wiki/Rust_(programming_language) --query "memory safety" --budget 1000
-cargo run -p hsx-cli -- agent-fetch https://example.com --tier key_facts | jq '.'
+cargo run -p fetchium-cli -- agent-fetch https://example.com
+cargo run -p fetchium-cli -- agent-fetch https://en.wikipedia.org/wiki/Rust_(programming_language) --query "memory safety" --budget 1000
+cargo run -p fetchium-cli -- agent-fetch https://example.com --tier key_facts | jq '.'
 ```
 
 ---
@@ -4193,7 +4193,7 @@ cargo run -p hsx-cli -- agent-fetch https://example.com --tier key_facts | jq '.
 ## Epic 1.5: Basic Ranking
 
 > **PRD Sections:** SS21 (Semantic Search & Hybrid Ranking -- BM25 component)
-> **Crate:** `hsx-core` -- `src/rank/`
+> **Crate:** `fetchium-core` -- `src/rank/`
 > **Priority:** P1 | **Tasks:** 1
 
 ### P1-E5-T1: BM25 Ranking with Tantivy
@@ -4215,7 +4215,7 @@ Implement BM25 ranking using the `tantivy` crate for lexical search scoring. Thi
 **Files to create:**
 
 ```
-crates/hsx-core/src/rank/
+crates/fetchium-core/src/rank/
   mod.rs              -- Module root (update)
   bm25.rs             -- BM25 scorer using tantivy
 ```
@@ -4502,7 +4502,7 @@ pub use bm25::Bm25Scorer;
 - [ ] Queries return scored results ranked by BM25 relevance
 - [ ] `rerank()` re-orders existing `ResultItem` arrays by BM25 score
 - [ ] Relevant documents score higher than irrelevant ones
-- [ ] All unit tests pass: `cargo test -p hsx-core rank::bm25`
+- [ ] All unit tests pass: `cargo test -p fetchium-core rank::bm25`
 - [ ] No clippy warnings
 
 ---
@@ -4510,7 +4510,7 @@ pub use bm25::Bm25Scorer;
 ## Epic 1.6: Cache Layer
 
 > **PRD Sections:** SS28 (Caching & Local Index)
-> **Crate:** `hsx-core` -- `src/cache/`
+> **Crate:** `fetchium-core` -- `src/cache/`
 > **Priority:** P1 | **Tasks:** 1
 
 ### P1-E6-T1: Memory LRU Cache with Moka
@@ -4532,7 +4532,7 @@ Implement the L1 memory cache using the `moka` crate -- a high-performance concu
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/cache/
+crates/fetchium-core/src/cache/
   mod.rs              -- Module root (update)
   memory.rs           -- Moka-based memory LRU cache
 ```
@@ -4763,7 +4763,7 @@ pub use memory::{CacheEntry, MemoryCache};
 - [ ] Cache keys are SHA-256 based for consistent hashing
 - [ ] TTL and max entries are configurable from `CacheConfig`
 - [ ] Separate key generators for URLs, search queries, and QATBE
-- [ ] All unit tests pass: `cargo test -p hsx-core cache::memory`
+- [ ] All unit tests pass: `cargo test -p fetchium-core cache::memory`
 - [ ] No clippy warnings
 
 ---
@@ -4771,7 +4771,7 @@ pub use memory::{CacheEntry, MemoryCache};
 ## Epic 1.7: Output Formatters
 
 > **PRD Sections:** SS26 (Output & Export System)
-> **Crate:** `hsx-core` -- `src/output/`
+> **Crate:** `fetchium-core` -- `src/output/`
 > **Priority:** P1 | **Tasks:** 1
 
 ### P1-E7-T1: Markdown/JSON/Text/Segments Formatters
@@ -4793,7 +4793,7 @@ Implement output formatters for the 4 primary formats: Markdown (human default),
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/output/
+crates/fetchium-core/src/output/
   mod.rs              -- Module root (update)
   markdown.rs         -- Markdown formatter
   json.rs             -- JSON formatter
@@ -5123,16 +5123,16 @@ impl Formatter for SegmentsFormatter {
 - [ ] Text formatter produces clean plain text with no markup
 - [ ] Segments formatter produces compact JSON (no pretty-printing)
 - [ ] All formatters implement the `Formatter` trait
-- [ ] All unit tests pass: `cargo test -p hsx-core output`
+- [ ] All unit tests pass: `cargo test -p fetchium-core output`
 - [ ] No clippy warnings
 
 **Testing instructions:**
 
 ```bash
-cargo test -p hsx-core output
+cargo test -p fetchium-core output
 # Visual test: pipe agent-search output through formatters
-cargo run -p hsx-cli -- search "test" --format json
-cargo run -p hsx-cli -- search "test" --format markdown
+cargo run -p fetchium-cli -- search "test" --format json
+cargo run -p fetchium-cli -- search "test" --format markdown
 ```
 
 ---
@@ -5172,10 +5172,10 @@ cargo test --workspace
 cargo clippy --workspace -- -W clippy::all
 
 # Smoke test: CLI commands work end-to-end
-cargo run -p hsx-cli -- search "hello world"
-cargo run -p hsx-cli -- fetch https://example.com
-cargo run -p hsx-cli -- agent-search "test" --budget 1000
-cargo run -p hsx-cli -- agent-fetch https://example.com --query "test" --budget 500
+cargo run -p fetchium-cli -- search "hello world"
+cargo run -p fetchium-cli -- fetch https://example.com
+cargo run -p fetchium-cli -- agent-search "test" --budget 1000
+cargo run -p fetchium-cli -- agent-fetch https://example.com --query "test" --budget 500
 ```
 
 ### What Phase 1 enables:
