@@ -33,3 +33,6 @@ bun.lock
 # Data
 *.db
 *.sqlite
+__pycache__/
+*.pyc
+.agentic/
