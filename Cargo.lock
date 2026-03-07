@@ -2008,11 +2008,13 @@ name = "fetchium-mcp"
 version = "1.0.0"
 dependencies = [
  "anyhow",
+ "axum",
  "chrono",
  "fetchium-core",
  "serde",
  "serde_json",
  "tokio",
+ "tower-http 0.5.2",
  "tracing",
  "uuid",
 ]

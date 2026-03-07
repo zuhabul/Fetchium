@@ -150,7 +150,7 @@ Phase 6 (M25-36) → Global scale, mobile, distribution
 - M12: $80K MRR, Series A materials ready
 
 ### Dependencies
-- SQLite persistence layer (hsx-core/index)
+- SQLite persistence layer (fetchium-core/index)
 - Vector embeddings (ONNX Runtime — `embeddings` feature)
 - Background job scheduler
 - SDK CI/CD pipeline (GitHub Actions)

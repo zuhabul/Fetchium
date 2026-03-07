@@ -246,16 +246,16 @@ export default function Pricing() {
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-500/25 bg-indigo-500/8 px-4 py-1.5 text-xs font-medium text-indigo-300">
-            <Zap className="h-3.5 w-3.5" strokeWidth={2.5} />
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-sm font-semibold text-indigo-200">
+            <Zap className="h-4 w-4" strokeWidth={2.5} />
             Transparent Pricing · No Hidden Fees
           </div>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-slate-100">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-slate-100">
             The{" "}
             <span className="gradient-text">cheapest full-pipeline</span>
             <br className="hidden sm:block" /> search API on the market
           </h2>
-          <p className="mt-4 sm:mt-5 mx-auto max-w-2xl text-sm sm:text-lg text-slate-500">
+          <p className="mt-5 sm:mt-6 mx-auto max-w-2xl text-base sm:text-xl text-slate-400 leading-relaxed">
             Competitors charge $5–$15 per 1,000 queries for search only.
             Fetchium delivers search + extraction + citations + ranking from{" "}
             <span className="text-slate-300 font-semibold">$0.58 per 1,000</span> — on the Growth plan.
@@ -263,7 +263,7 @@ export default function Pricing() {
           </p>
 
           {/* Billing toggle */}
-          <div className="mt-8 inline-flex items-center gap-2 rounded-xl border border-white/8 bg-white/3 p-1">
+          <div className="mt-8 inline-flex items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-900/60 p-1">
             <button
               onClick={() => setAnnual(false)}
               className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 min-h-[44px] ${
@@ -331,7 +331,7 @@ export default function Pricing() {
                         className={`flex h-8 w-8 items-center justify-center rounded-lg ${
                           plan.highlight
                             ? "bg-indigo-500/20 shadow-[0_0_12px_rgba(99,102,241,0.3)]"
-                            : "bg-white/6 border border-white/8"
+                            : "bg-slate-800/60 border border-slate-700/50"
                         }`}
                       >
                         <Icon
@@ -351,13 +351,13 @@ export default function Pricing() {
                     <PriceDisplay plan={plan} annual={annual} />
 
                     {annual && plan.monthlyPrice !== null && plan.monthlyPrice > 0 && plan.annualPrice !== null && (
-                      <div className="mt-1 text-[11px] text-slate-600">
+                      <div className="mt-1 text-[11px] text-slate-400">
                         Billed ${plan.annualPrice * 12}/yr — save $
                         {(plan.monthlyPrice - plan.annualPrice) * 12}/yr
                       </div>
                     )}
 
-                    <p className="mt-2.5 text-[12px] leading-relaxed text-slate-500">
+                    <p className="mt-2.5 text-[12px] leading-relaxed text-slate-400">
                       {plan.description}
                     </p>
 
@@ -366,7 +366,7 @@ export default function Pricing() {
                       className={`mt-3.5 rounded-xl border px-4 py-2.5 ${
                         plan.highlight
                           ? "border-indigo-500/25 bg-indigo-500/8"
-                          : "border-white/6 bg-white/3"
+                          : "border-slate-700/50 bg-slate-900/50"
                       }`}
                     >
                       <div
@@ -377,7 +377,7 @@ export default function Pricing() {
                         {plan.requestsLabel}
                       </div>
                       <div className="mt-0.5 flex items-center justify-between">
-                        <span className="text-[11px] text-slate-600">{plan.rateLimit}</span>
+                        <span className="text-[11px] text-slate-400">{plan.rateLimit}</span>
                         {plan.perThousand && plan.perThousand !== "Custom" && (
                           <span className="text-[11px] font-semibold text-emerald-400">
                             {plan.perThousand}/1K
@@ -410,8 +410,8 @@ export default function Pricing() {
 
                   {/* Competitor note */}
                   {plan.competitorNote && (
-                    <div className="mb-4 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2">
-                      <p className="text-[11px] text-slate-600 leading-snug">
+                    <div className="mb-4 rounded-lg border border-slate-700/40 bg-slate-900/50 px-3 py-2">
+                      <p className="text-[11px] text-slate-400 leading-snug">
                         <span className="text-emerald-400 font-semibold">vs competitor: </span>
                         {plan.competitorNote}
                       </p>
@@ -426,7 +426,7 @@ export default function Pricing() {
                     className={`group/btn flex items-center justify-center gap-2 rounded-xl py-3 text-[13px] font-semibold transition-all duration-200 min-h-[44px] ${
                       plan.highlight
                         ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)]"
-                        : "border border-white/10 bg-white/4 text-slate-300 hover:bg-white/8 hover:text-white"
+                        : "border border-slate-600/60 bg-slate-800/50 text-slate-200 hover:bg-slate-700/60 hover:text-white"
                     }`}
                   >
                     {plan.cta}
@@ -479,7 +479,7 @@ export default function Pricing() {
                   className={`rounded-xl p-3 text-center ${
                     item.highlight
                       ? "border border-emerald-500/25 bg-emerald-500/8"
-                      : "border border-white/6 bg-white/2"
+                      : "border border-slate-700/50 bg-slate-900/50"
                   }`}
                 >
                   <div

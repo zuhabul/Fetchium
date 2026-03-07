@@ -41,7 +41,7 @@ pub async fn run(
     let max_results = args.max_results;
 
     // ── Build orchestrator config ─────────────────────────────────────────
-    let mut orch_config = OrchestratorConfig::from_hsx_config(config, max_results);
+    let mut orch_config = OrchestratorConfig::from_fetchium_config(config, max_results);
 
     // Override backends if the user specified --backends
     if !args.backends.is_empty() {
@@ -84,7 +84,7 @@ pub async fn run(
     // For multi-domain queries (scientific, religious, philosophical, etc.),
     // generate 3-4 perspective-specific sub-queries to cover all angles.
     // Runs concurrently with a 6s timeout; gracefully skips if AI unavailable.
-    let ai_config_for_expand = AiConfig::from_hsx_config(config);
+    let ai_config_for_expand = AiConfig::from_fetchium_config(config);
     let has_ai = has_reachable_ai_for_expand(&ai_config_for_expand, config).await;
     let perspective_enabled = std::env::var("FETCHIUM_ENABLE_PERSPECTIVE")
         .map(|v| v == "1")
@@ -351,7 +351,7 @@ pub async fn run(
         use fetchium_core::rank::QueryIntent;
         let should_synthesize = !matches!(intent, QueryIntent::Code | QueryIntent::HowTo);
         if should_synthesize {
-            let ai_config = AiConfig::from_hsx_config(config);
+            let ai_config = AiConfig::from_fetchium_config(config);
             let has_ai =
                 !ai_config.providers.fallback_chain.is_empty() || ai_config.default_model.is_some();
             if has_ai {

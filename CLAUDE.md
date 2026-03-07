@@ -226,3 +226,8 @@ These must be set in the repository Settings → Secrets → Actions:
 - [ ] Add `HOMEBREW_TAP_TOKEN` secret (GitHub PAT with `repo` scope on `zuhabul/homebrew-fetchium`)
 - [ ] Enable GitHub Pages for rustdoc (repo Settings → Pages → Source: GitHub Actions)
 - [ ] First release: merge a `Release PR` created by release-please, or push a `v1.0.0` tag manually
+
+## Global Infrastructure SSOT
+- Canonical infrastructure source: `/home/echo/INFRASTRUCTURE_SOURCE_OF_TRUTH.md`
+- Endpoint registry (machine-friendly): `/home/echo/INFRASTRUCTURE_ENDPOINTS.tsv`
+- Before infra changes: read SSOT, apply changes, then update SSOT + endpoint registry in same task.

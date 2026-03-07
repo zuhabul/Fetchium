@@ -3,6 +3,7 @@
 //! Admin endpoints use `X-Admin-Secret` header for the MVP.
 
 use crate::middleware::AppState;
+use crate::types::{ResponseMeta, UsageResponse};
 use axum::{
     extract::State,
     http::{HeaderMap, StatusCode},
@@ -23,6 +24,28 @@ fn err(status: StatusCode, kind: &str, msg: &str) -> (StatusCode, Json<serde_jso
             "status": status.as_u16(),
         })),
     )
+}
+
+fn request_id_from_headers(headers: &HeaderMap) -> String {
+    headers
+        .get("x-request-id")
+        .and_then(|value| value.to_str().ok())
+        .map(ToOwned::to_owned)
+        .unwrap_or_else(|| uuid::Uuid::new_v4().to_string())
+}
+
+fn response_meta(request_id: String, endpoint: &str, duration_ms: u64) -> ResponseMeta {
+    ResponseMeta {
+        request_id,
+        status: "ok".into(),
+        endpoint: endpoint.into(),
+        duration_ms,
+        query: None,
+        tier: None,
+        tokens_used: None,
+        sources_count: None,
+        result_id: None,
+    }
 }
 
 /// Validate the admin secret from `X-Admin-Secret`.
@@ -67,6 +90,7 @@ fn default_plan() -> String {
 
 #[derive(Serialize)]
 pub struct CreateKeyResponse {
+    pub meta: ResponseMeta,
     /// Full raw key — shown ONCE. Store it securely.
     pub key: String,
     pub id: String,
@@ -82,6 +106,7 @@ pub async fn create_key(
     State(state): State<AppState>,
     Json(req): Json<CreateKeyRequest>,
 ) -> ApiResult<CreateKeyResponse> {
+    let start = Instant::now();
     if !check_admin(&headers) {
         return Err(err(
             StatusCode::UNAUTHORIZED,
@@ -119,6 +144,11 @@ pub async fn create_key(
         )?;
 
     Ok(Json(CreateKeyResponse {
+        meta: response_meta(
+            request_id_from_headers(&headers),
+            "/v1/keys",
+            start.elapsed().as_millis() as u64,
+        ),
         key: raw_key,
         id: record.id,
         name: record.name,
@@ -145,6 +175,7 @@ pub async fn list_keys(
     headers: HeaderMap,
     State(state): State<AppState>,
 ) -> ApiResult<serde_json::Value> {
+    let start = Instant::now();
     if !check_admin(&headers) {
         return Err(err(
             StatusCode::UNAUTHORIZED,
@@ -174,9 +205,15 @@ pub async fn list_keys(
         .collect();
 
     let count = response.len();
-    Ok(Json(
-        serde_json::json!({ "keys": response, "count": count }),
-    ))
+    Ok(Json(serde_json::json!({
+        "meta": response_meta(
+            request_id_from_headers(&headers),
+            "/v1/keys",
+            start.elapsed().as_millis() as u64,
+        ),
+        "keys": response,
+        "count": count
+    })))
 }
 
 // ─── DELETE /v1/keys/:id ──────────────────────────────────────────────────────
@@ -187,6 +224,7 @@ pub async fn revoke_key(
     State(state): State<AppState>,
     axum::extract::Path(key_id): axum::extract::Path<String>,
 ) -> ApiResult<serde_json::Value> {
+    let start = Instant::now();
     if !check_admin(&headers) {
         return Err(err(
             StatusCode::UNAUTHORIZED,
@@ -205,7 +243,15 @@ pub async fn revoke_key(
         })?;
 
     if revoked {
-        Ok(Json(serde_json::json!({ "id": key_id, "revoked": true })))
+        Ok(Json(serde_json::json!({
+            "meta": response_meta(
+                request_id_from_headers(&headers),
+                "/v1/keys/:id",
+                start.elapsed().as_millis() as u64,
+            ),
+            "id": key_id,
+            "revoked": true
+        })))
     } else {
         Err(err(
             StatusCode::NOT_FOUND,
@@ -221,12 +267,25 @@ pub async fn revoke_key(
 pub async fn get_usage(
     crate::middleware::AuthenticatedKey(key): crate::middleware::AuthenticatedKey,
     State(state): State<AppState>,
+    headers: HeaderMap,
 ) -> impl IntoResponse {
+    let start = Instant::now();
     let stats = tokio::task::block_in_place(|| state.auth_db.get_usage_stats(&key.id, &key.plan));
 
     match stats {
         Ok(s) => match serde_json::to_value(&s) {
-            Ok(v) => (StatusCode::OK, Json(v)).into_response(),
+            Ok(v) => (
+                StatusCode::OK,
+                Json(UsageResponse {
+                    meta: response_meta(
+                        request_id_from_headers(&headers),
+                        "/v1/usage",
+                        start.elapsed().as_millis() as u64,
+                    ),
+                    usage: v,
+                }),
+            )
+                .into_response(),
             Err(e) => {
                 tracing::error!(error = %e, "Failed to serialize usage stats");
                 (
@@ -265,8 +324,9 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
         .config
         .search
         .searxng_url
-        .as_deref()
-        .unwrap_or("http://localhost:4040");
+        .clone()
+        .or_else(|| std::env::var("SEARXNG_URL").ok())
+        .unwrap_or_else(|| "http://localhost:4040".to_string());
     let health_url = format!("{}/healthz", searxng_url.trim_end_matches('/'));
     let search_backbone_ok = state.http.fetch_text(&health_url).await.is_ok();
     let auth_store_ok =

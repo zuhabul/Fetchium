@@ -1,0 +1,9 @@
+.git
+target
+reports
+.tmp-build-venv
+adapters/langchain/dist
+adapters/crewai/dist
+node_modules
+apps/web/.next
+*.tgz

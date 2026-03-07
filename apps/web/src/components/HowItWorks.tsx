@@ -168,7 +168,7 @@ function StepCard({ step, index }: { step: Step; index: number }) {
               }}
             >
               <Icon
-                className={`h-4 w-4 sm:h-5 sm:w-5`}
+                className={`h-5 w-5 sm:h-6 sm:w-6`}
                 style={{ color: step.glow.replace("rgba(", "rgb(").replace(/,[\d.]+\)$/, ")") }}
                 strokeWidth={1.75}
               />
@@ -178,17 +178,17 @@ function StepCard({ step, index }: { step: Step; index: number }) {
           {/* Content */}
           <div className="min-w-0 flex-1">
             <div className="mb-0.5 flex items-center justify-between gap-2">
-              <h3 className="text-sm sm:text-[15px] font-semibold text-slate-100">
+              <h3 className="text-base sm:text-lg font-bold text-slate-100">
                 {step.title}
               </h3>
-              <span className="shrink-0 rounded-full border border-white/8 bg-white/4 px-2 py-0.5 font-mono text-[10px] sm:text-[11px] text-slate-500">
+              <span className="shrink-0 rounded-full border border-indigo-500/35 bg-indigo-500/15 px-2.5 py-0.5 font-mono text-[11px] sm:text-[12px] font-bold text-indigo-200">
                 {step.detail}
               </span>
             </div>
-            <div className="mb-2 text-[10px] sm:text-[11px] font-medium text-slate-600 tracking-wide uppercase">
+            <div className="mb-2 text-[11px] sm:text-[12px] font-semibold text-slate-400 tracking-wide uppercase">
               {step.subtitle}
             </div>
-            <p className="text-xs sm:text-[13.5px] leading-relaxed text-slate-500 group-hover:text-slate-400 transition-colors duration-300">
+            <p className="text-sm sm:text-base leading-relaxed text-slate-300 group-hover:text-slate-200 transition-colors duration-300">
               {step.description}
             </p>
           </div>
@@ -213,7 +213,7 @@ function PipelineDiagram() {
 
   return (
     <div className="mb-16">
-      <div className="sm:hidden text-center text-[11px] text-slate-600 mb-2 flex items-center justify-center gap-1.5">
+      <div className="sm:hidden text-center text-[11px] text-slate-400 mb-2 flex items-center justify-center gap-1.5">
         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
@@ -235,7 +235,7 @@ function PipelineDiagram() {
               className={`h-2.5 w-2.5 rounded-full ${l.color} shadow-lg`}
               style={{ boxShadow: `0 0 8px currentColor` }}
             />
-            <span className="whitespace-nowrap text-[11px] font-medium text-slate-500">
+            <span className="whitespace-nowrap text-[11px] font-medium text-slate-300">
               {l.label}
             </span>
           </motion.div>
@@ -279,16 +279,16 @@ export default function HowItWorks() {
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-500/25 bg-violet-500/8 px-3 sm:px-4 py-1.5 text-xs font-medium text-violet-300">
-            <Sparkles className="h-3.5 w-3.5" />
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-sm font-semibold text-violet-200">
+            <Sparkles className="h-4 w-4" />
             Pipeline Architecture
           </div>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-slate-100">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-100">
             How it{" "}
             <span className="gradient-text">works</span>
           </h2>
-          <p className="mt-4 sm:mt-5 mx-auto max-w-xl text-sm sm:text-lg text-slate-500">
-            Six stages. Under 200ms. Every result traced back to its source with
+          <p className="mt-5 sm:mt-6 mx-auto max-w-xl text-base sm:text-xl text-slate-300 leading-relaxed">
+            Six stages. Under 500ms. Every result traced back to its source with
             an evidence graph.
           </p>
         </motion.div>
@@ -311,22 +311,22 @@ export default function HowItWorks() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-8 sm:mt-10 overflow-hidden rounded-2xl border border-indigo-500/20 bg-gradient-to-r from-indigo-500/8 to-violet-500/8 p-4 sm:p-6"
         >
-          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="mb-1 text-sm sm:text-[15px] font-semibold text-slate-100">
+              <div className="mb-1 text-base sm:text-lg font-bold text-slate-100">
                 Start building in 2 minutes
               </div>
-              <div className="text-xs sm:text-[13px] text-slate-500">
+              <div className="text-sm sm:text-base text-slate-300 leading-relaxed">
                 Get an API key, make your first search call, get back ranked results with
                 extracted content and evidence graphs. Free plan — no credit card required.
               </div>
             </div>
             <a
               href="https://app.fetchium.com"
-              className="group flex shrink-0 items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-indigo-300 transition-all hover:bg-indigo-500/20 hover:text-indigo-200 w-full sm:w-auto justify-center min-h-[44px]"
+              className="group flex shrink-0 items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-5 py-3 text-sm sm:text-base font-bold text-indigo-200 transition-all hover:bg-indigo-500/20 hover:text-indigo-100 w-full sm:w-auto justify-center min-h-[48px]"
             >
               Get API Key Free
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
             </a>
           </div>
         </motion.div>

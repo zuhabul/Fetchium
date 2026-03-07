@@ -38,7 +38,7 @@ pub async fn run(action: ProviderAction, config: &HsxConfig) -> anyhow::Result<(
 // ─── list ─────────────────────────────────────────────────────────────────────
 
 async fn list(config: &HsxConfig) -> anyhow::Result<()> {
-    let ai_config = AiConfig::from_hsx_config(config);
+    let ai_config = AiConfig::from_fetchium_config(config);
     let providers_cfg = &config.ai.providers;
 
     println!("{}", "AI Provider Status".bold().cyan());
@@ -856,7 +856,7 @@ fn set_chain(config: &HsxConfig, providers: &[String]) -> anyhow::Result<()> {
 // ─── test ─────────────────────────────────────────────────────────────────────
 
 async fn test(config: &HsxConfig, provider_slug: Option<&str>) -> anyhow::Result<()> {
-    let ai_config = AiConfig::from_hsx_config(config);
+    let ai_config = AiConfig::from_fetchium_config(config);
     let providers_cfg = &config.ai.providers;
 
     let kinds: Vec<ProviderKind> = if let Some(slug) = provider_slug {
@@ -1773,7 +1773,7 @@ fn auth_gemini_cli() -> anyhow::Result<()> {
 async fn auth_ollama(config: &HsxConfig) -> anyhow::Result<()> {
     use fetchium_core::ai::OllamaClient;
 
-    let ai_config = AiConfig::from_hsx_config(config);
+    let ai_config = AiConfig::from_fetchium_config(config);
     println!("  Ollama runs locally — no API key or account needed.");
     println!();
     println!(

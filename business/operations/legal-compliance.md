@@ -50,7 +50,7 @@ All dependencies must be checked for license compatibility with MIT/Apache-2.0:
 | MPL-2.0 | Conditional | File-level copyleft; keep modifications to MPL files as OSS |
 | LGPL-2.1/3.0 | Conditional | Dynamic linking only; do NOT statically link |
 | GPL-2.0/3.0 | **No** | Cannot use in proprietary parts; only in CLI binary if distributed |
-| AGPL-3.0 | **No** | Viral to network-accessible software; avoid in hsx-api |
+| AGPL-3.0 | **No** | Viral to network-accessible software; avoid in fetchium-api |
 | CC-BY-4.0 | For content only | Fine for documentation, not code |
 
 **Tool for checking:** `cargo deny` — run in CI on every PR:

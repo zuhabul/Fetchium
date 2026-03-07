@@ -155,15 +155,15 @@ export default function Features() {
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-500/25 bg-indigo-500/8 px-3 sm:px-4 py-1.5 text-xs font-medium text-indigo-300">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-400" />
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-sm font-semibold text-indigo-200">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-400" />
             17 Novel Algorithms
           </div>
-          <h2 className="mx-auto max-w-3xl text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-slate-100">
+          <h2 className="mx-auto max-w-3xl text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-slate-100">
             Capabilities no other{" "}
             <span className="gradient-text">search API has</span>
           </h2>
-          <p className="mt-4 sm:mt-5 mx-auto max-w-2xl text-sm sm:text-lg text-slate-500">
+          <p className="mt-5 sm:mt-6 mx-auto max-w-2xl text-base sm:text-xl text-slate-300 leading-relaxed">
             Every algorithm was designed from scratch to solve a real gap in the
             AI search stack — not a wrapper around an existing tool.
           </p>
@@ -195,22 +195,22 @@ export default function Features() {
                   {/* Top row: icon + badge */}
                   <div className="relative mb-5 flex items-start justify-between">
                     <div
-                      className={`flex h-11 w-11 items-center justify-center rounded-xl border border-white/5 ${feature.iconBg} transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg`}
+                      className={`flex h-12 w-12 items-center justify-center rounded-xl border border-slate-700/50 ${feature.iconBg} transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg`}
                     >
-                      <Icon className={`h-5 w-5 ${feature.iconColor}`} strokeWidth={1.75} />
+                      <Icon className={`h-6 w-6 ${feature.iconColor}`} strokeWidth={1.75} />
                     </div>
                     <span
-                      className={`relative rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-wide uppercase ${badgeStyles[feature.badge]}`}
+                      className={`relative rounded-full border px-3 py-1 text-[12px] font-bold tracking-wide uppercase ${badgeStyles[feature.badge]}`}
                     >
                       {feature.badge}
                     </span>
                   </div>
 
                   {/* Text */}
-                  <h3 className="relative mb-2.5 text-[15px] font-semibold text-slate-100">
+                  <h3 className="relative mb-3 text-[17px] font-bold text-slate-100">
                     {feature.title}
                   </h3>
-                  <p className="relative text-[13.5px] leading-relaxed text-slate-500 group-hover:text-slate-400 transition-colors duration-300">
+                  <p className="relative text-[15px] leading-relaxed text-slate-300 group-hover:text-slate-200 transition-colors duration-300">
                     {feature.description}
                   </p>
 
@@ -233,17 +233,17 @@ export default function Features() {
           {[
             { value: "11+", label: "Search backends" },
             { value: "17", label: "Novel algorithms" },
-            { value: "930+", label: "Unit tests" },
-            { value: "< 200ms", label: "Median latency" },
+            { value: "563+", label: "Unit tests" },
+            { value: "~500ms", label: "P50 search latency" },
           ].map((stat) => (
             <div
               key={stat.label}
               className="glass-card rounded-xl p-4 sm:p-5 text-center"
             >
-              <div className="text-xl sm:text-3xl font-bold tracking-tight text-slate-100">
+              <div className="text-2xl sm:text-4xl font-bold tracking-tight text-slate-100">
                 {stat.value}
               </div>
-              <div className="mt-1 text-xs font-medium text-slate-500">
+              <div className="mt-2 text-sm sm:text-base font-semibold text-slate-300">
                 {stat.label}
               </div>
             </div>

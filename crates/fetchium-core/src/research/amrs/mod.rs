@@ -105,15 +105,15 @@ pub struct DeepResearchResult {
 pub struct Coordinator {
     config: AmrsConfig,
     http_client: HttpClient,
-    hsx_config: HsxConfig,
+    fetchium_config: HsxConfig,
 }
 
 impl Coordinator {
-    pub fn new(config: AmrsConfig, http_client: HttpClient, hsx_config: HsxConfig) -> Self {
+    pub fn new(config: AmrsConfig, http_client: HttpClient, fetchium_config: HsxConfig) -> Self {
         Self {
             config,
             http_client,
-            hsx_config,
+            fetchium_config,
         }
     }
 
@@ -168,7 +168,7 @@ impl Coordinator {
         for node in &search_nodes {
             let (agent_tx, agent_rx) = mpsc::channel::<AgentMessage>(self.config.channel_buffer);
             let coordinator_tx = coord_tx.clone();
-            let agent = SearchAgent::new(self.http_client.clone(), self.hsx_config.clone());
+            let agent = SearchAgent::new(self.http_client.clone(), self.fetchium_config.clone());
 
             agent_tx
                 .send(AgentMessage::SpawnSearch {
@@ -420,7 +420,7 @@ impl Coordinator {
             return String::new();
         }
 
-        let ai_config = AiConfig::from_hsx_config(&self.hsx_config);
+        let ai_config = AiConfig::from_fetchium_config(&self.fetchium_config);
         if ai_config.providers.fallback_chain.is_empty() && ai_config.default_model.is_none() {
             return String::new();
         }

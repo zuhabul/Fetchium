@@ -94,14 +94,14 @@ pub struct SummaryResult {
 pub async fn summarize(
     input: &str,
     config: &SummarizeConfig,
-    hsx_config: &HsxConfig,
+    fetchium_config: &HsxConfig,
 ) -> Result<SummaryResult, HsxError> {
     let start = Instant::now();
 
     let is_url = input.starts_with("http://") || input.starts_with("https://");
 
     let (content, source_url, source_title) = if is_url {
-        let http = HttpClient::new(hsx_config)?;
+        let http = HttpClient::new(fetchium_config)?;
         // YouTube URLs: extract transcript instead of HTML for much better summaries
         let is_youtube = input.contains("youtube.com/watch")
             || input.contains("youtu.be/")
@@ -111,7 +111,7 @@ pub async fn summarize(
             let video_id = crate::multimodal::video::extract_video_id(input).ok();
             let metadata_fut = async {
                 if let Some(ref vid) = video_id {
-                    crate::youtube::metadata::fetch_metadata(vid, &http, hsx_config)
+                    crate::youtube::metadata::fetch_metadata(vid, &http, fetchium_config)
                         .await
                         .ok()
                 } else {
@@ -119,7 +119,11 @@ pub async fn summarize(
                 }
             };
             let (transcript_result, metadata_opt) = tokio::join!(
-                crate::youtube::universal::fetch_universal_transcript(input, &http, hsx_config),
+                crate::youtube::universal::fetch_universal_transcript(
+                    input,
+                    &http,
+                    fetchium_config
+                ),
                 metadata_fut
             );
 
@@ -207,8 +211,8 @@ pub async fn summarize(
     }
 
     // Try AI synthesis
-    let ai_config = AiConfig::from_hsx_config(hsx_config);
-    let has_ai = has_reachable_ai_provider(&ai_config, hsx_config).await;
+    let ai_config = AiConfig::from_fetchium_config(fetchium_config);
+    let has_ai = has_reachable_ai_provider(&ai_config, fetchium_config).await;
 
     if has_ai {
         let system = summarize_prompt(config.length.description());
@@ -287,7 +291,7 @@ pub async fn summarize(
     })
 }
 
-async fn has_reachable_ai_provider(ai_config: &AiConfig, hsx_config: &HsxConfig) -> bool {
+async fn has_reachable_ai_provider(ai_config: &AiConfig, fetchium_config: &HsxConfig) -> bool {
     let configured = ai_config.providers.configured_providers();
     if configured.is_empty() {
         return false;
@@ -308,7 +312,7 @@ async fn has_reachable_ai_provider(ai_config: &AiConfig, hsx_config: &HsxConfig)
     }
 
     // Ollama is configured: check if local server is actually reachable.
-    if let Ok(http) = HttpClient::new(hsx_config) {
+    if let Ok(http) = HttpClient::new(fetchium_config) {
         let url = format!(
             "{}:{}/api/tags",
             ai_config.ollama_host, ai_config.ollama_port
@@ -452,8 +456,8 @@ mod tests {
             length: SummaryLength::Short,
             model: None,
         };
-        let hsx = HsxConfig::default();
-        let result = summarize(text, &config, &hsx).await.unwrap();
+        let fetchium_config = HsxConfig::default();
+        let result = summarize(text, &config, &fetchium_config).await.unwrap();
         assert!(!result.summary.is_empty());
         assert!(result.source_url.is_none());
     }
@@ -461,8 +465,8 @@ mod tests {
     #[tokio::test]
     async fn summarize_empty_text() {
         let config = SummarizeConfig::default();
-        let hsx = HsxConfig::default();
-        let result = summarize("", &config, &hsx).await.unwrap();
+        let fetchium_config = HsxConfig::default();
+        let result = summarize("", &config, &fetchium_config).await.unwrap();
         assert!(result.summary.is_empty());
         assert!(!result.ai_used);
     }
@@ -511,8 +515,8 @@ mod tests {
 
     #[tokio::test]
     async fn has_reachable_ai_provider_false_when_unconfigured() {
-        let hsx = HsxConfig::default();
-        let mut ai = AiConfig::from_hsx_config(&hsx);
+        let fetchium_config = HsxConfig::default();
+        let mut ai = AiConfig::from_fetchium_config(&fetchium_config);
         ai.providers.fallback_chain.clear();
         ai.providers.ollama.enabled = false;
         ai.providers.openai.enabled = false;
@@ -521,6 +525,6 @@ mod tests {
         ai.providers.gemini_cli.enabled = false;
         ai.providers.openrouter.enabled = false;
         ai.providers.antigravity.enabled = false;
-        assert!(!has_reachable_ai_provider(&ai, &hsx).await);
+        assert!(!has_reachable_ai_provider(&ai, &fetchium_config).await);
     }
 }

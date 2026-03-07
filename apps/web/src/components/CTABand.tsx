@@ -31,44 +31,44 @@ export default function CTABand() {
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
           {/* Badge */}
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/8 px-4 py-1.5 text-xs font-medium text-emerald-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             Free forever · No credit card required
           </div>
 
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-100 mb-5">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-slate-100 mb-6">
             Start building with{" "}
             <span className="gradient-text-purple">Fetchium</span>
             {" "}today
           </h2>
 
-          <p className="text-base sm:text-lg text-slate-500 max-w-2xl mx-auto mb-8 leading-relaxed">
+          <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
             Join the open beta. 1,000 free API requests per month, all features included.
             Upgrade when you need more — from{" "}
             <span className="text-slate-300 font-semibold">$9/month</span>{" "}for 10,000 requests.
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
             <Link
               href="https://app.fetchium.com/register"
               target="_blank"
               rel="noopener noreferrer"
-              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-4 text-sm font-semibold text-white shadow-[0_0_40px_rgba(99,102,241,0.4)] hover:shadow-[0_0_60px_rgba(99,102,241,0.6)] transition-all duration-300 min-h-[52px]"
+              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-4 text-base font-bold text-white shadow-[0_0_40px_rgba(99,102,241,0.4)] hover:shadow-[0_0_60px_rgba(99,102,241,0.6)] transition-all duration-300 min-h-[56px]"
             >
               Get API Key — Free
-              <ExternalLink className="h-4 w-4" />
+              <ExternalLink className="h-5 w-5" />
             </Link>
             <Link
               href="/docs/quickstart"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/3 px-8 py-4 text-sm font-semibold text-slate-300 hover:bg-white/8 hover:text-white hover:border-white/15 transition-all duration-200 min-h-[52px]"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/40 px-8 py-4 text-base font-bold text-slate-200 hover:bg-slate-700/50 hover:text-white hover:border-slate-600/60 transition-all duration-200 min-h-[56px]"
             >
               Read the Quickstart
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-5 w-5" />
             </Link>
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 rounded-xl px-5 py-4 text-sm font-medium text-slate-500 hover:text-slate-300 transition-colors min-h-[52px]"
+              className="inline-flex items-center gap-2 rounded-xl px-5 py-4 text-base font-semibold text-slate-300 hover:text-slate-100 transition-colors min-h-[56px]"
             >
               Talk to Sales →
             </Link>
@@ -84,11 +84,11 @@ export default function CTABand() {
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-center"
+                className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-center"
               >
-                <div className="text-xl sm:text-2xl font-bold gradient-text">{stat.value}</div>
-                <div className="text-[12px] font-medium text-slate-400 mt-0.5">{stat.label}</div>
-                <div className="text-[10px] text-slate-700 mt-0.5">{stat.sub}</div>
+                <div className="text-2xl sm:text-3xl font-bold gradient-text">{stat.value}</div>
+                <div className="text-[14px] font-semibold text-slate-300 mt-1">{stat.label}</div>
+                <div className="text-[12px] text-slate-400 mt-0.5">{stat.sub}</div>
               </div>
             ))}
           </div>

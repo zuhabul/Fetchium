@@ -33,38 +33,58 @@ git clone https://github.com/zuhabul/Fetchium.git
 cd fetchium
 
 # Copy and configure environment
-cp .env.example .env
-# Edit .env to set FETCHIUM_ADMIN_SECRET and other settings
+cp infra/fetchium.env.production infra/fetchium.env.production.local
+# Edit infra/fetchium.env.production.local to set FETCHIUM_ADMIN_SECRET and other settings
 
 # Start the stack
-docker compose up -d
+docker compose --env-file infra/fetchium.env.production.local -f infra/docker-compose.prod.yml up -d --build
 
 # Verify it's running
-curl http://localhost:3050/health`} />
+curl http://localhost:3050/v1/health
+curl -X POST http://localhost:3471/mcp \\
+  -H "Content-Type: application/json" \\
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'`} />
 
       <h2>Docker Compose configuration</h2>
 
-      <CodeBlock language="yaml" filename="docker-compose.yml" code={`version: "3.9"
-
-services:
-  fetchium-api:
-    image: ghcr.io/zuhabul/fetchium:latest
+      <CodeBlock language="yaml" filename="infra/docker-compose.prod.yml" code={`services:
+  searxng:
+    image: searxng/searxng:latest
     ports:
-      - "3050:3050"
+      - "127.0.0.1:4040:8080"
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    command: ["fetchium", "serve", "--mode", "rest", "--port", "3050"]
+    ports:
+      - "127.0.0.1:3050:3050"
     environment:
       - FETCHIUM_ADMIN_SECRET=\${FETCHIUM_ADMIN_SECRET}
       - SEARXNG_URL=http://searxng:8080
-      - DATABASE_PATH=/data/fetchium.db
+      - FETCHIUM_DATA_DIR=/data
     volumes:
       - fetchium-data:/data
     depends_on:
       - searxng
     restart: unless-stopped
 
-  searxng:
-    image: searxng/searxng:latest
+  mcp:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    command: ["fetchium", "serve", "--mode", "mcp", "--transport", "http", "--port", "3471"]
+    ports:
+      - "127.0.0.1:3471:3471"
+    environment:
+      - SEARXNG_URL=http://searxng:8080
+      - FETCHIUM_DATA_DIR=/data
     volumes:
-      - ./searxng:/etc/searxng
+      - fetchium-data:/data
+    depends_on:
+      - searxng
     restart: unless-stopped
 
 volumes:
@@ -76,10 +96,10 @@ volumes:
         <tbody>
           <tr><td><code>FETCHIUM_ADMIN_SECRET</code></td><td>Yes</td><td>Admin API secret (min 32 chars). Generate: <code>openssl rand -hex 32</code></td></tr>
           <tr><td><code>SEARXNG_URL</code></td><td>Yes</td><td>URL of your SearXNG instance</td></tr>
-          <tr><td><code>DATABASE_PATH</code></td><td>No</td><td>SQLite database path. Default: <code>~/.fetchium/fetchium.db</code></td></tr>
-          <tr><td><code>FETCHIUM_PORT</code></td><td>No</td><td>API port. Default: <code>3050</code></td></tr>
-          <tr><td><code>FETCHIUM_LOG_LEVEL</code></td><td>No</td><td><code>debug</code>, <code>info</code>, <code>warn</code>, <code>error</code>. Default: <code>info</code></td></tr>
-          <tr><td><code>ALLOWED_ORIGINS</code></td><td>No</td><td>Comma-separated CORS origins. Default: none (API only)</td></tr>
+          <tr><td><code>FETCHIUM_DATA_DIR</code></td><td>No</td><td>SQLite/auth data directory. Default: <code>/data</code> in containers</td></tr>
+          <tr><td><code>BRAVE_API_KEY</code></td><td>No</td><td>Optional Brave Search backend</td></tr>
+          <tr><td><code>YOUTUBE_API_KEY</code></td><td>No</td><td>Optional YouTube integration</td></tr>
+          <tr><td><code>RUST_LOG</code></td><td>No</td><td><code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code>, <code>trace</code></td></tr>
         </tbody>
       </table>
 
@@ -94,6 +114,12 @@ volumes:
   -d '{"name": "My App", "plan": "pro"}'`} />
 
       <CodeBlock language="json" code={`{
+  "meta": {
+    "request_id": "req_01...",
+    "status": "ok",
+    "endpoint": "/v1/keys",
+    "duration_ms": 3
+  },
   "key": "fetchium_4626d3fc3fd6693aaaf2d8f5fd084a71...",
   "id": "key_abc123",
   "name": "My App",
@@ -136,9 +162,8 @@ SEARXNG_URL=http://localhost:8080 \\
 }`} />
 
       <h2>Updating</h2>
-      <CodeBlock language="bash" code={`# Pull latest image and restart
-docker compose pull
-docker compose up -d`} />
+      <CodeBlock language="bash" code={`docker compose --env-file infra/fetchium.env.production.local -f infra/docker-compose.prod.yml pull
+docker compose --env-file infra/fetchium.env.production.local -f infra/docker-compose.prod.yml up -d --build`} />
 
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">

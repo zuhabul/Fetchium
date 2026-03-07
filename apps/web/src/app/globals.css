@@ -11,10 +11,17 @@
   --surface-2: #0d1117;
   --surface-3: #111827;
   --surface-4: #1a2235;
-  --border: rgba(99, 102, 241, 0.15);
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
+  /* Border system — no raw rgba(255,255,255) borders */
+  --border-subtle: #131922;      /* structural section dividers */
+  --border-default: #1a2235;     /* card / panel borders */
+  --border-elevated: #1e2a3a;    /* elevated card borders */
+  --border-brand: rgba(99,102,241,0.25); /* brand-tinted borders */
+  --border-brand-strong: rgba(99,102,241,0.45);
+  /* Text hierarchy */
+  --text-primary: #f1f5f9;       /* headings */
+  --text-secondary: #94a3b8;     /* body text */
+  --text-muted: #64748b;         /* secondary labels */
+  --text-faint: #475569;         /* captions, footnotes */
 }
 
 * { box-sizing: border-box; }
@@ -60,24 +67,49 @@ body {
 
 /* ─── Glass ─── */
 .glass {
-  background: rgba(6, 7, 13, 0.75);
+  background: rgba(9, 11, 18, 0.85);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(99, 102, 241, 0.12);
+  border: 1px solid var(--border-brand);
 }
 
 .glass-card {
-  background: linear-gradient(135deg, rgba(13,17,23,0.8) 0%, rgba(17,24,39,0.6) 100%);
+  background: linear-gradient(135deg, rgba(13,17,27,0.9) 0%, rgba(15,20,35,0.75) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  border: 1px solid var(--border-elevated);
   transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
 }
 .glass-card:hover {
-  border-color: rgba(99, 102, 241, 0.4);
-  background: linear-gradient(135deg, rgba(13,17,23,0.9) 0%, rgba(17,24,39,0.75) 100%);
+  border-color: rgba(99, 102, 241, 0.35);
+  background: linear-gradient(135deg, rgba(13,17,27,0.95) 0%, rgba(15,20,35,0.85) 100%);
   transform: translateY(-2px);
-  box-shadow: 0 20px 60px rgba(99,102,241,0.12), 0 0 0 1px rgba(99,102,241,0.2);
+  box-shadow: 0 20px 60px rgba(99,102,241,0.1), 0 0 0 1px rgba(99,102,241,0.18);
+}
+
+/* ─── Chip / Badge ─── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-brand);
+  background: rgba(99,102,241,0.1);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #a5b4fc;
+}
+
+/* ─── Panel ─── */
+.panel {
+  background: rgba(9,12,18,0.98);
+  border: 1px solid var(--border-elevated);
+  border-radius: 1rem;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.65);
+}
+.panel-header {
+  border-bottom: 1px solid var(--border-default);
+  background: rgba(6,8,14,0.8);
 }
 
 /* ─── Glows ─── */
@@ -134,7 +166,7 @@ code, pre {
   font-family: var(--font-geist-mono), 'SF Mono', 'Fira Code', monospace;
 }
 
-.token-comment { color: #6b7a99; }
+.token-comment { color: #7d8fa8; }
 .token-keyword { color: #c792ea; }
 .token-string { color: #c3e88d; }
 .token-number { color: #f78c6c; }

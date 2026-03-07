@@ -228,13 +228,13 @@ helm install fetchium fetchium/fetchium \
 
 ```
 Primary region: US-East (Hetzner Ashburn)
-  ├── hsx-api (3 instances, load balanced)
+  ├── fetchium-api (3 instances, load balanced)
   ├── PostgreSQL primary
   ├── Redis primary
   └── SearXNG cluster
 
 Failover region: EU-Central (Hetzner Frankfurt)
-  ├── hsx-api (standby, cold start < 60s)
+  ├── fetchium-api (standby, cold start < 60s)
   ├── PostgreSQL replica (streaming, < 5s lag)
   ├── Redis replica
   └── SearXNG cluster

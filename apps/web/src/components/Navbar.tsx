@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Zap, Github, ExternalLink, ChevronDown, Search, FileText, BookOpen, Code2, ShieldCheck, GitCompare } from "lucide-react";
+import { Menu, X, Zap, ExternalLink, ChevronDown, Search, FileText, BookOpen, Code2, ShieldCheck, GitCompare } from "lucide-react";
 
 const productLinks = [
   { href: "/product/search", label: "Search API", desc: "11-backend federated search", icon: Search },
@@ -27,7 +27,7 @@ function DropdownMenu({ items, wide = false }: { items: typeof productLinks | ty
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 8, scale: 0.97 }}
       transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-      className={`absolute top-full left-0 mt-2 rounded-xl border border-white/8 bg-[rgba(10,12,24,0.97)] backdrop-blur-2xl shadow-[0_16px_48px_rgba(0,0,0,0.5)] overflow-hidden z-50 ${wide ? "w-64" : "w-44"}`}
+      className={`absolute top-full left-0 mt-2 rounded-xl border border-slate-800 bg-[rgba(8,10,18,0.99)] backdrop-blur-2xl shadow-[0_16px_56px_rgba(0,0,0,0.7)] overflow-hidden z-50 ${wide ? "w-64" : "w-44"}`}
     >
       <div className="p-1.5">
         {items.map((item) => (
@@ -160,15 +160,6 @@ export default function Navbar() {
             transition={{ delay: 0.35, duration: 0.5 }}
           >
             <Link
-              href="https://github.com/zuhabul/Fetchium"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition-all hover:bg-white/5 hover:text-slate-100"
-            >
-              <Github className="h-4 w-4" />
-            </Link>
-            <div className="h-4 w-px bg-white/10" />
-            <Link
               href="https://app.fetchium.com"
               target="_blank"
               rel="noopener noreferrer"
@@ -182,7 +173,7 @@ export default function Navbar() {
 
           {/* Mobile hamburger */}
           <button
-            className="flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 text-slate-400 transition-all hover:bg-white/5 hover:text-white md:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-700/50 bg-slate-900/40 text-slate-300 transition-all hover:bg-slate-800 hover:text-white md:hidden"
             onClick={() => setOpen(!open)}
             aria-label="Toggle menu"
           >
@@ -246,17 +237,6 @@ export default function Navbar() {
               ))}
 
               <div className="my-3 h-px bg-white/5" />
-
-              <Link
-                href="https://github.com/zuhabul/Fetchium"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-400 transition-all hover:bg-white/5 hover:text-white"
-                onClick={() => setOpen(false)}
-              >
-                <Github className="h-4 w-4" />
-                Star on GitHub
-              </Link>
 
               <Link
                 href="https://app.fetchium.com"

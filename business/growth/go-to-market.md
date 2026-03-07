@@ -69,7 +69,7 @@ less than 5 minutes from install to first result.
 ### Activation Flow
 ```
 1. See Fetchium mentioned (GitHub / HN / Discord)
-2. README → `pip install fetchium` or `cargo install hsx` (< 30 seconds)
+2. README → `pip install fetchium` or `cargo install fetchium` (< 30 seconds)
 3. `fetchium fetch "https://example.com"` → beautiful JSON in terminal
 4. Try `fetchium ai "what is the latest on X?"` → gets a real answer
 5. Integrate into their existing agent — it just works
