@@ -22,7 +22,7 @@ const features: Feature[] = [
   { label: "YouTube & social search" },
   { label: "Real-time monitoring + diffs" },
   { label: "MCP protocol support" },
-  { label: "Self-hostable" },
+  { label: "Independent backend mix" },
   { label: "Free tier (renewing)" },
   { label: "Plan-based rate limits", description: "From current API auth configuration" },
   { label: "Free tier available", description: "1,000 requests/month in current API auth configuration" },
@@ -83,7 +83,7 @@ const tools: Tool[] = [
     compareHref: "/compare/firecrawl",
     data: [
       "no", "no", "partial", "no", "no", "no", "no",
-      "no", "partial", "no", "yes", "yes", "varies", "yes",
+      "no", "partial", "no", "no", "yes", "varies", "yes",
     ],
   },
 ];

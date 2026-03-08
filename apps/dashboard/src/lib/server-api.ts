@@ -1,4 +1,4 @@
-export const DEFAULT_API_BASE = "http://localhost:3050";
+export const DEFAULT_API_BASE = "***REMOVED***";
 
 export function resolve_api_base(input?: string): string {
   const base = (input || process.env.***REMOVED*** || DEFAULT_API_BASE).trim();
