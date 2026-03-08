@@ -10,7 +10,6 @@ const QUICKLINKS = [
   { title: "Search API", desc: "Federated search with ranking.", href: "https://docs.fetchium.com/api/search", icon: "🔍" },
   { title: "Research API", desc: "Deep multi-source synthesis.", href: "https://docs.fetchium.com/api/research", icon: "🔬" },
   { title: "MCP Protocol", desc: "12 MCP tools across core, YouTube, and social workflows.", href: "https://docs.fetchium.com/sdk/mcp", icon: "🧩" },
-  { title: "Self-Hosting", desc: "Run Fetchium on your own infra.", href: "https://docs.fetchium.com/self-hosting/docker", icon: "🐳" },
 ];
 
 export default function DocsIndex() {
