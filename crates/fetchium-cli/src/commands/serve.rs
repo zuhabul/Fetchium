@@ -1,9 +1,9 @@
 //! `fetchium serve` — start MCP or REST API server (PRD §9, §30).
 
 use crate::cli::{McpTransport, ServeArgs, ServerMode};
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 
-pub async fn run(args: ServeArgs, config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(args: ServeArgs, config: &FetchiumConfig) -> anyhow::Result<()> {
     match args.mode {
         ServerMode::Mcp => {
             if args.transport == McpTransport::Stdio {

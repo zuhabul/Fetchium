@@ -2,7 +2,7 @@
 
 > **"Make all the world's information instantly accessible, deeply understood, and reliably verified."**
 
-*Formerly HyperSearchX. Now Fetchium: the universal retrieval layer for the internet.*
+*Formerly Fetchium. Now Fetchium: the universal retrieval layer for the internet.*
 
 ---
 
@@ -544,7 +544,7 @@ Information retrieval that improves over time is qualitatively different from re
 - **Query prediction**: Based on query history and in-progress query context, Fetchium can prefetch likely follow-up sources before you ask the follow-up question.
 - **Failure pattern learning**: When a backend fails, extraction fails, or AI synthesis produces a low-quality result, the failure is recorded. Future queries avoid the same failure modes.
 
-**Privacy guarantee:** All PIE data is stored locally in `~/.hypersearchx/pie.db`. A single `fetchium forget --all` command deletes it. The data is never sent to any external service.
+**Privacy guarantee:** All PIE data is stored locally in `~/.fetchium/pie.db`. A single `fetchium forget --all` command deletes it. The data is never sent to any external service.
 
 **LP (Latency Predictor):** Predicts expected latency for a given query based on backend health history, recent latency measurements, and query complexity. Informs timeout settings and user-facing progress indicators.
 
@@ -1204,7 +1204,7 @@ Fetchium follows this playbook precisely. The product is the marketing. The deve
 **Goal: 100,000 developers using the free tier**
 
 **How:**
-- Launch CLI on Homebrew, `cargo install fetchium`, npm install hypersearchx
+- Launch CLI on Homebrew, `cargo install fetchium`, npm install fetchium
 - Submit to Hacker News Show HN, Reddit r/rust, r/MachineLearning, r/LocalLLaMA
 - Publish technical deep-dives: "How we built a 5-layer content extraction pipeline in Rust"
 - LangChain and LlamaIndex integrations in the standard library
@@ -1741,8 +1741,8 @@ The product has to earn each message. The tagline does not evolve because of a m
 | Milestone | Target Date | Success Metric |
 |-----------|------------|---------------|
 | 20 algorithms implemented, 941 tests passing | Complete | Cargo test: 0 failures |
-| Production deployment (API + web) | Complete | https://api.hypersearchx.zuhabul.com live |
-| Rename HyperSearchX → Fetchium | Q1 2026 | Brand migration complete |
+| Production deployment (API + web) | Complete | https://api.fetchium.zuhabul.com live |
+| Rename Fetchium → Fetchium | Q1 2026 | Brand migration complete |
 | LangChain integration | Q1 2026 | PR merged to langchain repo |
 | LlamaIndex integration | Q1 2026 | PR merged to llamaindex repo |
 | MCP server (Phase 4) | Q2 2026 | `fetchium serve --mode mcp` works |
@@ -1785,4 +1785,4 @@ That is the promise. Everything else — the algorithms, the architecture, the b
 
 *Fetchium — The Universal Retrieval Layer*
 *Document version: 1.0 | February 2026*
-*Contact: zuhabul@hypersearchx.com | https://hypersearchx.zuhabul.com*
+*Contact: zuhabul@fetchium.com | https://fetchium.zuhabul.com*

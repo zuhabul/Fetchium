@@ -16,7 +16,7 @@
 //!   - Headless: bing.com/ck/a?...&u=a1BASE64 redirect → decoded via decode_bing_redirect()
 //! - `.b_algoSlug` — snippet text
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::search::{SearchBackend, SearchContext};
 use crate::types::{BackendId, ResultItem};
 
@@ -190,7 +190,7 @@ impl SearchBackend for BingBackend {
         cfg!(feature = "headless")
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         self.search_with_locale(query, max_results, None).await
     }
 
@@ -199,7 +199,7 @@ impl SearchBackend for BingBackend {
         query: &str,
         max_results: u32,
         ctx: &SearchContext,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         self.search_with_locale(query, max_results, ctx.locale.as_deref())
             .await
     }
@@ -211,7 +211,7 @@ impl BingBackend {
         query: &str,
         max_results: u32,
         locale: Option<&str>,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         // ── Non-headless path: lightweight HTTP scraper with IP rotation ──────
         #[cfg(not(feature = "headless"))]
         {
@@ -331,9 +331,9 @@ mod tests {
 
     #[cfg(not(feature = "headless"))]
     fn make_backend() -> BingBackend {
-        use crate::config::HsxConfig;
+        use crate::config::FetchiumConfig;
         use crate::http::HttpClient;
-        BingBackend::new_http(HttpClient::new(&HsxConfig::default()).expect("http"))
+        BingBackend::new_http(HttpClient::new(&FetchiumConfig::default()).expect("http"))
     }
 
     #[cfg(not(feature = "headless"))]

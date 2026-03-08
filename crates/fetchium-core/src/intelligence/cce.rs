@@ -9,7 +9,7 @@ use std::sync::Mutex;
 
 use rusqlite::Connection;
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use crate::intelligence::enable_wal;
 
 /// A calibrated confidence value with metadata.
@@ -47,7 +47,7 @@ pub struct ConfidenceCalibrationEngine {
 }
 
 impl ConfidenceCalibrationEngine {
-    pub fn new(db_path: &std::path::Path) -> Result<Self, HsxError> {
+    pub fn new(db_path: &std::path::Path) -> Result<Self, FetchiumError> {
         let conn = Connection::open(db_path)?;
         enable_wal(&conn)?;
         conn.execute_batch(
@@ -83,7 +83,7 @@ impl ConfidenceCalibrationEngine {
         stated_confidence: f64,
         claim: &str,
         source_url: Option<&str>,
-    ) -> Result<u64, HsxError> {
+    ) -> Result<u64, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
             "INSERT INTO predictions (domain_category, stated_confidence, claim, source_url)
@@ -98,7 +98,7 @@ impl ConfidenceCalibrationEngine {
         &self,
         prediction_id: u64,
         actually_correct: bool,
-    ) -> Result<(), HsxError> {
+    ) -> Result<(), FetchiumError> {
         let conn = self.conn.lock().unwrap();
 
         conn.execute(
@@ -141,7 +141,7 @@ impl ConfidenceCalibrationEngine {
         &self,
         domain_category: &str,
         stated_confidence: f64,
-    ) -> Result<CalibratedConfidence, HsxError> {
+    ) -> Result<CalibratedConfidence, FetchiumError> {
         let conn = self.conn.lock().unwrap();
 
         let mut stmt = conn.prepare(
@@ -181,7 +181,7 @@ impl ConfidenceCalibrationEngine {
     }
 
     /// Summary of calibration coverage: (domain_category, bin_count, total_predictions).
-    pub fn calibration_summary(&self) -> Result<Vec<(String, u64, u64)>, HsxError> {
+    pub fn calibration_summary(&self) -> Result<Vec<(String, u64, u64)>, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT domain_category, COUNT(*), SUM(total_count)

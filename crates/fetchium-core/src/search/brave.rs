@@ -3,7 +3,7 @@
 //! Set the `BRAVE_API_KEY` environment variable to enable. Without a key,
 //! this backend returns empty results immediately (soft fail).
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::http::HttpClient;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
@@ -79,7 +79,7 @@ impl BraveBackend {
         query: &str,
         max_results: u32,
         freshness: Option<&str>,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let Some(ref key) = self.api_key else {
             debug!("Brave: no API key set (BRAVE_API_KEY), skipping");
             return Ok(vec![]);
@@ -170,7 +170,7 @@ impl SearchBackend for BraveBackend {
         BackendId::Brave
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         self.search_inner(query, max_results, None).await
     }
 
@@ -179,7 +179,7 @@ impl SearchBackend for BraveBackend {
         query: &str,
         max_results: u32,
         ctx: &SearchContext,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let freshness = Self::time_range_to_freshness(ctx.time_range);
         self.search_inner(query, max_results, freshness).await
     }

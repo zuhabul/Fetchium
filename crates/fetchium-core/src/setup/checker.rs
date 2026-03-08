@@ -1,6 +1,6 @@
 //! Environment checks for `fetchium setup --check` and `fetchium doctor`.
 
-use crate::config::HsxConfig;
+use crate::config::FetchiumConfig;
 
 /// A single environment check result.
 #[derive(Debug)]
@@ -33,7 +33,7 @@ impl CheckStatus {
 }
 
 /// Run all setup-relevant environment checks and return results.
-pub fn run_checks(config: &HsxConfig) -> Vec<CheckItem> {
+pub fn run_checks(config: &FetchiumConfig) -> Vec<CheckItem> {
     let mut items = Vec::new();
 
     // ── Chrome/Chromium ────────────────────────────────────────────────────
@@ -100,7 +100,7 @@ pub fn run_checks(config: &HsxConfig) -> Vec<CheckItem> {
     });
 
     // ── Config file ────────────────────────────────────────────────────────
-    let config_path = HsxConfig::config_file_path();
+    let config_path = FetchiumConfig::config_file_path();
     items.push(CheckItem {
         name: "Config file",
         status: CheckStatus::Ok,

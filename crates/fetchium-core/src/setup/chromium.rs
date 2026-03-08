@@ -23,7 +23,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use serde::Deserialize;
 use tokio::io::AsyncWriteExt;
 
-use crate::config::HsxConfig;
+use crate::config::FetchiumConfig;
 
 const MANIFEST_URL: &str = "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json";
 
@@ -32,7 +32,7 @@ const MANIFEST_URL: &str = "https://googlechromelabs.github.io/chrome-for-testin
 /// Resolve Chrome binary using the priority chain described in the module docs.
 ///
 /// Returns `None` if no Chrome/Chromium is found anywhere on the system.
-pub fn resolve_chrome_path(config: &HsxConfig) -> Option<PathBuf> {
+pub fn resolve_chrome_path(config: &FetchiumConfig) -> Option<PathBuf> {
     // 1. Env var override
     if let Ok(val) = std::env::var("FETCHIUM_CHROME_PATH") {
         let p = PathBuf::from(&val);

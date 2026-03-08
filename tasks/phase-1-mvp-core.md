@@ -83,8 +83,8 @@ Replace the existing scaffold with a production client:
 //! PRD SS14: Domain-aware scheduler with per-domain concurrency caps.
 //! PRD SS44: Structured errors with retry info.
 
-use crate::config::HsxConfig;
-use crate::error::{ErrorKind, HsxError, HsxResult, StructuredError};
+use crate::config::FetchiumConfig;
+use crate::error::{ErrorKind, FetchiumError, FetchiumResult, StructuredError};
 use dashmap::DashMap;
 use reqwest::{Client, Response, StatusCode};
 use std::sync::Arc;
@@ -111,7 +111,7 @@ struct DomainState {
 #[derive(Clone)]
 pub struct HttpClient {
     inner: Client,
-    config: Arc<HsxConfig>,
+    config: Arc<FetchiumConfig>,
     /// Per-domain rate limiting state.
     domain_delays: Arc<DashMap<String, DomainState>>,
 }
@@ -130,7 +130,7 @@ pub struct FetchResult {
 
 impl HttpClient {
     /// Create a new HTTP client from config.
-    pub fn new(config: &HsxConfig) -> HsxResult<Self> {
+    pub fn new(config: &FetchiumConfig) -> FetchiumResult<Self> {
         let client = Client::builder()
             .user_agent(&config.fetch.user_agent)
             .timeout(Duration::from_secs(config.fetch.timeout_secs))
@@ -143,7 +143,7 @@ impl HttpClient {
             .pool_max_idle_per_host(10)
             .pool_idle_timeout(Duration::from_secs(90))
             .build()
-            .map_err(HsxError::Network)?;
+            .map_err(FetchiumError::Network)?;
 
         Ok(Self {
             inner: client,
@@ -158,7 +158,7 @@ impl HttpClient {
     }
 
     /// Get the config reference.
-    pub fn config(&self) -> &HsxConfig {
+    pub fn config(&self) -> &FetchiumConfig {
         &self.config
     }
 
@@ -225,11 +225,11 @@ impl HttpClient {
 
     /// Fetch a URL with retries, rate limiting, and size enforcement.
     /// Returns the response body as a string along with metadata.
-    pub async fn fetch(&self, url: &str) -> HsxResult<FetchResult> {
+    pub async fn fetch(&self, url: &str) -> FetchiumResult<FetchResult> {
         let domain = Self::extract_domain(url);
         let start = Instant::now();
         let max_size = self.config.fetch.max_page_size;
-        let mut last_err: Option<HsxError> = None;
+        let mut last_err: Option<FetchiumError> = None;
 
         for attempt in 0..=MAX_RETRIES {
             if attempt > 0 {
@@ -249,7 +249,7 @@ impl HttpClient {
                     if !status.is_success() {
                         if Self::is_retryable_status(status) && attempt < MAX_RETRIES {
                             warn!("Retryable status {status} for {url}");
-                            last_err = Some(HsxError::Structured(StructuredError {
+                            last_err = Some(FetchiumError::Structured(StructuredError {
                                 kind: Self::status_to_error_kind(status),
                                 retryable: true,
                                 message: format!("HTTP {status} from {url}"),
@@ -260,7 +260,7 @@ impl HttpClient {
                             continue;
                         }
 
-                        return Err(HsxError::Structured(StructuredError {
+                        return Err(FetchiumError::Structured(StructuredError {
                             kind: Self::status_to_error_kind(status),
                             retryable: false,
                             message: format!("HTTP {status} from {url}"),
@@ -282,7 +282,7 @@ impl HttpClient {
                     let content_length = resp.content_length();
                     if let Some(len) = content_length {
                         if len > max_size {
-                            return Err(HsxError::Structured(StructuredError {
+                            return Err(FetchiumError::Structured(StructuredError {
                                 kind: ErrorKind::ExtractionFailed,
                                 retryable: false,
                                 message: format!(
@@ -308,10 +308,10 @@ impl HttpClient {
                     let body = resp
                         .text()
                         .await
-                        .map_err(HsxError::Network)?;
+                        .map_err(FetchiumError::Network)?;
 
                     if body.len() as u64 > max_size {
-                        return Err(HsxError::Structured(StructuredError {
+                        return Err(FetchiumError::Structured(StructuredError {
                             kind: ErrorKind::ExtractionFailed,
                             retryable: false,
                             message: format!(
@@ -338,17 +338,17 @@ impl HttpClient {
                     if e.is_timeout() || e.is_connect() {
                         if attempt < MAX_RETRIES {
                             warn!("Transient error for {url}: {e}");
-                            last_err = Some(HsxError::Network(e));
+                            last_err = Some(FetchiumError::Network(e));
                             continue;
                         }
                     }
-                    return Err(HsxError::Network(e));
+                    return Err(FetchiumError::Network(e));
                 }
             }
         }
 
         Err(last_err.unwrap_or_else(|| {
-            HsxError::Structured(StructuredError {
+            FetchiumError::Structured(StructuredError {
                 kind: ErrorKind::NetworkTimeout,
                 retryable: false,
                 message: format!("All {MAX_RETRIES} retries exhausted for {url}"),
@@ -360,7 +360,7 @@ impl HttpClient {
     }
 
     /// Convenience: fetch a URL and return just the body text.
-    pub async fn fetch_text(&self, url: &str) -> HsxResult<String> {
+    pub async fn fetch_text(&self, url: &str) -> FetchiumResult<String> {
         let result = self.fetch(url).await?;
         Ok(result.body)
     }
@@ -372,7 +372,7 @@ mod tests {
 
     #[test]
     fn client_creation() {
-        let config = HsxConfig::default();
+        let config = FetchiumConfig::default();
         let client = HttpClient::new(&config);
         assert!(client.is_ok());
     }
@@ -1305,13 +1305,13 @@ crates/fetchium-cli/src/commands/fetch.rs  -- Full implementation
 
 use crate::cli::FetchArgs;
 use colored::Colorize;
-use hsx_core::config::HsxConfig;
+use hsx_core::config::FetchiumConfig;
 use hsx_core::extract::pipeline;
 use hsx_core::http::HttpClient;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::Instant;
 
-pub async fn run(args: FetchArgs, config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(args: FetchArgs, config: &FetchiumConfig) -> anyhow::Result<()> {
     let start = Instant::now();
 
     // Show progress spinner
@@ -1425,7 +1425,7 @@ crates/fetchium-core/src/search/
 //! Uses the lite HTML version which has no bot detection and returns
 //! clean, easily parseable HTML with search results.
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::HttpClient;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
@@ -1581,7 +1581,7 @@ impl SearchBackend for DuckDuckGoBackend {
         &self,
         query: &str,
         max_results: u32,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         info!("DDG search: {query:?} (max {max_results})");
 
         // DDG lite uses POST form submission
@@ -1594,16 +1594,16 @@ impl SearchBackend for DuckDuckGoBackend {
             .form(&form_params)
             .send()
             .await
-            .map_err(HsxError::Network)?;
+            .map_err(FetchiumError::Network)?;
 
         if !response.status().is_success() {
-            return Err(HsxError::Search(format!(
+            return Err(FetchiumError::Search(format!(
                 "DDG returned status {}",
                 response.status()
             )));
         }
 
-        let html = response.text().await.map_err(HsxError::Network)?;
+        let html = response.text().await.map_err(FetchiumError::Network)?;
         let results = self.parse_results(&html, max_results);
 
         info!("DDG returned {} results for {query:?}", results.len());
@@ -1711,7 +1711,7 @@ mod tests {
         </body></html>
         "#;
 
-        let config = crate::config::HsxConfig::default();
+        let config = crate::config::FetchiumConfig::default();
         let client = HttpClient::new(&config).unwrap();
         let backend = DuckDuckGoBackend::new(client);
         let results = backend.parse_results(html, 10);
@@ -1742,7 +1742,7 @@ pub mod duckduckgo;
 pub mod orchestrator;
 
 use async_trait::async_trait;
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::types::{BackendId, ResultItem};
 
 /// Trait for search backends.
@@ -1757,7 +1757,7 @@ pub trait SearchBackend: Send + Sync {
     }
 
     /// Execute a search query and return results.
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>>;
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>>;
 }
 ```
 
@@ -1817,7 +1817,7 @@ crates/fetchium-core/src/search/
 //! 5. RANK (Phase 1: by backend rank; Phase 2: HyperFusion)
 //! 6. RETURN top N
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::http::HttpClient;
 use crate::search::duckduckgo::DuckDuckGoBackend;
 use crate::search::SearchBackend;
@@ -1889,7 +1889,7 @@ impl SearchOrchestrator {
         &self,
         query: &str,
         max_results: Option<u32>,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let max = max_results.unwrap_or(self.config.max_total_results);
         let per_backend = self.config.max_results_per_backend;
 
@@ -2133,14 +2133,14 @@ crates/fetchium-cli/src/commands/search.rs  -- Full implementation
 
 use crate::cli::SearchArgs;
 use colored::Colorize;
-use hsx_core::config::HsxConfig;
+use hsx_core::config::FetchiumConfig;
 use hsx_core::http::HttpClient;
 use hsx_core::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
 use hsx_core::types::BackendId;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::{Duration, Instant};
 
-pub async fn run(args: SearchArgs, config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(args: SearchArgs, config: &FetchiumConfig) -> anyhow::Result<()> {
     let start = Instant::now();
 
     let pb = ProgressBar::new_spinner();
@@ -3893,7 +3893,7 @@ crates/fetchium-cli/src/commands/agent_search.rs  -- Full implementation
 //! extraction and PDS tiering for token-efficient agent consumption.
 
 use crate::cli::AgentSearchArgs;
-use hsx_core::config::HsxConfig;
+use hsx_core::config::FetchiumConfig;
 use hsx_core::extract::pipeline;
 use hsx_core::http::HttpClient;
 use hsx_core::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
@@ -3903,7 +3903,7 @@ use hsx_core::types::*;
 use std::time::Instant;
 use tracing::{debug, info, warn};
 
-pub async fn run(args: AgentSearchArgs, config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(args: AgentSearchArgs, config: &FetchiumConfig) -> anyhow::Result<()> {
     let start = Instant::now();
 
     let client = HttpClient::new(config)?;
@@ -4089,7 +4089,7 @@ crates/fetchium-cli/src/commands/agent_fetch.rs  -- Full implementation
 //! awareness, and returns structured JSON with typed segments.
 
 use crate::cli::AgentFetchArgs;
-use hsx_core::config::HsxConfig;
+use hsx_core::config::FetchiumConfig;
 use hsx_core::extract::pipeline;
 use hsx_core::http::HttpClient;
 use hsx_core::token::counter::count_tokens;
@@ -4098,7 +4098,7 @@ use hsx_core::token::qatbe;
 use hsx_core::types::*;
 use std::time::Instant;
 
-pub async fn run(args: AgentFetchArgs, config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(args: AgentFetchArgs, config: &FetchiumConfig) -> anyhow::Result<()> {
     let start = Instant::now();
 
     let client = HttpClient::new(config)?;
@@ -4231,7 +4231,7 @@ crates/fetchium-core/src/rank/
 //! Phase 1: standalone BM25 scoring for result re-ranking.
 //! Phase 2: integrated into the full 8-signal HyperFusion pipeline.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::types::ResultItem;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
@@ -4250,7 +4250,7 @@ pub struct Bm25Scorer {
 
 impl Bm25Scorer {
     /// Create a new BM25 scorer with an in-memory index.
-    pub fn new() -> HsxResult<Self> {
+    pub fn new() -> FetchiumResult<Self> {
         let mut schema_builder = Schema::builder();
 
         let title_field = schema_builder.add_text_field("title", TEXT | STORED);
@@ -4270,11 +4270,11 @@ impl Bm25Scorer {
     }
 
     /// Index a set of documents for BM25 scoring.
-    pub fn index_documents(&self, documents: &[ScoringDocument]) -> HsxResult<()> {
+    pub fn index_documents(&self, documents: &[ScoringDocument]) -> FetchiumResult<()> {
         let mut writer: IndexWriter = self
             .index
             .writer(50_000_000) // 50MB heap
-            .map_err(|e| crate::error::HsxError::Extraction(e.to_string()))?;
+            .map_err(|e| crate::error::FetchiumError::Extraction(e.to_string()))?;
 
         for doc_data in documents {
             writer
@@ -4283,26 +4283,26 @@ impl Bm25Scorer {
                     self.body_field => doc_data.body.as_str(),
                     self.url_field => doc_data.url.as_str(),
                 ))
-                .map_err(|e| crate::error::HsxError::Extraction(e.to_string()))?;
+                .map_err(|e| crate::error::FetchiumError::Extraction(e.to_string()))?;
         }
 
         writer
             .commit()
-            .map_err(|e| crate::error::HsxError::Extraction(e.to_string()))?;
+            .map_err(|e| crate::error::FetchiumError::Extraction(e.to_string()))?;
 
         info!("Indexed {} documents for BM25 scoring", documents.len());
         Ok(())
     }
 
     /// Score a query against indexed documents, returning ranked URLs with scores.
-    pub fn score(&self, query: &str, top_n: usize) -> HsxResult<Vec<ScoredResult>> {
+    pub fn score(&self, query: &str, top_n: usize) -> FetchiumResult<Vec<ScoredResult>> {
         let reader = self
             .index
             .reader_builder()
             .reload_policy(ReloadPolicy::Manual)
             .try_into()
             .map_err(|e: tantivy::TantivyError| {
-                crate::error::HsxError::Extraction(e.to_string())
+                crate::error::FetchiumError::Extraction(e.to_string())
             })?;
 
         let searcher = reader.searcher();
@@ -4312,18 +4312,18 @@ impl Bm25Scorer {
 
         let parsed_query = query_parser
             .parse_query(query)
-            .map_err(|e| crate::error::HsxError::Extraction(e.to_string()))?;
+            .map_err(|e| crate::error::FetchiumError::Extraction(e.to_string()))?;
 
         let top_docs = searcher
             .search(&parsed_query, &TopDocs::with_limit(top_n))
-            .map_err(|e| crate::error::HsxError::Extraction(e.to_string()))?;
+            .map_err(|e| crate::error::FetchiumError::Extraction(e.to_string()))?;
 
         let mut results = Vec::new();
 
         for (score, doc_address) in top_docs {
             let doc: TantivyDocument = searcher
                 .doc(doc_address)
-                .map_err(|e| crate::error::HsxError::Extraction(e.to_string()))?;
+                .map_err(|e| crate::error::FetchiumError::Extraction(e.to_string()))?;
 
             let url = doc
                 .get_first(self.url_field)
@@ -4354,7 +4354,7 @@ impl Bm25Scorer {
         &self,
         items: &mut [ResultItem],
         query: &str,
-    ) -> HsxResult<()> {
+    ) -> FetchiumResult<()> {
         // Index the items
         let docs: Vec<ScoringDocument> = items
             .iter()
@@ -4591,7 +4591,7 @@ impl MemoryCache {
         Self { cache }
     }
 
-    /// Create from HsxConfig cache settings.
+    /// Create from FetchiumConfig cache settings.
     pub fn from_config(config: &crate::config::CacheConfig) -> Self {
         Self::new(config.memory_max_entries, config.ttl_secs)
     }

@@ -23,7 +23,7 @@ fetchium/
 User query
     │
     ▼
-fetchium-cli (clap parse + HsxConfig)
+fetchium-cli (clap parse + FetchiumConfig)
     │
     ▼
 fetchium-core pipeline:
@@ -60,8 +60,8 @@ fetchium-core pipeline:
 fetchium-core/src/
 ├── lib.rs            # Crate root, module declarations
 ├── types.rs          # All shared data types
-├── config.rs         # HsxConfig (TOML + env var loading)
-├── error.rs          # HsxError + StructuredError taxonomy
+├── config.rs         # FetchiumConfig (TOML + env var loading)
+├── error.rs          # FetchiumError + StructuredError taxonomy
 │
 ├── http/             # HTTP layer
 │   ├── client.rs     # HttpClient: pooling, retries, rate limiting

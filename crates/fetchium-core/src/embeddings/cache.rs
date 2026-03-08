@@ -3,7 +3,7 @@
 //! Avoids re-computing embeddings for frequently queried texts.
 //! Embeddings are stored as raw little-endian f32 BLOB (384 × 4 = 1536 bytes each).
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use rusqlite::{Connection, OptionalExtension};
 use sha2::{Digest, Sha256};
 use std::path::Path;
@@ -17,7 +17,7 @@ pub struct EmbeddingCache {
 
 impl EmbeddingCache {
     /// Open (or create) the cache at `db_path`.
-    pub fn new(db_path: &Path) -> Result<Self, HsxError> {
+    pub fn new(db_path: &Path) -> Result<Self, FetchiumError> {
         let conn = Connection::open(db_path)?;
         // WAL mode for concurrent access
         conn.execute_batch(
@@ -41,7 +41,7 @@ impl EmbeddingCache {
     }
 
     /// Look up a cached embedding. Returns `None` on cache miss.
-    pub fn get(&self, text: &str) -> Result<Option<Vec<f32>>, HsxError> {
+    pub fn get(&self, text: &str) -> Result<Option<Vec<f32>>, FetchiumError> {
         let hash = Self::hash_text(text);
         let conn = self.conn.lock().unwrap();
         let mut stmt =
@@ -62,7 +62,7 @@ impl EmbeddingCache {
     }
 
     /// Store an embedding in the cache.
-    pub fn put(&self, text: &str, embedding: &[f32]) -> Result<(), HsxError> {
+    pub fn put(&self, text: &str, embedding: &[f32]) -> Result<(), FetchiumError> {
         let hash = Self::hash_text(text);
         let blob: Vec<u8> = embedding.iter().flat_map(|f| f.to_le_bytes()).collect();
         let conn = self.conn.lock().unwrap();
@@ -74,7 +74,7 @@ impl EmbeddingCache {
     }
 
     /// Delete cache entries older than `max_age_secs` seconds.
-    pub fn evict_older_than(&self, max_age_secs: u64) -> Result<usize, HsxError> {
+    pub fn evict_older_than(&self, max_age_secs: u64) -> Result<usize, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let deleted = conn.execute(
             "DELETE FROM embedding_cache \
@@ -86,7 +86,7 @@ impl EmbeddingCache {
     }
 
     /// Number of cached embeddings.
-    pub fn len(&self) -> Result<usize, HsxError> {
+    pub fn len(&self) -> Result<usize, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let count: i64 =
             conn.query_row("SELECT COUNT(*) FROM embedding_cache", [], |r| r.get(0))?;
@@ -94,7 +94,7 @@ impl EmbeddingCache {
     }
 
     /// Returns `true` if the cache contains no entries.
-    pub fn is_empty(&self) -> Result<bool, HsxError> {
+    pub fn is_empty(&self) -> Result<bool, FetchiumError> {
         Ok(self.len()? == 0)
     }
 }

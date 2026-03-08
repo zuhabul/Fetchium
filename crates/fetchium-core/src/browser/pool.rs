@@ -93,11 +93,11 @@ mod headless_impl {
             }
         }
 
-        /// Create a pool from `HsxConfig`, using the full priority-chain Chrome resolution.
+        /// Create a pool from `FetchiumConfig`, using the full priority-chain Chrome resolution.
         ///
         /// This is the preferred constructor — it honours `fetchium setup --headless` downloads,
         /// env var overrides, and config file paths automatically.
-        pub fn from_config(tier: BrowserTier, config: &crate::config::HsxConfig) -> Self {
+        pub fn from_config(tier: BrowserTier, config: &crate::config::FetchiumConfig) -> Self {
             let chrome_path = crate::setup::chromium::resolve_chrome_path(config);
             Self::new_with_path(tier, chrome_path)
         }

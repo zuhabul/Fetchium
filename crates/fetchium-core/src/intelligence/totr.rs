@@ -10,7 +10,7 @@
 
 use std::fmt::Write as FmtWrite;
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 
@@ -228,7 +228,7 @@ pub fn decompose_query_heuristic(query: &str, max_branches: usize) -> Vec<(Strin
 ///
 /// `ai_complete_fn` is an async callback:
 /// ```text
-/// |prompt: String| async { Ok::<String, HsxError>(response_text) }
+/// |prompt: String| async { Ok::<String, FetchiumError>(response_text) }
 /// ```
 pub async fn decompose_query<F, Fut>(
     query: &str,
@@ -237,7 +237,7 @@ pub async fn decompose_query<F, Fut>(
 ) -> Vec<(String, Vec<String>)>
 where
     F: Fn(String) -> Fut,
-    Fut: std::future::Future<Output = Result<String, HsxError>>,
+    Fut: std::future::Future<Output = Result<String, FetchiumError>>,
 {
     let prompt = format!(
         "Decompose this research question into {max_branches} distinct perspectives. \

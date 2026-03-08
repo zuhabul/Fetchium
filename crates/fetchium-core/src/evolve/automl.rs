@@ -4,7 +4,7 @@
 //! tune the 8 HyperFusion signal weights. Requires ≥50 feedback events
 //! before updating; otherwise returns default weights.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 
@@ -109,7 +109,7 @@ pub struct AutoMlTuner {
 }
 
 impl AutoMlTuner {
-    pub fn new(db_path: &std::path::Path) -> HsxResult<Self> {
+    pub fn new(db_path: &std::path::Path) -> FetchiumResult<Self> {
         let conn = Connection::open(db_path)?;
         conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS feedback_events (
@@ -135,7 +135,7 @@ impl AutoMlTuner {
     }
 
     /// Record a feedback event.
-    pub fn record(&self, event: &FeedbackEvent) -> HsxResult<()> {
+    pub fn record(&self, event: &FeedbackEvent) -> FetchiumResult<()> {
         let signals = serde_json::to_string(&event.signals)?;
         self.conn.execute(
             "INSERT INTO feedback_events (query, result_url, pos_shown, signals, clicked, recorded_at)
@@ -153,7 +153,7 @@ impl AutoMlTuner {
     }
 
     /// Count recorded events.
-    pub fn event_count(&self) -> HsxResult<usize> {
+    pub fn event_count(&self) -> FetchiumResult<usize> {
         let n: i64 = self
             .conn
             .query_row("SELECT COUNT(*) FROM feedback_events", [], |r| r.get(0))?;
@@ -161,7 +161,7 @@ impl AutoMlTuner {
     }
 
     /// Load current tuned weights (falls back to Default if not yet tuned).
-    pub fn load_weights(&self) -> HsxResult<HyperFusionWeights> {
+    pub fn load_weights(&self) -> FetchiumResult<HyperFusionWeights> {
         let row: rusqlite::Result<String> =
             self.conn
                 .query_row("SELECT weights FROM tuned_weights WHERE id=1", [], |r| {
@@ -176,7 +176,7 @@ impl AutoMlTuner {
     /// Run one gradient-descent update pass over all stored events.
     ///
     /// Returns `None` if fewer than `min_events` events are stored.
-    pub fn tune(&self) -> HsxResult<Option<HyperFusionWeights>> {
+    pub fn tune(&self) -> FetchiumResult<Option<HyperFusionWeights>> {
         if self.event_count()? < self.min_events {
             return Ok(None);
         }
@@ -255,7 +255,7 @@ impl AutoMlTuner {
     }
 
     /// Return a human-readable training report.
-    pub fn report(&self) -> HsxResult<String> {
+    pub fn report(&self) -> FetchiumResult<String> {
         let count = self.event_count()?;
         let weights = self.load_weights()?;
         Ok(format!(

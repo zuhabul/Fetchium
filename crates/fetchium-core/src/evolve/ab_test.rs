@@ -3,7 +3,7 @@
 //! Uses a deterministic hash-based assignment so the same user (identified
 //! by a stable session ID) always gets the same variant.
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
@@ -127,7 +127,7 @@ pub struct VariantStats {
 pub fn compute_stats(
     results: &[AbResult],
     metric: &str,
-) -> HsxResult<(VariantStats, VariantStats)> {
+) -> FetchiumResult<(VariantStats, VariantStats)> {
     let values_a: Vec<f64> = results
         .iter()
         .filter(|r| r.metric == metric && r.variant == Variant::A)
@@ -140,7 +140,7 @@ pub fn compute_stats(
         .collect();
 
     if values_a.is_empty() || values_b.is_empty() {
-        return Err(HsxError::Config(format!(
+        return Err(FetchiumError::Config(format!(
             "insufficient data for metric '{metric}' in A/B analysis"
         )));
     }

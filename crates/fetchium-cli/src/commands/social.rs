@@ -15,7 +15,7 @@
 
 use anyhow::Result;
 use colored::Colorize;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::social::{
     facebook::{analysis as fb_analysis, pipeline as fb_pipeline, types::FacebookPipelineConfig},
@@ -68,7 +68,7 @@ fn resolve_platform(mut args: SocialArgs) -> SocialArgs {
 }
 
 /// Run the `fetchium social` command.
-pub async fn run(args: SocialArgs, config: &HsxConfig, format: Format) -> Result<()> {
+pub async fn run(args: SocialArgs, config: &FetchiumConfig, format: Format) -> Result<()> {
     let args = resolve_platform(args);
     let http = HttpClient::new(config)?;
 
@@ -147,7 +147,7 @@ async fn run_twitter(
     query: String,
     max: usize,
     trends: bool,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {
@@ -194,7 +194,7 @@ async fn run_reddit(
     query: String,
     subreddits: Vec<String>,
     max: usize,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {
@@ -230,7 +230,7 @@ async fn run_reddit(
 async fn run_tiktok(
     query: String,
     max: usize,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {
@@ -266,7 +266,7 @@ async fn run_tiktok(
 async fn run_hackernews(
     query: String,
     max: usize,
-    _config: &HsxConfig,
+    _config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {
@@ -318,7 +318,7 @@ async fn run_youtube_social(
     query: String,
     max: usize,
     deep: bool,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {
@@ -409,7 +409,7 @@ async fn run_facebook(
     query: String,
     max: usize,
     token: Option<String>,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {
@@ -460,7 +460,7 @@ async fn run_facebook(
 async fn run_unified(
     args: &SocialArgs,
     platforms: Vec<SocialPlatform>,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {

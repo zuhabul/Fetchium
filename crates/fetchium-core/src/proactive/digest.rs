@@ -1,6 +1,6 @@
 //! Intelligent digest builder — weekly/daily topic summaries (PRD §33.3).
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use serde::{Deserialize, Serialize};
 
 /// A compiled digest of recent research findings.
@@ -124,7 +124,7 @@ impl Digest {
         md
     }
 
-    pub fn to_json(&self) -> HsxResult<String> {
+    pub fn to_json(&self) -> FetchiumResult<String> {
         Ok(serde_json::to_string_pretty(self)?)
     }
 }

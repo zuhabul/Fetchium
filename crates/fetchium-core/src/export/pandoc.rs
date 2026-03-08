@@ -6,7 +6,7 @@
 //! Pandoc is required for all export formats. A clear error message with
 //! install instructions is shown when Pandoc is not found.
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use std::io::Write as IoWrite;
 use std::path::Path;
 use std::process::Command;
@@ -29,11 +29,11 @@ fn typst_available() -> bool {
 }
 
 /// Check that Typst is installed and return its version string.
-pub fn check_typst() -> Result<String, HsxError> {
+pub fn check_typst() -> Result<String, FetchiumError> {
     let output = Command::new("typst")
         .arg("--version")
         .output()
-        .map_err(|_| HsxError::ExternalTool(format!("Typst not found. {TYPST_INSTALL_HELP}")))?;
+        .map_err(|_| FetchiumError::ExternalTool(format!("Typst not found. {TYPST_INSTALL_HELP}")))?;
 
     let version = String::from_utf8_lossy(&output.stdout);
     let first_line = version
@@ -45,11 +45,11 @@ pub fn check_typst() -> Result<String, HsxError> {
 }
 
 /// Check that Pandoc is installed and return its version string.
-pub fn check_pandoc() -> Result<String, HsxError> {
+pub fn check_pandoc() -> Result<String, FetchiumError> {
     let output = Command::new("pandoc")
         .arg("--version")
         .output()
-        .map_err(|_| HsxError::ExternalTool(format!("Pandoc not found. {PANDOC_INSTALL_HELP}")))?;
+        .map_err(|_| FetchiumError::ExternalTool(format!("Pandoc not found. {PANDOC_INSTALL_HELP}")))?;
 
     let version = String::from_utf8_lossy(&output.stdout);
     let first_line = version
@@ -64,7 +64,7 @@ pub fn check_pandoc() -> Result<String, HsxError> {
 ///
 /// Engine priority: **typst** (~1s) → **xelatex** (Unicode) → pandoc default engine.
 /// Install typst with `brew install typst` for the fastest export experience.
-pub fn export_pdf(markdown: &str, output_path: &Path, title: Option<&str>) -> Result<(), HsxError> {
+pub fn export_pdf(markdown: &str, output_path: &Path, title: Option<&str>) -> Result<(), FetchiumError> {
     check_pandoc()?;
 
     let tmp_path = std::env::temp_dir().join(format!("fetchium-export-{}.md", uuid_v4()));
@@ -94,7 +94,7 @@ pub fn export_pdf(markdown: &str, output_path: &Path, title: Option<&str>) -> Re
     if success {
         Ok(())
     } else {
-        Err(HsxError::ExternalTool(
+        Err(FetchiumError::ExternalTool(
             "Pandoc PDF generation failed. Install Typst (brew install typst) for fast PDF export, \
              or a LaTeX engine (xelatex, pdflatex, or tectonic) as fallback."
                 .into(),
@@ -115,7 +115,7 @@ fn try_pandoc_pdf(src: &Path, dst: &Path, engine: Option<&str>) -> bool {
 }
 
 /// Export a markdown string to DOCX via Pandoc.
-pub fn export_docx(markdown: &str, output_path: &Path) -> Result<(), HsxError> {
+pub fn export_docx(markdown: &str, output_path: &Path) -> Result<(), FetchiumError> {
     check_pandoc()?;
 
     let tmp_path = std::env::temp_dir().join(format!("fetchium-export-{}.md", uuid_v4()));
@@ -138,7 +138,7 @@ pub fn export_docx(markdown: &str, output_path: &Path) -> Result<(), HsxError> {
     if status.success() {
         Ok(())
     } else {
-        Err(HsxError::ExternalTool(
+        Err(FetchiumError::ExternalTool(
             "Pandoc DOCX generation failed.".into(),
         ))
     }
@@ -163,7 +163,7 @@ mod tests {
         // Either Pandoc is installed (Ok) or not (ExternalTool error).
         match check_pandoc() {
             Ok(version) => assert!(version.to_lowercase().contains("pandoc")),
-            Err(HsxError::ExternalTool(msg)) => assert!(msg.contains("Pandoc")),
+            Err(FetchiumError::ExternalTool(msg)) => assert!(msg.contains("Pandoc")),
             Err(e) => panic!("Unexpected error: {e}"),
         }
     }
@@ -173,7 +173,7 @@ mod tests {
         // Either Typst is installed (Ok) or not (ExternalTool error).
         match check_typst() {
             Ok(version) => assert!(!version.is_empty()),
-            Err(HsxError::ExternalTool(msg)) => assert!(msg.contains("Typst")),
+            Err(FetchiumError::ExternalTool(msg)) => assert!(msg.contains("Typst")),
             Err(e) => panic!("Unexpected error: {e}"),
         }
     }

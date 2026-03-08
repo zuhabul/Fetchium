@@ -11,7 +11,7 @@
 //! 3. Invidious captions API (community instance)
 //! 4. Piped captions API (community instance)
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::client::HttpClient;
 use crate::youtube::types::*;
 use std::time::Duration;
@@ -34,8 +34,8 @@ const TRANSCRIPT_TIMEOUT_SECS: u64 = 15;
 pub async fn fetch_transcript(
     video_id: &str,
     http: &HttpClient,
-    config: &crate::config::HsxConfig,
-) -> HsxResult<EnhancedTranscript> {
+    config: &crate::config::FetchiumConfig,
+) -> FetchiumResult<EnhancedTranscript> {
     let (tx, mut rx) =
         tokio::sync::mpsc::channel::<(Vec<TranscriptEntry>, TranscriptSource, String)>(8);
 
@@ -155,7 +155,7 @@ pub async fn fetch_transcript(
         }
     }
 
-    Err(HsxError::YouTube(format!(
+    Err(FetchiumError::YouTube(format!(
         "No transcript available for video {video_id}. \
          Caption sources returned nothing and Whisper ASR fallback also failed. \
          Ensure yt-dlp and openai-whisper are installed: \
@@ -256,7 +256,7 @@ async fn fetch_via_watch_page(
     video_id: &str,
     http: &HttpClient,
     timeout: Duration,
-) -> HsxResult<(Vec<TranscriptEntry>, String)> {
+) -> FetchiumResult<(Vec<TranscriptEntry>, String)> {
     let url = format!("https://www.youtube.com/watch?v={video_id}&hl=en");
 
     let html = tokio::time::timeout(timeout, async {
@@ -271,13 +271,13 @@ async fn fetch_via_watch_page(
             .header("Accept-Language", "en-US,en;q=0.9")
             .send()
             .await
-            .map_err(HsxError::Network)?
+            .map_err(FetchiumError::Network)?
             .text()
             .await
-            .map_err(HsxError::Network)
+            .map_err(FetchiumError::Network)
     })
     .await
-    .map_err(|_| HsxError::YouTube("Watch page request timed out".into()))??;
+    .map_err(|_| FetchiumError::YouTube("Watch page request timed out".into()))??;
 
     let api_key = extract_innertube_api_key(&html).unwrap_or_else(|| INNERTUBE_API_KEY.to_string());
 
@@ -309,7 +309,7 @@ async fn fetch_via_android_innertube(
     video_id: &str,
     http: &HttpClient,
     timeout: Duration,
-) -> HsxResult<(Vec<TranscriptEntry>, String)> {
+) -> FetchiumResult<(Vec<TranscriptEntry>, String)> {
     fetch_innertube_with_client(
         video_id,
         http,
@@ -333,7 +333,7 @@ async fn fetch_via_tvhtml5(
     video_id: &str,
     http: &HttpClient,
     timeout: Duration,
-) -> HsxResult<(Vec<TranscriptEntry>, String)> {
+) -> FetchiumResult<(Vec<TranscriptEntry>, String)> {
     fetch_innertube_with_client(
         video_id,
         http,
@@ -369,7 +369,7 @@ async fn fetch_innertube_with_client(
     client_name: &str,
     client_version: &str,
     user_agent: &str,
-) -> HsxResult<(Vec<TranscriptEntry>, String)> {
+) -> FetchiumResult<(Vec<TranscriptEntry>, String)> {
     let innertube_url =
         format!("https://www.youtube.com/youtubei/v1/player?key={api_key}&prettyPrint=false");
     let body = serde_json::json!({
@@ -393,21 +393,21 @@ async fn fetch_innertube_with_client(
             .body(body)
             .send()
             .await
-            .map_err(HsxError::Network)?
+            .map_err(FetchiumError::Network)?
             .text()
             .await
-            .map_err(HsxError::Network)
+            .map_err(FetchiumError::Network)
     })
     .await
-    .map_err(|_| HsxError::YouTube(format!("Innertube ({client_name}) request timed out")))??;
+    .map_err(|_| FetchiumError::YouTube(format!("Innertube ({client_name}) request timed out")))??;
 
     let v: serde_json::Value = serde_json::from_str(&response_text)
-        .map_err(|e| HsxError::YouTube(format!("Innertube JSON parse: {e}")))?;
+        .map_err(|e| FetchiumError::YouTube(format!("Innertube JSON parse: {e}")))?;
 
     let tracks = v["captions"]["playerCaptionsTracklistRenderer"]["captionTracks"]
         .as_array()
         .ok_or_else(|| {
-            HsxError::YouTube(
+            FetchiumError::YouTube(
                 "No caption tracks in Innertube response (video may have no captions)".into(),
             )
         })?;
@@ -440,7 +440,7 @@ async fn fetch_innertube_with_client(
                 })
             })
             .or_else(|| tracks.first())
-            .ok_or_else(|| HsxError::YouTube("No caption tracks available".into()))?;
+            .ok_or_else(|| FetchiumError::YouTube("No caption tracks available".into()))?;
 
         let lang = selected["languageCode"]
             .as_str()
@@ -448,7 +448,7 @@ async fn fetch_innertube_with_client(
             .to_string();
         let url = selected["baseUrl"]
             .as_str()
-            .ok_or_else(|| HsxError::YouTube("No baseUrl in caption track".into()))?
+            .ok_or_else(|| FetchiumError::YouTube("No baseUrl in caption track".into()))?
             .replace("&fmt=srv3", ""); // ANDROID/TVHTML5 URLs are XML — don't add &fmt=json3
         (lang, url)
     }; // `selected` borrow dropped here so we can iterate `tracks` again below
@@ -528,7 +528,7 @@ async fn fetch_innertube_with_client(
 }
 
 /// Fetch raw caption XML from a URL with a timeout.
-async fn fetch_caption_xml(url: &str, http: &HttpClient, timeout: Duration) -> HsxResult<String> {
+async fn fetch_caption_xml(url: &str, http: &HttpClient, timeout: Duration) -> FetchiumResult<String> {
     tokio::time::timeout(timeout, async {
         http.client()
             .get(url)
@@ -538,13 +538,13 @@ async fn fetch_caption_xml(url: &str, http: &HttpClient, timeout: Duration) -> H
             )
             .send()
             .await
-            .map_err(HsxError::Network)?
+            .map_err(FetchiumError::Network)?
             .text()
             .await
-            .map_err(HsxError::Network)
+            .map_err(FetchiumError::Network)
     })
     .await
-    .map_err(|_| HsxError::YouTube("Caption XML fetch timed out".into()))?
+    .map_err(|_| FetchiumError::YouTube("Caption XML fetch timed out".into()))?
 }
 
 // ─── Fallback Sources ──────────────────────────────────────────
@@ -558,18 +558,18 @@ async fn fetch_invidious_captions_fast(
     instance: &str,
     http: &HttpClient,
     timeout: Duration,
-) -> HsxResult<Vec<TranscriptEntry>> {
+) -> FetchiumResult<Vec<TranscriptEntry>> {
     let url = format!("{instance}/api/v1/captions/{video_id}");
     let body = tokio::time::timeout(timeout, http.fetch_text_once(&url))
         .await
-        .map_err(|_| HsxError::YouTube("Invidious captions timeout".into()))??;
+        .map_err(|_| FetchiumError::YouTube("Invidious captions timeout".into()))??;
 
     let v: serde_json::Value = serde_json::from_str(&body)
-        .map_err(|e| HsxError::YouTube(format!("Invidious captions parse: {e}")))?;
+        .map_err(|e| FetchiumError::YouTube(format!("Invidious captions parse: {e}")))?;
 
     let captions = v["captions"]
         .as_array()
-        .ok_or_else(|| HsxError::YouTube("No captions".into()))?;
+        .ok_or_else(|| FetchiumError::YouTube("No captions".into()))?;
 
     // Find English caption URL
     let en_url_str = captions
@@ -581,7 +581,7 @@ async fn fetch_invidious_captions_fast(
                 .unwrap_or(false)
         })
         .and_then(|c| c["url"].as_str())
-        .ok_or_else(|| HsxError::YouTube("No English captions in Invidious".into()))?
+        .ok_or_else(|| FetchiumError::YouTube("No English captions in Invidious".into()))?
         .to_string();
 
     let caption_url = if en_url_str.starts_with("http") {
@@ -592,7 +592,7 @@ async fn fetch_invidious_captions_fast(
 
     let caption_body = tokio::time::timeout(timeout, http.fetch_text_once(&caption_url))
         .await
-        .map_err(|_| HsxError::YouTube("Invidious caption body timeout".into()))??;
+        .map_err(|_| FetchiumError::YouTube("Invidious caption body timeout".into()))??;
 
     parse_timedtext_xml(&caption_body)
 }
@@ -603,18 +603,18 @@ async fn fetch_piped_captions_fast(
     instance: &str,
     http: &HttpClient,
     timeout: Duration,
-) -> HsxResult<Vec<TranscriptEntry>> {
+) -> FetchiumResult<Vec<TranscriptEntry>> {
     let url = format!("{instance}/streams/{video_id}");
     let body = tokio::time::timeout(timeout, http.fetch_text_once(&url))
         .await
-        .map_err(|_| HsxError::YouTube("Piped stream timeout".into()))??;
+        .map_err(|_| FetchiumError::YouTube("Piped stream timeout".into()))??;
 
     let v: serde_json::Value =
-        serde_json::from_str(&body).map_err(|e| HsxError::YouTube(format!("Piped parse: {e}")))?;
+        serde_json::from_str(&body).map_err(|e| FetchiumError::YouTube(format!("Piped parse: {e}")))?;
 
     let subtitles = v["subtitles"]
         .as_array()
-        .ok_or_else(|| HsxError::YouTube("No subtitles in Piped".into()))?;
+        .ok_or_else(|| FetchiumError::YouTube("No subtitles in Piped".into()))?;
 
     let en_url = subtitles
         .iter()
@@ -625,12 +625,12 @@ async fn fetch_piped_captions_fast(
                 .unwrap_or(false)
         })
         .and_then(|s| s["url"].as_str())
-        .ok_or_else(|| HsxError::YouTube("No English subtitles in Piped".into()))?
+        .ok_or_else(|| FetchiumError::YouTube("No English subtitles in Piped".into()))?
         .to_string();
 
     let sub_body = tokio::time::timeout(timeout, http.fetch_text_once(&en_url))
         .await
-        .map_err(|_| HsxError::YouTube("Piped subtitle body timeout".into()))??;
+        .map_err(|_| FetchiumError::YouTube("Piped subtitle body timeout".into()))??;
 
     parse_timedtext_xml(&sub_body)
 }
@@ -650,7 +650,7 @@ async fn fetch_piped_captions_fast(
 ///
 /// Requires: `pip install yt-dlp openai-whisper` (or `faster-whisper` for 2× speed).
 /// Returns `Err` if yt-dlp or whisper are not installed — caller falls back gracefully.
-async fn fetch_via_whisper(video_id: &str) -> HsxResult<(Vec<TranscriptEntry>, String)> {
+async fn fetch_via_whisper(video_id: &str) -> FetchiumResult<(Vec<TranscriptEntry>, String)> {
     use tokio::process::Command;
 
     // Check that both tools are available before starting heavy work.
@@ -662,7 +662,7 @@ async fn fetch_via_whisper(video_id: &str) -> HsxResult<(Vec<TranscriptEntry>, S
     let whisper_ok = Command::new("whisper").arg("--help").output().await.is_ok();
 
     if !ytdlp_ok || !whisper_ok {
-        return Err(HsxError::YouTube(
+        return Err(FetchiumError::YouTube(
             "Whisper ASR requires yt-dlp and openai-whisper: \
              `pip install yt-dlp openai-whisper`"
                 .into(),
@@ -689,12 +689,12 @@ async fn fetch_via_whisper(video_id: &str) -> HsxResult<(Vec<TranscriptEntry>, S
             .output(),
     )
     .await
-    .map_err(|_| HsxError::YouTube("yt-dlp audio download timed out (120s)".into()))?
-    .map_err(|e| HsxError::YouTube(format!("yt-dlp failed: {e}")))?;
+    .map_err(|_| FetchiumError::YouTube("yt-dlp audio download timed out (120s)".into()))?
+    .map_err(|e| FetchiumError::YouTube(format!("yt-dlp failed: {e}")))?;
 
     if !yt_out.status.success() {
         let _ = tokio::fs::remove_dir_all(&tmp_dir).await;
-        return Err(HsxError::YouTube(format!(
+        return Err(FetchiumError::YouTube(format!(
             "yt-dlp audio download failed: {}",
             String::from_utf8_lossy(&yt_out.stderr)
         )));
@@ -704,7 +704,7 @@ async fn fetch_via_whisper(video_id: &str) -> HsxResult<(Vec<TranscriptEntry>, S
     let mut audio_path: Option<std::path::PathBuf> = None;
     let mut rd = tokio::fs::read_dir(&tmp_dir)
         .await
-        .map_err(|e| HsxError::YouTube(format!("failed to read ASR temp dir: {e}")))?;
+        .map_err(|e| FetchiumError::YouTube(format!("failed to read ASR temp dir: {e}")))?;
     while let Ok(Some(entry)) = rd.next_entry().await {
         let p = entry.path();
         if p.is_file() {
@@ -723,7 +723,7 @@ async fn fetch_via_whisper(video_id: &str) -> HsxResult<(Vec<TranscriptEntry>, S
         }
     }
     let audio_path = audio_path.ok_or_else(|| {
-        HsxError::YouTube("yt-dlp did not produce an audio file for Whisper".into())
+        FetchiumError::YouTube("yt-dlp did not produce an audio file for Whisper".into())
     })?;
 
     // Step 2: Run Whisper transcription.
@@ -763,14 +763,14 @@ async fn fetch_via_whisper(video_id: &str) -> HsxResult<(Vec<TranscriptEntry>, S
         whisper_cmd.output(),
     )
     .await
-    .map_err(|_| HsxError::YouTube(format!("Whisper timed out ({whisper_timeout_secs}s)")))?
-    .map_err(|e| HsxError::YouTube(format!("Whisper failed: {e}")))?;
+    .map_err(|_| FetchiumError::YouTube(format!("Whisper timed out ({whisper_timeout_secs}s)")))?
+    .map_err(|e| FetchiumError::YouTube(format!("Whisper failed: {e}")))?;
 
     let _ = tokio::fs::remove_file(&audio_path).await;
 
     if !whisper_out.status.success() {
         let _ = tokio::fs::remove_dir_all(&tmp_dir).await;
-        return Err(HsxError::YouTube(format!(
+        return Err(FetchiumError::YouTube(format!(
             "Whisper failed: {}",
             String::from_utf8_lossy(&whisper_out.stderr)
         )));
@@ -780,7 +780,7 @@ async fn fetch_via_whisper(video_id: &str) -> HsxResult<(Vec<TranscriptEntry>, S
     let json_path = tmp_dir.join("audio.json");
     let json_content = tokio::fs::read_to_string(&json_path)
         .await
-        .map_err(|e| HsxError::YouTube(format!("Whisper JSON output not found: {e}")))?;
+        .map_err(|e| FetchiumError::YouTube(format!("Whisper JSON output not found: {e}")))?;
 
     let _ = tokio::fs::remove_dir_all(&tmp_dir).await;
 
@@ -801,9 +801,9 @@ fn whisper_model_from_env() -> String {
 ///
 /// Whisper JSON format: `{"language": "english", "segments": [{"start": 0.0, "end": 2.5, "text": "..."}]}`
 /// Returns `(entries, language_code)` where language_code is an ISO 639-1 code (e.g. "en", "bn").
-fn parse_whisper_json(json: &str) -> HsxResult<(Vec<TranscriptEntry>, String)> {
+fn parse_whisper_json(json: &str) -> FetchiumResult<(Vec<TranscriptEntry>, String)> {
     let v: serde_json::Value = serde_json::from_str(json)
-        .map_err(|e| HsxError::YouTube(format!("Whisper JSON parse: {e}")))?;
+        .map_err(|e| FetchiumError::YouTube(format!("Whisper JSON parse: {e}")))?;
 
     // Whisper outputs the language name in English (e.g. "english", "bengali").
     // Map common names to ISO 639-1 codes; default to "und" (undetermined) if unknown.
@@ -812,7 +812,7 @@ fn parse_whisper_json(json: &str) -> HsxResult<(Vec<TranscriptEntry>, String)> {
 
     let segments = v["segments"]
         .as_array()
-        .ok_or_else(|| HsxError::YouTube("No segments in Whisper output".into()))?;
+        .ok_or_else(|| FetchiumError::YouTube("No segments in Whisper output".into()))?;
 
     let entries: Vec<TranscriptEntry> = segments
         .iter()
@@ -833,7 +833,7 @@ fn parse_whisper_json(json: &str) -> HsxResult<(Vec<TranscriptEntry>, String)> {
         .collect();
 
     if entries.is_empty() {
-        return Err(HsxError::YouTube(
+        return Err(FetchiumError::YouTube(
             "Whisper produced no transcript segments".into(),
         ));
     }
@@ -872,7 +872,7 @@ fn whisper_lang_to_iso(name: &str) -> &'static str {
 // ─── XML Parser (fallback for non-json3 sources) ───────────────
 
 /// Parse YouTube timedtext XML into transcript entries.
-fn parse_timedtext_xml(xml: &str) -> HsxResult<Vec<TranscriptEntry>> {
+fn parse_timedtext_xml(xml: &str) -> FetchiumResult<Vec<TranscriptEntry>> {
     let re = once_cell::sync::Lazy::new(|| {
         regex::Regex::new(
             r#"<text[^>]*start="([0-9.]+)"[^>]*(?:dur="([0-9.]+)")?[^>]*>([^<]*)</text>"#,
@@ -901,7 +901,7 @@ fn parse_timedtext_xml(xml: &str) -> HsxResult<Vec<TranscriptEntry>> {
     }
 
     if entries.is_empty() {
-        return Err(HsxError::YouTube(
+        return Err(FetchiumError::YouTube(
             "No transcript entries parsed from XML".into(),
         ));
     }

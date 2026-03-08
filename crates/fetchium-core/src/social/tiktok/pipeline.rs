@@ -1,7 +1,7 @@
 //! TikTok intelligence pipeline — full orchestration.
 
-use crate::config::HsxConfig;
-use crate::error::HsxResult;
+use crate::config::FetchiumConfig;
+use crate::error::FetchiumResult;
 use crate::http::client::HttpClient;
 use crate::social::tiktok::{analysis, search, types::*};
 use std::time::Instant;
@@ -9,9 +9,9 @@ use std::time::Instant;
 /// Run the full TikTok intelligence pipeline.
 pub async fn run_tiktok_pipeline(
     config_tt: &TikTokPipelineConfig,
-    _config: &HsxConfig,
+    _config: &FetchiumConfig,
     http: &HttpClient,
-) -> HsxResult<TikTokPipelineResult> {
+) -> FetchiumResult<TikTokPipelineResult> {
     let started = Instant::now();
 
     // Parallel: search videos + fetch trends

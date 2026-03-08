@@ -1,6 +1,6 @@
 //! Synthesize Agent — assembles final research report from verified findings (PRD §8.8).
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use crate::research::amrs::agent::Agent;
 use crate::research::amrs::channel::{
     AgentMessage, AgentReceiver, AgentSender, AgentType, AmrsFinding, AmrsSource, AuditEntry,
@@ -67,7 +67,7 @@ impl Agent for SynthesizeAgent {
         AgentType::Synthesize
     }
 
-    async fn run(&self, mut rx: AgentReceiver, tx: AgentSender) -> Result<(), HsxError> {
+    async fn run(&self, mut rx: AgentReceiver, tx: AgentSender) -> Result<(), FetchiumError> {
         while let Some(msg) = rx.recv().await {
             match msg {
                 AgentMessage::SpawnSynthesize {

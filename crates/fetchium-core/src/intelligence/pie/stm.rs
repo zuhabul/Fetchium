@@ -9,7 +9,7 @@
 use rusqlite::Connection;
 use std::sync::Mutex;
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use crate::intelligence::enable_wal;
 
 pub struct SourceTrustMemory {
@@ -18,7 +18,7 @@ pub struct SourceTrustMemory {
 
 impl SourceTrustMemory {
     /// Open or create the STM database at `db_path`.
-    pub fn new(db_path: &std::path::Path) -> Result<Self, HsxError> {
+    pub fn new(db_path: &std::path::Path) -> Result<Self, FetchiumError> {
         let conn = Connection::open(db_path)?;
         enable_wal(&conn)?;
         conn.execute_batch(
@@ -47,7 +47,7 @@ impl SourceTrustMemory {
         domain: &str,
         success: bool,
         relevance: f64,
-    ) -> Result<f64, HsxError> {
+    ) -> Result<f64, FetchiumError> {
         let conn = self.conn.lock().unwrap();
 
         // Insert-or-ignore to seed the row.
@@ -89,7 +89,7 @@ impl SourceTrustMemory {
     }
 
     /// Get trust score for a domain. Returns `0.5` (uninformed prior) if unknown.
-    pub fn get_trust(&self, domain: &str) -> Result<f64, HsxError> {
+    pub fn get_trust(&self, domain: &str) -> Result<f64, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let score = conn
             .query_row(
@@ -102,7 +102,7 @@ impl SourceTrustMemory {
     }
 
     /// Top `limit` trusted domains (requiring at least 5 fetches).
-    pub fn top_trusted(&self, limit: usize) -> Result<Vec<(String, f64)>, HsxError> {
+    pub fn top_trusted(&self, limit: usize) -> Result<Vec<(String, f64)>, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT domain, trust_score FROM domain_trust
@@ -120,14 +120,14 @@ impl SourceTrustMemory {
     }
 
     /// Count of tracked domains.
-    pub fn domain_count(&self) -> Result<u64, HsxError> {
+    pub fn domain_count(&self) -> Result<u64, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let n: i64 = conn.query_row("SELECT COUNT(*) FROM domain_trust", [], |row| row.get(0))?;
         Ok(n as u64)
     }
 
     /// Reset all trust data (VACUUM for privacy).
-    pub fn reset(&self) -> Result<(), HsxError> {
+    pub fn reset(&self) -> Result<(), FetchiumError> {
         let conn = self.conn.lock().unwrap();
         conn.execute_batch("DELETE FROM domain_trust; VACUUM;")?;
         Ok(())

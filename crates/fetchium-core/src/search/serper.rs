@@ -4,7 +4,7 @@
 //! Also queries Scholar and News endpoints for diverse source types.
 //! API key required: set `SERPER_API_KEY` env var or `search.serper_api_key` in config.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::http::HttpClient;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
@@ -252,7 +252,7 @@ impl SearchBackend for SerperBackend {
         BackendId::Serper
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         let (organic, scholar, news) = tokio::join!(
             self.search_organic(query, max_results, None),
             self.search_scholar(query),
@@ -276,7 +276,7 @@ impl SearchBackend for SerperBackend {
         query: &str,
         max_results: u32,
         ctx: &SearchContext,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let tbs = Self::time_range_to_tbs(ctx.time_range);
         let (organic, scholar, news) = tokio::join!(
             self.search_organic(query, max_results, tbs),

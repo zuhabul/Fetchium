@@ -155,8 +155,8 @@ pub mod test_utils;
 
 /// Re-export commonly used types.
 pub mod prelude {
-    pub use crate::config::HsxConfig;
-    pub use crate::error::{HsxError, HsxResult};
+    pub use crate::config::FetchiumConfig;
+    pub use crate::error::{FetchiumError, FetchiumResult};
     pub use crate::rank::{detect_intent, hyperfusion_rank, QueryIntent};
     pub use crate::types::*;
 }

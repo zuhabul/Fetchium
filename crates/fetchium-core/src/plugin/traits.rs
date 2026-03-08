@@ -1,6 +1,6 @@
 //! Plugin trait definitions for all 6 plugin types (PRD §29).
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use async_trait::async_trait;
 
 /// Plugin type classification.
@@ -36,8 +36,8 @@ pub trait Plugin: Send + Sync {
     fn description(&self) -> &str {
         ""
     }
-    fn init(&mut self, config: &serde_json::Value) -> Result<(), HsxError>;
-    fn shutdown(&mut self) -> Result<(), HsxError>;
+    fn init(&mut self, config: &serde_json::Value) -> Result<(), FetchiumError>;
+    fn shutdown(&mut self) -> Result<(), FetchiumError>;
 }
 
 /// Backend plugin: provides a search data source.
@@ -47,7 +47,7 @@ pub trait BackendPlugin: Plugin {
         &self,
         query: &str,
         max_results: usize,
-    ) -> Result<Vec<crate::types::ResultItem>, HsxError>;
+    ) -> Result<Vec<crate::types::ResultItem>, FetchiumError>;
     fn supported_features(&self) -> BackendFeatures {
         BackendFeatures::default()
     }
@@ -68,7 +68,7 @@ pub trait ExtractorPlugin: Plugin {
         &self,
         url: &str,
         raw_html: &str,
-    ) -> Result<crate::extract::ExtractedContent, HsxError>;
+    ) -> Result<crate::extract::ExtractedContent, FetchiumError>;
     fn supported_content_types(&self) -> Vec<String>;
 }
 
@@ -78,12 +78,12 @@ pub trait RankerPlugin: Plugin {
         &self,
         query: &str,
         results: &mut Vec<crate::types::ResultItem>,
-    ) -> Result<(), HsxError>;
+    ) -> Result<(), FetchiumError>;
 }
 
 /// Formatter plugin: custom output format.
 pub trait FormatterPlugin: Plugin {
-    fn format(&self, result: &crate::types::SearchResult) -> Result<String, HsxError>;
+    fn format(&self, result: &crate::types::SearchResult) -> Result<String, FetchiumError>;
     fn file_extension(&self) -> &str;
     fn mime_type(&self) -> &str;
 }
@@ -91,12 +91,12 @@ pub trait FormatterPlugin: Plugin {
 /// Validator plugin: custom content validation.
 pub trait ValidatorPlugin: Plugin {
     /// Returns confidence score in [0.0, 1.0].
-    fn validate(&self, text: &str, url: &str) -> Result<f64, HsxError>;
+    fn validate(&self, text: &str, url: &str) -> Result<f64, FetchiumError>;
 }
 
 /// AI provider plugin: custom model backend.
 #[async_trait]
 pub trait AiProviderPlugin: Plugin {
-    async fn complete(&self, prompt: &str, max_tokens: u32) -> Result<String, HsxError>;
+    async fn complete(&self, prompt: &str, max_tokens: u32) -> Result<String, FetchiumError>;
     fn available_models(&self) -> Vec<String>;
 }

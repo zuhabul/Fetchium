@@ -215,7 +215,7 @@ pub async fn search(
 }
 
 async fn fetch_impl(
-    key: fetchium_core::error::HsxResult<String>,
+    key: fetchium_core::error::FetchiumResult<String>,
     state: AppState,
     headers: HeaderMap,
     req: FetchRequest,
