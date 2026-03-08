@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 const values = [
   {
     title: "Technically honest",
-    desc: "We only claim what we can prove. Every benchmark on this site is reproducible. Every price comparison links to the source.",
+    desc: "We aim to keep public product claims tied to current code, docs, and verifiable configuration.",
   },
   {
     title: "Privacy by default",
@@ -31,7 +31,7 @@ const values = [
 const techStack = [
   { name: "fetchium-core", desc: "All 17 algorithms: search orchestration, CEP extraction, HyperFusion ranking, QATBE, AMRS, PIE, intelligence", lang: "Rust" },
   { name: "fetchium-cli", desc: "26-command CLI: search, research, compare, doctor, provider, export, and more", lang: "Rust" },
-  { name: "fetchium-mcp", desc: "JSON-RPC 2.0 stdio MCP server with 5 tools for Claude Desktop, Cursor, and any MCP client", lang: "Rust" },
+  { name: "fetchium-mcp", desc: "JSON-RPC 2.0 MCP server with 12 tools for Claude Desktop, Cursor, and other MCP clients", lang: "Rust" },
   { name: "fetchium-api", desc: "axum 0.7 REST API server with PostgreSQL, authentication, and rate limiting", lang: "Rust" },
   { name: "apps/web", desc: "Marketing site and documentation hub", lang: "Next.js 15" },
   { name: "apps/dashboard", desc: "API key management, usage analytics, playground", lang: "Next.js 15" },

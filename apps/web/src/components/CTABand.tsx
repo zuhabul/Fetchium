@@ -44,8 +44,7 @@ export default function CTABand() {
 
           <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
             Join the open beta. 1,000 free API requests per month, all features included.
-            Upgrade when you need more — from{" "}
-            <span className="text-slate-300 font-semibold">$9/month</span>{" "}for 10,000 requests.
+            Upgrade when you need more with higher-volume Starter, Pro, and Enterprise tiers.
           </p>
 
           {/* CTAs */}
@@ -78,9 +77,9 @@ export default function CTABand() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 max-w-2xl mx-auto">
             {[
               { value: "1,000", label: "free req/mo", sub: "no expiry" },
-              { value: "$9", label: "entry plan", sub: "10K req/mo" },
+              { value: "25K", label: "Starter quota", sub: "req / month" },
               { value: "17", label: "algorithms", sub: "all included" },
-              { value: "~500ms", label: "P50 latency", sub: "search mode" },
+              { value: "12", label: "MCP tools", sub: "included" },
             ].map((stat) => (
               <div
                 key={stat.label}

@@ -182,7 +182,7 @@ const workflows = [
   {
     id: "social",
     title: "Social Monitoring",
-    description: "Track trends and sentiment across X and LinkedIn.",
+    description: "Track trends and discussion across Reddit and Hacker News.",
     Illustration: SocialIllustration,
     bg: "bg-[#070c14]",
     border: "border-slate-500/20 hover:border-slate-400/35",
@@ -192,7 +192,7 @@ const workflows = [
   {
     id: "video",
     title: "Video Intel",
-    description: "Search and transcribe within YouTube videos instantly.",
+    description: "Search and analyze YouTube videos and transcripts.",
     Illustration: VideoIllustration,
     bg: "bg-[#0d0500]",
     border: "border-orange-500/25 hover:border-orange-400/45",

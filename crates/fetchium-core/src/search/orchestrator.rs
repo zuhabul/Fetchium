@@ -697,7 +697,7 @@ impl SearchOrchestrator {
         // Don't wait for any specific backend — return early when we have enough for ranking.
         let mut all: Vec<ResultItem> = Vec::new();
         let target_results = (max as usize) * 3; // 3x headroom for dedup/ranking
-        let early_deadline = tokio::time::Instant::now() + Duration::from_millis(3200);
+        let early_deadline = tokio::time::Instant::now() + Duration::from_millis(4500);
         let mut quality_backends_responded: u32 = 0;
 
         let mut remaining: futures::stream::FuturesUnordered<_> = handles.into_iter().collect();
@@ -773,7 +773,7 @@ impl SearchOrchestrator {
                         let q = effective_query.to_string();
                         let ctx = search_ctx.clone();
                         match timeout(
-                            Duration::from_secs(8),
+                            Duration::from_secs(5),
                             ddg.search_with_context(&q, per_backend, &ctx),
                         )
                         .await
@@ -1724,7 +1724,7 @@ fn domain_key(url: &str) -> String {
 fn backend_timeout_for(id: &BackendId, default_timeout: Duration) -> Duration {
     let cap = match id {
         // SearXNG aggregates search engines through proxies — needs time for Startpage/Yahoo
-        BackendId::Searxng => Duration::from_secs(6),
+        BackendId::Searxng => Duration::from_millis(4500),
         BackendId::Reddit => Duration::from_secs(3),
         BackendId::HackerNews => Duration::from_secs(2),
         BackendId::Wikipedia => Duration::from_secs(2),

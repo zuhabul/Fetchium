@@ -9,8 +9,8 @@ const cases = [
     icon: Bot,
     title: "RAG Pipelines & AI Agents",
     description:
-      "Drop Fetchium into any LangChain, LlamaIndex, or custom RAG stack. One call returns search results, extracted content, and citations — ready for your vector store or context window.",
-    tags: ["LangChain", "LlamaIndex", "CrewAI", "AutoGen"],
+      "Drop Fetchium into custom RAG stacks and AI agents over HTTP or MCP. One call returns search results, extracted content, and citations ready for downstream retrieval or prompting.",
+    tags: ["HTTP API", "MCP", "RAG", "Agents"],
     href: "/product/search",
     color: "from-indigo-500/15 to-violet-500/10",
     border: "border-indigo-500/20 hover:border-indigo-500/40",
@@ -21,7 +21,7 @@ const cases = [
     icon: FileSearch,
     title: "Deep Research Reports",
     description:
-      "The AMRS pipeline spawns 4 agent types in parallel — each searching a different angle, cross-validating findings, and assembling an evidence graph. Research that would take hours is done in minutes.",
+      "The AMRS pipeline spawns 4 agent types in parallel, searches different angles, cross-validates findings, and assembles an evidence graph.",
     tags: ["AMRS", "Evidence graphs", "Multi-agent", "Citations"],
     href: "/product/research",
     color: "from-violet-500/15 to-purple-500/10",
@@ -33,8 +33,8 @@ const cases = [
     icon: Eye,
     title: "Content Monitoring & Diffs",
     description:
-      "Track any page, domain, or topic over time. Fetchium detects semantic changes — not just text diffs — and alerts you when the meaning of content shifts, not just when characters change.",
-    tags: ["Real-time", "Semantic diff", "Alerts", "Webhooks"],
+      "Track pages, domains, or topics over time and compare fetched content across runs for change detection workflows.",
+    tags: ["Diffs", "Monitoring", "Extraction", "Analysis"],
     href: "/product/extract",
     color: "from-blue-500/15 to-cyan-500/10",
     border: "border-blue-500/20 hover:border-blue-500/40",
@@ -57,8 +57,8 @@ const cases = [
     icon: MessageSquare,
     title: "Social Intelligence",
     description:
-      "Pull structured data from Reddit, HackerNews, and other social platforms. Understand sentiment, trending topics, and community signals across any niche — at API speed.",
-    tags: ["Reddit", "HackerNews", "Sentiment", "Trends"],
+      "Pull structured data from Reddit and Hacker News alongside broader web retrieval to understand community signals around a topic.",
+    tags: ["Reddit", "HackerNews", "Community", "Trends"],
     href: "https://docs.fetchium.com/api/social",
     color: "from-emerald-500/15 to-teal-500/10",
     border: "border-emerald-500/20 hover:border-emerald-500/40",
