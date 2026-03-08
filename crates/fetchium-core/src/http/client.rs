@@ -198,6 +198,15 @@ impl HttpClient {
         self.client_for_domain_with_locale(domain, None)
     }
 
+    /// Direct client — bypasses ALL proxy routing (residential and datacenter).
+    ///
+    /// Use for first-attempt requests where proxy is not yet needed.
+    /// If the direct attempt fails, escalate to `client_for_domain_with_locale`.
+    /// Saves DataImpulse GB when direct connections succeed (majority of requests).
+    pub fn client_direct(&self) -> Client {
+        self.inner.clone()
+    }
+
     /// Get a **fresh** client that forces a new residential IP on the next request.
     ///
     /// Use when a previous request was blocked (CAPTCHA, 403, empty SERP).

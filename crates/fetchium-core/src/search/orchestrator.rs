@@ -627,6 +627,14 @@ impl SearchOrchestrator {
                 continue;
             }
 
+            // DDG runs conditionally after Google result check (Google-first cascade).
+            // DDG internally cascades: direct_full → direct_lite → residential_full → residential_lite.
+            // We only pay DataImpulse GB on DDG when Google AND DDG-direct both fail.
+            if backend.id() == BackendId::DuckDuckGo {
+                skipped_backends.push("DDG:deferred-to-google-first-gate".to_string());
+                continue;
+            }
+
             let backend = Arc::clone(backend);
             let q = effective_query.to_string();
             let cb = self.circuit_breaker.clone();
@@ -737,6 +745,55 @@ impl SearchOrchestrator {
                 Err(e) => {
                     self.metrics.record_error("backend_panic");
                     warn!("Backend task panicked: {e}");
+                }
+            }
+        }
+
+        // Google-first gate: dispatch DDG only if Google returned fewer than 5 results.
+        // DDG's 4-tier cascade handles cost internally: direct_full → direct_lite → residential_full → residential_lite.
+        // Residential proxy is only charged when BOTH Google and DDG-direct fail.
+        {
+            let google_count = all.iter().filter(|r| r.backend == BackendId::Google).count();
+            let ddg_in_selected = selected_set.contains("DuckDuckGo");
+            let ddg_allowed = self.circuit_breaker.should_allow("DuckDuckGo");
+
+            if ddg_in_selected && ddg_allowed {
+                if google_count >= 5 {
+                    info!(
+                        "Orchestrator: Google={google_count} results — DDG skipped (cost save)"
+                    );
+                } else {
+                    info!(
+                        "Orchestrator: Google={google_count} results — dispatching DDG cascade"
+                    );
+                    if let Some(ddg_backend) = self.backends.iter().find(|b| b.id() == BackendId::DuckDuckGo) {
+                        let ddg = Arc::clone(ddg_backend);
+                        let q = effective_query.to_string();
+                        let ctx = search_ctx.clone();
+                        match timeout(
+                            Duration::from_secs(8),
+                            ddg.search_with_context(&q, per_backend, &ctx),
+                        ).await {
+                            Ok(Ok(ddg_results)) => {
+                                self.circuit_breaker.record_success("DuckDuckGo");
+                                self.backend_selector.report_outcome(
+                                    &BackendId::DuckDuckGo,
+                                    ddg_results.len(),
+                                    (ddg_results.len() as f64 / 10.0).min(1.0),
+                                );
+                                info!("DDG conditional: {} results for {:?}", ddg_results.len(), effective_query);
+                                all.extend(ddg_results);
+                            }
+                            Ok(Err(e)) => {
+                                self.circuit_breaker.record_failure("DuckDuckGo");
+                                warn!("DDG conditional error: {e}");
+                            }
+                            Err(_) => {
+                                self.circuit_breaker.record_failure("DuckDuckGo");
+                                warn!("DDG conditional timed out");
+                            }
+                        }
+                    }
                 }
             }
         }
