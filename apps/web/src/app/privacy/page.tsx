@@ -100,7 +100,7 @@ export default function PrivacyPage() {
 
             <section>
               <h2 className="text-lg font-semibold text-slate-200 mb-3">7. Self-Hosting</h2>
-              <p>If you self-host Fetchium, this Privacy Policy does not apply — you control all data processing. See the <Link href="/docs/self-hosting/docker" className="text-indigo-400 hover:text-indigo-300">self-hosting documentation</Link>.</p>
+              <p>If you self-host Fetchium, this Privacy Policy does not apply — you control all data processing. See the <Link href="https://docs.fetchium.com/self-hosting/docker" className="text-indigo-400 hover:text-indigo-300">self-hosting documentation</Link>.</p>
             </section>
 
             <section>

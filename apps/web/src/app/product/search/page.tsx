@@ -75,7 +75,7 @@ export default function ProductSearchPage() {
                 Get API Key Free →
               </Link>
               <Link
-                href="/docs/api/search"
+                href="https://docs.fetchium.com/api/search"
                 className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/3 px-6 py-3 text-sm font-semibold text-slate-300 hover:bg-white/6 transition-all"
               >
                 API Reference
@@ -173,7 +173,7 @@ export default function ProductSearchPage() {
               {[
                 { href: "/product/extract", label: "Extract API", desc: "Full CEP content extraction" },
                 { href: "/compare/tavily", label: "vs Tavily", desc: "Feature + price comparison" },
-                { href: "/docs/api/search", label: "API Reference", desc: "Full parameter documentation" },
+                { href: "https://docs.fetchium.com/api/search", label: "API Reference", desc: "Full parameter documentation" },
               ].map((l) => (
                 <Link
                   key={l.href}

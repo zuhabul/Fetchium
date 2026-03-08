@@ -20,26 +20,34 @@ export default function UsageApiReference() {
 
       <h2>Example request</h2>
       <CodeBlock language="bash" code={`curl ***REMOVED***/v1/usage \\
-  -H "Authorization: Bearer fetchium_your_key"`} />
+  -H "Authorization: Bearer $FETCHIUM_API_KEY"`} />
 
       <h2>Response</h2>
       <CodeBlock language="json" filename="response.json" code={`{
-  "key_id": "9e57a4f8-2f8a-4f7b-b527-2f5cfca2ad2f",
-  "plan": "pro",
-  "requests_this_month": 12847,
-  "requests_today": 212,
-  "tokens_this_month": 4912032,
-  "monthly_limit": 250000,
-  "quota_remaining": 237153
+  "meta": {
+    "request_id": "bc8ba5f5-4420-4c98-8865-fdabb07f8314",
+    "status": "ok",
+    "endpoint": "/v1/usage",
+    "duration_ms": 2
+  },
+  "usage": {
+    "key_id": "9e57a4f8-2f8a-4f7b-b527-2f5cfca2ad2f",
+    "plan": "pro",
+    "requests_this_month": 12847,
+    "requests_today": 212,
+    "tokens_this_month": 4912032,
+    "monthly_limit": 250000,
+    "quota_remaining": 237153
+  }
 }`} />
 
       <h2>Field notes</h2>
       <table>
         <thead><tr><th>Field</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td><code>monthly_limit</code></td><td><code>null</code> for unlimited plans</td></tr>
-          <tr><td><code>quota_remaining</code></td><td><code>null</code> when no monthly cap exists</td></tr>
-          <tr><td><code>tokens_this_month</code></td><td>Recorded token usage for current month</td></tr>
+          <tr><td><code>usage.monthly_limit</code></td><td><code>null</code> for unlimited plans</td></tr>
+          <tr><td><code>usage.quota_remaining</code></td><td><code>null</code> when no monthly cap exists</td></tr>
+          <tr><td><code>usage.tokens_this_month</code></td><td>Recorded token usage for the current month</td></tr>
         </tbody>
       </table>
 
@@ -60,10 +68,10 @@ export default function UsageApiReference() {
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/rate-limits", title: "Rate Limits", desc: "Quota policies and limits" },
-          { href: "/docs/api/search", title: "Search API", desc: "Core search endpoint" },
-          { href: "/docs/authentication", title: "Authentication", desc: "Key and admin secret setup" },
-          { href: "/docs/errors", title: "Error Reference", desc: "Error formats and codes" },
+          { href: "https://docs.fetchium.com/rate-limits", title: "Rate Limits", desc: "Quota policies and limits" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "Core search endpoint" },
+          { href: "https://docs.fetchium.com/authentication", title: "Authentication", desc: "Key and admin secret setup" },
+          { href: "https://docs.fetchium.com/errors", title: "Error Reference", desc: "Error formats and codes" },
         ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

@@ -93,7 +93,7 @@ export default function ProductExtractPage() {
                 Get API Key Free →
               </Link>
               <Link
-                href="/docs/api/scrape"
+                href="https://docs.fetchium.com/api/scrape"
                 className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/3 px-6 py-3 text-sm font-semibold text-slate-300 hover:bg-white/6 transition-all"
               >
                 API Reference
@@ -198,7 +198,7 @@ export default function ProductExtractPage() {
               {[
                 { href: "/product/search", label: "Search API", desc: "Search + extract in one call" },
                 { href: "/compare/firecrawl", label: "vs Firecrawl", desc: "Compare extraction APIs" },
-                { href: "/docs/algorithms/cep", label: "CEP Algorithm Docs", desc: "Deep technical reference" },
+                { href: "https://docs.fetchium.com/algorithms/cep", label: "CEP Algorithm Docs", desc: "Deep technical reference" },
               ].map((l) => (
                 <Link
                   key={l.href}

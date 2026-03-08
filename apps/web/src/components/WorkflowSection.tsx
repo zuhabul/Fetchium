@@ -187,7 +187,7 @@ const workflows = [
     bg: "bg-[#070c14]",
     border: "border-slate-500/20 hover:border-slate-400/35",
     glow: "bg-slate-500/5",
-    href: "/docs/api/social",
+    href: "https://docs.fetchium.com/api/social",
   },
   {
     id: "video",
@@ -197,7 +197,7 @@ const workflows = [
     bg: "bg-[#0d0500]",
     border: "border-orange-500/25 hover:border-orange-400/45",
     glow: "bg-orange-500/5",
-    href: "/docs/api/youtube",
+    href: "https://docs.fetchium.com/api/youtube",
   },
 ];
 

@@ -34,7 +34,7 @@ export default function ResearchApiReference() {
 
       <h2>Example request</h2>
       <CodeBlock language="bash" filename="research.sh" code={`curl -X POST ***REMOVED***/v1/research \\
-  -H "Authorization: Bearer fetchium_your_key" \\
+  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "query": "Compare vector databases for production use",
@@ -66,13 +66,19 @@ export default function ResearchApiReference() {
   "confidence": 0.87
 }`} />
 
+      <h2>Async alternative</h2>
+      <p>
+        For long-running research, submit the same payload to <code>/v1/research/jobs</code> and
+        poll <code>/v1/jobs/:id</code> until the result is ready.
+      </p>
+
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/api/search", title: "Search API", desc: "Fast retrieval" },
-          { href: "/docs/api/scrape", title: "Scrape API", desc: "Single URL extraction" },
-          { href: "/docs/api/youtube", title: "YouTube API", desc: "Video research workflows" },
-          { href: "/docs/errors", title: "Error Reference", desc: "Error payloads" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "Fast retrieval" },
+          { href: "https://docs.fetchium.com/api/scrape", title: "Scrape API", desc: "Single URL extraction" },
+          { href: "https://docs.fetchium.com/api/async-jobs", title: "Async Jobs", desc: "Queue and poll long-running work" },
+          { href: "https://docs.fetchium.com/api/youtube", title: "YouTube API", desc: "Video research workflows" },
         ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

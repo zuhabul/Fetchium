@@ -30,12 +30,13 @@ export default function ScrapeApiReference() {
           <tr><td><code>query</code></td><td>string</td><td>No</td><td>Optional relevance hint for extraction</td></tr>
           <tr><td><code>token_budget</code></td><td>integer</td><td>No</td><td>100-10,000</td></tr>
           <tr><td><code>format</code></td><td>string</td><td>No</td><td><code>markdown</code> | <code>text</code> | <code>html</code></td></tr>
+          <tr><td><code>schema</code></td><td>object</td><td>No</td><td>Optional JSON schema for structured extraction</td></tr>
         </tbody>
       </table>
 
       <h2>Example request</h2>
       <CodeBlock language="bash" filename="scrape.sh" code={`curl -X POST ***REMOVED***/v1/scrape \\
-  -H "Authorization: Bearer fetchium_your_key" \\
+  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "url": "https://tokio.rs/tokio/tutorial/hello-tokio",
@@ -45,6 +46,15 @@ export default function ScrapeApiReference() {
 
       <h2>Response</h2>
       <CodeBlock language="json" filename="response.json" code={`{
+  "meta": {
+    "request_id": "19b3d621-e7a6-44dc-875b-3104badb29a4",
+    "status": "ok",
+    "endpoint": "/v1/scrape",
+    "duration_ms": 428,
+    "tier": "markdown",
+    "tokens_used": 2871,
+    "result_id": "f1e2d3c4-0c80-4637-aa62-bf4ec6a714af"
+  },
   "url": "https://tokio.rs/tokio/tutorial/hello-tokio",
   "title": "Hello Tokio - Tokio",
   "content": "Tokio is an asynchronous runtime for Rust...",
@@ -56,10 +66,10 @@ export default function ScrapeApiReference() {
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/api/search", title: "Search API", desc: "Find candidate URLs" },
-          { href: "/docs/api/research", title: "Research API", desc: "Synthesize across sources" },
-          { href: "/docs/api/estimate", title: "Estimate API", desc: "Estimate token cost" },
-          { href: "/docs/errors", title: "Error Reference", desc: "Error payloads" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "Find candidate URLs" },
+          { href: "https://docs.fetchium.com/api/research", title: "Research API", desc: "Synthesize across sources" },
+          { href: "https://docs.fetchium.com/api/estimate", title: "Estimate API", desc: "Estimate token cost" },
+          { href: "https://docs.fetchium.com/errors", title: "Error Reference", desc: "Error payloads" },
         ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

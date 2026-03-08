@@ -89,7 +89,7 @@ export default function ProductResearchPage() {
                 Get API Key Free →
               </Link>
               <Link
-                href="/docs/api/research"
+                href="https://docs.fetchium.com/api/research"
                 className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/3 px-6 py-3 text-sm font-semibold text-slate-300 hover:bg-white/6 transition-all"
               >
                 API Reference
@@ -169,7 +169,7 @@ export default function ProductResearchPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
                 { href: "/product/search", label: "Search API", desc: "Quick single-query search" },
-                { href: "/docs/algorithms/cep", label: "Algorithm Docs", desc: "CEP, AMRS, RAR explained" },
+                { href: "https://docs.fetchium.com/algorithms/cep", label: "Algorithm Docs", desc: "CEP, AMRS, RAR explained" },
                 { href: "/pricing", label: "Pricing", desc: "Research API included in Growth+" },
               ].map((l) => (
                 <Link key={l.href} href={l.href} className="flex items-start gap-2 rounded-lg border border-white/6 bg-white/2 p-3 hover:bg-white/5 transition-all group">

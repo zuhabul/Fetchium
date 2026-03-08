@@ -172,10 +172,10 @@ curl "***REMOVED***/search?q=test&format=json" | jq .number_of_results`} />
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/self-hosting/config", title: "Configuration", desc: "Full config.toml reference" },
-          { href: "/docs/self-hosting/docker", title: "Docker Setup", desc: "Full stack deployment" },
-          { href: "/docs/api/search", title: "Search API", desc: "Use SearXNG-powered search" },
-          { href: "/docs/quickstart", title: "Quick Start", desc: "Make your first request" },
+          { href: "https://docs.fetchium.com/self-hosting/config", title: "Configuration", desc: "Full config.toml reference" },
+          { href: "https://docs.fetchium.com/self-hosting/docker", title: "Docker Setup", desc: "Full stack deployment" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "Use SearXNG-powered search" },
+          { href: "https://docs.fetchium.com/quickstart", title: "Quick Start", desc: "Make your first request" },
         ].map(l => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

@@ -203,7 +203,7 @@ sh scripts/setup-dev.sh   # installs commit-msg and pre-commit git hooks
 | Channel | Install command | Updated automatically |
 |---------|----------------|----------------------|
 | GitHub Releases | Direct download | ✅ On every release |
-| Shell installer | `curl -sSf https://install.fetchium.dev \| sh` | ✅ Points to latest |
+| Shell installer | `curl -sSf https://install.fetchium.com \| sh` | ✅ Points to latest |
 | npm | `npm install -g fetchium` | ✅ Via npm publish |
 | npx | `npx fetchium` | ✅ Via npm publish |
 | Homebrew | `brew install zuhabul/tap/fetchium` | ✅ Via tap PR |

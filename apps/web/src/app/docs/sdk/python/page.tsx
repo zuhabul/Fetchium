@@ -85,10 +85,10 @@ social.raise_for_status()`} />
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/sdk/typescript", title: "TypeScript SDK", desc: "TS/Node examples" },
-          { href: "/docs/sdk/curl", title: "curl Examples", desc: "Terminal examples" },
-          { href: "/docs/api/search", title: "Search API", desc: "Full API reference" },
-          { href: "/docs/api/social", title: "Social API", desc: "Social endpoints" },
+          { href: "https://docs.fetchium.com/sdk/typescript", title: "TypeScript SDK", desc: "TS/Node examples" },
+          { href: "https://docs.fetchium.com/sdk/curl", title: "curl Examples", desc: "Terminal examples" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "Full API reference" },
+          { href: "https://docs.fetchium.com/api/social", title: "Social API", desc: "Social endpoints" },
         ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

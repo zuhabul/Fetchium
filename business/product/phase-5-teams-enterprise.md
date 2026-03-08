@@ -157,7 +157,7 @@ This requires:
 - Multi-region active-passive failover (US + EU)
 - Database replication with < 5s RPO
 - Automated failover (no manual intervention)
-- Status page: https://status.fetchium.dev (Instatus or Better Uptime)
+- Status page: https://fetchium.com/status (Instatus or Better Uptime)
 
 ### 6. On-Prem Deployment
 
@@ -167,7 +167,7 @@ Enterprise customers with strict data sovereignty requirements.
 
 **A. Docker Compose (SMB enterprise)**
 ```bash
-curl -sSf https://install.fetchium.dev/enterprise | sh
+curl -sSf https://install.fetchium.com/enterprise | sh
 # Pulls: fetchium-api, fetchium-web, fetchium-worker, postgres, redis, searxng
 # Configures Traefik, generates self-signed cert, starts all services
 fetchium-admin setup  # interactive wizard
@@ -175,7 +175,7 @@ fetchium-admin setup  # interactive wizard
 
 **B. Kubernetes / Helm chart (large enterprise)**
 ```bash
-helm repo add fetchium https://charts.fetchium.dev
+helm repo add fetchium https://charts.fetchium.com
 helm install fetchium fetchium/fetchium \
   --set license.key="..." \
   --set database.host="..." \
@@ -248,7 +248,7 @@ Failover trigger:
 ### Observability (Enterprise Grade)
 - Grafana Cloud (managed Prometheus + Loki + Tempo)
 - PagerDuty: P0 (production down) → immediate page → 15-min response SLA
-- Status page: https://status.fetchium.dev with historical uptime
+- Status page: https://fetchium.com/status with historical uptime
 - Customer-facing incident communications: email + status page updates within 15 minutes
 
 ---

@@ -27,18 +27,20 @@ export default function SearchApiReference() {
           <tr><td><code>tier</code></td><td>string</td><td>No</td><td><code>key_facts</code> | <code>summary</code> | <code>detailed</code> | <code>complete</code></td></tr>
           <tr><td><code>max_sources</code></td><td>integer</td><td>No</td><td>1-20</td></tr>
           <tr><td><code>validate</code></td><td>boolean</td><td>No</td><td>Optional additional validation toggle</td></tr>
+          <tr><td><code>include_content</code></td><td>boolean</td><td>No</td><td>Inline extracted content for each result</td></tr>
         </tbody>
       </table>
 
       <h2>Example request</h2>
       <CodeBlock language="bash" filename="search.sh" code={`curl -X POST ***REMOVED***/v1/search \\
-  -H "Authorization: Bearer fetchium_your_key" \\
+  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "query": "rust async programming best practices",
     "tier": "detailed",
     "max_sources": 8,
-    "token_budget": 5000
+    "token_budget": 5000,
+    "include_content": true
   }'`} />
 
       <h2>Response</h2>
@@ -56,7 +58,8 @@ export default function SearchApiReference() {
       "title": "Async in Rust: A comprehensive guide",
       "url": "https://tokio.rs/tokio/tutorial",
       "snippet": "Tokio is an asynchronous runtime for Rust...",
-      "score": 0.941
+      "score": 0.941,
+      "content": "Async Rust lets you interleave waiting work while preserving structured code."
     }
   ]
 }`} />
@@ -64,10 +67,10 @@ export default function SearchApiReference() {
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/api/scrape", title: "Scrape API", desc: "Single URL extraction" },
-          { href: "/docs/api/research", title: "Research API", desc: "Multi-source synthesis" },
-          { href: "/docs/api/estimate", title: "Estimate API", desc: "Token estimation" },
-          { href: "/docs/errors", title: "Error Reference", desc: "Error payloads" },
+          { href: "https://docs.fetchium.com/api/scrape", title: "Scrape API", desc: "Single URL extraction" },
+          { href: "https://docs.fetchium.com/api/research", title: "Research API", desc: "Multi-source synthesis" },
+          { href: "https://docs.fetchium.com/api/async-jobs", title: "Async Jobs", desc: "Queue longer-running pipelines" },
+          { href: "https://docs.fetchium.com/api/estimate", title: "Estimate API", desc: "Token estimation" },
         ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

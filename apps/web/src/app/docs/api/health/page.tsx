@@ -63,10 +63,10 @@ export default function HealthApiReference() {
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/api/usage", title: "Usage API", desc: "Quota and monthly usage" },
-          { href: "/docs/api/search", title: "Search API", desc: "Core search endpoint" },
-          { href: "/docs/api/estimate", title: "Estimate API", desc: "Token estimate before fetch" },
-          { href: "/docs/errors", title: "Error Reference", desc: "Common error formats" },
+          { href: "https://docs.fetchium.com/api/usage", title: "Usage API", desc: "Quota and monthly usage" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "Core search endpoint" },
+          { href: "https://docs.fetchium.com/api/estimate", title: "Estimate API", desc: "Token estimate before fetch" },
+          { href: "https://docs.fetchium.com/errors", title: "Error Reference", desc: "Common error formats" },
         ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

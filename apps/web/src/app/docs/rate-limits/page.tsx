@@ -16,12 +16,12 @@ export default function RateLimits() {
 
       <h2>Plan quotas</h2>
       <table>
-        <thead><tr><th>Plan</th><th>Requests / month</th><th>Requests / minute</th><th>Price</th></tr></thead>
+        <thead><tr><th>Plan</th><th>Requests / month</th><th>Requests / minute</th><th>Notes</th></tr></thead>
         <tbody>
-          <tr><td>Free</td><td>1,000</td><td>60</td><td>$0</td></tr>
-          <tr><td>Starter</td><td>10,000</td><td>200</td><td>$19 / mo</td></tr>
-          <tr><td>Pro</td><td>100,000</td><td>500</td><td>$79 / mo</td></tr>
-          <tr><td>Enterprise</td><td>Unlimited</td><td>2,000</td><td>Custom</td></tr>
+          <tr><td>Free</td><td>1,000</td><td>60</td><td>Default self-serve tier</td></tr>
+          <tr><td>Starter</td><td>25,000</td><td>200</td><td>Plan name enforced by the auth store</td></tr>
+          <tr><td>Pro</td><td>250,000</td><td>500</td><td>Plan name enforced by the auth store</td></tr>
+          <tr><td>Enterprise</td><td>Unlimited</td><td>2,000</td><td>No monthly cap</td></tr>
         </tbody>
       </table>
 
@@ -30,24 +30,20 @@ export default function RateLimits() {
         when you subscribed.
       </div>
 
-      <h2>Rate limit headers</h2>
+      <h2>Current response headers</h2>
       <p>
-        Every API response includes headers showing your current rate limit status:
+        The current implementation always returns <code>X-Request-Id</code>. When you hit a
+        per-minute or monthly limit, the API also returns <code>Retry-After: 60</code>.
       </p>
 
       <CodeBlock language="text" filename="response-headers.txt" code={`HTTP/2 200 OK
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 847
-X-RateLimit-Reset: 2025-07-01T00:00:00Z
-X-Request-Id: req_01j8xk3m7p4qr5st6uv7wx8yz`} />
+X-Request-Id: 3f3a7acb-4f68-4ef5-9e4d-8e74b80e7ab7`} />
 
       <table>
         <thead><tr><th>Header</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td><code>X-RateLimit-Limit</code></td><td>Monthly quota for your plan</td></tr>
-          <tr><td><code>X-RateLimit-Remaining</code></td><td>Requests remaining this month</td></tr>
-          <tr><td><code>X-RateLimit-Reset</code></td><td>ISO 8601 timestamp when quota resets</td></tr>
           <tr><td><code>X-Request-Id</code></td><td>Unique request ID for support/debugging</td></tr>
+          <tr><td><code>Retry-After</code></td><td>Included on <code>429</code> responses; currently fixed at 60 seconds</td></tr>
         </tbody>
       </table>
 
@@ -67,9 +63,7 @@ X-Request-Id: req_01j8xk3m7p4qr5st6uv7wx8yz`} />
 
       <CodeBlock language="text" filename="429-headers.txt" code={`HTTP/2 429 Too Many Requests
 Retry-After: 60
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 1000
-X-RateLimit-Reset: 2025-07-01T00:00:00Z`} />
+X-Request-Id: 3f3a7acb-4f68-4ef5-9e4d-8e74b80e7ab7`} />
 
       <p>
         When the monthly quota is exhausted, you receive a <code>429</code> with code{" "}
@@ -145,19 +139,22 @@ def search_with_retry(query: str, max_retries: int = 3) -> dict:
       </p>
 
       <CodeBlock language="bash" code={`curl ***REMOVED***/v1/usage \\
-  -H "Authorization: Bearer fetchium_your_key"`} />
+  -H "Authorization: Bearer $FETCHIUM_API_KEY"`} />
 
       <CodeBlock language="json" filename="usage-response.json" code={`{
-  "plan": "free",
-  "quota": 1000,
-  "used": 153,
-  "remaining": 847,
-  "reset_at": "2025-07-01T00:00:00Z",
-  "per_minute_limit": 60,
-  "endpoints": {
-    "search": 120,
-    "research": 28,
-    "scrape": 5
+  "meta": {
+    "request_id": "ae5d9be4-1fb2-4988-b0f5-d6e1f8ea5732",
+    "status": "ok",
+    "endpoint": "/v1/usage",
+    "duration_ms": 1
+  },
+  "usage": {
+    "plan": "free",
+    "requests_this_month": 153,
+    "requests_today": 7,
+    "tokens_this_month": 48291,
+    "monthly_limit": 1000,
+    "quota_remaining": 847
   }
 }`} />
 
@@ -176,10 +173,10 @@ def search_with_retry(query: str, max_retries: int = 3) -> dict:
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/api/search", title: "Search API", desc: "Full parameter reference" },
-          { href: "/docs/authentication", title: "Authentication", desc: "Key management and rotation" },
-          { href: "/docs/errors", title: "Error Codes", desc: "All error responses documented" },
-          { href: "/docs/api/usage", title: "Usage API", desc: "Programmatic quota monitoring" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "Full parameter reference" },
+          { href: "https://docs.fetchium.com/authentication", title: "Authentication", desc: "Key management and rotation" },
+          { href: "https://docs.fetchium.com/errors", title: "Error Codes", desc: "All error responses documented" },
+          { href: "https://docs.fetchium.com/api/usage", title: "Usage API", desc: "Programmatic quota monitoring" },
         ].map(l => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

@@ -86,7 +86,7 @@ export default function ProductMCPPage() {
                 Get API Key Free →
               </Link>
               <Link
-                href="/docs/sdk/mcp"
+                href="https://docs.fetchium.com/sdk/mcp"
                 className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/3 px-6 py-3 text-sm font-semibold text-slate-300 hover:bg-white/6 transition-all"
               >
                 MCP Setup Guide
@@ -171,7 +171,7 @@ export default function ProductMCPPage() {
             <h3 className="text-base font-semibold text-slate-200 mb-4">Related</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
-                { href: "/docs/sdk/mcp", label: "MCP Setup Guide", desc: "Full setup documentation" },
+                { href: "https://docs.fetchium.com/sdk/mcp", label: "MCP Setup Guide", desc: "Full setup documentation" },
                 { href: "/product/search", label: "Search API", desc: "Direct REST API access" },
                 { href: "/pricing", label: "Pricing", desc: "MCP included in all plans" },
               ].map((l) => (

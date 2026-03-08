@@ -19,6 +19,8 @@ export default function YoutubeApiReference() {
         <tbody>
           <tr><td><code>POST</code></td><td><code>/v1/youtube/search</code></td><td>Search/rank videos</td></tr>
           <tr><td><code>POST</code></td><td><code>/v1/youtube/analyze</code></td><td>Analyze one video URL</td></tr>
+          <tr><td><code>POST</code></td><td><code>/v1/youtube/search/jobs</code></td><td>Async YouTube search</td></tr>
+          <tr><td><code>POST</code></td><td><code>/v1/youtube/analyze/jobs</code></td><td>Async video analysis</td></tr>
         </tbody>
       </table>
 
@@ -33,7 +35,7 @@ export default function YoutubeApiReference() {
       </table>
 
       <CodeBlock language="bash" filename="youtube-search.sh" code={`curl -X POST ***REMOVED***/v1/youtube/search \\
-  -H "Authorization: Bearer fetchium_your_key" \\
+  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "query": "Java learning",
@@ -53,7 +55,7 @@ export default function YoutubeApiReference() {
       </table>
 
       <CodeBlock language="bash" filename="youtube-analyze.sh" code={`curl -X POST ***REMOVED***/v1/youtube/analyze \\
-  -H "Authorization: Bearer fetchium_your_key" \\
+  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
@@ -64,38 +66,47 @@ export default function YoutubeApiReference() {
 
       <h2>Representative response shape</h2>
       <CodeBlock language="json" filename="youtube-response.json" code={`{
-  "query": "Java learning",
-  "videos": [
-    {
-      "metadata": {
-        "video_id": "abc123",
-        "title": "Java Tutorial for Beginners",
-        "channel": {
-          "name": "Example Channel",
-          "id": "UCxxxx",
-          "subscriber_count": 120000,
-          "verified": true
+  "meta": {
+    "request_id": "3ea58c50-5091-4f57-9224-7727ddfb6698",
+    "status": "ok",
+    "endpoint": "/v1/youtube/search",
+    "duration_ms": 912,
+    "query": "Java learning",
+    "tokens_used": 0
+  },
+  "data": {
+    "query": "Java learning",
+    "videos": [
+      {
+        "metadata": {
+          "video_id": "abc123",
+          "title": "Java Tutorial for Beginners",
+          "channel": {
+            "name": "Example Channel",
+            "id": "UCxxxx",
+            "subscriber_count": 120000,
+            "verified": true
+          },
+          "duration_secs": 3600,
+          "view_count": 250000,
+          "like_count": 8400,
+          "published": "2025-01-08"
         },
-        "duration_secs": 3600,
-        "view_count": 250000,
-        "like_count": 8400,
-        "published": "2025-01-08"
-      },
-      "credibility": {
-        "score": 0.78,
-        "tier": "established"
+        "credibility": {
+          "score": 0.78,
+          "tier": "established"
+        }
       }
-    }
-  ],
-  "rankings": [
-    {
-      "video_id": "abc123",
-      "final_score": 0.87,
-      "educational_score": 0.74,
-      "clickbait_score": 0.18
-    }
-  ],
-  "duration_ms": 912
+    ],
+    "rankings": [
+      {
+        "video_id": "abc123",
+        "final_score": 0.87,
+        "educational_score": 0.74,
+        "clickbait_score": 0.18
+      }
+    ]
+  }
 }`} />
 
       <p>
@@ -103,13 +114,19 @@ export default function YoutubeApiReference() {
         path, and fact checks depending on request and pipeline state.
       </p>
 
+      <p>
+        Synchronous endpoints wrap the pipeline output in <code>meta</code> plus <code>data</code>.
+        The async <code>/jobs</code> variants return a queued job first, then expose the final
+        pipeline payload under <code>result</code> when you poll <code>/v1/jobs/:id</code>.
+      </p>
+
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/api/social", title: "Social API", desc: "Cross-platform social research" },
-          { href: "/docs/api/search", title: "Search API", desc: "Web search endpoint" },
-          { href: "/docs/sdk/mcp", title: "MCP Protocol", desc: "Tool integration" },
-          { href: "/docs/api/usage", title: "Usage API", desc: "Quota monitoring" },
+          { href: "https://docs.fetchium.com/api/social", title: "Social API", desc: "Cross-platform social research" },
+          { href: "https://docs.fetchium.com/api/async-jobs", title: "Async Jobs", desc: "Queue YouTube searches and analysis" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "Web search endpoint" },
+          { href: "https://docs.fetchium.com/sdk/mcp", title: "MCP Protocol", desc: "Tool integration" },
         ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

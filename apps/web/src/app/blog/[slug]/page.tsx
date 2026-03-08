@@ -64,7 +64,7 @@ print(result)` },
         "Returns structured citations for every fact"
       ]},
       { type: "h2", content: "Further reading" },
-      { type: "p", content: "See the Fetchium API reference at /docs/api/search and the Python SDK docs at /docs/sdk/python for the full parameter reference." },
+      { type: "p", content: "See the Fetchium API reference at https://docs.fetchium.com/api/search and the Python SDK docs at https://docs.fetchium.com/sdk/python for the full parameter reference." },
     ],
   },
   "token-budgeted-extraction-llm-cost": {
@@ -177,7 +177,7 @@ export default async function BlogArticlePage({ params }: Props) {
               {[
                 { href: "/blog/token-budgeted-extraction-llm-cost", label: "Token-Budgeted Extraction: Why Context Size Matters" },
                 { href: "/product/search", label: "Fetchium Search API — Technical Deep Dive" },
-                { href: "/docs/algorithms/cep", label: "CEP Algorithm Documentation" },
+                { href: "https://docs.fetchium.com/algorithms/cep", label: "CEP Algorithm Documentation" },
                 { href: "/compare/tavily", label: "Fetchium vs Tavily Comparison" },
               ].filter(l => l.href !== `/blog/${slug}`).slice(0, 3).map((l) => (
                 <Link key={l.href} href={l.href} className="rounded-xl border border-white/6 bg-white/[0.02] p-3 text-[13px] text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">

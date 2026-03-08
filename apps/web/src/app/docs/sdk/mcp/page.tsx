@@ -17,7 +17,7 @@ export default function McpSDK() {
 
       <p>
         Use stdio for local agent integration, or run the HTTP MCP endpoint on <code>/mcp</code>
-        for remote deployments.
+        for remote deployments with <code>fetchium serve --mode mcp --transport http</code>.
       </p>
 
       <h2>Available MCP tools (12)</h2>
@@ -68,10 +68,10 @@ curl -X POST http://127.0.0.1:3471/mcp \\
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/api/search", title: "Search API", desc: "REST endpoint reference" },
-          { href: "/docs/api/youtube", title: "YouTube API", desc: "Video search and analysis" },
-          { href: "/docs/api/social", title: "Social API", desc: "Cross-platform social research" },
-          { href: "/docs/quickstart", title: "Quick Start", desc: "Get started fast" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "REST endpoint reference" },
+          { href: "https://docs.fetchium.com/api/youtube", title: "YouTube API", desc: "Video search and analysis" },
+          { href: "https://docs.fetchium.com/api/social", title: "Social API", desc: "Cross-platform social research" },
+          { href: "https://docs.fetchium.com/quickstart", title: "Quick Start", desc: "Get started fast" },
         ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

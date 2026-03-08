@@ -29,7 +29,7 @@ export default function Authentication() {
       </p>
 
       <CodeBlock language="bash" code={`curl -X POST ***REMOVED***/v1/search \\
-  -H "Authorization: Bearer fetchium_your_key_here" \\
+  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"query": "rust async programming", "tier": "summary"}'`} />
 
@@ -53,52 +53,26 @@ export default function Authentication() {
       </div>
 
       <h2>Key management</h2>
-
-      <h3>List your keys</h3>
-      <CodeBlock language="bash" code={`curl ***REMOVED***/v1/keys \\
-  -H "Authorization: Bearer fetchium_your_key"`} />
-
-      <CodeBlock language="json" filename="response.json" code={`{
-  "keys": [
-    {
-      "id": "key_abc123",
-      "name": "Production",
-      "prefix": "fetchium_4626...bb98",
-      "created_at": "2025-01-15T10:22:00Z",
-      "last_used_at": "2025-06-20T14:30:00Z",
-      "scopes": ["search", "research", "scrape"]
-    }
-  ]
-}`} />
-
-      <h3>Create a key</h3>
-      <CodeBlock language="bash" code={`curl -X POST ***REMOVED***/v1/keys \\
-  -H "Authorization: Bearer fetchium_your_key" \\
-  -H "Content-Type: application/json" \\
-  -d '{"name": "CI Pipeline", "scopes": ["search"]}'`} />
-
-      <h3>Revoke a key</h3>
-      <CodeBlock language="bash" code={`curl -X DELETE ***REMOVED***/v1/keys/key_abc123 \\
-  -H "Authorization: Bearer fetchium_your_key"`} />
+      <p>
+        End-user keys are typically created in the dashboard. The REST admin endpoints for
+        creating, listing, and revoking keys require <code>X-Admin-Secret</code> and are documented
+        separately in the admin reference.
+      </p>
 
       <h2>Error responses</h2>
       <table>
         <thead><tr><th>Status</th><th>Code</th><th>Cause</th></tr></thead>
         <tbody>
-          <tr><td><code>401</code></td><td><code>missing_auth</code></td><td>No Authorization header</td></tr>
-          <tr><td><code>401</code></td><td><code>invalid_auth</code></td><td>Malformed Bearer token</td></tr>
-          <tr><td><code>401</code></td><td><code>invalid_key</code></td><td>Key not found or revoked</td></tr>
-          <tr><td><code>403</code></td><td><code>insufficient_scope</code></td><td>Key lacks required scope</td></tr>
+          <tr><td><code>401</code></td><td><code>missing_token</code></td><td>No Bearer token was provided</td></tr>
+          <tr><td><code>401</code></td><td><code>invalid_token</code></td><td>Malformed, invalid, or revoked API key</td></tr>
           <tr><td><code>429</code></td><td><code>rate_limited</code></td><td>Quota or per-minute limit exceeded</td></tr>
         </tbody>
       </table>
 
       <CodeBlock language="json" filename="401-response.json" code={`{
-  "error": {
-    "code": "invalid_key",
-    "message": "API key not found or has been revoked.",
-    "request_id": "req_01j8xk3..."
-  }
+  "type": "https://docs.fetchium.com/errors/invalid_token",
+  "title": "Invalid or revoked API key",
+  "status": 401
 }`} />
 
       <h2>Environment variable setup</h2>
@@ -135,10 +109,10 @@ HEADERS = {
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/quickstart", title: "Quick Start", desc: "Make your first API call" },
-          { href: "/docs/rate-limits", title: "Rate Limits", desc: "Understand quotas and headers" },
-          { href: "/docs/api/search", title: "Search API", desc: "Full search reference" },
-          { href: "/docs/errors", title: "Error Reference", desc: "All error codes explained" },
+          { href: "https://docs.fetchium.com/quickstart", title: "Quick Start", desc: "Make your first API call" },
+          { href: "https://docs.fetchium.com/rate-limits", title: "Rate Limits", desc: "Understand quotas and headers" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "Full search reference" },
+          { href: "https://docs.fetchium.com/api/admin-keys", title: "Admin Keys", desc: "Create, list, and revoke keys with X-Admin-Secret" },
         ].map(l => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>
