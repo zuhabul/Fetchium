@@ -118,7 +118,6 @@ Optional heavy dependencies use Cargo features:
 | `embeddings` | `fastembed` | Semantic search, hybrid ranking |
 | `vector-search` | `usearch` | HNSW vector index |
 | `mcp` | `rmcp` | MCP server protocol |
-| `llama` | `llama-cpp-2` | Local LLM without Ollama |
 
 Build with a feature:
 ```bash

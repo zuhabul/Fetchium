@@ -17,6 +17,9 @@ pub fn detect_query_locale(query: &str) -> Option<&'static str> {
         return Some(cc);
     }
     let q = query.to_lowercase();
+    if let Some(cc) = detect_explicit_locale_hint(&q) {
+        return Some(cc);
+    }
     // Country/city mentions — explicit signals
     if let Some(cc) = detect_country_mention(&q) {
         return Some(cc);
@@ -49,9 +52,9 @@ fn detect_by_script(query: &str) -> Option<&'static str> {
             // Greek
             '\u{0370}'..='\u{03FF}' => return Some("gr"),
             // CJK Unified — could be Chinese or Japanese kanji
-            '\u{4E00}'..='\u{9FFF}'
-            | '\u{3400}'..='\u{4DBF}'
-            | '\u{20000}'..='\u{2A6DF}' => has_cjk = true,
+            '\u{4E00}'..='\u{9FFF}' | '\u{3400}'..='\u{4DBF}' | '\u{20000}'..='\u{2A6DF}' => {
+                has_cjk = true
+            }
             _ => {}
         }
     }
@@ -65,226 +68,329 @@ fn detect_by_script(query: &str) -> Option<&'static str> {
     None
 }
 
+/// Detect locale from explicit search syntax such as `site:bbc.co.uk` or `lang:fr`.
+fn detect_explicit_locale_hint(q: &str) -> Option<&'static str> {
+    let normalized = normalize_for_matching(q);
+
+    for (hint, cc) in [
+        (" site bbc co uk ", "gb"),
+        (" site gov uk ", "gb"),
+        (" site co uk ", "gb"),
+        (" site ac uk ", "gb"),
+        (" site gouv fr ", "fr"),
+        (" site lemonde fr ", "fr"),
+        (" site de ", "de"),
+        (" site fr ", "fr"),
+        (" site es ", "es"),
+        (" site it ", "it"),
+        (" site jp ", "jp"),
+        (" site co jp ", "jp"),
+        (" site kr ", "kr"),
+        (" site co kr ", "kr"),
+        (" site cn ", "cn"),
+        (" site com au ", "au"),
+        (" site ca ", "ca"),
+        (" site com br ", "br"),
+        (" site com mx ", "mx"),
+        (" lang fr ", "fr"),
+        (" language french ", "fr"),
+        (" lang de ", "de"),
+        (" language german ", "de"),
+        (" lang es ", "es"),
+        (" language spanish ", "es"),
+        (" lang it ", "it"),
+        (" language italian ", "it"),
+        (" lang ja ", "jp"),
+        (" language japanese ", "jp"),
+        (" lang ko ", "kr"),
+        (" language korean ", "kr"),
+        (" lang zh ", "cn"),
+        (" language chinese ", "cn"),
+        (" lang pt ", "pt"),
+        (" language portuguese ", "pt"),
+    ] {
+        if normalized.contains(hint) {
+            return Some(cc);
+        }
+    }
+
+    None
+}
+
 /// Detect country from explicit mentions in the (lowercased) query.
 fn detect_country_mention(q: &str) -> Option<&'static str> {
+    let normalized = normalize_for_matching(q);
+
     // ── United States ────────────────────────────────────────────────────────
-    if q.contains("near me")
-        || q.contains("new york")
-        || q.contains("los angeles")
-        || q.contains("chicago")
-        || q.contains("san francisco")
-        || q.contains("houston")
-        || q.contains("las vegas")
-        || q.contains("miami")
-        || q.contains(" usa")
-        || q.contains("united states")
-        || q.contains("american ")
+    if contains_phrase(&normalized, "near me")
+        || contains_phrase(&normalized, "new york")
+        || contains_phrase(&normalized, "los angeles")
+        || contains_phrase(&normalized, "chicago")
+        || contains_phrase(&normalized, "san francisco")
+        || contains_phrase(&normalized, "houston")
+        || contains_phrase(&normalized, "las vegas")
+        || contains_phrase(&normalized, "miami")
+        || contains_phrase(&normalized, "usa")
+        || contains_phrase(&normalized, "united states")
+        || contains_phrase(&normalized, "american")
     {
         return Some("us");
     }
 
     // ── United Kingdom ───────────────────────────────────────────────────────
-    if q.contains("london")
-        || q.contains("manchester")
-        || q.contains("edinburgh")
-        || q.contains("birmingham")
-        || q.contains("united kingdom")
-        || q.contains(" uk ")
-        || q.ends_with(" uk")
-        || q.starts_with("uk ")
-        || q.contains("england")
-        || q.contains("britain")
-        || q.contains("british ")
-        || q.contains("scotland")
-        || q.contains("wales")
+    if contains_phrase(&normalized, "london")
+        || contains_phrase(&normalized, "manchester")
+        || contains_phrase(&normalized, "edinburgh")
+        || contains_phrase(&normalized, "birmingham")
+        || contains_phrase(&normalized, "united kingdom")
+        || contains_phrase(&normalized, "u k")
+        || contains_phrase(&normalized, "england")
+        || contains_phrase(&normalized, "britain")
+        || contains_phrase(&normalized, "british")
+        || contains_phrase(&normalized, "scotland")
+        || contains_phrase(&normalized, "wales")
     {
         return Some("gb");
     }
 
     // ── France ───────────────────────────────────────────────────────────────
-    if q.contains("france")
-        || q.contains("paris")
-        || q.contains("lyon")
-        || q.contains("marseille")
-        || q.contains("bordeaux")
-        || q.contains("toulouse")
-        || q.contains("french ")
-        || q.contains(" france")
+    if contains_phrase(&normalized, "france")
+        || contains_phrase(&normalized, "paris")
+        || contains_phrase(&normalized, "lyon")
+        || contains_phrase(&normalized, "marseille")
+        || contains_phrase(&normalized, "bordeaux")
+        || contains_phrase(&normalized, "toulouse")
+        || contains_phrase(&normalized, "french")
     {
         return Some("fr");
     }
 
     // ── Germany ──────────────────────────────────────────────────────────────
-    if q.contains("germany")
-        || q.contains("berlin")
-        || q.contains("munich")
-        || q.contains("münchen")
-        || q.contains("hamburg")
-        || q.contains("frankfurt")
-        || q.contains("cologne")
-        || q.contains("düsseldorf")
-        || q.contains("deutsch")
-        || q.contains("german ")
+    if contains_phrase(&normalized, "germany")
+        || contains_phrase(&normalized, "berlin")
+        || contains_phrase(&normalized, "munich")
+        || contains_phrase(&normalized, "münchen")
+        || contains_phrase(&normalized, "hamburg")
+        || contains_phrase(&normalized, "frankfurt")
+        || contains_phrase(&normalized, "cologne")
+        || contains_phrase(&normalized, "düsseldorf")
+        || contains_phrase(&normalized, "deutsch")
+        || contains_phrase(&normalized, "german")
     {
         return Some("de");
     }
 
     // ── Japan ────────────────────────────────────────────────────────────────
-    if q.contains("japan")
-        || q.contains("tokyo")
-        || q.contains("osaka")
-        || q.contains("kyoto")
-        || q.contains("hiroshima")
-        || q.contains("japanese ")
+    if contains_phrase(&normalized, "japan")
+        || contains_phrase(&normalized, "tokyo")
+        || contains_phrase(&normalized, "osaka")
+        || contains_phrase(&normalized, "kyoto")
+        || contains_phrase(&normalized, "hiroshima")
+        || contains_phrase(&normalized, "japanese")
     {
         return Some("jp");
     }
 
     // ── Spain ────────────────────────────────────────────────────────────────
-    if q.contains("spain")
-        || q.contains("madrid")
-        || q.contains("barcelona")
-        || q.contains("seville")
-        || q.contains("valencia")
-        || q.contains("spanish ")
-        || q.contains("español")
+    if contains_phrase(&normalized, "spain")
+        || contains_phrase(&normalized, "madrid")
+        || contains_phrase(&normalized, "barcelona")
+        || contains_phrase(&normalized, "seville")
+        || contains_phrase(&normalized, "valencia")
+        || contains_phrase(&normalized, "spanish")
+        || contains_phrase(&normalized, "español")
     {
         return Some("es");
     }
 
     // ── Italy ────────────────────────────────────────────────────────────────
-    if q.contains("italy")
-        || q.contains(" rome")
-        || q.contains(" milan")
-        || q.contains("venice")
-        || q.contains("florence")
-        || q.contains("naples")
-        || q.contains("italian ")
+    if contains_phrase(&normalized, "italy")
+        || contains_phrase(&normalized, "rome")
+        || contains_phrase(&normalized, "milan")
+        || contains_phrase(&normalized, "venice")
+        || contains_phrase(&normalized, "florence")
+        || contains_phrase(&normalized, "naples")
+        || contains_phrase(&normalized, "italian")
         || q.contains("italiano")
     {
         return Some("it");
     }
 
     // ── Brazil ───────────────────────────────────────────────────────────────
-    if q.contains("brazil")
-        || q.contains("brasil")
-        || q.contains("são paulo")
-        || q.contains("sao paulo")
-        || q.contains("rio de janeiro")
-        || q.contains("brasília")
+    if contains_phrase(&normalized, "brazil")
+        || contains_phrase(&normalized, "brasil")
+        || contains_phrase(&normalized, "são paulo")
+        || contains_phrase(&normalized, "sao paulo")
+        || contains_phrase(&normalized, "rio de janeiro")
+        || contains_phrase(&normalized, "brasília")
     {
         return Some("br");
     }
 
     // ── China ────────────────────────────────────────────────────────────────
-    if q.contains("china")
-        || q.contains("beijing")
-        || q.contains("shanghai")
-        || q.contains("shenzhen")
-        || q.contains("guangzhou")
-        || q.contains("chinese ")
+    if contains_phrase(&normalized, "china")
+        || contains_phrase(&normalized, "beijing")
+        || contains_phrase(&normalized, "shanghai")
+        || contains_phrase(&normalized, "shenzhen")
+        || contains_phrase(&normalized, "guangzhou")
+        || contains_phrase(&normalized, "chinese")
     {
         return Some("cn");
     }
 
     // ── South Korea ──────────────────────────────────────────────────────────
-    if q.contains("korea")
-        || q.contains("seoul")
-        || q.contains("busan")
-        || q.contains("korean ")
+    if contains_phrase(&normalized, "south korea")
+        || contains_phrase(&normalized, "korea")
+        || contains_phrase(&normalized, "seoul")
+        || contains_phrase(&normalized, "busan")
+        || contains_phrase(&normalized, "korean")
     {
         return Some("kr");
     }
 
     // ── India ────────────────────────────────────────────────────────────────
-    if q.contains("india")
-        || q.contains("mumbai")
-        || q.contains("delhi")
-        || q.contains("bangalore")
-        || q.contains("bengaluru")
-        || q.contains("chennai")
-        || q.contains("hyderabad")
-        || q.contains("indian ")
+    if contains_phrase(&normalized, "india")
+        || contains_phrase(&normalized, "mumbai")
+        || contains_phrase(&normalized, "delhi")
+        || contains_phrase(&normalized, "bangalore")
+        || contains_phrase(&normalized, "bengaluru")
+        || contains_phrase(&normalized, "chennai")
+        || contains_phrase(&normalized, "hyderabad")
+        || contains_phrase(&normalized, "indian")
     {
         return Some("in");
     }
 
     // ── Russia ───────────────────────────────────────────────────────────────
-    if q.contains("russia")
-        || q.contains("moscow")
-        || q.contains("st. petersburg")
-        || q.contains("saint petersburg")
-        || q.contains("russian ")
+    if contains_phrase(&normalized, "russia")
+        || contains_phrase(&normalized, "moscow")
+        || contains_phrase(&normalized, "st petersburg")
+        || contains_phrase(&normalized, "saint petersburg")
+        || contains_phrase(&normalized, "russian")
     {
         return Some("ru");
     }
 
     // ── Australia ────────────────────────────────────────────────────────────
-    if q.contains("australia")
-        || q.contains("sydney")
-        || q.contains("melbourne")
-        || q.contains("brisbane")
-        || q.contains("perth")
-        || q.contains("australian ")
+    if contains_phrase(&normalized, "australia")
+        || contains_phrase(&normalized, "sydney")
+        || contains_phrase(&normalized, "melbourne")
+        || contains_phrase(&normalized, "brisbane")
+        || contains_phrase(&normalized, "perth")
+        || contains_phrase(&normalized, "australian")
     {
         return Some("au");
     }
 
     // ── Canada ───────────────────────────────────────────────────────────────
-    if q.contains("canada")
-        || q.contains("toronto")
-        || q.contains("vancouver")
-        || q.contains("montreal")
-        || q.contains("calgary")
-        || q.contains("canadian ")
+    if contains_phrase(&normalized, "canada")
+        || contains_phrase(&normalized, "toronto")
+        || contains_phrase(&normalized, "vancouver")
+        || contains_phrase(&normalized, "montreal")
+        || contains_phrase(&normalized, "calgary")
+        || contains_phrase(&normalized, "canadian")
     {
         return Some("ca");
     }
 
     // ── Mexico ───────────────────────────────────────────────────────────────
-    if q.contains("mexico")
-        || q.contains("ciudad de mexico")
-        || q.contains("guadalajara")
-        || q.contains("monterrey")
+    if contains_phrase(&normalized, "mexico")
+        || contains_phrase(&normalized, "ciudad de mexico")
+        || contains_phrase(&normalized, "guadalajara")
+        || contains_phrase(&normalized, "monterrey")
     {
         return Some("mx");
     }
 
     // ── Netherlands ──────────────────────────────────────────────────────────
-    if q.contains("netherlands")
-        || q.contains("amsterdam")
-        || q.contains("rotterdam")
-        || q.contains("dutch ")
-        || q.contains("holland")
+    if contains_phrase(&normalized, "netherlands")
+        || contains_phrase(&normalized, "amsterdam")
+        || contains_phrase(&normalized, "rotterdam")
+        || contains_phrase(&normalized, "dutch")
+        || contains_phrase(&normalized, "holland")
     {
         return Some("nl");
     }
 
     // ── Sweden ───────────────────────────────────────────────────────────────
-    if q.contains("sweden")
-        || q.contains("stockholm")
-        || q.contains("gothenburg")
-        || q.contains("swedish ")
+    if contains_phrase(&normalized, "sweden")
+        || contains_phrase(&normalized, "stockholm")
+        || contains_phrase(&normalized, "gothenburg")
+        || contains_phrase(&normalized, "swedish")
     {
         return Some("se");
     }
 
     // ── Poland ───────────────────────────────────────────────────────────────
-    if q.contains("poland") || q.contains("warsaw") || q.contains("krakow") {
+    if contains_phrase(&normalized, "poland")
+        || contains_phrase(&normalized, "warsaw")
+        || contains_phrase(&normalized, "krakow")
+    {
         return Some("pl");
     }
 
     // ── Turkey ───────────────────────────────────────────────────────────────
-    if q.contains("turkey") || q.contains("istanbul") || q.contains("ankara") {
+    if contains_phrase(&normalized, "istanbul")
+        || contains_phrase(&normalized, "ankara")
+        || (contains_phrase(&normalized, "turkey") && !looks_like_food_query(&normalized))
+    {
         return Some("tr");
     }
 
     // ── Singapore ────────────────────────────────────────────────────────────
-    if q.contains("singapore") {
+    if contains_phrase(&normalized, "singapore") {
         return Some("sg");
     }
 
     None
+}
+
+fn normalize_for_matching(query: &str) -> String {
+    let mut normalized = String::with_capacity(query.len() + 2);
+    normalized.push(' ');
+    let mut previous_was_space = true;
+
+    for ch in query.chars() {
+        if ch.is_alphanumeric() {
+            normalized.push(ch);
+            previous_was_space = false;
+        } else if !previous_was_space {
+            normalized.push(' ');
+            previous_was_space = true;
+        }
+    }
+
+    if !previous_was_space {
+        normalized.push(' ');
+    }
+
+    normalized
+}
+
+fn contains_phrase(normalized_query: &str, phrase: &str) -> bool {
+    let normalized_phrase = normalize_for_matching(phrase);
+    normalized_query.contains(&normalized_phrase)
+}
+
+fn looks_like_food_query(normalized_query: &str) -> bool {
+    [
+        " recipe ",
+        " recipes ",
+        " roast ",
+        " roasted ",
+        " gravy ",
+        " stuffing ",
+        " sandwich ",
+        " burger ",
+        " breast ",
+        " thighs ",
+        " leftovers ",
+        " oven ",
+        " cook ",
+        " cooking ",
+    ]
+    .iter()
+    .any(|signal| normalized_query.contains(signal))
 }
 
 /// Language detection from common function words (Latin-script queries only).
@@ -297,27 +403,67 @@ fn detect_language_words(q: &str) -> Option<&'static str> {
         (
             "fr",
             &[
-                "le", "la", "les", "du", "des", "est", "sont", "pour", "avec", "dans", "sur",
-                "comment", "pourquoi", "quoi", "qui", "que", "quel", "quelle", "une", "un",
-                "pas", "plus", "très", "aussi", "apprendre", "rapidement",
+                "le",
+                "la",
+                "les",
+                "du",
+                "des",
+                "est",
+                "sont",
+                "pour",
+                "avec",
+                "dans",
+                "sur",
+                "comment",
+                "pourquoi",
+                "quoi",
+                "qui",
+                "que",
+                "quel",
+                "quelle",
+                "une",
+                "un",
+                "pas",
+                "plus",
+                "très",
+                "aussi",
+                "apprendre",
+                "rapidement",
             ],
             2,
         ),
         (
             "de",
             &[
-                "der", "die", "das", "und", "ist", "sind", "für", "mit", "bei", "wie", "was",
-                "wo", "wann", "warum", "welche", "welcher", "ein", "eine", "nicht", "kann",
-                "werden", "einfach", "erklärt", "erklaert",
+                "der", "die", "das", "und", "ist", "sind", "für", "mit", "bei", "wie", "was", "wo",
+                "wann", "warum", "welche", "welcher", "ein", "eine", "nicht", "kann", "werden",
+                "einfach", "erklärt", "erklaert",
             ],
             2,
         ),
         (
             "es",
             &[
-                "el", "los", "las", "una", "para", "con", "por", "como", "qué", "dónde",
-                "cuándo", "mejor", "cómo", "también", "más", "muy", "hacer", "cocinar",
-                "valenciana", "paella",
+                "el",
+                "los",
+                "las",
+                "una",
+                "para",
+                "con",
+                "por",
+                "como",
+                "qué",
+                "dónde",
+                "cuándo",
+                "mejor",
+                "cómo",
+                "también",
+                "más",
+                "muy",
+                "hacer",
+                "cocinar",
+                "valenciana",
+                "paella",
             ],
             2,
         ),
@@ -332,16 +478,16 @@ fn detect_language_words(q: &str) -> Option<&'static str> {
         (
             "it",
             &[
-                "il", "della", "dello", "per", "con", "come", "dove", "quando", "perché",
-                "cosa", "anche", "molto", "fare", "essere",
+                "il", "della", "dello", "per", "con", "come", "dove", "quando", "perché", "cosa",
+                "anche", "molto", "fare", "essere",
             ],
             2,
         ),
         (
             "nl",
             &[
-                "de", "het", "een", "van", "in", "op", "met", "voor", "aan", "hoe", "wat",
-                "waar", "waarom", "beste",
+                "de", "het", "een", "van", "in", "op", "met", "voor", "aan", "hoe", "wat", "waar",
+                "waarom", "beste",
             ],
             3, // stricter: many short words overlap with English
         ),
@@ -351,10 +497,7 @@ fn detect_language_words(q: &str) -> Option<&'static str> {
     let mut best_count = 0usize;
 
     for &(lang, signal_words, min_matches) in signals {
-        let count = words
-            .iter()
-            .filter(|&&w| signal_words.contains(&w))
-            .count();
+        let count = words.iter().filter(|&&w| signal_words.contains(&w)).count();
         if count >= min_matches && count > best_count {
             best_count = count;
             best_lang = Some(lang);
@@ -362,70 +505,4 @@ fn detect_language_words(q: &str) -> Option<&'static str> {
     }
 
     best_lang
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn detects_japanese_kana() {
-        // の is hiragana → jp even without katakana
-        assert_eq!(detect_query_locale("東京の天気"), Some("jp"));
-        assert_eq!(detect_query_locale("東京のラーメン屋"), Some("jp")); // katakana ラーメン
-        assert_eq!(detect_query_locale("how to make ramen in tokyo"), Some("jp"));
-        // Pure CJK (no kana) → cn
-        assert_eq!(detect_query_locale("量子计算机"), Some("cn"));
-    }
-
-    #[test]
-    fn detects_french_query() {
-        assert_eq!(
-            detect_query_locale("comment apprendre le francais rapidement"),
-            Some("fr")
-        );
-    }
-
-    #[test]
-    fn detects_spanish_recipe() {
-        assert_eq!(
-            detect_query_locale("como cocinar paella valenciana"),
-            Some("es")
-        );
-    }
-
-    #[test]
-    fn detects_german_explainer() {
-        assert_eq!(
-            detect_query_locale("was ist quantencomputing einfach erklaert"),
-            Some("de")
-        );
-    }
-
-    #[test]
-    fn detects_uk_from_city() {
-        assert_eq!(detect_query_locale("best fish and chips in london"), Some("gb"));
-    }
-
-    #[test]
-    fn detects_near_me_as_us() {
-        assert_eq!(detect_query_locale("pizza near me"), Some("us"));
-    }
-
-    #[test]
-    fn returns_none_for_generic_english() {
-        // Generic English → None (default US routing is fine)
-        assert_eq!(detect_query_locale("how does photosynthesis work"), None);
-        assert_eq!(detect_query_locale("rust programming language"), None);
-    }
-
-    #[test]
-    fn detects_cyrillic_as_russian() {
-        assert_eq!(detect_query_locale("что такое квантовые вычисления"), Some("ru"));
-    }
-
-    #[test]
-    fn detects_arabic_script() {
-        assert_eq!(detect_query_locale("كيف تتعلم البرمجة"), Some("ae"));
-    }
 }

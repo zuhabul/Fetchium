@@ -1,0 +1,1098 @@
+{
+  "categories": {
+    "programming": [
+      {
+        "q": "how to implement binary search tree in python",
+        "expect_terms": [
+          "binary",
+          "search",
+          "tree",
+          "python"
+        ]
+      },
+      {
+        "q": "rust async await tutorial with examples",
+        "expect_terms": [
+          "rust",
+          "async",
+          "await"
+        ]
+      },
+      {
+        "q": "difference between TCP and UDP protocols",
+        "expect_terms": [
+          "tcp",
+          "udp"
+        ]
+      },
+      {
+        "q": "react hooks useEffect cleanup function",
+        "expect_terms": [
+          "react",
+          "useeffect",
+          "hook"
+        ]
+      },
+      {
+        "q": "kubernetes pod scheduling algorithm",
+        "expect_terms": [
+          "kubernetes",
+          "pod",
+          "schedul"
+        ]
+      },
+      {
+        "q": "git rebase vs merge when to use which",
+        "expect_terms": [
+          "git",
+          "rebase",
+          "merge"
+        ]
+      },
+      {
+        "q": "SQL window functions ROW_NUMBER RANK examples",
+        "expect_terms": [
+          "sql",
+          "window",
+          "row_number"
+        ]
+      },
+      {
+        "q": "docker compose networking between containers",
+        "expect_terms": [
+          "docker",
+          "compose",
+          "network"
+        ]
+      },
+      {
+        "q": "OAuth 2.0 authorization code flow explained",
+        "expect_terms": [
+          "oauth",
+          "authorization",
+          "code"
+        ]
+      },
+      {
+        "q": "WebAssembly performance benchmarks 2024",
+        "expect_terms": [
+          "webassembly",
+          "wasm",
+          "performance"
+        ]
+      }
+    ],
+    "ai_ml": [
+      {
+        "q": "transformer attention mechanism explained",
+        "expect_terms": [
+          "transformer",
+          "attention"
+        ]
+      },
+      {
+        "q": "fine tuning LLMs with LoRA adapters",
+        "expect_terms": [
+          "lora",
+          "fine",
+          "tun"
+        ]
+      },
+      {
+        "q": "RAG retrieval augmented generation best practices",
+        "expect_terms": [
+          "rag",
+          "retrieval",
+          "augmented"
+        ]
+      },
+      {
+        "q": "diffusion models image generation how they work",
+        "expect_terms": [
+          "diffusion",
+          "model",
+          "image"
+        ]
+      },
+      {
+        "q": "reinforcement learning from human feedback RLHF",
+        "expect_terms": [
+          "rlhf",
+          "reinforcement",
+          "human"
+        ]
+      },
+      {
+        "q": "vector database comparison pinecone vs weaviate vs chromadb",
+        "expect_terms": [
+          "vector",
+          "database"
+        ]
+      },
+      {
+        "q": "neural network backpropagation algorithm derivation",
+        "expect_terms": [
+          "backpropagation",
+          "neural"
+        ]
+      },
+      {
+        "q": "GPT-4 vs Claude vs Gemini comparison 2024",
+        "expect_terms": [
+          "gpt",
+          "claude",
+          "gemini"
+        ]
+      },
+      {
+        "q": "computer vision object detection YOLO v8",
+        "expect_terms": [
+          "yolo",
+          "object",
+          "detection"
+        ]
+      },
+      {
+        "q": "tokenization BPE vs WordPiece vs SentencePiece",
+        "expect_terms": [
+          "tokeniz",
+          "bpe"
+        ]
+      }
+    ],
+    "science": [
+      {
+        "q": "CRISPR gene editing mechanism and applications",
+        "expect_terms": [
+          "crispr",
+          "gene",
+          "edit"
+        ]
+      },
+      {
+        "q": "quantum entanglement explained simply",
+        "expect_terms": [
+          "quantum",
+          "entanglement"
+        ]
+      },
+      {
+        "q": "james webb telescope latest discoveries 2024",
+        "expect_terms": [
+          "webb",
+          "telescope"
+        ]
+      },
+      {
+        "q": "nuclear fusion energy progress ITER",
+        "expect_terms": [
+          "fusion",
+          "energy"
+        ]
+      },
+      {
+        "q": "dark matter evidence and theories",
+        "expect_terms": [
+          "dark",
+          "matter"
+        ]
+      },
+      {
+        "q": "mRNA vaccine technology how it works",
+        "expect_terms": [
+          "mrna",
+          "vaccine"
+        ]
+      },
+      {
+        "q": "plate tectonics theory evidence and mechanisms",
+        "expect_terms": [
+          "plate",
+          "tectonic"
+        ]
+      },
+      {
+        "q": "photosynthesis light reactions Calvin cycle",
+        "expect_terms": [
+          "photosynthe"
+        ]
+      },
+      {
+        "q": "gravitational waves detection LIGO",
+        "expect_terms": [
+          "gravitational",
+          "wave"
+        ]
+      },
+      {
+        "q": "antibiotic resistance mechanisms and solutions",
+        "expect_terms": [
+          "antibiotic",
+          "resistan"
+        ]
+      }
+    ],
+    "medical": [
+      {
+        "q": "type 2 diabetes management latest guidelines",
+        "expect_terms": [
+          "diabetes",
+          "type"
+        ]
+      },
+      {
+        "q": "Alzheimer disease early symptoms and diagnosis",
+        "expect_terms": [
+          "alzheimer"
+        ]
+      },
+      {
+        "q": "COVID long haulers symptoms treatment",
+        "expect_terms": [
+          "covid",
+          "long"
+        ]
+      },
+      {
+        "q": "intermittent fasting health benefits evidence",
+        "expect_terms": [
+          "intermittent",
+          "fasting"
+        ]
+      },
+      {
+        "q": "ACL tear recovery timeline and rehabilitation",
+        "expect_terms": [
+          "acl",
+          "recover"
+        ]
+      },
+      {
+        "q": "gut microbiome and mental health connection",
+        "expect_terms": [
+          "microbiome",
+          "mental"
+        ]
+      },
+      {
+        "q": "blood pressure medication side effects comparison",
+        "expect_terms": [
+          "blood",
+          "pressure"
+        ]
+      },
+      {
+        "q": "sleep apnea causes diagnosis treatment options",
+        "expect_terms": [
+          "sleep",
+          "apnea"
+        ]
+      }
+    ],
+    "finance": [
+      {
+        "q": "S&P 500 index fund vs individual stock picking",
+        "expect_terms": [
+          "index",
+          "fund"
+        ]
+      },
+      {
+        "q": "cryptocurrency regulation United States 2024",
+        "expect_terms": [
+          "crypto",
+          "regulat"
+        ]
+      },
+      {
+        "q": "how to calculate compound interest formula",
+        "expect_terms": [
+          "compound",
+          "interest"
+        ]
+      },
+      {
+        "q": "venture capital term sheet explained",
+        "expect_terms": [
+          "venture",
+          "capital",
+          "term"
+        ]
+      },
+      {
+        "q": "inflation impact on real estate prices",
+        "expect_terms": [
+          "inflation",
+          "real",
+          "estate"
+        ]
+      },
+      {
+        "q": "Roth IRA vs traditional IRA comparison",
+        "expect_terms": [
+          "roth",
+          "ira"
+        ]
+      },
+      {
+        "q": "federal reserve interest rate decision 2024",
+        "expect_terms": [
+          "federal",
+          "reserve",
+          "rate"
+        ]
+      },
+      {
+        "q": "startup valuation methods DCF vs multiples",
+        "expect_terms": [
+          "valuation",
+          "startup"
+        ]
+      }
+    ],
+    "legal": [
+      {
+        "q": "EU AI Act key requirements and timeline",
+        "expect_terms": [
+          "ai",
+          "act"
+        ]
+      },
+      {
+        "q": "software patent eligibility requirements US",
+        "expect_terms": [
+          "patent",
+          "software"
+        ]
+      },
+      {
+        "q": "GDPR data processing lawful basis explained",
+        "expect_terms": [
+          "gdpr",
+          "data"
+        ]
+      },
+      {
+        "q": "open source license comparison MIT vs Apache vs GPL",
+        "expect_terms": [
+          "license",
+          "mit",
+          "apache"
+        ]
+      },
+      {
+        "q": "section 230 reform proposals and implications",
+        "expect_terms": [
+          "section",
+          "230"
+        ]
+      }
+    ],
+    "current_events": [
+      {
+        "q": "AI regulation latest developments worldwide",
+        "expect_terms": [
+          "ai",
+          "regulat"
+        ]
+      },
+      {
+        "q": "climate change COP latest agreements",
+        "expect_terms": [
+          "climate",
+          "cop"
+        ]
+      },
+      {
+        "q": "space exploration missions planned 2025 2026",
+        "expect_terms": [
+          "space",
+          "mission"
+        ]
+      },
+      {
+        "q": "electric vehicle market share growth trends",
+        "expect_terms": [
+          "electric",
+          "vehicle"
+        ]
+      },
+      {
+        "q": "global semiconductor chip shortage status",
+        "expect_terms": [
+          "semiconductor",
+          "chip"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "q": "Feynman technique for learning explained",
+        "expect_terms": [
+          "feynman",
+          "learn"
+        ]
+      },
+      {
+        "q": "spaced repetition algorithm for studying",
+        "expect_terms": [
+          "spaced",
+          "repetition"
+        ]
+      },
+      {
+        "q": "project based learning vs traditional education",
+        "expect_terms": [
+          "project",
+          "learn"
+        ]
+      },
+      {
+        "q": "best free online courses computer science",
+        "expect_terms": [
+          "course",
+          "computer",
+          "science"
+        ]
+      },
+      {
+        "q": "how to write a research paper step by step",
+        "expect_terms": [
+          "research",
+          "paper"
+        ]
+      }
+    ],
+    "history": [
+      {
+        "q": "causes of the fall of the Roman Empire",
+        "expect_terms": [
+          "roman",
+          "empire",
+          "fall"
+        ]
+      },
+      {
+        "q": "industrial revolution impact on society",
+        "expect_terms": [
+          "industrial",
+          "revolution"
+        ]
+      },
+      {
+        "q": "cold war proxy conflicts overview",
+        "expect_terms": [
+          "cold",
+          "war"
+        ]
+      },
+      {
+        "q": "ancient Egyptian pyramid construction theories",
+        "expect_terms": [
+          "pyramid",
+          "egypt"
+        ]
+      },
+      {
+        "q": "silk road trade routes historical significance",
+        "expect_terms": [
+          "silk",
+          "road",
+          "trade"
+        ]
+      }
+    ],
+    "philosophy": [
+      {
+        "q": "trolley problem variations and philosophical implications",
+        "expect_terms": [
+          "trolley",
+          "problem"
+        ]
+      },
+      {
+        "q": "existentialism key thinkers Sartre Camus Kierkegaard",
+        "expect_terms": [
+          "existentialism"
+        ]
+      },
+      {
+        "q": "consciousness hard problem David Chalmers",
+        "expect_terms": [
+          "consciousness",
+          "hard",
+          "problem"
+        ]
+      },
+      {
+        "q": "stoicism practical applications modern life",
+        "expect_terms": [
+          "stoic"
+        ]
+      },
+      {
+        "q": "utilitarianism vs deontological ethics comparison",
+        "expect_terms": [
+          "utilitari",
+          "deontolog"
+        ]
+      }
+    ],
+    "environment": [
+      {
+        "q": "carbon capture technology current status",
+        "expect_terms": [
+          "carbon",
+          "capture"
+        ]
+      },
+      {
+        "q": "renewable energy cost comparison solar wind nuclear",
+        "expect_terms": [
+          "renewable",
+          "energy"
+        ]
+      },
+      {
+        "q": "ocean acidification effects on marine ecosystems",
+        "expect_terms": [
+          "ocean",
+          "acidif"
+        ]
+      },
+      {
+        "q": "deforestation Amazon rainforest latest data",
+        "expect_terms": [
+          "deforestation",
+          "amazon"
+        ]
+      },
+      {
+        "q": "microplastics health effects research findings",
+        "expect_terms": [
+          "microplastic"
+        ]
+      }
+    ],
+    "edge_single_word": [
+      {
+        "q": "photosynthesis",
+        "expect_terms": [
+          "photosynthe"
+        ]
+      },
+      {
+        "q": "kubernetes",
+        "expect_terms": [
+          "kubernetes"
+        ]
+      },
+      {
+        "q": "inflation",
+        "expect_terms": [
+          "inflation"
+        ]
+      },
+      {
+        "q": "mitochondria",
+        "expect_terms": [
+          "mitochondria"
+        ]
+      },
+      {
+        "q": "recursion",
+        "expect_terms": [
+          "recursion"
+        ]
+      }
+    ],
+    "edge_long_query": [
+      {
+        "q": "what is the best programming language for building high performance web servers that handle millions of concurrent connections",
+        "expect_terms": [
+          "programming",
+          "language",
+          "web",
+          "server"
+        ]
+      },
+      {
+        "q": "how does the human immune system respond to novel viruses and what role do T cells and antibodies play in fighting infection",
+        "expect_terms": [
+          "immune",
+          "virus"
+        ]
+      },
+      {
+        "q": "step by step guide to deploying a machine learning model to production using Docker Kubernetes and CI CD pipelines",
+        "expect_terms": [
+          "deploy",
+          "machine",
+          "learning",
+          "docker"
+        ]
+      }
+    ],
+    "edge_ambiguous": [
+      {
+        "q": "apple",
+        "expect_terms": [
+          "apple"
+        ]
+      },
+      {
+        "q": "python",
+        "expect_terms": [
+          "python"
+        ]
+      },
+      {
+        "q": "rust",
+        "expect_terms": [
+          "rust"
+        ]
+      },
+      {
+        "q": "java",
+        "expect_terms": [
+          "java"
+        ]
+      },
+      {
+        "q": "mercury",
+        "expect_terms": [
+          "mercury"
+        ]
+      },
+      {
+        "q": "swift",
+        "expect_terms": [
+          "swift"
+        ]
+      },
+      {
+        "q": "cell",
+        "expect_terms": [
+          "cell"
+        ]
+      }
+    ],
+    "edge_questions": [
+      {
+        "q": "why is the sky blue",
+        "expect_terms": [
+          "sky",
+          "blue"
+        ]
+      },
+      {
+        "q": "how many planets are in the solar system",
+        "expect_terms": [
+          "planet",
+          "solar"
+        ]
+      },
+      {
+        "q": "what causes earthquakes",
+        "expect_terms": [
+          "earthquake",
+          "cause"
+        ]
+      },
+      {
+        "q": "when was the internet invented",
+        "expect_terms": [
+          "internet",
+          "invent"
+        ]
+      },
+      {
+        "q": "who invented the transistor",
+        "expect_terms": [
+          "transistor",
+          "invent"
+        ]
+      }
+    ],
+    "edge_comparison": [
+      {
+        "q": "rust vs go performance comparison",
+        "expect_terms": [
+          "rust",
+          "go"
+        ]
+      },
+      {
+        "q": "PostgreSQL vs MySQL which database to choose",
+        "expect_terms": [
+          "postgres",
+          "mysql"
+        ]
+      },
+      {
+        "q": "React vs Vue vs Angular framework comparison 2024",
+        "expect_terms": [
+          "react",
+          "vue",
+          "angular"
+        ]
+      },
+      {
+        "q": "Linux vs Windows server security comparison",
+        "expect_terms": [
+          "linux",
+          "windows"
+        ]
+      },
+      {
+        "q": "Python vs Julia for scientific computing",
+        "expect_terms": [
+          "python",
+          "julia"
+        ]
+      }
+    ],
+    "edge_howto": [
+      {
+        "q": "how to set up SSH keys for GitHub",
+        "expect_terms": [
+          "ssh",
+          "key",
+          "github"
+        ]
+      },
+      {
+        "q": "how to optimize PostgreSQL query performance",
+        "expect_terms": [
+          "postgres",
+          "query",
+          "perform"
+        ]
+      },
+      {
+        "q": "how to build a REST API with FastAPI Python",
+        "expect_terms": [
+          "fastapi",
+          "api"
+        ]
+      },
+      {
+        "q": "how to configure nginx reverse proxy",
+        "expect_terms": [
+          "nginx",
+          "reverse",
+          "proxy"
+        ]
+      },
+      {
+        "q": "how to reduce Docker image size",
+        "expect_terms": [
+          "docker",
+          "image",
+          "size"
+        ]
+      }
+    ],
+    "edge_debug": [
+      {
+        "q": "CORS error Access-Control-Allow-Origin fix",
+        "expect_terms": [
+          "cors",
+          "access-control"
+        ]
+      },
+      {
+        "q": "segmentation fault debugging C program",
+        "expect_terms": [
+          "segmentation",
+          "fault"
+        ]
+      },
+      {
+        "q": "JavaScript heap out of memory Node.js fix",
+        "expect_terms": [
+          "heap",
+          "memory",
+          "node"
+        ]
+      },
+      {
+        "q": "SSL certificate expired error troubleshooting",
+        "expect_terms": [
+          "ssl",
+          "certificate"
+        ]
+      },
+      {
+        "q": "OOM killed Linux process memory limit",
+        "expect_terms": [
+          "oom",
+          "memory"
+        ]
+      }
+    ],
+    "edge_numeric": [
+      {
+        "q": "HTTP status code 429 meaning and handling",
+        "expect_terms": [
+          "429",
+          "rate",
+          "limit"
+        ]
+      },
+      {
+        "q": "IEEE 754 floating point representation explained",
+        "expect_terms": [
+          "ieee",
+          "754",
+          "float"
+        ]
+      },
+      {
+        "q": "RFC 7231 HTTP semantics overview",
+        "expect_terms": [
+          "rfc",
+          "7231"
+        ]
+      }
+    ],
+    "entertainment": [
+      {
+        "q": "best science fiction books of all time ranked",
+        "expect_terms": [
+          "science",
+          "fiction",
+          "book"
+        ]
+      },
+      {
+        "q": "how movies use CGI special effects breakdown",
+        "expect_terms": [
+          "cgi",
+          "effect"
+        ]
+      },
+      {
+        "q": "video game design principles player engagement",
+        "expect_terms": [
+          "game",
+          "design"
+        ]
+      }
+    ],
+    "food_cooking": [
+      {
+        "q": "sourdough bread recipe step by step beginner",
+        "expect_terms": [
+          "sourdough",
+          "bread"
+        ]
+      },
+      {
+        "q": "Maillard reaction cooking science explained",
+        "expect_terms": [
+          "maillard",
+          "reaction"
+        ]
+      },
+      {
+        "q": "fermentation process kimchi sauerkraut",
+        "expect_terms": [
+          "ferment"
+        ]
+      }
+    ],
+    "multilingual": [
+      {
+        "q": "বাংলাদেশের স্বাধীনতা যুদ্ধ ইতিহাস",
+        "expect_terms": [
+          "বাংলাদেশ",
+          "স্বাধীনতা",
+          "যুদ্ধ"
+        ]
+      },
+      {
+        "q": "comment apprendre le français rapidement",
+        "expect_terms": [
+          "français",
+          "apprendre"
+        ]
+      },
+      {
+        "q": "機械学習とは何ですか",
+        "expect_terms": [
+          "機械",
+          "学習"
+        ]
+      },
+      {
+        "q": "cómo funciona la inteligencia artificial",
+        "expect_terms": [
+          "inteligencia",
+          "artificial"
+        ]
+      },
+      {
+        "q": "was ist quantencomputing einfach erklärt",
+        "expect_terms": [
+          "quanten",
+          "computing"
+        ]
+      }
+    ],
+    "everyday_casual": [
+      {
+        "q": "best budget noise cancelling headphones 2024",
+        "expect_terms": ["headphone", "noise", "cancell"]
+      },
+      {
+        "q": "how to get coffee stains out of white shirt",
+        "expect_terms": ["coffee", "stain"]
+      },
+      {
+        "q": "cheapest flights from New York to London",
+        "expect_terms": ["flight", "new york", "london"]
+      },
+      {
+        "q": "is it safe to eat raw cookie dough",
+        "expect_terms": ["cookie", "dough", "raw"]
+      },
+      {
+        "q": "best time to visit Japan cherry blossom season",
+        "expect_terms": ["japan", "cherry", "blossom"]
+      }
+    ],
+    "conversational": [
+      {
+        "q": "I'm trying to learn guitar where should I start",
+        "expect_terms": ["guitar", "learn", "beginner"]
+      },
+      {
+        "q": "my cat keeps throwing up what should I do",
+        "expect_terms": ["cat", "vomit"]
+      },
+      {
+        "q": "can I run a marathon without training",
+        "expect_terms": ["marathon", "train"]
+      },
+      {
+        "q": "why does my WiFi keep disconnecting",
+        "expect_terms": ["wifi", "disconnect"]
+      },
+      {
+        "q": "what to do in Paris for 3 days",
+        "expect_terms": ["paris"]
+      }
+    ],
+    "product_review": [
+      {
+        "q": "iPhone 15 Pro vs Samsung Galaxy S24 Ultra camera comparison",
+        "expect_terms": ["iphone", "samsung", "camera"]
+      },
+      {
+        "q": "Tesla Model 3 long range review 2024",
+        "expect_terms": ["tesla", "model"]
+      },
+      {
+        "q": "best mechanical keyboard for programming",
+        "expect_terms": ["mechanical", "keyboard"]
+      },
+      {
+        "q": "MacBook Air M3 vs MacBook Pro which one to buy",
+        "expect_terms": ["macbook"]
+      },
+      {
+        "q": "Dyson V15 vs Shark vacuum cleaner comparison",
+        "expect_terms": ["vacuum", "dyson"]
+      }
+    ],
+    "how_things_work": [
+      {
+        "q": "how does a car engine work explained simply",
+        "expect_terms": ["engine", "car"]
+      },
+      {
+        "q": "how do airplanes fly explained",
+        "expect_terms": ["airplane", "fly", "lift"]
+      },
+      {
+        "q": "how does GPS work on phones",
+        "expect_terms": ["gps", "satellite"]
+      },
+      {
+        "q": "how do solar panels generate electricity",
+        "expect_terms": ["solar", "panel", "electric"]
+      },
+      {
+        "q": "how does the stock market work for beginners",
+        "expect_terms": ["stock", "market"]
+      }
+    ],
+    "diy_practical": [
+      {
+        "q": "how to fix a leaking kitchen faucet",
+        "expect_terms": ["faucet", "leak"]
+      },
+      {
+        "q": "how to change a flat tire step by step",
+        "expect_terms": ["tire", "change", "flat"]
+      },
+      {
+        "q": "best indoor plants that are hard to kill",
+        "expect_terms": ["plant", "indoor"]
+      },
+      {
+        "q": "how to unclog a drain without chemicals",
+        "expect_terms": ["drain", "clog", "unclog"]
+      },
+      {
+        "q": "how to paint a room like a professional",
+        "expect_terms": ["paint", "room"]
+      }
+    ],
+    "career_life": [
+      {
+        "q": "how to negotiate salary at a new job",
+        "expect_terms": ["salary", "negotiat"]
+      },
+      {
+        "q": "remote work productivity tips",
+        "expect_terms": ["remote", "work", "productiv"]
+      },
+      {
+        "q": "software engineer interview preparation guide",
+        "expect_terms": ["interview", "software", "engineer"]
+      },
+      {
+        "q": "signs of burnout and how to recover",
+        "expect_terms": ["burnout"]
+      },
+      {
+        "q": "how to write a cover letter that stands out",
+        "expect_terms": ["cover", "letter"]
+      }
+    ],
+    "sports_fitness": [
+      {
+        "q": "beginner workout routine at home no equipment",
+        "expect_terms": ["workout", "beginner"]
+      },
+      {
+        "q": "proper deadlift form to avoid injury",
+        "expect_terms": ["deadlift", "form"]
+      },
+      {
+        "q": "FIFA World Cup 2026 host cities schedule",
+        "expect_terms": ["world cup", "2026"]
+      },
+      {
+        "q": "how many calories does running burn per mile",
+        "expect_terms": ["calorie", "running"]
+      },
+      {
+        "q": "yoga for back pain relief poses",
+        "expect_terms": ["yoga", "back", "pain"]
+      }
+    ]
+  }
+}

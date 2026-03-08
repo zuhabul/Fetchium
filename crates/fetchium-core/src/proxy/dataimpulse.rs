@@ -62,9 +62,7 @@ impl DataImpulseClient {
     /// Pass `Some("us")`, `Some("gb")`, `Some("fr")` etc. for country-specific routing.
     /// Clients are cached per country code — O(1) on subsequent calls.
     pub fn client(&self, country_code: Option<&str>) -> Client {
-        let cc = country_code
-            .map(|c| c.to_lowercase())
-            .unwrap_or_default();
+        let cc = country_code.map(|c| c.to_lowercase()).unwrap_or_default();
 
         // Fast path: cached client
         if let Some(c) = self.inner.clients.get(&cc) {
@@ -115,9 +113,7 @@ impl DataImpulseClient {
     /// Use this for retry-on-block scenarios. The client has zero idle connections
     /// so the proxy gateway assigns a fresh IP on every request.
     pub fn fresh_client(&self, country_code: Option<&str>) -> Client {
-        let cc = country_code
-            .map(|c| c.to_lowercase())
-            .unwrap_or_default();
+        let cc = country_code.map(|c| c.to_lowercase()).unwrap_or_default();
 
         let username = if cc.is_empty() {
             self.inner.username.clone()
@@ -160,8 +156,12 @@ mod tests {
     #[test]
     fn client_cached_per_country() {
         let di = DataImpulseClient::new(
-            "testuser", "testpass", "gw.example.com", 823,
-            "TestAgent/1.0", Duration::from_secs(10),
+            "testuser",
+            "testpass",
+            "gw.example.com",
+            823,
+            "TestAgent/1.0",
+            Duration::from_secs(10),
         );
         let c1 = di.client(Some("us"));
         let c2 = di.client(Some("us"));

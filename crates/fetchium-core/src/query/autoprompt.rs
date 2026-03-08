@@ -81,8 +81,8 @@ fn normalize_question(query: &str) -> String {
     // Don't rewrite long queries — they have enough keyword signal already
     if word_count > 10 {
         // Just strip trailing question mark
-        if query.ends_with('?') {
-            return query[..query.len() - 1].trim().to_string();
+        if let Some(stripped) = query.strip_suffix('?') {
+            return stripped.trim().to_string();
         }
         return query.to_string();
     }
@@ -134,8 +134,8 @@ fn normalize_question(query: &str) -> String {
     }
 
     // Remove trailing question mark
-    if query.ends_with('?') {
-        return query[..query.len() - 1].trim().to_string();
+    if let Some(stripped) = query.strip_suffix('?') {
+        return stripped.trim().to_string();
     }
 
     query.to_string()
@@ -170,7 +170,12 @@ fn remove_fillers(query: &str) -> String {
 
     // Remove individual filler words that don't carry search value
     const FILLER_WORDS: &[&str] = &[
-        "basically", "actually", "really", "just", "simply", "literally",
+        "basically",
+        "actually",
+        "really",
+        "just",
+        "simply",
+        "literally",
     ];
     let words: Vec<&str> = result.split_whitespace().collect();
     if words.len() > 2 {

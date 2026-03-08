@@ -6,6 +6,7 @@
 
 use crate::error::HsxResult;
 use crate::http::HttpClient;
+use crate::query::locale::detect_query_locale;
 use crate::rank;
 use crate::rank::fusion::{detect_intent, hyperfusion_rank};
 use crate::resilience::{Bulkhead, CircuitBreaker};
@@ -28,7 +29,6 @@ use crate::search::serper::SerperBackend;
 use crate::search::stackoverflow::StackOverflowBackend;
 use crate::search::tavily::TavilyBackend;
 use crate::search::wikipedia::WikipediaBackend;
-use crate::query::locale::detect_query_locale;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::telemetry::PipelineMetrics;
 use crate::types::{BackendId, ResultItem};
@@ -555,10 +555,7 @@ impl SearchOrchestrator {
         let ap = crate::query::autoprompt::autoprompt(query);
         let effective_query = &ap.rewritten;
         if ap.changed {
-            info!(
-                "Autoprompt: {:?} → {:?}",
-                query, effective_query
-            );
+            info!("Autoprompt: {:?} → {:?}", query, effective_query);
         }
 
         // Step 0b: Detect query intent and select appropriate backends via ABS.
@@ -579,7 +576,11 @@ impl SearchOrchestrator {
             _ => None,
         };
         let locale = detect_query_locale(effective_query).map(|s| s.to_string());
-        let search_ctx = SearchContext { intent, time_range, locale };
+        let search_ctx = SearchContext {
+            intent,
+            time_range,
+            locale,
+        };
 
         let available_ids: Vec<BackendId> = self.backends.iter().map(|b| b.id()).collect();
         let unhealthy_ids: Vec<BackendId> = available_ids
@@ -696,12 +697,10 @@ impl SearchOrchestrator {
         // Don't wait for any specific backend — return early when we have enough for ranking.
         let mut all: Vec<ResultItem> = Vec::new();
         let target_results = (max as usize) * 3; // 3x headroom for dedup/ranking
-        let early_deadline =
-            tokio::time::Instant::now() + Duration::from_millis(5000);
+        let early_deadline = tokio::time::Instant::now() + Duration::from_millis(3200);
         let mut quality_backends_responded: u32 = 0;
 
-        let mut remaining: futures::stream::FuturesUnordered<_> =
-            handles.into_iter().collect();
+        let mut remaining: futures::stream::FuturesUnordered<_> = handles.into_iter().collect();
 
         use futures::StreamExt;
         while let Some(result) = tokio::select! {
@@ -753,27 +752,32 @@ impl SearchOrchestrator {
         // DDG's 4-tier cascade handles cost internally: direct_full → direct_lite → residential_full → residential_lite.
         // Residential proxy is only charged when BOTH Google and DDG-direct fail.
         {
-            let google_count = all.iter().filter(|r| r.backend == BackendId::Google).count();
+            let google_count = all
+                .iter()
+                .filter(|r| r.backend == BackendId::Google)
+                .count();
             let ddg_in_selected = selected_set.contains("DuckDuckGo");
             let ddg_allowed = self.circuit_breaker.should_allow("DuckDuckGo");
 
             if ddg_in_selected && ddg_allowed {
                 if google_count >= 5 {
-                    info!(
-                        "Orchestrator: Google={google_count} results — DDG skipped (cost save)"
-                    );
+                    info!("Orchestrator: Google={google_count} results — DDG skipped (cost save)");
                 } else {
-                    info!(
-                        "Orchestrator: Google={google_count} results — dispatching DDG cascade"
-                    );
-                    if let Some(ddg_backend) = self.backends.iter().find(|b| b.id() == BackendId::DuckDuckGo) {
+                    info!("Orchestrator: Google={google_count} results — dispatching DDG cascade");
+                    if let Some(ddg_backend) = self
+                        .backends
+                        .iter()
+                        .find(|b| b.id() == BackendId::DuckDuckGo)
+                    {
                         let ddg = Arc::clone(ddg_backend);
                         let q = effective_query.to_string();
                         let ctx = search_ctx.clone();
                         match timeout(
                             Duration::from_secs(8),
                             ddg.search_with_context(&q, per_backend, &ctx),
-                        ).await {
+                        )
+                        .await
+                        {
                             Ok(Ok(ddg_results)) => {
                                 self.circuit_breaker.record_success("DuckDuckGo");
                                 self.backend_selector.report_outcome(
@@ -781,7 +785,11 @@ impl SearchOrchestrator {
                                     ddg_results.len(),
                                     (ddg_results.len() as f64 / 10.0).min(1.0),
                                 );
-                                info!("DDG conditional: {} results for {:?}", ddg_results.len(), effective_query);
+                                info!(
+                                    "DDG conditional: {} results for {:?}",
+                                    ddg_results.len(),
+                                    effective_query
+                                );
                                 all.extend(ddg_results);
                             }
                             Ok(Err(e)) => {
@@ -837,7 +845,10 @@ impl SearchOrchestrator {
                 }
             }
             if all.is_empty() {
-                info!("Orchestrator: no results from any backend for {:?}", effective_query);
+                info!(
+                    "Orchestrator: no results from any backend for {:?}",
+                    effective_query
+                );
                 return Ok(Vec::new());
             }
         }
@@ -908,8 +919,12 @@ impl SearchOrchestrator {
             let boost_words = extract_content_words(effective_query);
             if boost_words.len() >= 2 {
                 for r in &mut ranked {
-                    let haystack = format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
-                    let matches = boost_words.iter().filter(|w| haystack.contains(w.as_str())).count();
+                    let haystack =
+                        format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
+                    let matches = boost_words
+                        .iter()
+                        .filter(|w| haystack.contains(w.as_str()))
+                        .count();
                     let coverage = matches as f64 / boost_words.len() as f64;
                     // Scale: 100% coverage → 1.0x (no change), 0% → 0.3x penalty
                     // Steeper penalty catches off-topic results from high-authority domains
@@ -963,7 +978,11 @@ impl SearchOrchestrator {
         // Proportional term matching: for long queries require ~40% of content words
         let strict_min_term_matches = if multilingual_query {
             // For multilingual, still require 1 match if we have content words
-            if query_content_words.len() >= 2 { 1 } else { 0 }
+            if query_content_words.len() >= 2 {
+                1
+            } else {
+                0
+            }
         } else if query_content_words.len() >= 7 {
             (query_content_words.len() * 2 / 5).max(3) // ~40% for very long queries
         } else if query_content_words.len() >= 5 {
@@ -1060,13 +1079,19 @@ impl SearchOrchestrator {
             let mut backfill = ranked_before_filter
                 .iter()
                 .filter(|r| {
-                    if r.score.unwrap_or(0.0) < 0.02 || is_spam_domain(&r.url) || is_image_url(&r.url) {
+                    if r.score.unwrap_or(0.0) < 0.02
+                        || is_spam_domain(&r.url)
+                        || is_image_url(&r.url)
+                    {
                         return false;
                     }
                     // Even in backfill, require at least 1 content word match
                     if !query_content_words.is_empty() {
-                        let haystack = format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
-                        query_content_words.iter().any(|w| haystack.contains(w.as_str()))
+                        let haystack =
+                            format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
+                        query_content_words
+                            .iter()
+                            .any(|w| haystack.contains(w.as_str()))
                     } else {
                         true
                     }
@@ -1090,9 +1115,11 @@ impl SearchOrchestrator {
             let is_howto = intent == rank::fusion::QueryIntent::HowTo;
             let is_code = intent == rank::fusion::QueryIntent::Code;
             let is_comparison = intent == rank::fusion::QueryIntent::Comparison;
-            // HowTo/Code/Comparison/Casual: Wikipedia articles are almost never useful
-            let wiki_cap: u32 = if is_temporal || is_practical || is_casual || is_howto || is_code || is_comparison {
+            // HowTo/Code/Casual: Wikipedia articles rarely useful; Comparison allows 1
+            let wiki_cap: u32 = if is_temporal || is_practical || is_casual || is_howto || is_code {
                 0
+            } else if is_comparison {
+                1
             } else {
                 2
             };
@@ -1128,14 +1155,15 @@ impl SearchOrchestrator {
                         return false;
                     }
                 }
-                // If query mentions a year, filter out results published in older years
-                if is_temporal {
-                    if let Some(qy) = query_year {
-                        if let Some(ref date) = r.published_date {
-                            if let Some(pub_year) = date.get(..4).and_then(|s| s.parse::<u32>().ok()) {
-                                if pub_year + 1 < qy {
-                                    return false;
-                                }
+                // Staleness filter: if query mentions a year, drop outdated results.
+                // CurrentEvents: strict (1-year tolerance).
+                // All other queries: loose (2-year tolerance) — catches old product reviews.
+                if let Some(qy) = query_year {
+                    if let Some(ref date) = r.published_date {
+                        if let Some(pub_year) = date.get(..4).and_then(|s| s.parse::<u32>().ok()) {
+                            let tolerance = if is_temporal { 1 } else { 2 };
+                            if pub_year + tolerance < qy {
+                                return false;
                             }
                         }
                     }
@@ -1163,7 +1191,21 @@ impl SearchOrchestrator {
                     return false;
                 }
                 let domain = extract_domain(&r.url);
-                let cap = if domain == "reddit.com" || domain == "wikipedia.org" || domain == "arxiv.org" { 2 } else { 3 };
+                let cap = if domain == "wikipedia.org" || domain == "arxiv.org" {
+                    2
+                } else if domain == "reddit.com" {
+                    let want_reddit = matches!(
+                        intent,
+                        rank::fusion::QueryIntent::Comparison | rank::fusion::QueryIntent::Opinion
+                    );
+                    if want_reddit {
+                        3
+                    } else {
+                        2
+                    }
+                } else {
+                    3
+                };
                 let count = domain_counts.entry(domain).or_insert(0);
                 *count += 1;
                 *count <= cap
@@ -1183,7 +1225,10 @@ impl SearchOrchestrator {
                     continue;
                 }
                 // Apply same safety filters as Step 5
-                if is_spam_domain(&candidate.url) || is_image_url(&candidate.url) || is_homepage_url(&candidate.url) {
+                if is_spam_domain(&candidate.url)
+                    || is_image_url(&candidate.url)
+                    || is_homepage_url(&candidate.url)
+                {
                     continue;
                 }
                 if seen.insert(candidate.url.clone()) {
@@ -1226,14 +1271,18 @@ impl SearchOrchestrator {
                             .iter()
                             .enumerate()
                             .map(|(i, r)| {
-                                let semantic = embeddings::cosine_similarity(&query_emb, &result_embs[i]) as f64;
+                                let semantic =
+                                    embeddings::cosine_similarity(&query_emb, &result_embs[i])
+                                        as f64;
                                 let fusion = r.score.unwrap_or(0.5);
                                 // Blend: 60% fusion score + 40% semantic rerank
                                 let blended = fusion * 0.6 + semantic * 0.4;
                                 (i, blended)
                             })
                             .collect();
-                        scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+                        scored.sort_by(|a, b| {
+                            b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
+                        });
                         let reranked: Vec<ResultItem> = scored
                             .iter()
                             .map(|&(idx, score)| {
@@ -1245,8 +1294,14 @@ impl SearchOrchestrator {
                         ranked = reranked;
                         // Re-normalize scores to [0, 1]
                         if ranked.len() >= 2 {
-                            let max_score = ranked.iter().filter_map(|r| r.score).fold(f64::NEG_INFINITY, f64::max);
-                            let min_score = ranked.iter().filter_map(|r| r.score).fold(f64::INFINITY, f64::min);
+                            let max_score = ranked
+                                .iter()
+                                .filter_map(|r| r.score)
+                                .fold(f64::NEG_INFINITY, f64::max);
+                            let min_score = ranked
+                                .iter()
+                                .filter_map(|r| r.score)
+                                .fold(f64::INFINITY, f64::min);
                             let range = max_score - min_score;
                             if range > 1e-9 {
                                 for r in &mut ranked {
@@ -1323,17 +1378,96 @@ fn extract_query_year(query: &str) -> Option<u32> {
 /// one substantive query term. Returns lowercase words with length >= 3.
 fn extract_content_words(query: &str) -> Vec<String> {
     const STOPWORDS: &[&str] = &[
-        "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
-        "is", "are", "was", "were", "be", "been", "have", "has", "do", "does", "did", "will",
-        "would", "could", "should", "may", "might", "what", "which", "who", "when", "where", "how",
-        "why", "best", "top", "good", "vs", "vs.", "versus", "most", "more", "less", "all", "any",
-        "some", "many", "can", "its", "it", "this", "that", "than", "then", "from", "into",
-        "about", "like", "get", "use", "used",
+        "a",
+        "an",
+        "the",
+        "and",
+        "or",
+        "but",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "with",
+        "by",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "have",
+        "has",
+        "do",
+        "does",
+        "did",
+        "will",
+        "would",
+        "could",
+        "should",
+        "may",
+        "might",
+        "what",
+        "which",
+        "who",
+        "when",
+        "where",
+        "how",
+        "why",
+        "best",
+        "top",
+        "good",
+        "vs",
+        "vs.",
+        "versus",
+        "most",
+        "more",
+        "less",
+        "all",
+        "any",
+        "some",
+        "many",
+        "can",
+        "its",
+        "it",
+        "this",
+        "that",
+        "than",
+        "then",
+        "from",
+        "into",
+        "about",
+        "like",
+        "get",
+        "use",
+        "used",
         // Generic verbs/nouns that match too broadly when used as sole filter
-        "new", "latest", "overview", "guide", "introduction", "advances",
-        "build", "create", "make", "using", "step", "set",
+        "new",
+        "latest",
+        "overview",
+        "guide",
+        "introduction",
+        "advances",
+        "build",
+        "create",
+        "make",
+        "using",
+        "step",
+        "set",
         // Short words that cause false positive matches across many topics
-        "go", "up", "no", "so", "if", "as", "my", "me", "we", "he", "us",
+        "go",
+        "up",
+        "no",
+        "so",
+        "if",
+        "as",
+        "my",
+        "me",
+        "we",
+        "he",
+        "us",
     ];
     query
         .split_whitespace()
@@ -1366,13 +1500,35 @@ fn has_non_ascii_letters(query: &str) -> bool {
 fn is_practical_query(query: &str) -> bool {
     let lower = query.to_lowercase();
     const PRACTICAL_PATTERNS: &[&str] = &[
-        "how to ", "how do ", "how can ", "best way to ", "cheapest ",
-        "where to ", "what to do ", "tips for ", "guide to ",
-        "fix ", "repair ", "remove ", "clean ", "install ",
-        "buy ", "price ", "cost ", "cheap ", "budget ",
-        "recipe ", "workout ", "exercise ", "travel ",
-        "flights ", "hotel ", "restaurant ",
-        "can i ", "should i ", "is it safe ",
+        "how to ",
+        "how do ",
+        "how can ",
+        "best way to ",
+        "cheapest ",
+        "where to ",
+        "what to do ",
+        "tips for ",
+        "guide to ",
+        "fix ",
+        "repair ",
+        "remove ",
+        "clean ",
+        "install ",
+        "buy ",
+        "price ",
+        "cost ",
+        "cheap ",
+        "budget ",
+        "recipe ",
+        "workout ",
+        "exercise ",
+        "travel ",
+        "flights ",
+        "hotel ",
+        "restaurant ",
+        "can i ",
+        "should i ",
+        "is it safe ",
     ];
     PRACTICAL_PATTERNS.iter().any(|p| lower.contains(p))
 }
@@ -1382,7 +1538,7 @@ fn is_practical_query(query: &str) -> bool {
 #[allow(clippy::upper_case_acronyms)]
 enum Script {
     Latin,
-    CJK,       // Chinese, Japanese, Korean
+    CJK, // Chinese, Japanese, Korean
     Bengali,
     Devanagari,
     Arabic,
@@ -1401,7 +1557,10 @@ fn detect_scripts(text: &str) -> HashSet<Script> {
             scripts.insert(Script::Latin);
         } else {
             let cp = c as u32;
-            if (0x4E00..=0x9FFF).contains(&cp) || (0x3040..=0x30FF).contains(&cp) || (0xAC00..=0xD7AF).contains(&cp) {
+            if (0x4E00..=0x9FFF).contains(&cp)
+                || (0x3040..=0x30FF).contains(&cp)
+                || (0xAC00..=0xD7AF).contains(&cp)
+            {
                 scripts.insert(Script::CJK);
             } else if (0x0980..=0x09FF).contains(&cp) {
                 scripts.insert(Script::Bengali);
@@ -1434,7 +1593,7 @@ fn extract_domain(url: &str) -> String {
         .unwrap_or(url);
     let host = without_scheme.split('/').next().unwrap_or(without_scheme);
     let host = host.split(':').next().unwrap_or(host); // strip port
-    // Strip "www." prefix
+                                                       // Strip "www." prefix
     let host = host.strip_prefix("www.").unwrap_or(host);
     // For subdomains like "i.redd.it" or "en.wikipedia.org", get the main domain
     let parts: Vec<&str> = host.split('.').collect();
@@ -1616,7 +1775,9 @@ mod tests {
 
     #[test]
     fn spam_domain_blocked() {
-        assert!(is_spam_domain("https://www.smoaky.com/forum/index.php?topic=123"));
+        assert!(is_spam_domain(
+            "https://www.smoaky.com/forum/index.php?topic=123"
+        ));
         assert!(is_spam_domain("https://brainly.com/question/12345"));
         assert!(!is_spam_domain("https://stackoverflow.com/questions/123"));
     }

@@ -5,17 +5,17 @@
 
 pub mod autoprompt;
 pub mod complexity;
-pub mod locale;
 pub mod crosslingual;
 pub mod expansion;
 pub mod fingerprint;
 pub mod hyde;
+pub mod locale;
 
+pub use autoprompt::{autoprompt, AutopromptResult};
 pub use complexity::{
     estimate_complexity, suggest_intent, ComplexityAssessment, ComplexityConfig, ComplexityLevel,
 };
 pub use crosslingual::{expand_crosslingual, CrossLingualExpansion, CrossLingualResult, Language};
-pub use autoprompt::{autoprompt, AutopromptResult};
 pub use expansion::{expand_query, should_expand, ExpandedQuery};
 pub use fingerprint::{fingerprint as query_fingerprint, QueryFingerprint};
 pub use hyde::{hyde_prompt, should_use_hyde};

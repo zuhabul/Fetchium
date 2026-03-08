@@ -72,7 +72,6 @@
 //! | `vector-search` | `usearch` | HNSW approximate nearest-neighbor index |
 //! | `headless` | `chromiumoxide` | CEP layers 3+5, JS rendering, screenshot OCR |
 //! | `mcp` | `rmcp` | MCP protocol support |
-//! | `llama` | `llama-cpp-2` | Local LLaMA inference |
 //!
 //! ## Prelude
 //!

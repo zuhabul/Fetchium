@@ -22,6 +22,7 @@ use crate::types::{BackendId, ResultItem};
 
 /// Max IP-rotation retries on block/empty SERP detection (2 = 1 cached + 1 fresh IP).
 /// Bing is scraper-tolerant so blocks are rare — 2 attempts is sufficient.
+#[cfg(not(feature = "headless"))]
 const MAX_IP_RETRIES: usize = 2;
 use async_trait::async_trait;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
@@ -199,7 +200,8 @@ impl SearchBackend for BingBackend {
         max_results: u32,
         ctx: &SearchContext,
     ) -> HsxResult<Vec<ResultItem>> {
-        self.search_with_locale(query, max_results, ctx.locale.as_deref()).await
+        self.search_with_locale(query, max_results, ctx.locale.as_deref())
+            .await
     }
 }
 
@@ -225,39 +227,52 @@ impl BingBackend {
                     } else {
                         tracing::info!(
                             "Bing: block detected — rotating IP (attempt {}/{})",
-                            attempt + 1, MAX_IP_RETRIES
+                            attempt + 1,
+                            MAX_IP_RETRIES
                         );
-                        tokio::time::sleep(std::time::Duration::from_millis(300 * attempt as u64)).await;
-                        self.http.fresh_client_for_domain_with_locale("bing.com", locale)
+                        tokio::time::sleep(std::time::Duration::from_millis(300 * attempt as u64))
+                            .await;
+                        self.http
+                            .fresh_client_for_domain_with_locale("bing.com", locale)
                     };
 
                     match client
                         .get(&url)
                         .header("User-Agent", BROWSER_UA)
-                        .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                        .header(
+                            "Accept",
+                            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                        )
                         .header("Accept-Language", "en-US,en;q=0.9")
                         .header("Referer", "https://www.bing.com/")
                         .header("Cache-Control", "no-cache")
                         .send()
                         .await
                     {
-                        Ok(resp) if resp.status().is_success() => match resp.text().await {
-                            Ok(html) => {
-                                let page_results = Self::parse_serp(&html, page);
-                                if !page_results.is_empty() {
-                                    all_results.extend(page_results);
-                                    continue 'pages; // page succeeded
+                        Ok(resp) if resp.status().is_success() => {
+                            match resp.text().await {
+                                Ok(html) => {
+                                    let page_results = Self::parse_serp(&html, page);
+                                    if !page_results.is_empty() {
+                                        all_results.extend(page_results);
+                                        continue 'pages; // page succeeded
+                                    }
+                                    // Empty = possible block — rotate IP
+                                    debug!("Bing: empty SERP page {page} attempt {attempt} — rotating IP");
                                 }
-                                // Empty = possible block — rotate IP
-                                debug!("Bing: empty SERP page {page} attempt {attempt} — rotating IP");
+                                Err(e) => {
+                                    debug!("Bing: body read error: {e}");
+                                    break 'pages;
+                                }
                             }
-                            Err(e) => {
-                                debug!("Bing: body read error: {e}");
-                                break 'pages;
-                            }
-                        },
-                        Ok(resp) if resp.status().as_u16() == 403 || resp.status().as_u16() == 429 => {
-                            debug!("Bing: HTTP {} attempt {attempt} — rotating IP", resp.status());
+                        }
+                        Ok(resp)
+                            if resp.status().as_u16() == 403 || resp.status().as_u16() == 429 =>
+                        {
+                            debug!(
+                                "Bing: HTTP {} attempt {attempt} — rotating IP",
+                                resp.status()
+                            );
                         }
                         Ok(resp) => {
                             debug!("Bing: HTTP {} for {query:?}", resp.status());
@@ -271,7 +286,7 @@ impl BingBackend {
                 }
             }
 
-            return Ok(all_results.into_iter().take(max_results as usize).collect());
+            Ok(all_results.into_iter().take(max_results as usize).collect())
         }
 
         // ── Headless path: chromiumoxide BrowserPool ─────────────────────────
