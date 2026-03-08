@@ -172,6 +172,11 @@ pub fn build_router(state: AppState) -> Router {
         .route("/metrics/realtime", get(admin::metrics::realtime))
         .route("/metrics/summary", get(admin::metrics::summary))
         .route("/metrics/providers", get(admin::metrics::provider_health))
+        // System
+        .route("/system/stats", get(admin::metrics::system_stats))
+        .route("/db/query", post(admin::db_query::run_query))
+        // Universal search
+        .route("/search", get(admin::search::search))
         // Proxy ops
         .route("/proxy/stats", get(admin::proxy_ops::stats))
         .route("/proxy/reset", post(admin::proxy_ops::reset))

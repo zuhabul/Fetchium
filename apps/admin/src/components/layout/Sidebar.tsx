@@ -32,6 +32,7 @@ const NAV: NavItem[] = [
   { href: '/proxy',      label: 'Proxy Ops',   icon: Server,     perm: 'proxy.read' },
   { href: '/audit',      label: 'Audit',       icon: Shield,     perm: 'audit.read' },
   { href: '/flags',      label: 'Flags',       icon: Flag,       perm: 'flags.read' },
+  { href: '/system',     label: 'System',      icon: Server,     perm: 'proxy.read' as Permission },
   { href: '/settings',   label: 'Settings',    icon: Settings },
 ]
 

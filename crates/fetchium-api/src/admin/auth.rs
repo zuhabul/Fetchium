@@ -483,3 +483,25 @@ fn db_not_init() -> (StatusCode, Json<serde_json::Value>) {
         Json(serde_json::json!({"error": "admin db not initialized"})),
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_password_hash_and_verify() {
+        let password = "SuperSecret123!";
+        let hash = hash_password(password).expect("hash should succeed");
+        assert!(verify_password(password, &hash), "correct password should verify");
+        assert!(!verify_password("WrongPassword", &hash), "wrong password should fail");
+        assert!(!verify_password("", &hash), "empty password should fail");
+    }
+
+    #[test]
+    fn test_password_hash_unique() {
+        let p = "SamePassword";
+        let h1 = hash_password(p).unwrap();
+        let h2 = hash_password(p).unwrap();
+        assert_ne!(h1, h2, "hashes should be unique (different salt)");
+    }
+}

@@ -35,12 +35,28 @@ pub struct AdminSession {
     pub expires_at: String,
 }
 
+/// Result of a read-only SQL query.
+pub struct QueryResult {
+    pub columns: Vec<String>,
+    pub rows: Vec<Vec<serde_json::Value>>,
+}
+
 /// SQLite-backed admin database.
 pub struct AdminDb {
     conn: Mutex<Connection>,
 }
 
 impl AdminDb {
+    /// Open an in-memory SQLite database and run migrations. Used in tests.
+    pub fn open_in_memory() -> Result<Arc<Self>> {
+        let conn = Connection::open_in_memory().context("opening in-memory admin db")?;
+        let db = Arc::new(Self {
+            conn: Mutex::new(conn),
+        });
+        db.migrate()?;
+        Ok(db)
+    }
+
     /// Open (or create) the admin.db at `path` and run migrations.
     pub fn open(path: &Path) -> Result<Arc<Self>> {
         if let Some(parent) = path.parent() {
@@ -946,6 +962,16 @@ impl AdminDb {
             .collect())
     }
 
+    /// Returns the current size of the admin DB in kilobytes.
+    pub fn db_size_kb(&self) -> Result<u64, String> {
+        let conn = self.conn.lock();
+        let pages: u64 = conn.query_row("PRAGMA page_count", [], |r| r.get(0))
+            .map_err(|e| e.to_string())?;
+        let page_size: u64 = conn.query_row("PRAGMA page_size", [], |r| r.get(0))
+            .map_err(|e| e.to_string())?;
+        Ok((pages * page_size) / 1024)
+    }
+
     pub fn count_tickets_by_status(&self, status: &str) -> Result<i64> {
         let conn = self.conn.lock();
         let exists: i64 = conn.query_row(
@@ -961,6 +987,89 @@ impl AdminDb {
             params![status],
             |r| r.get(0),
         )?)
+    }
+
+    // ── DB query runner ──────────────────────────────────────────────────────
+
+    pub fn run_select_query(&self, sql: &str, limit: usize) -> Result<QueryResult, String> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(sql).map_err(|e| e.to_string())?;
+        let columns: Vec<String> = stmt.column_names().iter().map(|s| s.to_string()).collect();
+        let col_count = columns.len();
+
+        let rows: Vec<Vec<serde_json::Value>> = stmt
+            .query_map([], |row| {
+                let mut vals = Vec::new();
+                for i in 0..col_count {
+                    let val: serde_json::Value = row.get_ref(i)
+                        .map(|v| match v {
+                            rusqlite::types::ValueRef::Null => serde_json::Value::Null,
+                            rusqlite::types::ValueRef::Integer(n) => serde_json::json!(n),
+                            rusqlite::types::ValueRef::Real(f) => serde_json::json!(f),
+                            rusqlite::types::ValueRef::Text(s) => {
+                                serde_json::Value::String(String::from_utf8_lossy(s).to_string())
+                            },
+                            rusqlite::types::ValueRef::Blob(b) => {
+                                serde_json::Value::String(format!("<blob {} bytes>", b.len()))
+                            },
+                        })
+                        .unwrap_or(serde_json::Value::Null);
+                    vals.push(val);
+                }
+                Ok(vals)
+            })
+            .map_err(|e| e.to_string())?
+            .filter_map(|r| r.ok())
+            .take(limit)
+            .collect();
+
+        Ok(QueryResult { columns, rows })
+    }
+
+    // ── Universal search ─────────────────────────────────────────────────────
+
+    pub fn search_orgs(&self, q: &str, limit: usize) -> Result<Vec<serde_json::Value>, String> {
+        let conn = self.conn.lock();
+        let pattern = format!("%{}%", q);
+        let mut stmt = conn.prepare(
+            "SELECT id, name, slug, plan, status FROM organizations
+             WHERE lower(name) LIKE ?1 OR lower(slug) LIKE ?1 OR lower(owner_email) LIKE ?1
+             LIMIT ?2"
+        ).map_err(|e| e.to_string())?;
+        let rows: Vec<_> = stmt.query_map(
+            rusqlite::params![pattern, limit as i64],
+            |row| {
+                Ok(serde_json::json!({
+                    "id": row.get::<_, String>(0)?,
+                    "name": row.get::<_, String>(1)?,
+                    "slug": row.get::<_, String>(2)?,
+                    "plan": row.get::<_, String>(3)?,
+                    "status": row.get::<_, String>(4)?,
+                }))
+            }
+        ).map_err(|e| e.to_string())?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
+    }
+
+    pub fn search_incidents(&self, q: &str, limit: usize) -> Result<Vec<serde_json::Value>, String> {
+        let conn = self.conn.lock();
+        let pattern = format!("%{}%", q);
+        let mut stmt = conn.prepare(
+            "SELECT id, title, severity, status FROM incidents
+             WHERE lower(title) LIKE ?1 LIMIT ?2"
+        ).map_err(|e| e.to_string())?;
+        let rows: Vec<_> = stmt.query_map(
+            rusqlite::params![pattern, limit as i64],
+            |row| {
+                Ok(serde_json::json!({
+                    "id": row.get::<_, String>(0)?,
+                    "title": row.get::<_, String>(1)?,
+                    "severity": row.get::<_, String>(2)?,
+                    "status": row.get::<_, String>(3)?,
+                }))
+            }
+        ).map_err(|e| e.to_string())?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
     }
 
     // ── TOTP replay prevention ───────────────────────────────────────────────
@@ -986,5 +1095,83 @@ impl AdminDb {
             params![user_id, code, now],
         )?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_db() -> Arc<AdminDb> {
+        AdminDb::open_in_memory().expect("open in-memory db")
+    }
+
+    #[test]
+    fn test_create_and_find_user() {
+        let db = test_db();
+        let id = Uuid::new_v4().to_string();
+        db.create_user(&id, "test@example.com", "hashed_pw", "ops", "Test User")
+            .expect("create user");
+        let user = db
+            .find_user_by_email("test@example.com")
+            .expect("find user")
+            .expect("user should exist");
+        assert_eq!(user.id, id);
+        assert_eq!(user.email, "test@example.com");
+        assert_eq!(user.name, "Test User");
+    }
+
+    #[test]
+    fn test_has_any_users_empty() {
+        let db = test_db();
+        assert!(!db.has_any_users().expect("should not error"), "fresh db has no users");
+    }
+
+    #[test]
+    fn test_has_any_users_after_create() {
+        let db = test_db();
+        let id = Uuid::new_v4().to_string();
+        db.create_user(&id, "admin@test.com", "pw", "owner", "Admin").unwrap();
+        assert!(db.has_any_users().expect("should not error"), "should have users now");
+    }
+
+    #[test]
+    fn test_session_create_and_validate() {
+        let db = test_db();
+        let user_id = Uuid::new_v4().to_string();
+        db.create_user(&user_id, "alice@test.com", "pw", "ops", "Alice").unwrap();
+        let token_hash = "abc123hash";
+        let session_id = Uuid::new_v4().to_string();
+        db.create_session(&session_id, &user_id, token_hash, "127.0.0.1", "TestAgent/1.0")
+            .expect("create session");
+        let result = db.validate_session(token_hash).expect("validate session");
+        assert!(result.is_some(), "session should be valid");
+        let (user, sid) = result.unwrap();
+        assert_eq!(user.email, "alice@test.com");
+        assert_eq!(sid, session_id);
+    }
+
+    #[test]
+    fn test_revoke_session() {
+        let db = test_db();
+        let user_id = Uuid::new_v4().to_string();
+        db.create_user(&user_id, "bob@test.com", "pw", "support", "Bob").unwrap();
+        let token_hash = "revoketest123";
+        let session_id = Uuid::new_v4().to_string();
+        db.create_session(&session_id, &user_id, token_hash, "10.0.0.1", "UA/1").unwrap();
+        db.revoke_session(&session_id).expect("revoke");
+        let result = db.validate_session(token_hash).expect("validate after revoke");
+        assert!(result.is_none(), "revoked session should be invalid");
+    }
+
+    #[test]
+    fn test_totp_replay_prevention() {
+        let db = test_db();
+        let user_id = Uuid::new_v4().to_string();
+        db.create_user(&user_id, "carol@test.com", "pw", "owner", "Carol").unwrap();
+        let code = "123456";
+        assert!(!db.is_totp_code_used(&user_id, code).unwrap(), "code not yet used");
+        db.mark_totp_code_used(&user_id, code).unwrap();
+        assert!(db.is_totp_code_used(&user_id, code).unwrap(), "code should be used now");
     }
 }
