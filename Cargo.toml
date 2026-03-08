@@ -17,6 +17,9 @@ description = "Fetchium — the universal retrieval layer for the internet"
 
 
 [workspace.dependencies]
+# System
+libc = "0.2"
+
 # Async runtime
 tokio = { version = "1", features = ["full"] }
 

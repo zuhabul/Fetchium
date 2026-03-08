@@ -255,3 +255,59 @@ where
         Ok(AdminAuth { user, session_id })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Test exhaustive role × permission matrix
+    #[test]
+    fn test_owner_has_all_permissions() {
+        use Permission::*;
+        let all_perms = [
+            OrgsRead, OrgsSuspend, OrgsDelete, OrgsPlanChange, OrgsQuotaOverride,
+            UsersRead, UsersSuspend,
+            KeysRead, KeysRevoke, KeysCreate,
+            BillingRead, BillingRefund, BillingCredit,
+            SupportRead, SupportReply, SupportClose,
+            CrmRead, CrmWrite,
+            IncidentsRead, IncidentsManage,
+            AuditRead,
+            FlagsRead, FlagsWrite,
+            ProxyRead, ProxyReset,
+            CampaignsRead,
+            AdminStaffManage,
+        ];
+        for perm in &all_perms {
+            assert!(has_permission("owner", *perm), "owner should have {perm:?}");
+        }
+    }
+
+    #[test]
+    fn test_readonly_role_restrictions() {
+        // readonly cannot do any mutations
+        assert!(!has_permission("readonly", Permission::OrgsSuspend));
+        assert!(!has_permission("readonly", Permission::KeysRevoke));
+        assert!(!has_permission("readonly", Permission::BillingRefund));
+        assert!(!has_permission("readonly", Permission::AdminStaffManage));
+    }
+
+    #[test]
+    fn test_support_role_cannot_access_billing() {
+        assert!(!has_permission("support", Permission::BillingRefund));
+        assert!(!has_permission("support", Permission::BillingCredit));
+    }
+
+    #[test]
+    fn test_finance_role_cannot_manage_staff() {
+        assert!(!has_permission("finance", Permission::AdminStaffManage));
+        assert!(!has_permission("finance", Permission::UsersSuspend));
+    }
+
+    #[test]
+    fn test_growth_role_limited() {
+        assert!(has_permission("growth", Permission::CrmRead));
+        assert!(!has_permission("growth", Permission::KeysRevoke));
+        assert!(!has_permission("growth", Permission::BillingRead));
+    }
+}
