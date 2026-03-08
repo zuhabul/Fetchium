@@ -1,4 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { auth_secret } from "@/auth";
 import { resolve_api_base } from "@/lib/server-api";
 
 export const runtime = "nodejs";
@@ -17,31 +19,36 @@ const ALLOWED_ENDPOINTS = new Set([
 ]);
 
 type PlaygroundRequest = {
-  apiKey?: string;
-  apiBase?: string;
   endpoint?: string;
   payload?: unknown;
 };
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const started = Date.now();
   try {
-    const body = (await req.json()) as PlaygroundRequest;
-    const apiKey = (body.apiKey || "").trim();
-    const endpoint = (body.endpoint || "").trim();
-    if (!apiKey.startsWith("fetchium_")) {
+    const token = await getToken({
+      req,
+      secret: auth_secret() || undefined,
+      secureCookie: true,
+      cookieName: "__Secure-authjs.session-token",
+    });
+    const apiKey = token?.apiKey;
+    if (!apiKey?.startsWith("fetchium_")) {
       return NextResponse.json(
-        { error: "invalid_api_key", message: "A valid fetchium_ API key is required." },
-        { status: 400 },
+        { error: "unauthorized", message: "An authenticated dashboard session is required." },
+        { status: 401 },
       );
     }
+
+    const body = (await req.json()) as PlaygroundRequest;
+    const endpoint = (body.endpoint || "").trim();
     if (!ALLOWED_ENDPOINTS.has(endpoint)) {
       return NextResponse.json(
         { error: "invalid_endpoint", message: "Endpoint is not allowed in dashboard playground." },
         { status: 400 },
       );
     }
-    const apiBase = resolve_api_base(body.apiBase);
+    const apiBase = resolve_api_base(token && typeof token.apiBase === "string" ? token.apiBase : undefined);
     const res = await fetch(`${apiBase}${endpoint}`, {
       method: "POST",
       headers: {
@@ -78,4 +85,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

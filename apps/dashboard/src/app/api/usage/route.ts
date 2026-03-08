@@ -1,27 +1,29 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { auth_secret } from "@/auth";
 import { resolve_api_base } from "@/lib/server-api";
 
 export const runtime = "nodejs";
 
-type UsageRequest = {
-  apiKey?: string;
-  apiBase?: string;
-};
-
-export async function POST(req: Request) {
+export async function GET(req: NextRequest) {
   try {
-    const body = (await req.json()) as UsageRequest;
-    const apiKey = (body.apiKey || "").trim();
-    if (!apiKey.startsWith("fetchium_")) {
+    const token = await getToken({
+      req,
+      secret: auth_secret() || undefined,
+      secureCookie: true,
+      cookieName: "__Secure-authjs.session-token",
+    });
+    const rawApiKey = token?.apiKey;
+    if (!rawApiKey?.startsWith("fetchium_")) {
       return NextResponse.json(
-        { error: "invalid_api_key", message: "A valid fetchium_ API key is required." },
-        { status: 400 },
+        { error: "unauthorized", message: "An authenticated dashboard session is required." },
+        { status: 401 },
       );
     }
-    const apiBase = resolve_api_base(body.apiBase);
+    const apiBase = resolve_api_base(token && typeof token.apiBase === "string" ? token.apiBase : undefined);
     const res = await fetch(`${apiBase}/v1/usage`, {
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${rawApiKey}`,
       },
       cache: "no-store",
     });
@@ -37,4 +39,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

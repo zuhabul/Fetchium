@@ -16,6 +16,8 @@ Thumbs.db
 # Environment
 .env
 .env.local
+.env.production.local
+apps/dashboard/.env.production.local
 infra/*.local
 
 # Dependencies

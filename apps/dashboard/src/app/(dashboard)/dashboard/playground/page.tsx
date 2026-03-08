@@ -2,15 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Send, Copy, Check } from "lucide-react";
-import {
-  DEFAULT_API_BASE,
-  appendRequestLog,
-  loadDashboardConfig,
-  normalize_api_base,
-  normalize_api_key,
-  validate_api_base,
-  validate_api_key,
-} from "@/lib/client-config";
+import { appendRequestLog } from "@/lib/client-config";
 
 const endpoints = [
   "/v1/search",
@@ -37,37 +29,17 @@ export default function PlaygroundPage() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState("");
-  const [apiBase, setApiBase] = useState(DEFAULT_API_BASE);
-
-  useEffect(() => {
-    const cfg = loadDashboardConfig();
-    setApiKey(cfg.apiKey);
-    setApiBase(cfg.apiBaseUrl);
-  }, []);
 
   const send = async () => {
     setLoading(true);
     setResponse(null);
     setError(null);
     try {
-      const nextKey = normalize_api_key(apiKey);
-      const nextBase = normalize_api_base(apiBase);
-      const keyError = validate_api_key(nextKey);
-      const baseError = validate_api_base(nextBase);
-
-      if (keyError || baseError) {
-        setError(keyError || baseError || "Invalid settings");
-        return;
-      }
-
       const payload = JSON.parse(body);
       const res = await fetch("/api/playground", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          apiKey: nextKey,
-          apiBase: nextBase,
           endpoint,
           payload,
         }),
@@ -102,27 +74,11 @@ export default function PlaygroundPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold text-white">Playground</h1>
-        <p className="text-sm text-white/40 mt-1">Live API requests through dashboard proxy routes.</p>
+        <p className="text-sm text-white/40 mt-1">Live API requests through authenticated dashboard proxy routes.</p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
-        <input
-          type="password"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder="fetchium_..."
-          className="rounded-lg border border-white/10 bg-surface-2 px-3 py-2 text-sm text-white outline-none focus:border-brand-500/50"
-        />
-        <input
-          type="url"
-          value={apiBase}
-          readOnly
-          placeholder={DEFAULT_API_BASE}
-          className="rounded-lg border border-white/10 bg-surface-2 px-3 py-2 text-sm text-white/60 outline-none"
-        />
-      </div>
       <p className="text-xs text-white/35">
-        Playground requests use the API base configured in Settings and the hosted dashboard only targets the production API.
+        Playground requests use the authenticated session and the hosted dashboard only targets the production API.
       </p>
 
       <div className="grid gap-4 lg:grid-cols-2">
