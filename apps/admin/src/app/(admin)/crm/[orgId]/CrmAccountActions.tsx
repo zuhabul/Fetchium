@@ -1,8 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import type { AdminSession } from '@/lib/session'
-
 interface AccountStub {
   org_id: string
   lifecycle_stage: string
@@ -13,10 +11,8 @@ const STAGES = ['prospect', 'trial', 'customer', 'expansion', 'churned']
 
 export default function CrmAccountActions({
   account,
-  session,
 }: {
   account: AccountStub
-  session: AdminSession
 }) {
   const [stage, setStage] = useState(account.lifecycle_stage)
   const [csm, setCsm] = useState(account.csm ?? '')
@@ -32,12 +28,9 @@ export default function CrmAccountActions({
   async function updateStage(newStage: string) {
     setStage(newStage)
     try {
-      await fetch(`/internal/admin/crm/accounts/${account.org_id}/stage`, {
+      await fetch(`/api/admin/crm/accounts/${account.org_id}/stage`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.sessionToken}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stage: newStage }),
       })
       showToast('Stage updated')
@@ -49,12 +42,9 @@ export default function CrmAccountActions({
   async function assignCsm() {
     if (!csm.trim()) return
     try {
-      await fetch(`/internal/admin/crm/accounts/${account.org_id}/csm`, {
+      await fetch(`/api/admin/crm/accounts/${account.org_id}/csm`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.sessionToken}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ csm }),
       })
       showToast('CSM assigned')
@@ -67,12 +57,9 @@ export default function CrmAccountActions({
     if (!note.trim()) return
     setLoading(true)
     try {
-      await fetch(`/internal/admin/crm/accounts/${account.org_id}/notes`, {
+      await fetch(`/api/admin/crm/accounts/${account.org_id}/notes`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.sessionToken}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body: note }),
       })
       setNote('')

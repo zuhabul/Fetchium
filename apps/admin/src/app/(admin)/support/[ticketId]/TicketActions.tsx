@@ -1,8 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import type { AdminSession } from '@/lib/session'
-
 interface TicketStub {
   id: string
   status: string
@@ -15,11 +13,9 @@ const PRIORITIES = ['low', 'normal', 'high', 'urgent']
 
 export default function TicketActions({
   ticketId,
-  session,
   ticket,
 }: {
   ticketId: string
-  session: AdminSession
   ticket: TicketStub
 }) {
   const [noteBody, setNoteBody] = useState('')
@@ -39,12 +35,9 @@ export default function TicketActions({
     if (!noteBody.trim()) return
     setLoading(true)
     try {
-      await fetch(`/internal/admin/support/tickets/${ticketId}/notes`, {
+      await fetch(`/api/admin/support/tickets/${ticketId}/notes`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.sessionToken}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body: noteBody, internal: isInternal }),
       })
       setNoteBody('')
@@ -58,12 +51,9 @@ export default function TicketActions({
 
   async function updateField(field: string, value: string) {
     try {
-      await fetch(`/internal/admin/support/tickets/${ticketId}`, {
+      await fetch(`/api/admin/support/tickets/${ticketId}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.sessionToken}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value }),
       })
       showToast(`${field.charAt(0).toUpperCase() + field.slice(1)} updated`)

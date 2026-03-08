@@ -56,10 +56,7 @@ export default function NotificationCenter() {
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        await fetch('/api/admin/proxy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: '/internal/admin/metrics/summary' }),
+        await fetch('/api/admin/metrics/summary', {
         })
         // In production, derive new notifications from summary response
       } catch {

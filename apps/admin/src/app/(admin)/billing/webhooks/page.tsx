@@ -52,7 +52,7 @@ export default function WebhooksPage() {
   const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/internal/admin/billing/webhooks', { cache: 'no-store' })
+    fetch('/api/admin/billing/webhooks', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then(setEvents)
       .catch(() => setError(true))
@@ -61,7 +61,7 @@ export default function WebhooksPage() {
   async function handleReplay(id: string) {
     setReplayingId(id)
     try {
-      await fetch(`/internal/admin/billing/webhooks/${id}/replay`, { method: 'POST' })
+      await fetch(`/api/admin/billing/webhooks/${id}/replay`, { method: 'POST' })
       setToast('Webhook replayed successfully')
     } catch {
       setToast('Failed to replay webhook')

@@ -130,7 +130,7 @@ export default async function BillingOrgPage({ params }: { params: Promise<{ org
             </div>
 
             {/* Action Buttons + Modals */}
-            <BillingActions orgId={orgId} session={session} />
+            <BillingActions orgId={orgId} />
 
             {/* Invoices */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl">

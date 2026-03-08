@@ -150,7 +150,7 @@ export default async function TicketDetailPage({
               </div>
 
               {/* Add note form */}
-              <TicketActions ticketId={ticketId} ticket={ticket} session={session} />
+              <TicketActions ticketId={ticketId} ticket={ticket} />
             </div>
 
             {/* Sidebar — 35% */}

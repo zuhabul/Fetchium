@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import type { AdminSession } from '@/lib/session'
 
 interface ModalProps {
   title: string
@@ -68,10 +67,8 @@ function ActionModal({ title, onClose, onSubmit, loading }: ModalProps) {
 
 export default function BillingActions({
   orgId,
-  session,
 }: {
   orgId: string
-  session: AdminSession
 }) {
   const [modal, setModal] = useState<'refund' | 'credit' | null>(null)
   const [loading, setLoading] = useState(false)
@@ -82,13 +79,12 @@ export default function BillingActions({
     try {
       const endpoint =
         type === 'refund'
-          ? `/internal/admin/billing/${orgId}/refund`
-          : `/internal/admin/billing/${orgId}/credit`
+          ? `/api/admin/billing/${orgId}/refund`
+          : `/api/admin/billing/${orgId}/credit`
       await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.sessionToken}`,
         },
         body: JSON.stringify({ amount_cents: Math.round(parseFloat(amount) * 100), reason }),
       })
