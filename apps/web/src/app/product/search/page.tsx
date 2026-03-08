@@ -13,7 +13,7 @@ const backends = [
   { name: "DuckDuckGo", type: "General", note: "Privacy-first, no tracking" },
   { name: "Brave Search", type: "General", note: "Independent index, no Google dependency" },
   { name: "Bing", type: "General", note: "Microsoft index, broad coverage" },
-  { name: "SearXNG", type: "Meta-search", note: "Self-hosted, privacy-preserving" },
+  { name: "SearXNG", type: "Meta-search", note: "Privacy-focused metasearch aggregation" },
   { name: "GitHub", type: "Code", note: "Code search + repositories" },
   { name: "Reddit", type: "Social", note: "Community discussions + opinions" },
   { name: "HackerNews", type: "Tech", note: "Developer community, tech news" },

@@ -57,7 +57,7 @@ const phases = [
       "SOC 2 Type II certification",
       "EU data residency option",
       "Team accounts and role-based access",
-      "On-premise Enterprise deployment with support SLA",
+      "Enterprise support and deployment assistance",
       "Mobile SDKs (React Native, Flutter)",
       "Zapier and Make.com integration",
     ],

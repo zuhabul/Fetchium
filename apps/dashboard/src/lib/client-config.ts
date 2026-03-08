@@ -15,7 +15,62 @@ export type RequestLog = {
 const CFG_KEY = "fetchium_dashboard_config_v1";
 const LOG_KEY = "fetchium_dashboard_logs_v1";
 
-export const DEFAULT_API_BASE = "http://localhost:3050";
+export const DEFAULT_API_BASE = "https://api.fetchium.com";
+
+export function normalize_api_base(input: string): string {
+  return input.trim().replace(/\/+$/, "");
+}
+
+export function normalize_api_key(input: string): string {
+  return input.trim();
+}
+
+function is_local_host(hostname: string): boolean {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "[::1]"
+  );
+}
+
+export function validate_api_base(input: string): string | null {
+  const value = normalize_api_base(input);
+  if (!value) return "API base URL is required.";
+
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return "Enter a valid API base URL.";
+  }
+
+  if (!["http:", "https:"].includes(url.protocol)) {
+    return "API base URL must use http or https.";
+  }
+
+  if (typeof window !== "undefined" && !is_local_host(window.location.hostname)) {
+    if (url.protocol !== "https:") {
+      return "Production settings must use an https API base URL.";
+    }
+    if (is_local_host(url.hostname)) {
+      return "Localhost API bases are only allowed in local development.";
+    }
+  }
+
+  return null;
+}
+
+export function validate_api_key(input: string): string | null {
+  const value = normalize_api_key(input);
+  if (!value) return "API key is required.";
+  if (!value.startsWith("fetchium_")) {
+    return "API key must start with fetchium_.";
+  }
+  if (value.length < 16) {
+    return "API key looks too short.";
+  }
+  return null;
+}
 
 export function loadDashboardConfig(): DashboardConfig {
   if (typeof window === "undefined") {
@@ -26,8 +81,8 @@ export function loadDashboardConfig(): DashboardConfig {
     if (!raw) return { apiBaseUrl: DEFAULT_API_BASE, apiKey: "" };
     const parsed = JSON.parse(raw) as Partial<DashboardConfig>;
     return {
-      apiBaseUrl: (parsed.apiBaseUrl || DEFAULT_API_BASE).trim(),
-      apiKey: (parsed.apiKey || "").trim(),
+      apiBaseUrl: normalize_api_base(parsed.apiBaseUrl || DEFAULT_API_BASE),
+      apiKey: normalize_api_key(parsed.apiKey || ""),
     };
   } catch {
     return { apiBaseUrl: DEFAULT_API_BASE, apiKey: "" };
@@ -39,8 +94,8 @@ export function saveDashboardConfig(cfg: DashboardConfig): void {
   localStorage.setItem(
     CFG_KEY,
     JSON.stringify({
-      apiBaseUrl: cfg.apiBaseUrl.trim() || DEFAULT_API_BASE,
-      apiKey: cfg.apiKey.trim(),
+      apiBaseUrl: normalize_api_base(cfg.apiBaseUrl) || DEFAULT_API_BASE,
+      apiKey: normalize_api_key(cfg.apiKey),
     }),
   );
 }
@@ -63,4 +118,3 @@ export function appendRequestLog(log: RequestLog): void {
   logs.unshift(log);
   localStorage.setItem(LOG_KEY, JSON.stringify(logs.slice(0, 100)));
 }
-

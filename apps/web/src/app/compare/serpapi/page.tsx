@@ -27,7 +27,6 @@ const rows = [
   { feature: "Multi-agent deep research", f: "yes", s: "no" },
   { feature: "YouTube & social search", f: "yes", s: "yes", note: "SerpAPI has YouTube and Google Shopping; Fetchium has dedicated endpoints" },
   { feature: "MCP protocol support", f: "yes", s: "no" },
-  { feature: "Self-hostable", f: "yes", s: "no" },
   { feature: "Google-independent backends", f: "yes", s: "no", note: "SerpAPI depends entirely on Google; Fetchium uses DDG, Brave, SearXNG, etc." },
   { feature: "Legal risk (Google lawsuit)", f: "none", s: "active", note: "Google filed DMCA lawsuit vs SerpAPI, December 2025. Case ongoing." },
   { feature: "Free tier (renewing)", f: "yes", s: "partial", note: "SerpAPI: 100 free searches/month. Fetchium: 1,000/month." },
