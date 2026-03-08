@@ -1,218 +1,236 @@
 "use client";
+
 import { useEffect, useRef } from "react";
-import * as THREE from "three";
+
+type Particle = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  hue: number;
+};
+
+const BASE_PARTICLE_COUNT = 56;
+const MOBILE_PARTICLE_COUNT = 28;
+const MAX_CONNECTION_DISTANCE = 140;
+const MOBILE_CONNECTION_DISTANCE = 92;
+const TARGET_FPS = 30;
 
 export default function NeuralCanvas() {
-  const mountRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const el = mountRef.current;
-    if (!el) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const W = el.clientWidth;
-    const H = el.clientHeight;
-    if (!W || !H) return;
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if (!ctx) return;
 
+    let width = 0;
+    let height = 0;
+    let raf = 0;
+    let lastFrame = 0;
+    let running = true;
+    let pointerX = 0;
+    let pointerY = 0;
+    let pointerActive = false;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const compactMode = W < 768;
-    const particleCount = reducedMotion ? 120 : compactMode ? 180 : W < 1200 ? 260 : 360;
-    const connectionThreshold = reducedMotion ? 0 : compactMode ? 12 : W < 1200 ? 14 : 16;
-    const maxConnections = compactMode ? 90 : W < 1200 ? 170 : 260;
-    const breatheStride = compactMode ? 10 : 6;
-    const probe = document.createElement("canvas");
-    const hasWebgl =
-      !!window.WebGLRenderingContext &&
-      !!(probe.getContext("webgl") || probe.getContext("experimental-webgl"));
-    if (!hasWebgl) return;
+    const particles: Particle[] = [];
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 2000);
-    camera.position.set(0, 0, compactMode ? 140 : 128);
+    const configureCanvas = () => {
+      const rect = canvas.getBoundingClientRect();
+      const nextWidth = Math.max(1, Math.floor(rect.width));
+      const nextHeight = Math.max(1, Math.floor(rect.height));
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
-    let renderer: THREE.WebGLRenderer;
-    try {
-      renderer = new THREE.WebGLRenderer({
-        antialias: !compactMode,
-        alpha: true,
-        powerPreference: "low-power",
-      });
-    } catch {
-      return;
-    }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(W, H);
-    renderer.setClearColor(0x000000, 0);
-    el.appendChild(renderer.domElement);
+      width = nextWidth;
+      height = nextHeight;
+      canvas.width = Math.floor(nextWidth * dpr);
+      canvas.height = Math.floor(nextHeight * dpr);
+      canvas.style.width = `${nextWidth}px`;
+      canvas.style.height = `${nextHeight}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
 
-    // Keep the backdrop light enough that first paint and interaction stay smooth.
-    const COUNT = particleCount;
-    const positions = new Float32Array(COUNT * 3);
-    const colors = new Float32Array(COUNT * 3);
-    const sizes = new Float32Array(COUNT);
+    const resetParticles = () => {
+      particles.length = 0;
+      const isCompact = width < 768;
+      const count = reducedMotion
+        ? Math.max(16, Math.round((isCompact ? MOBILE_PARTICLE_COUNT : BASE_PARTICLE_COUNT) * 0.55))
+        : isCompact
+          ? MOBILE_PARTICLE_COUNT
+          : BASE_PARTICLE_COUNT;
 
-    const palette = [
-      new THREE.Color("#6366f1"),
-      new THREE.Color("#818cf8"),
-      new THREE.Color("#93c5fd"),
-      new THREE.Color("#22d3ee"),
-    ];
+      for (let i = 0; i < count; i += 1) {
+        const speedScale = reducedMotion ? 0.06 : isCompact ? 0.1 : 0.14;
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * speedScale,
+          vy: (Math.random() - 0.5) * speedScale,
+          radius: Math.random() * 1.7 + 1,
+          hue: 210 + Math.random() * 55,
+        });
+      }
+    };
 
-    for (let i = 0; i < COUNT; i++) {
-      const r = 88 + Math.random() * 44;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.6;
-      positions[i * 3 + 2] = r * Math.cos(phi);
+    const drawBackgroundGlow = () => {
+      const gradient = ctx.createRadialGradient(
+        width * 0.52,
+        height * 0.38,
+        0,
+        width * 0.52,
+        height * 0.38,
+        Math.max(width * 0.42, height * 0.55),
+      );
+      gradient.addColorStop(0, "rgba(99, 102, 241, 0.11)");
+      gradient.addColorStop(0.45, "rgba(59, 130, 246, 0.05)");
+      gradient.addColorStop(1, "rgba(2, 6, 23, 0)");
 
-      const c = palette[Math.floor(Math.random() * palette.length)];
-      colors[i * 3] = c.r;
-      colors[i * 3 + 1] = c.g;
-      colors[i * 3 + 2] = c.b;
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+    };
 
-      sizes[i] = Math.random() * 1.75 + 0.7;
-    }
+    const drawConnections = (isCompact: boolean) => {
+      const maxDistance = isCompact ? MOBILE_CONNECTION_DISTANCE : MAX_CONNECTION_DISTANCE;
+      const maxDistanceSq = maxDistance * maxDistance;
 
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    geo.setAttribute("size", new THREE.BufferAttribute(sizes, 1));
+      for (let i = 0; i < particles.length; i += 1) {
+        const a = particles[i];
 
-    const mat = new THREE.ShaderMaterial({
-      vertexShader: `
-        attribute float size;
-        attribute vec3 color;
-        varying vec3 vColor;
-        varying float vAlpha;
-        void main() {
-          vColor = color;
-          vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-          vAlpha = 1.0 - smoothstep(80.0, 150.0, -mvPos.z);
-          gl_PointSize = size * (250.0 / -mvPos.z);
-          gl_Position = projectionMatrix * mvPos;
-        }
-      `,
-      fragmentShader: `
-        varying vec3 vColor;
-        varying float vAlpha;
-        void main() {
-          float d = length(gl_PointCoord - vec2(0.5));
-          if (d > 0.5) discard;
-          float alpha = (1.0 - smoothstep(0.0, 0.5, d)) * vAlpha * 0.85;
-          gl_FragColor = vec4(vColor, alpha);
-        }
-      `,
-      transparent: true,
-      vertexColors: true,
-      depthWrite: false,
-    });
+        for (let j = i + 1; j < particles.length; j += 1) {
+          const b = particles[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const distanceSq = dx * dx + dy * dy;
 
-    const points = new THREE.Points(geo, mat);
-    scene.add(points);
+          if (distanceSq > maxDistanceSq) continue;
 
-    const lineGeo = new THREE.BufferGeometry();
-    const lineVerts: number[] = [];
-    const lineColors: number[] = [];
-    let builtConnections = 0;
-
-    for (let i = 0; i < COUNT && builtConnections < maxConnections; i++) {
-      for (let j = i + 1; j < COUNT && builtConnections < maxConnections; j++) {
-        const dx = positions[i * 3] - positions[j * 3];
-        const dy = positions[i * 3 + 1] - positions[j * 3 + 1];
-        const dz = positions[i * 3 + 2] - positions[j * 3 + 2];
-        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-        if (dist < connectionThreshold) {
-          const alpha = 1 - dist / connectionThreshold;
-          lineVerts.push(
-            positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2],
-            positions[j * 3], positions[j * 3 + 1], positions[j * 3 + 2],
-          );
-          const r = 0.44 + alpha * 0.1;
-          const g = 0.60 + alpha * 0.12;
-          const b = 0.95;
-          lineColors.push(r, g, b, r, g, b);
-          builtConnections += 1;
+          const alpha = 1 - distanceSq / maxDistanceSq;
+          ctx.strokeStyle = `rgba(125, 211, 252, ${alpha * (isCompact ? 0.08 : 0.12)})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
         }
       }
-    }
-
-    lineGeo.setAttribute("position", new THREE.Float32BufferAttribute(lineVerts, 3));
-    lineGeo.setAttribute("color", new THREE.Float32BufferAttribute(lineColors, 3));
-
-    const lineMat = new THREE.LineBasicMaterial({
-      vertexColors: true,
-      transparent: true,
-      opacity: compactMode ? 0.08 : 0.12,
-      depthWrite: false,
-    });
-    const lines = new THREE.LineSegments(lineGeo, lineMat);
-    scene.add(lines);
-
-    const mouse = { x: 0, y: 0 };
-    const handleMouseMove = (e: MouseEvent) => {
-      mouse.x = (e.clientX / window.innerWidth - 0.5) * 2;
-      mouse.y = -(e.clientY / window.innerHeight - 0.5) * 2;
     };
-    if (!reducedMotion && !compactMode) {
-      window.addEventListener("mousemove", handleMouseMove);
-    }
+
+    const drawParticles = () => {
+      for (const particle of particles) {
+        ctx.beginPath();
+        ctx.fillStyle = `hsla(${particle.hue}, 90%, 72%, 0.9)`;
+        ctx.shadowColor = `hsla(${particle.hue}, 90%, 70%, 0.32)`;
+        ctx.shadowBlur = 12;
+        ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+    };
+
+    const updateParticles = (isCompact: boolean) => {
+      const pointerForce = reducedMotion ? 0 : isCompact ? 24 : 34;
+
+      for (const particle of particles) {
+        if (pointerActive) {
+          const dx = pointerX - particle.x;
+          const dy = pointerY - particle.y;
+          const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+
+          if (distance < pointerForce) {
+            const influence = 1 - distance / pointerForce;
+            particle.vx -= (dx / distance) * influence * 0.006;
+            particle.vy -= (dy / distance) * influence * 0.006;
+          }
+        }
+
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        particle.vx *= 0.992;
+        particle.vy *= 0.992;
+
+        if (particle.x < -20) particle.x = width + 20;
+        if (particle.x > width + 20) particle.x = -20;
+        if (particle.y < -20) particle.y = height + 20;
+        if (particle.y > height + 20) particle.y = -20;
+      }
+    };
+
+    const render = (time: number) => {
+      if (!running) return;
+
+      raf = window.requestAnimationFrame(render);
+
+      if (!reducedMotion && time - lastFrame < 1000 / TARGET_FPS) {
+        return;
+      }
+
+      lastFrame = time;
+      const isCompact = width < 768;
+
+      ctx.clearRect(0, 0, width, height);
+      drawBackgroundGlow();
+      updateParticles(isCompact);
+      drawConnections(isCompact);
+      drawParticles();
+    };
 
     const handleResize = () => {
-      const w = el.clientWidth;
-      const h = el.clientHeight;
-      if (!w || !h) return;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+      configureCanvas();
+      resetParticles();
     };
-    window.addEventListener("resize", handleResize);
 
-    let frame = 0;
-    let raf: number;
+    const handlePointerMove = (event: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      pointerX = event.clientX - rect.left;
+      pointerY = event.clientY - rect.top;
+      pointerActive =
+        pointerX >= 0 &&
+        pointerX <= rect.width &&
+        pointerY >= 0 &&
+        pointerY <= rect.height;
+    };
 
-    const animate = () => {
-      raf = requestAnimationFrame(animate);
-      frame++;
+    const handlePointerLeave = () => {
+      pointerActive = false;
+    };
 
-      points.rotation.y += reducedMotion ? 0.0001 : compactMode ? 0.0002 : 0.00035;
-      points.rotation.x += reducedMotion ? 0.00005 : 0.00014;
-      lines.rotation.y = points.rotation.y;
-      lines.rotation.x = points.rotation.x;
+    const handleVisibilityChange = () => {
+      running = document.visibilityState === "visible";
 
-      camera.position.x += (mouse.x * 4 - camera.position.x) * 0.035;
-      camera.position.y += (mouse.y * 3 - camera.position.y) * 0.035;
-      camera.lookAt(scene.position);
-
-      const sizeAttr = geo.getAttribute("size") as THREE.BufferAttribute;
-      for (let i = 0; i < COUNT; i += breatheStride) {
-        (sizeAttr.array as Float32Array)[i] =
-          sizes[i] * (1 + 0.16 * Math.sin(frame * 0.012 + i * 0.06));
+      if (running) {
+        lastFrame = 0;
+        raf = window.requestAnimationFrame(render);
+      } else {
+        window.cancelAnimationFrame(raf);
       }
-      sizeAttr.needsUpdate = true;
-
-      renderer.render(scene, camera);
     };
-    animate();
+
+    configureCanvas();
+    resetParticles();
+    raf = window.requestAnimationFrame(render);
+
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pointerleave", handlePointerLeave);
 
     return () => {
-      cancelAnimationFrame(raf);
-      if (!reducedMotion && !compactMode) {
-        window.removeEventListener("mousemove", handleMouseMove);
-      }
+      running = false;
+      window.cancelAnimationFrame(raf);
       window.removeEventListener("resize", handleResize);
-      renderer.dispose();
-      geo.dispose();
-      mat.dispose();
-      lineGeo.dispose();
-      lineMat.dispose();
-      if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerleave", handlePointerLeave);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
   return (
-    <div
-      ref={mountRef}
-      className="absolute inset-0 w-full h-full"
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 h-full w-full"
       style={{ pointerEvents: "none" }}
     />
   );
