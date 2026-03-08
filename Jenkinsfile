@@ -83,7 +83,22 @@ pipeline {
       }
     }
 
-    // ── 5. Package & upload to S3 (production branch only) ────────────────────
+    // ── 5. Build Admin Panel ───────────────────────────────────────────────────
+    stage('Build Admin') {
+      when { branch 'production' }
+      steps {
+        sh '''
+          set -euo pipefail
+          export PATH="/home/echo/.bun/bin:$PATH"
+          cd "${PROJECT_PATH}/apps/admin"
+          bun install --frozen-lockfile
+          bun run build
+          echo "✓ Admin panel built"
+        '''
+      }
+    }
+
+    // ── 6. Package & upload to S3 (production branch only) ────────────────────
     stage('Upload') {
       when { branch 'production' }
       environment {
@@ -166,7 +181,38 @@ pipeline {
       }
     }
 
-    // ── 7. Smoke test (production branch only) ────────────────────────────────
+    // ── 7. Deploy Admin Panel (production branch only) ────────────────────────
+    stage('Deploy Admin') {
+      when { branch 'production' }
+      steps {
+        sh '''
+          set -euo pipefail
+          export PATH="/home/echo/.bun/bin:$PATH"
+
+          # Install/update systemd service unit
+          sudo cp "${PROJECT_PATH}/infra/fetchium-admin.service" /etc/systemd/system/fetchium-admin.service
+          sudo systemctl daemon-reload
+          sudo systemctl enable fetchium-admin
+
+          # Restart service
+          sudo systemctl restart fetchium-admin
+          sleep 4
+          sudo systemctl is-active fetchium-admin || {
+            echo "❌ fetchium-admin failed to start"
+            sudo journalctl -u fetchium-admin -n 30 --no-pager
+            exit 1
+          }
+          echo "✓ fetchium-admin restarted successfully"
+        '''
+      }
+      post {
+        failure {
+          sh 'sudo journalctl -u fetchium-admin -n 50 --no-pager || true'
+        }
+      }
+    }
+
+    // ── 8. Smoke test (production branch only) ────────────────────────────────
     stage('Smoke') {
       when { branch 'production' }
       steps {

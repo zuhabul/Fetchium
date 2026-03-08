@@ -1,5 +1,6 @@
 //! REST API route definitions — v1 API under /v1/ prefix.
 
+use crate::admin;
 use crate::middleware::AppState;
 use crate::{handlers, handlers_auth, handlers_proxy};
 use axum::{
@@ -56,14 +57,29 @@ pub fn build_router(state: AppState) -> Router {
         .route("/proxy/purge", post(handlers_proxy::proxy_purge))
         .route("/proxy/test", post(handlers_proxy::proxy_test));
 
+    // Internal admin routes — session-authenticated, staff only
+    let internal_admin = Router::new()
+        // Auth
+        .route("/auth/bootstrap", post(admin::auth::bootstrap))
+        .route("/auth/login", post(admin::auth::login))
+        .route("/auth/logout", post(admin::auth::logout))
+        .route("/auth/me", get(admin::auth::me))
+        .route("/auth/totp/setup", post(admin::auth::totp_setup))
+        .route("/auth/totp/confirm", post(admin::auth::totp_confirm))
+        // Sessions
+        .route("/sessions", get(admin::auth::list_sessions))
+        .route("/sessions/:id", delete(admin::auth::revoke_session));
+
     Router::new()
         // Public endpoints (no auth)
         .route("/health", get(handlers_auth::health))
         .route("/v1/health", get(handlers_auth::health))
         .route("/", get(api_root))
-        // Versioned API
+        // Versioned public/customer API
         .nest("/v1", v1_authed)
         .nest("/v1", v1_admin)
+        // Internal admin namespace (session auth, not X-Admin-Secret)
+        .nest("/internal/admin", internal_admin)
         // Legacy unversioned routes (backwards compat)
         .route("/api/health", get(handlers_auth::health))
         .with_state(state)

@@ -1,5 +1,6 @@
 //! REST API middleware — auth extraction, rate limiting, request logging.
 
+use crate::admin::db::AdminDb;
 use crate::auth::{ApiKeyRecord, AuthDb, PlanLimits};
 use crate::types::{JobState, JobStatusResponse};
 use axum::{
@@ -25,6 +26,7 @@ pub struct AppState {
     pub http: HttpClient,
     pub cache: MemoryCache,
     pub auth_db: Arc<AuthDb>,
+    pub admin_db: Option<Arc<AdminDb>>,
     pub rate_limiter: Arc<PerKeyRateLimiter>,
     pub jobs: Arc<JobStore>,
     /// Global concurrency limiter for search operations.
@@ -33,7 +35,11 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(config: FetchiumConfig, auth_db: Arc<AuthDb>) -> anyhow::Result<Self> {
+    pub fn new(
+        config: FetchiumConfig,
+        auth_db: Arc<AuthDb>,
+        admin_db: Option<Arc<AdminDb>>,
+    ) -> anyhow::Result<Self> {
         let http = HttpClient::new(&config)?;
         let cache = MemoryCache::new(
             config.cache.memory_max_entries,
@@ -45,6 +51,7 @@ impl AppState {
             http,
             cache,
             auth_db,
+            admin_db,
             rate_limiter: Arc::new(PerKeyRateLimiter::new()),
             jobs: Arc::new(JobStore::new()),
             // Serialize search operations: each search dispatches 7-10 backend

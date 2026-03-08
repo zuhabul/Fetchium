@@ -24,6 +24,9 @@ sha2.workspace = true
 parking_lot.workspace = true
 rand.workspace = true
 dirs.workspace = true
+argon2.workspace = true
+totp-rs.workspace = true
+base32.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
