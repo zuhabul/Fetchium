@@ -59,7 +59,7 @@ curl -X POST https://api.fetchium.com/v1/proxy/purge \\
   -H "X-Admin-Secret: $FETCHIUM_ADMIN_SECRET"`} />
 
       <div className="callout">
-        These endpoints are operational controls for self-hosted or internal admin deployments.
+        These endpoints are operational controls for internal admin deployments.
         If proxy rotation is disabled, the API returns a JSON response with <code>enabled: false</code>
         or a status message explaining that proxy rotation is not configured.
       </div>
@@ -68,8 +68,6 @@ curl -X POST https://api.fetchium.com/v1/proxy/purge \\
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
           { href: "https://docs.fetchium.com/api/admin-keys", title: "Admin Keys", desc: "Manage API keys with the same admin secret" },
-          { href: "https://docs.fetchium.com/self-hosting/config", title: "Configuration", desc: "Enable and tune proxy rotation" },
-          { href: "https://docs.fetchium.com/self-hosting/docker", title: "Docker Setup", desc: "Run the API in production" },
           { href: "https://docs.fetchium.com/errors", title: "Error Reference", desc: "Current admin error formats" },
         ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">

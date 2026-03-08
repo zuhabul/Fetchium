@@ -136,7 +136,6 @@ export default function AlgorithmsOverview() {
           { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "See algorithms in action" },
           { href: "https://docs.fetchium.com/api/research", title: "Research API", desc: "AMRS research swarm" },
           { href: "https://docs.fetchium.com/quickstart", title: "Quick Start", desc: "Make your first API call" },
-          { href: "https://docs.fetchium.com/self-hosting/docker", title: "Self-Hosting", desc: "Run your own instance" },
         ].map(l => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

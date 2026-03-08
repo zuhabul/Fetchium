@@ -22,7 +22,6 @@ const nav: Record<string, { label: string; href: string }[]> = {
     { label: "TypeScript SDK", href: "https://docs.fetchium.com/sdk/typescript" },
     { label: "Python SDK", href: "https://docs.fetchium.com/sdk/python" },
     { label: "Algorithm Docs", href: "https://docs.fetchium.com/algorithms" },
-    { label: "Self-hosting", href: "https://docs.fetchium.com/self-hosting/docker" },
   ],
   Compare: [
     { label: "vs Tavily", href: "/compare/tavily" },

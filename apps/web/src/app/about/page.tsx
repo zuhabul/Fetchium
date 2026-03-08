@@ -16,11 +16,11 @@ const values = [
   },
   {
     title: "Privacy by default",
-    desc: "Zero telemetry unless you opt in. Full self-hosting with complete feature parity. Your queries are yours.",
+    desc: "Zero telemetry unless you opt in. Your queries are yours.",
   },
   {
     title: "Open infrastructure",
-    desc: "Self-hostable. Standards-based (MCP, REST, CLI). No lock-in. If you want to run Fetchium on your own servers tomorrow, you can.",
+    desc: "Standards-based (MCP, REST, CLI). Designed to be easy to integrate without locking your application to a proprietary workflow.",
   },
   {
     title: "Built to last",
