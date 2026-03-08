@@ -30,8 +30,8 @@ export default function ApiExplorerClient({ routes }: Props) {
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 max-w-lg w-full mx-4 space-y-4">
             <p className="text-sm font-semibold text-zinc-300">Test with curl</p>
             <pre className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-xs font-mono text-zinc-400 overflow-x-auto whitespace-pre-wrap">
-{`curl -X GET https://api.hypersearchx.zuhabul.com${testPath} \\
-  -H "Authorization: Bearer YOUR_TOKEN" \\
+{`curl -X GET ${typeof window !== 'undefined' ? window.location.origin : ''}/api/admin${testPath} \\
+  -H "Cookie: admin_session=YOUR_SESSION" \\
   -H "Content-Type: application/json"`}
             </pre>
             <button onClick={() => setTestPath(null)}

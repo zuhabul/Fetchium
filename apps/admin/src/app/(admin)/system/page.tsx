@@ -14,6 +14,7 @@ interface MetricsSummary {
   ram_used_mb?: number
   ram_total_mb?: number
   disk_used_gb?: number
+  admin_db_size_bytes?: number
 }
 
 interface MetricsRealtime {
@@ -155,11 +156,13 @@ export default async function SystemPage() {
             <dl className="space-y-2 text-xs">
               <div className="flex justify-between">
                 <dt className="text-zinc-500">admin.db</dt>
-                <dd className="text-zinc-300">~2.4 MB</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-zinc-500">auth.db</dt>
-                <dd className="text-zinc-300">~0.8 MB</dd>
+                <dd className="text-zinc-300">
+                  {summary.admin_db_size_bytes != null
+                    ? summary.admin_db_size_bytes < 1024 * 1024
+                      ? `${(summary.admin_db_size_bytes / 1024).toFixed(1)} KB`
+                      : `${(summary.admin_db_size_bytes / (1024 * 1024)).toFixed(2)} MB`
+                    : '—'}
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-zinc-500">Engine</dt>

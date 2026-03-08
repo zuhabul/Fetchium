@@ -557,6 +557,13 @@ impl AdminDb {
         Ok(sessions)
     }
 
+    pub fn db_size_bytes(&self) -> i64 {
+        let conn = self.conn.lock();
+        let page_count: i64 = conn.query_row("PRAGMA page_count", [], |r| r.get(0)).unwrap_or(0);
+        let page_size: i64 = conn.query_row("PRAGMA page_size", [], |r| r.get(0)).unwrap_or(4096);
+        page_count * page_size
+    }
+
     pub fn list_users(&self, limit: i64, offset: i64, search: Option<&str>, status: Option<&str>) -> Result<Vec<serde_json::Value>> {
         let conn = self.conn.lock();
         let mut where_parts: Vec<String> = vec![];

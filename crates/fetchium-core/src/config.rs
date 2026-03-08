@@ -133,26 +133,6 @@ pub struct SearchConfig {
     pub timeout_secs: u64,
     /// SearXNG instance URL (if configured).
     pub searxng_url: Option<String>,
-    /// Tavily API key (set via TAVILY_API_KEY env var or config).
-    pub tavily_api_key: Option<String>,
-    /// Extra Tavily keys for pool rotation.
-    #[serde(default)]
-    pub tavily_api_keys: Vec<String>,
-    /// Serper API key (set via SERPER_API_KEY env var or config).
-    pub serper_api_key: Option<String>,
-    /// Extra Serper keys for pool rotation.
-    #[serde(default)]
-    pub serper_api_keys: Vec<String>,
-    /// Exa API key (set via EXA_API_KEY env var or config).
-    pub exa_api_key: Option<String>,
-    /// Extra Exa keys for pool rotation.
-    #[serde(default)]
-    pub exa_api_keys: Vec<String>,
-    /// Firecrawl API key (set via FIRECRAWL_API_KEY env var or config).
-    pub firecrawl_api_key: Option<String>,
-    /// Extra Firecrawl keys for pool rotation.
-    #[serde(default)]
-    pub firecrawl_api_keys: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -336,10 +316,6 @@ impl Default for SearchConfig {
             // Direct Bing/DDG/Google scrapers excluded — they CAPTCHA-block server IPs.
             backends: vec![
                 "searxng".into(),
-                "tavily".into(),
-                "serper".into(),
-                "exa".into(),
-                "firecrawl".into(),
                 "wikipedia".into(),
                 "hackernews".into(),
                 "reddit".into(),
@@ -352,14 +328,6 @@ impl Default for SearchConfig {
             max_concurrent: 10,
             timeout_secs: 30,
             searxng_url: Some("***REMOVED***".into()),
-            tavily_api_key: None,
-            tavily_api_keys: Vec::new(),
-            serper_api_key: None,
-            serper_api_keys: Vec::new(),
-            exa_api_key: None,
-            exa_api_keys: Vec::new(),
-            firecrawl_api_key: None,
-            firecrawl_api_keys: Vec::new(),
         }
     }
 }
@@ -644,27 +612,6 @@ impl FetchiumConfig {
         if let Some(val) = env_str!("FETCHIUM_FETCH_RESPECT_ROBOTS") {
             if let Ok(b) = val.parse::<bool>() {
                 self.fetch.respect_robots = b;
-            }
-        }
-        // Search backend API keys (premium backends)
-        if let Ok(val) = std::env::var("TAVILY_API_KEY") {
-            if !val.is_empty() {
-                self.search.tavily_api_key = Some(val);
-            }
-        }
-        if let Ok(val) = std::env::var("SERPER_API_KEY") {
-            if !val.is_empty() {
-                self.search.serper_api_key = Some(val);
-            }
-        }
-        if let Ok(val) = std::env::var("EXA_API_KEY") {
-            if !val.is_empty() {
-                self.search.exa_api_key = Some(val);
-            }
-        }
-        if let Ok(val) = std::env::var("FIRECRAWL_API_KEY") {
-            if !val.is_empty() {
-                self.search.firecrawl_api_key = Some(val);
             }
         }
         // Provider API key overrides (also read directly by ProviderEntry::resolve_api_key)

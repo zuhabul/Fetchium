@@ -1,7 +1,7 @@
 import { getSession, adminFetch } from '@/lib/session'
 import TopBar from '@/components/layout/TopBar'
 import { notFound } from 'next/navigation'
-import { Bot } from 'lucide-react'
+import PostmortemClient from './PostmortemClient'
 
 interface TimelineEvent {
   id: string
@@ -175,15 +175,9 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
           <h3 className="text-sm font-semibold text-zinc-300">Postmortem</h3>
           <p className="text-xs text-zinc-500">
-            Generate an AI-powered postmortem report summarizing the incident timeline, root cause, and remediation steps.
+            Generate a structured postmortem summarizing the incident timeline, root cause, and remediation steps.
           </p>
-          <button className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm px-3 py-1.5 rounded-md transition-colors">
-            <Bot className="w-3.5 h-3.5" />
-            Generate AI Postmortem
-          </button>
-          <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-3 text-xs text-zinc-500 italic">
-            Postmortem will appear here after generation…
-          </div>
+          <PostmortemClient incidentId={id} />
         </div>
       </div>
     </>

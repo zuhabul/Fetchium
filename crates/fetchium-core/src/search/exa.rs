@@ -70,15 +70,36 @@ struct ExaResult {
     score: Option<f64>,
 }
 
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 /// Exa AI neural search backend — semantic search with content.
 pub struct ExaBackend {
     http: HttpClient,
-    api_key: String,
+    api_keys: Vec<String>,
+    current_key_index: AtomicUsize,
 }
 
 impl ExaBackend {
-    pub fn new(http: HttpClient, api_key: String) -> Self {
-        Self { http, api_key }
+    pub fn new(http: HttpClient, api_keys: Vec<String>) -> Self {
+        Self {
+            http,
+            api_keys,
+            current_key_index: AtomicUsize::new(0),
+        }
+    }
+
+    fn get_key(&self) -> &str {
+        if self.api_keys.is_empty() {
+            return "";
+        }
+        let idx = self.current_key_index.load(Ordering::Relaxed) % self.api_keys.len();
+        &self.api_keys[idx]
+    }
+
+    fn rotate_key(&self) {
+        if !self.api_keys.is_empty() {
+            self.current_key_index.fetch_add(1, Ordering::Relaxed);
+        }
     }
 }
 
@@ -89,71 +110,89 @@ impl ExaBackend {
         max_results: u32,
         start_date: Option<&str>,
     ) -> FetchiumResult<Vec<ResultItem>> {
-        let request = ExaRequest {
-            query,
-            search_type: "auto",
-            num_results: max_results.min(10),
-            contents: ExaContents {
-                text: ExaTextConfig {
-                    max_characters: 1500,
+        let mut last_err = None;
+        let num_keys = self.api_keys.len().max(1);
+
+        for _ in 0..num_keys {
+            let api_key = self.get_key();
+            let request = ExaRequest {
+                query,
+                search_type: "auto",
+                num_results: max_results.min(10),
+                contents: ExaContents {
+                    text: ExaTextConfig {
+                        max_characters: 1500,
+                    },
+                    highlights: ExaHighlightConfig {
+                        num_sentences: 3,
+                        highlights_per_url: 3,
+                    },
                 },
-                highlights: ExaHighlightConfig {
-                    num_sentences: 3,
-                    highlights_per_url: 3,
-                },
-            },
-            start_published_date: start_date,
-        };
+                start_published_date: start_date,
+            };
 
-        let body = serde_json::to_string(&request)
-            .map_err(|e| FetchiumError::Search(format!("Exa serialization: {e}")))?;
+            let body = serde_json::to_string(&request)
+                .map_err(|e| FetchiumError::Search(format!("Exa serialization: {e}")))?;
 
-        let response = self
-            .http
-            .post_json_with_header(
-                "https://api.exa.ai/search",
-                &body,
-                "x-api-key",
-                &self.api_key,
-            )
-            .await?;
+            let result = self
+                .http
+                .post_json_with_header("https://api.exa.ai/search", &body, "x-api-key", api_key)
+                .await;
 
-        let parsed: ExaResponse = serde_json::from_str(&response)
-            .map_err(|e| FetchiumError::Search(format!("Exa parse: {e}")))?;
+            match result {
+                Ok(response) => {
+                    let parsed: ExaResponse = serde_json::from_str(&response)
+                        .map_err(|e| FetchiumError::Search(format!("Exa parse: {e}")))?;
 
-        debug!(
-            "Exa: {} results in {:.0}ms [start_date={:?}]",
-            parsed.results.len(),
-            parsed.search_time.unwrap_or(0.0),
-            start_date,
-        );
+                    debug!(
+                        "Exa: {} results in {:.0}ms [start_date={:?}]",
+                        parsed.results.len(),
+                        parsed.search_time.unwrap_or(0.0),
+                        start_date,
+                    );
 
-        let results = parsed
-            .results
-            .into_iter()
-            .enumerate()
-            .map(|(i, r)| {
-                let snippet = if !r.highlights.is_empty() {
-                    r.highlights.join(" ... ")
-                } else {
-                    r.text.unwrap_or_default()
-                };
+                    let results = parsed
+                        .results
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, r)| {
+                            let snippet = if !r.highlights.is_empty() {
+                                r.highlights.join(" ... ")
+                            } else {
+                                r.text.unwrap_or_default()
+                            };
 
-                let score = r.score.or_else(|| r.highlight_scores.first().copied());
+                            let score = r.score.or_else(|| r.highlight_scores.first().copied());
 
-                ResultItem {
-                    title: r.title,
-                    url: r.url,
-                    snippet,
-                    rank: (i + 1) as u32,
-                    backend: BackendId::Exa,
-                    score,
-                    published_date: r.published_date,
+                            ResultItem {
+                                title: r.title,
+                                url: r.url,
+                                snippet,
+                                rank: (i + 1) as u32,
+                                backend: BackendId::Exa,
+                                score,
+                                published_date: r.published_date,
+                            }
+                        })
+                        .collect();
+
+                    return Ok(results);
                 }
-            })
-            .collect();
+                Err(e) => {
+                    if let FetchiumError::Structured(ref se) = e {
+                        if se.message.contains("401") || se.message.contains("403") || se.message.contains("429") || se.message.contains("limit") {
+                            tracing::warn!("Exa key exhausted or limited, rotating... Error: {}", se.message);
+                            self.rotate_key();
+                            last_err = Some(e);
+                            continue;
+                        }
+                    }
+                    return Err(e);
+                }
+            }
+        }
 
-        Ok(results)
+        Err(last_err.unwrap_or(FetchiumError::Search("Exa: All keys exhausted".into())))
     }
 
     fn time_range_to_date(tr: Option<TimeRange>) -> Option<String> {

@@ -118,3 +118,68 @@ pub async fn resolve(
     let _ = db.log_audit(Some(&auth.user.id), Some(&auth.user.role), "incident", Some(&id), "incident.resolve", None);
     Ok(Json(serde_json::json!({"ok": true})))
 }
+
+pub async fn postmortem(
+    auth: AdminAuth,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
+    require(&auth.user, Permission::IncidentsRead)?;
+    let db = state.admin_db.as_ref().ok_or_else(|| (
+        axum::http::StatusCode::SERVICE_UNAVAILABLE,
+        Json(serde_json::json!({"error": "admin db not initialized"})),
+    ))?;
+    let incident = db.get_incident(&id)
+        .unwrap_or(None)
+        .ok_or_else(|| (axum::http::StatusCode::NOT_FOUND, Json(serde_json::json!({"error": "incident not found"}))))?;
+    let timeline = db.get_incident_timeline(&id).unwrap_or_default();
+
+    let title = incident.get("title").and_then(|v| v.as_str()).unwrap_or("Unknown");
+    let severity = incident.get("severity").and_then(|v| v.as_str()).unwrap_or("unknown");
+    let status = incident.get("status").and_then(|v| v.as_str()).unwrap_or("unknown");
+    let started = incident.get("started_at").and_then(|v| v.as_str()).unwrap_or("unknown");
+    let resolved = incident.get("resolved_at").and_then(|v| v.as_str()).unwrap_or("unresolved");
+
+    let timeline_text: String = timeline.iter().enumerate().map(|(i, ev)| {
+        let t = ev.get("event_type").and_then(|v| v.as_str()).unwrap_or("update");
+        let msg = ev.get("message").and_then(|v| v.as_str()).unwrap_or("");
+        let ts = ev.get("created_at").and_then(|v| v.as_str()).unwrap_or("");
+        format!("  {}. [{}] {} — {}", i + 1, t.to_uppercase(), ts, msg)
+    }).collect::<Vec<_>>().join("\n");
+
+    let postmortem = format!(
+        "INCIDENT POSTMORTEM\n\
+         ══════════════════════════════════════════\n\
+         Title:     {title}\n\
+         Severity:  {severity}\n\
+         Status:    {status}\n\
+         Started:   {started}\n\
+         Resolved:  {resolved}\n\
+         \n\
+         TIMELINE\n\
+         ─────────────────────────────────────────\n\
+         {timeline_or_none}\n\
+         \n\
+         SUMMARY\n\
+         ─────────────────────────────────────────\n\
+         This incident was classified as {severity} severity. \
+         {timeline_count} timeline event(s) were recorded. \
+         {resolution_note}\n\
+         \n\
+         RECOMMENDATIONS\n\
+         ─────────────────────────────────────────\n\
+         • Review monitoring alerts for early detection\n\
+         • Ensure runbooks are up to date for {severity} severity incidents\n\
+         • Schedule a follow-up review within 5 business days\n",
+        timeline_or_none = if timeline_text.is_empty() { "  (no timeline events recorded)".to_string() } else { timeline_text },
+        timeline_count = timeline.len(),
+        resolution_note = if status == "resolved" {
+            format!("Incident was resolved at {resolved}.")
+        } else {
+            "Incident is still open — resolution pending.".to_string()
+        },
+    );
+
+    let _ = db.log_audit(Some(&auth.user.id), Some(&auth.user.role), "incident", Some(&id), "incident.postmortem", None);
+    Ok(Json(serde_json::json!({"ok": true, "postmortem": postmortem})))
+}
