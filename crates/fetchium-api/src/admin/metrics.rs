@@ -9,8 +9,29 @@ pub async fn realtime(_auth: AdminAuth, State(_state): State<AppState>) -> Json<
     Json(serde_json::json!({"ok": true, "data": {}}))
 }
 
-pub async fn summary(_auth: AdminAuth, State(_state): State<AppState>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({"ok": true, "data": {}}))
+pub async fn summary(_auth: AdminAuth, State(state): State<AppState>) -> Json<serde_json::Value> {
+    let (total_orgs, open_incidents, open_tickets) = state.admin_db.as_ref()
+        .map(|db| {
+            let orgs = db.count_orgs().unwrap_or(0);
+            let incidents = db.list_incidents().unwrap_or_default()
+                .iter()
+                .filter(|i| i.get("status").and_then(|s| s.as_str()) != Some("resolved"))
+                .count() as i64;
+            let tickets = db.count_tickets_by_status("open").unwrap_or(0);
+            (orgs, incidents, tickets)
+        })
+        .unwrap_or((0, 0, 0));
+
+    Json(serde_json::json!({
+        "ok": true,
+        "total_orgs": total_orgs,
+        "open_incidents": open_incidents,
+        "open_tickets": open_tickets,
+        "jobs_active": 0,
+        "jobs_queued": 0,
+        "jobs_completed_today": 0,
+        "jobs_failed_today": 0,
+    }))
 }
 
 pub async fn provider_health(
@@ -79,4 +100,59 @@ fn read_disk_usage(path: &str) -> Option<(f64, f64)> {
     let total = stat.f_blocks as f64 * stat.f_frsize as f64 / 1e9;
     let free = stat.f_bfree as f64 * stat.f_frsize as f64 / 1e9;
     Some((total - free, total))
+}
+
+/// GET /internal/admin/system/logs?service=fetchium-api&lines=200
+pub async fn system_logs(
+    _auth: AdminAuth,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Json<serde_json::Value> {
+    let service = params.get("service").map(|s| s.as_str()).unwrap_or("fetchium-api");
+    let lines = params.get("lines").and_then(|n| n.parse::<u32>().ok()).unwrap_or(100).min(500);
+
+    // Validate service name (whitelist only)
+    let allowed = ["fetchium-api", "fetchium-admin", "fetchium-mcp"];
+    if !allowed.contains(&service) {
+        return Json(serde_json::json!({"ok": false, "lines": [], "error": "unknown service"}));
+    }
+
+    let output = std::process::Command::new("journalctl")
+        .args(["-u", service, "--no-pager", "-n", &lines.to_string(), "--output=short-iso"])
+        .output();
+
+    match output {
+        Ok(out) if out.status.success() => {
+            let text = String::from_utf8_lossy(&out.stdout);
+            let log_lines: Vec<serde_json::Value> = text.lines().map(|line| {
+                // Detect log level from content
+                let level = if line.contains("ERROR") || line.contains("error") { "ERROR" }
+                    else if line.contains("WARN") || line.contains("warn") { "WARN" }
+                    else if line.contains("DEBUG") || line.contains("debug") { "DEBUG" }
+                    else { "INFO" };
+                serde_json::json!({"line": line, "level": level})
+            }).collect();
+            Json(serde_json::json!({"ok": true, "lines": log_lines, "service": service}))
+        }
+        Ok(out) => {
+            let stderr = String::from_utf8_lossy(&out.stderr);
+            Json(serde_json::json!({"ok": false, "lines": [], "error": stderr.trim()}))
+        }
+        Err(e) => Json(serde_json::json!({"ok": false, "lines": [], "error": e.to_string()})),
+    }
+}
+
+/// GET /internal/admin/system/jobs - recent audit events as job history
+pub async fn system_jobs(
+    auth: AdminAuth,
+    State(state): State<AppState>,
+) -> Json<serde_json::Value> {
+    let rows = state.admin_db.as_ref()
+        .and_then(|db| db.list_audit(50, 0).ok())
+        .unwrap_or_default();
+
+    Json(serde_json::json!({
+        "ok": true,
+        "jobs": rows,
+        "total": rows.len(),
+    }))
 }
