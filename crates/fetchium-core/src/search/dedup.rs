@@ -134,6 +134,35 @@ pub fn normalize_url(url: &str) -> String {
             // Strip fragment
             parsed.set_fragment(None);
 
+            // ArXiv version normalization: /abs/2301.12345v3 → /abs/2301.12345
+            // Ensures different versions of the same paper are deduped as one URL.
+            if parsed.host_str().unwrap_or("").ends_with("arxiv.org") {
+                let path = parsed.path().to_owned();
+                // Match /abs/NNNN.NNNNvN or /pdf/NNNN.NNNNvN.pdf patterns
+                let normalized_path = {
+                    // Strip trailing version like v1, v2, v12
+                    let p = if let Some(stripped) = path.strip_suffix(".pdf") {
+                        stripped
+                    } else {
+                        &path
+                    };
+                    // Remove vN suffix from the paper ID
+                    if let Some(v_pos) = p.rfind('v') {
+                        let after_v = &p[v_pos + 1..];
+                        if !after_v.is_empty() && after_v.chars().all(|c| c.is_ascii_digit()) {
+                            p[..v_pos].to_owned()
+                        } else {
+                            p.to_owned()
+                        }
+                    } else {
+                        p.to_owned()
+                    }
+                };
+                // Also normalize /pdf/ → /abs/ so PDF and abstract links dedup
+                let normalized_path = normalized_path.replace("/pdf/", "/abs/");
+                let _ = parsed.set_path(&normalized_path);
+            }
+
             // Filter out tracking query parameters
             let filtered: Vec<(String, String)> = parsed
                 .query_pairs()
@@ -206,45 +235,11 @@ pub fn deduplicate(mut results: Vec<ResultItem>, simhash_threshold: u32) -> Vec<
         }
     }
 
-    // ── Phase 1.5: Title-exact dedup ─────────────────────────────────────────
-    // Catches same paper/article appearing with different URLs (e.g. arxiv.org/abs/1234
-    // vs semanticscholar.org/paper/1234, or different URL params on the same article).
-    // Normalise: lowercase, collapse whitespace, strip punctuation.
-    let mut title_seen: HashMap<String, usize> = HashMap::with_capacity(phase1.len());
-    let mut phase15: Vec<ResultItem> = Vec::with_capacity(phase1.len());
-    for item in phase1 {
-        let norm_title: String = item
-            .title
-            .to_lowercase()
-            .split(|c: char| !c.is_alphanumeric())
-            .filter(|s| !s.is_empty())
-            .collect::<Vec<_>>()
-            .join(" ");
-        if norm_title.len() < 8 {
-            // Very short titles (≤7 chars) are not reliable dedup keys — always keep.
-            phase15.push(item);
-            continue;
-        }
-        match title_seen.get(&norm_title).copied() {
-            Some(existing_idx) => {
-                let existing_score = phase15[existing_idx].score.unwrap_or(0.0);
-                let new_score = item.score.unwrap_or(0.0);
-                if new_score > existing_score {
-                    phase15[existing_idx] = item;
-                }
-            }
-            None => {
-                title_seen.insert(norm_title, phase15.len());
-                phase15.push(item);
-            }
-        }
-    }
-
     // ── Phase 2: SimHash near-dup dedup ──────────────────────────────────────
-    let mut seen_hashes: Vec<SimHash> = Vec::with_capacity(phase15.len());
-    let mut final_results: Vec<ResultItem> = Vec::with_capacity(phase15.len());
+    let mut seen_hashes: Vec<SimHash> = Vec::with_capacity(phase1.len());
+    let mut final_results: Vec<ResultItem> = Vec::with_capacity(phase1.len());
 
-    for item in phase15 {
+    for item in phase1 {
         let text = format!("{} {}", item.title, item.snippet);
         let hash = SimHash::compute(&text);
 
