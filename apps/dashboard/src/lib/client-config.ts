@@ -16,6 +16,8 @@ const CFG_KEY = "fetchium_dashboard_config_v1";
 const LOG_KEY = "fetchium_dashboard_logs_v1";
 
 export const DEFAULT_API_BASE = "https://api.fetchium.com";
+export const ADMIN_KEYS_ENABLED =
+  process.env.NEXT_PUBLIC_FETCHIUM_DASHBOARD_ENABLE_ADMIN_KEYS === "true";
 
 export function normalize_api_base(input: string): string {
   return input.trim().replace(/\/+$/, "");
@@ -30,6 +32,14 @@ function is_local_host(hostname: string): boolean {
     hostname === "localhost" ||
     hostname === "127.0.0.1" ||
     hostname === "[::1]"
+  );
+}
+
+function is_hosted_dashboard(hostname: string): boolean {
+  return (
+    hostname === "app.fetchium.com" ||
+    hostname === "fetchium.com" ||
+    hostname === "www.fetchium.com"
   );
 }
 
@@ -54,6 +64,9 @@ export function validate_api_base(input: string): string | null {
     }
     if (is_local_host(url.hostname)) {
       return "Localhost API bases are only allowed in local development.";
+    }
+    if (is_hosted_dashboard(window.location.hostname) && url.origin !== DEFAULT_API_BASE) {
+      return `Hosted dashboard connections must use ${DEFAULT_API_BASE}.`;
     }
   }
 

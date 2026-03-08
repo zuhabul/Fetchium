@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Copy, Trash2, Check } from "lucide-react";
+import { ADMIN_KEYS_ENABLED } from "@/lib/client-config";
 
 type KeyInfo = {
   id: string;
@@ -26,12 +27,15 @@ type CreateKeyResponse = {
   warning: string;
 };
 
+const plans = ["free", "starter", "pro", "enterprise"] as const;
+
 export default function KeysPage() {
   const [keys, setKeys] = useState<KeyInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newPlan, setNewPlan] = useState<(typeof plans)[number]>("free");
   const [newKey, setNewKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -45,6 +49,12 @@ export default function KeysPage() {
   );
 
   async function loadKeys() {
+    if (!ADMIN_KEYS_ENABLED) {
+      setLoading(false);
+      setKeys([]);
+      setError("API key management is disabled on the hosted dashboard.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -75,7 +85,7 @@ export default function KeysPage() {
       const res = await fetch("/api/keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName || "Dashboard key", plan: "free" }),
+        body: JSON.stringify({ name: newName || "Dashboard key", plan: newPlan }),
       });
       const json = (await res.json()) as CreateKeyResponse | { title?: string; message?: string };
       if (!res.ok) {
@@ -85,6 +95,7 @@ export default function KeysPage() {
       setNewKey((json as CreateKeyResponse).key);
       setCreating(false);
       setNewName("");
+      setNewPlan("free");
       await loadKeys();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create key");
@@ -124,13 +135,15 @@ export default function KeysPage() {
             Real-time key management via `/v1/keys` admin endpoints.
           </p>
         </div>
-        <button
-          onClick={() => setCreating(true)}
-          className="flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Create key
-        </button>
+        {ADMIN_KEYS_ENABLED && (
+          <button
+            onClick={() => setCreating(true)}
+            className="flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Create key
+          </button>
+        )}
       </div>
 
       {error && (
@@ -161,7 +174,11 @@ export default function KeysPage() {
         </div>
       )}
 
-      {creating && !newKey && (
+      {!ADMIN_KEYS_ENABLED ? (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-200">
+          API key management is disabled on the hosted dashboard until authenticated admin access exists.
+        </div>
+      ) : creating && !newKey ? (
         <div className="rounded-xl border border-white/10 bg-surface-2 p-4">
           <h3 className="font-medium text-white mb-3">Create new key</h3>
           <div className="flex gap-3">
@@ -174,6 +191,17 @@ export default function KeysPage() {
               onKeyDown={(e) => e.key === "Enter" && void createKey()}
               className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-brand-500/50"
             />
+            <select
+              value={newPlan}
+              onChange={(e) => setNewPlan(e.target.value as (typeof plans)[number])}
+              className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-brand-500/50"
+            >
+              {plans.map((plan) => (
+                <option key={plan} value={plan}>
+                  {plan}
+                </option>
+              ))}
+            </select>
             <button
               onClick={() => void createKey()}
               disabled={submitting}
@@ -189,7 +217,7 @@ export default function KeysPage() {
             </button>
           </div>
         </div>
-      )}
+      ) : null}
 
       <div className="rounded-xl border border-white/5 bg-surface-1 divide-y divide-white/5">
         {loading ? (
@@ -236,4 +264,3 @@ export default function KeysPage() {
     </div>
   );
 }
-
