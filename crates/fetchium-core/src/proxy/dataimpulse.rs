@@ -110,6 +110,43 @@ impl DataImpulseClient {
         client
     }
 
+    /// Get a fresh (non-cached) client that forces a new residential IP assignment.
+    ///
+    /// Use this for retry-on-block scenarios. The client has zero idle connections
+    /// so the proxy gateway assigns a fresh IP on every request.
+    pub fn fresh_client(&self, country_code: Option<&str>) -> Client {
+        let cc = country_code
+            .map(|c| c.to_lowercase())
+            .unwrap_or_default();
+
+        let username = if cc.is_empty() {
+            self.inner.username.clone()
+        } else {
+            format!("{}__cr.{}", self.inner.username, cc)
+        };
+
+        let proxy_url = format!(
+            "http://{}:{}@{}:{}",
+            username, self.inner.password, self.inner.host, self.inner.port
+        );
+
+        match reqwest::Client::builder()
+            .user_agent(&self.inner.user_agent)
+            .timeout(self.inner.timeout)
+            .connect_timeout(Duration::from_secs(8))
+            .proxy(reqwest::Proxy::all(&proxy_url).expect("valid DataImpulse proxy URL"))
+            .redirect(reqwest::redirect::Policy::limited(5))
+            .gzip(true)
+            .brotli(true)
+            // No connection pool — every request gets a new residential IP
+            .pool_max_idle_per_host(0)
+            .build()
+        {
+            Ok(c) => c,
+            Err(_) => reqwest::Client::new(),
+        }
+    }
+
     /// Whether credentials are configured (non-empty).
     pub fn is_configured(&self) -> bool {
         !self.inner.username.is_empty() && !self.inner.password.is_empty()
