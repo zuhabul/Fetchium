@@ -4,7 +4,7 @@ use crate::admin;
 use crate::middleware::AppState;
 use crate::{handlers, handlers_auth, handlers_proxy};
 use axum::{
-    routing::{delete, get, post},
+    routing::{delete, get, patch, post},
     Router,
 };
 
@@ -68,7 +68,140 @@ pub fn build_router(state: AppState) -> Router {
         .route("/auth/totp/confirm", post(admin::auth::totp_confirm))
         // Sessions
         .route("/sessions", get(admin::auth::list_sessions))
-        .route("/sessions/:id", delete(admin::auth::revoke_session));
+        .route("/sessions/:id", delete(admin::auth::revoke_session))
+        // Orgs
+        .route("/orgs", get(admin::orgs::list).post(admin::orgs::create))
+        .route(
+            "/orgs/:id",
+            get(admin::orgs::get).patch(admin::orgs::update),
+        )
+        .route("/orgs/:id/suspend", post(admin::orgs::suspend))
+        .route("/orgs/:id/reactivate", post(admin::orgs::reactivate))
+        .route("/orgs/:id/plan", patch(admin::orgs::change_plan))
+        .route("/orgs/:id/quota", patch(admin::orgs::override_quota))
+        .route("/orgs/:id/keys", get(admin::keys::list_for_org))
+        .route("/orgs/:id/usage", get(admin::usage::for_org))
+        .route("/orgs/:id/billing", get(admin::billing::for_org))
+        .route("/orgs/:id/tickets", get(admin::support::for_org))
+        .route(
+            "/orgs/:id/crm",
+            get(admin::crm::get).patch(admin::crm::update),
+        )
+        // Users
+        .route("/users", get(admin::users::list))
+        .route("/users/:id", get(admin::users::get))
+        .route("/users/:id/suspend", post(admin::users::suspend))
+        .route("/users/:id/force-logout", post(admin::users::force_logout))
+        // Keys
+        .route("/keys", get(admin::keys::list).post(admin::keys::create))
+        .route(
+            "/keys/:id",
+            get(admin::keys::get).delete(admin::keys::revoke),
+        )
+        .route("/keys/:id/rotate", post(admin::keys::rotate))
+        // Usage
+        .route("/usage", get(admin::usage::summary))
+        .route("/usage/forensics/:request_id", get(admin::usage::forensics))
+        .route("/usage/top-orgs", get(admin::usage::top_orgs))
+        .route("/usage/heatmap", get(admin::usage::endpoint_heatmap))
+        // Billing — static paths before dynamic :org_id
+        .route("/billing", get(admin::billing::list_subscriptions))
+        .route("/billing/webhooks", get(admin::billing::webhook_log))
+        .route(
+            "/billing/webhooks/:id/replay",
+            post(admin::billing::webhook_replay),
+        )
+        .route("/billing/:org_id/refund", post(admin::billing::refund))
+        .route("/billing/:org_id/credit", post(admin::billing::credit))
+        .route("/billing/:org_id/invoices", get(admin::billing::invoices))
+        // CRM
+        .route("/crm/accounts", get(admin::crm::list))
+        .route(
+            "/crm/accounts/:org_id",
+            get(admin::crm::get).patch(admin::crm::update),
+        )
+        .route("/crm/accounts/:org_id/notes", post(admin::crm::add_note))
+        // Support
+        .route("/support/tickets", get(admin::support::list))
+        .route("/support/tickets/:id", get(admin::support::get))
+        .route("/support/tickets/:id/notes", post(admin::support::add_note))
+        .route("/support/tickets/:id/assign", patch(admin::support::assign))
+        .route(
+            "/support/tickets/:id/status",
+            patch(admin::support::set_status),
+        )
+        .route(
+            "/support/macros",
+            get(admin::support::list_macros).post(admin::support::create_macro),
+        )
+        // Incidents
+        .route(
+            "/incidents",
+            get(admin::incidents::list).post(admin::incidents::create),
+        )
+        .route(
+            "/incidents/:id",
+            get(admin::incidents::get).patch(admin::incidents::update),
+        )
+        .route(
+            "/incidents/:id/timeline",
+            post(admin::incidents::add_timeline),
+        )
+        .route("/incidents/:id/resolve", post(admin::incidents::resolve))
+        // Campaigns — static paths before dynamic :id
+        .route(
+            "/campaigns",
+            get(admin::campaigns::list).post(admin::campaigns::create),
+        )
+        .route(
+            "/campaigns/attribution",
+            get(admin::campaigns::attribution_report),
+        )
+        .route("/campaigns/funnel", get(admin::campaigns::funnel))
+        .route("/campaigns/:id", get(admin::campaigns::get))
+        // Audit
+        .route("/audit", get(admin::audit::list))
+        .route("/audit/:id", get(admin::audit::get))
+        // Flags
+        .route("/flags", get(admin::flags::list).post(admin::flags::create))
+        .route(
+            "/flags/:id",
+            get(admin::flags::get).patch(admin::flags::update),
+        )
+        // Metrics
+        .route("/metrics/realtime", get(admin::metrics::realtime))
+        .route("/metrics/summary", get(admin::metrics::summary))
+        .route("/metrics/providers", get(admin::metrics::provider_health))
+        // Proxy ops
+        .route("/proxy/stats", get(admin::proxy_ops::stats))
+        .route("/proxy/reset", post(admin::proxy_ops::reset))
+        .route("/proxy/purge", post(admin::proxy_ops::purge))
+        .route("/proxy/geo", get(admin::proxy_ops::geo_distribution))
+        // Anomaly
+        .route("/anomaly/alerts", get(admin::anomaly::alerts))
+        .route("/anomaly/tenants", get(admin::anomaly::suspicious_tenants))
+        // Export
+        .route("/export/:entity", get(admin::export::export_csv))
+        // Staff management
+        .route(
+            "/staff",
+            get(admin::auth::list_staff).post(admin::auth::create_staff),
+        )
+        .route(
+            "/staff/:id",
+            patch(admin::auth::update_staff).delete(admin::auth::remove_staff),
+        )
+        .route(
+            "/staff/:id/sessions",
+            get(admin::auth::staff_sessions).delete(admin::auth::revoke_all_sessions),
+        )
+        // Approval workflows
+        .route(
+            "/approvals",
+            get(admin::approval::list).post(admin::approval::create),
+        )
+        .route("/approvals/:id/approve", post(admin::approval::approve))
+        .route("/approvals/:id/reject", post(admin::approval::reject));
 
     Router::new()
         // Public endpoints (no auth)

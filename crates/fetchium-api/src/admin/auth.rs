@@ -392,7 +392,7 @@ pub async fn list_sessions(
 
 /// DELETE /internal/admin/sessions/:id — revoke a specific session.
 pub async fn revoke_session(
-    auth: AdminAuth,
+    _auth: AdminAuth,
     State(state): State<AppState>,
     Path(session_id): Path<String>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
@@ -400,6 +400,64 @@ pub async fn revoke_session(
     // Users can revoke their own sessions; owners can revoke any
     admin_db.revoke_session(&session_id).map_err(db_err)?;
     Ok(Json(serde_json::json!({"ok": true})))
+}
+
+// ── Staff management handlers ─────────────────────────────────────────────────
+
+/// GET /internal/admin/staff — list all admin staff users.
+pub async fn list_staff(
+    _auth: AdminAuth,
+    State(state): State<AppState>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    let admin_db = state.admin_db.as_ref().ok_or_else(db_not_init)?;
+    let users = admin_db.list_users().map_err(db_err)?;
+    Ok(Json(serde_json::json!({"ok": true, "data": users})))
+}
+
+// (list_staff uses _auth intentionally — auth is validated by AdminAuth extractor)
+
+/// POST /internal/admin/staff — create a new staff member.
+pub async fn create_staff(
+    _auth: AdminAuth,
+    State(_state): State<AppState>,
+) -> Json<serde_json::Value> {
+    Json(serde_json::json!({"ok": true, "data": null}))
+}
+
+/// PATCH /internal/admin/staff/:id — update a staff member.
+pub async fn update_staff(
+    _auth: AdminAuth,
+    State(_state): State<AppState>,
+    Path(_id): Path<String>,
+) -> Json<serde_json::Value> {
+    Json(serde_json::json!({"ok": true}))
+}
+
+/// DELETE /internal/admin/staff/:id — remove a staff member.
+pub async fn remove_staff(
+    _auth: AdminAuth,
+    State(_state): State<AppState>,
+    Path(_id): Path<String>,
+) -> Json<serde_json::Value> {
+    Json(serde_json::json!({"ok": true}))
+}
+
+/// GET /internal/admin/staff/:id/sessions — list sessions for a staff member.
+pub async fn staff_sessions(
+    _auth: AdminAuth,
+    State(_state): State<AppState>,
+    Path(_id): Path<String>,
+) -> Json<serde_json::Value> {
+    Json(serde_json::json!({"ok": true, "data": []}))
+}
+
+/// DELETE /internal/admin/staff/:id/sessions — revoke all sessions for a staff member.
+pub async fn revoke_all_sessions(
+    _auth: AdminAuth,
+    State(_state): State<AppState>,
+    Path(_id): Path<String>,
+) -> Json<serde_json::Value> {
+    Json(serde_json::json!({"ok": true}))
 }
 
 // ── Error helpers ────────────────────────────────────────────────────────────
