@@ -1,14 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  DEFAULT_API_BASE,
-  loadDashboardConfig,
-  normalize_api_base,
-  normalize_api_key,
-  validate_api_base,
-  validate_api_key,
-} from "@/lib/client-config";
 
 type UsageStats = {
   key_id: string;
@@ -21,48 +13,26 @@ type UsageStats = {
 };
 
 export default function UsagePage() {
-  const [apiKey, setApiKey] = useState("");
-  const [apiBase, setApiBase] = useState(DEFAULT_API_BASE);
   const [stats, setStats] = useState<UsageStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const cfg = loadDashboardConfig();
-    setApiKey(cfg.apiKey);
-    setApiBase(cfg.apiBaseUrl);
-    if (cfg.apiKey) {
-      void fetchUsage(cfg.apiKey, cfg.apiBaseUrl);
-    }
+    void fetchUsage();
   }, []);
 
-  async function fetchUsage(key = apiKey, base = apiBase) {
-    const nextKey = normalize_api_key(key);
-    const nextBase = normalize_api_base(base);
-    const keyError = validate_api_key(nextKey);
-    const baseError = validate_api_base(nextBase);
-
-    if (keyError || baseError) {
-      setStats(null);
-      setError(keyError || baseError || "Invalid settings.");
-      return;
-    }
-
+  async function fetchUsage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/usage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: nextKey, apiBase: nextBase }),
-      });
-      const body = (await res.json()) as UsageStats & { title?: string; message?: string };
+      const res = await fetch("/api/usage", { cache: "no-store" });
+      const body = (await res.json()) as { usage?: UsageStats; title?: string; message?: string };
       if (!res.ok) {
         setStats(null);
         setError(body.title || body.message || "Failed to fetch usage.");
         return;
       }
-      setStats(body);
+      setStats(body.usage || null);
     } catch (e) {
       setStats(null);
       setError(e instanceof Error ? e.message : "Failed to fetch usage.");
@@ -79,24 +49,8 @@ export default function UsagePage() {
       </div>
 
       <div className="rounded-xl border border-white/5 bg-surface-1 p-5 space-y-3">
-        <div className="grid gap-3 md:grid-cols-2">
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="fetchium_..."
-            className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-brand-500/50"
-          />
-          <input
-            type="url"
-            value={apiBase}
-            readOnly
-            placeholder={DEFAULT_API_BASE}
-            className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 outline-none"
-          />
-        </div>
         <p className="text-xs text-white/35">
-          API base is managed in Settings and locked to the hosted production API here.
+          Usage is loaded from the authenticated session against the hosted production API.
         </p>
         <button
           onClick={() => void fetchUsage()}
@@ -122,7 +76,10 @@ export default function UsagePage() {
             label="Quota Remaining"
             value={stats.quota_remaining == null ? "Unlimited" : String(stats.quota_remaining)}
           />
-          <StatCard label="Monthly Limit" value={stats.monthly_limit == null ? "Unlimited" : String(stats.monthly_limit)} />
+          <StatCard
+            label="Monthly Limit"
+            value={stats.monthly_limit == null ? "Unlimited" : String(stats.monthly_limit)}
+          />
           <StatCard label="Tokens This Month" value={stats.tokens_this_month.toLocaleString()} />
           <StatCard label="Key ID" value={stats.key_id.slice(0, 8)} />
           <StatCard

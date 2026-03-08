@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { BarChart3, Zap, Clock, CheckCircle } from "lucide-react";
-import { loadDashboardConfig, loadRequestLogs } from "@/lib/client-config";
+import { loadRequestLogs } from "@/lib/client-config";
 
 type UsageStats = {
   plan: string;
@@ -24,18 +24,12 @@ export default function DashboardPage() {
   const [logs, setLogs] = useState<RequestLog[]>([]);
 
   useEffect(() => {
-    const cfg = loadDashboardConfig();
     setLogs(loadRequestLogs().slice(0, 8) as RequestLog[]);
-    if (!cfg.apiKey) return;
     void (async () => {
-      const res = await fetch("/api/usage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: cfg.apiKey, apiBase: cfg.apiBaseUrl }),
-      });
+      const res = await fetch("/api/usage", { cache: "no-store" });
       if (!res.ok) return;
-      const body = (await res.json()) as UsageStats;
-      setUsage(body);
+      const body = (await res.json()) as { usage?: UsageStats };
+      setUsage(body.usage || null);
     })();
   }, []);
 
@@ -132,4 +126,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, User } from "lucide-react";
-import { loadDashboardConfig } from "@/lib/client-config";
+import { Bell, LogOut, User } from "lucide-react";
+import { signOut } from "next-auth/react";
 
 type UsageStats = {
   plan: string;
@@ -14,17 +14,11 @@ export default function DashHeader() {
   const [usage, setUsage] = useState<UsageStats | null>(null);
 
   useEffect(() => {
-    const cfg = loadDashboardConfig();
-    if (!cfg.apiKey) return;
     void (async () => {
-      const res = await fetch("/api/usage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: cfg.apiKey, apiBase: cfg.apiBaseUrl }),
-      });
+      const res = await fetch("/api/usage", { cache: "no-store" });
       if (!res.ok) return;
-      const body = (await res.json()) as UsageStats;
-      setUsage(body);
+      const body = (await res.json()) as { usage?: UsageStats };
+      setUsage(body.usage || null);
     })();
   }, []);
 
@@ -50,8 +44,14 @@ export default function DashHeader() {
         <button className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/20 text-brand-300">
           <User className="h-4 w-4" />
         </button>
+        <button
+          onClick={() => void signOut({ callbackUrl: "/login" })}
+          className="flex h-8 items-center justify-center gap-1 rounded-lg border border-white/5 px-3 text-white/50 transition-colors hover:text-white"
+        >
+          <LogOut className="h-4 w-4" />
+          <span className="text-xs">Sign out</span>
+        </button>
       </div>
     </header>
   );
 }
-
