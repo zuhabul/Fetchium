@@ -125,9 +125,9 @@ pub async fn embed_batch_async(texts: &[&str]) -> Result<Vec<Vec<f32>>, Fetchium
 
 /// Parse Ollama /api/embed JSON response.
 fn parse_ollama_response(data: &serde_json::Value) -> Result<Vec<Vec<f32>>, FetchiumError> {
-    let embeddings = data["embeddings"]
-        .as_array()
-        .ok_or_else(|| FetchiumError::Internal("Ollama response missing 'embeddings' array".into()))?;
+    let embeddings = data["embeddings"].as_array().ok_or_else(|| {
+        FetchiumError::Internal("Ollama response missing 'embeddings' array".into())
+    })?;
 
     let result: Vec<Vec<f32>> = embeddings
         .iter()

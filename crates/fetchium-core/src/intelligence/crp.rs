@@ -80,7 +80,10 @@ pub struct Resolution {
 ///
 /// The `stm_trust_fn` callback retrieves the PIE trust score for a domain.
 /// Pass `|_| 0.5` when PIE is unavailable.
-pub fn resolve<F>(contradiction: &CrpContradiction, stm_trust_fn: F) -> Result<Resolution, FetchiumError>
+pub fn resolve<F>(
+    contradiction: &CrpContradiction,
+    stm_trust_fn: F,
+) -> Result<Resolution, FetchiumError>
 where
     F: Fn(&str) -> f64,
 {

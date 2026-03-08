@@ -83,8 +83,9 @@ pub async fn chat_with_fallback(
         }
     }
 
-    Err(last_error
-        .unwrap_or_else(|| FetchiumError::AiUnavailable("All configured AI providers failed.".into())))
+    Err(last_error.unwrap_or_else(|| {
+        FetchiumError::AiUnavailable("All configured AI providers failed.".into())
+    }))
 }
 
 /// Attempt a single provider and return its `ChatResult` on success.
@@ -396,7 +397,8 @@ async fn call_openai_compat(
         let mut buf = Vec::<u8>::new();
 
         while let Some(chunk) = stream.next().await {
-            let bytes = chunk.map_err(|e| FetchiumError::AiUnavailable(format!("Stream error: {e}")))?;
+            let bytes =
+                chunk.map_err(|e| FetchiumError::AiUnavailable(format!("Stream error: {e}")))?;
             buf.extend_from_slice(&bytes);
 
             while let Some(pos) = buf.iter().position(|&b| b == b'\n') {
@@ -532,7 +534,8 @@ async fn call_anthropic(
         let mut buf = Vec::<u8>::new();
 
         while let Some(chunk) = stream.next().await {
-            let bytes = chunk.map_err(|e| FetchiumError::AiUnavailable(format!("Stream error: {e}")))?;
+            let bytes =
+                chunk.map_err(|e| FetchiumError::AiUnavailable(format!("Stream error: {e}")))?;
             buf.extend_from_slice(&bytes);
 
             while let Some(pos) = buf.iter().position(|&b| b == b'\n') {
@@ -556,10 +559,9 @@ async fn call_anthropic(
             provider: ProviderKind::Anthropic,
         })
     } else {
-        let parsed: AnthropicResponse = resp
-            .json()
-            .await
-            .map_err(|e| FetchiumError::AiUnavailable(format!("Invalid Anthropic response: {e}")))?;
+        let parsed: AnthropicResponse = resp.json().await.map_err(|e| {
+            FetchiumError::AiUnavailable(format!("Invalid Anthropic response: {e}"))
+        })?;
         let content = parsed
             .content
             .into_iter()
@@ -651,7 +653,8 @@ async fn gemini_read_stream_with_provider(
     let mut buf = Vec::<u8>::new();
 
     while let Some(chunk) = stream.next().await {
-        let bytes = chunk.map_err(|e| FetchiumError::AiUnavailable(format!("Stream error: {e}")))?;
+        let bytes =
+            chunk.map_err(|e| FetchiumError::AiUnavailable(format!("Stream error: {e}")))?;
         buf.extend_from_slice(&bytes);
 
         while let Some(pos) = buf.iter().position(|&b| b == b'\n') {
@@ -1050,10 +1053,9 @@ async fn call_gemini_oauth(
     if streaming {
         gemini_read_stream(resp, model, on_token).await
     } else {
-        let parsed: GeminiResponse = resp
-            .json()
-            .await
-            .map_err(|e| FetchiumError::AiUnavailable(format!("Invalid Gemini OAuth response: {e}")))?;
+        let parsed: GeminiResponse = resp.json().await.map_err(|e| {
+            FetchiumError::AiUnavailable(format!("Invalid Gemini OAuth response: {e}"))
+        })?;
         let content = parsed
             .candidates
             .into_iter()

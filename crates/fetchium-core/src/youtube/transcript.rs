@@ -399,7 +399,9 @@ async fn fetch_innertube_with_client(
             .map_err(FetchiumError::Network)
     })
     .await
-    .map_err(|_| FetchiumError::YouTube(format!("Innertube ({client_name}) request timed out")))??;
+    .map_err(|_| {
+        FetchiumError::YouTube(format!("Innertube ({client_name}) request timed out"))
+    })??;
 
     let v: serde_json::Value = serde_json::from_str(&response_text)
         .map_err(|e| FetchiumError::YouTube(format!("Innertube JSON parse: {e}")))?;
@@ -528,7 +530,11 @@ async fn fetch_innertube_with_client(
 }
 
 /// Fetch raw caption XML from a URL with a timeout.
-async fn fetch_caption_xml(url: &str, http: &HttpClient, timeout: Duration) -> FetchiumResult<String> {
+async fn fetch_caption_xml(
+    url: &str,
+    http: &HttpClient,
+    timeout: Duration,
+) -> FetchiumResult<String> {
     tokio::time::timeout(timeout, async {
         http.client()
             .get(url)
@@ -609,8 +615,8 @@ async fn fetch_piped_captions_fast(
         .await
         .map_err(|_| FetchiumError::YouTube("Piped stream timeout".into()))??;
 
-    let v: serde_json::Value =
-        serde_json::from_str(&body).map_err(|e| FetchiumError::YouTube(format!("Piped parse: {e}")))?;
+    let v: serde_json::Value = serde_json::from_str(&body)
+        .map_err(|e| FetchiumError::YouTube(format!("Piped parse: {e}")))?;
 
     let subtitles = v["subtitles"]
         .as_array()

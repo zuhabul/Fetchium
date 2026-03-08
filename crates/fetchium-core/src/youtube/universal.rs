@@ -219,7 +219,9 @@ async fn run_ytdlp_subs(
         }
     }
 
-    Err(FetchiumError::YouTube("yt-dlp wrote no subtitle file".into()))
+    Err(FetchiumError::YouTube(
+        "yt-dlp wrote no subtitle file".into(),
+    ))
 }
 
 // ─── Subtitle Format Parsers ───────────────────────────────────

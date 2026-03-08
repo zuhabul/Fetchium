@@ -74,7 +74,9 @@ async fn run_youtube_pipeline_inner(
     let analyses = fetch_all_video_data(&search_results, pipeline_config, config, http).await;
 
     if analyses.is_empty() {
-        return Err(FetchiumError::YouTube("Failed to analyze any videos".into()));
+        return Err(FetchiumError::YouTube(
+            "Failed to analyze any videos".into(),
+        ));
     }
 
     // Step 7: Rank with VideoFusion

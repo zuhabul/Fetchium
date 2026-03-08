@@ -27,7 +27,11 @@ impl PluginManifest {
     }
 
     /// Write a scaffold `plugin.toml` to the given path.
-    pub fn scaffold(name: &str, plugin_type: &str, path: &std::path::Path) -> Result<(), FetchiumError> {
+    pub fn scaffold(
+        name: &str,
+        plugin_type: &str,
+        path: &std::path::Path,
+    ) -> Result<(), FetchiumError> {
         let manifest = PluginManifest {
             name: name.to_string(),
             version: "0.1.0".to_string(),

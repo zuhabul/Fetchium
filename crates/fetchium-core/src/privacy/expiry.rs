@@ -28,7 +28,12 @@ impl ExpiryScheduler {
     }
 
     /// Schedule `result_id` for deletion after `seconds` seconds.
-    pub fn schedule(&self, result_id: &str, label: &str, seconds: u64) -> Result<(), FetchiumError> {
+    pub fn schedule(
+        &self,
+        result_id: &str,
+        label: &str,
+        seconds: u64,
+    ) -> Result<(), FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let expire_at = chrono::Utc::now() + chrono::Duration::seconds(seconds as i64);
         conn.execute(

@@ -320,10 +320,9 @@ where
         let db2 = app_state.auth_db.clone();
         let key_id = record.id.clone();
         let plan = record.plan.clone();
-        let within_quota =
-            tokio::task::spawn_blocking(move || db2.check_quota(&key_id, &plan))
-                .await
-                .unwrap_or(false);
+        let within_quota = tokio::task::spawn_blocking(move || db2.check_quota(&key_id, &plan))
+            .await
+            .unwrap_or(false);
         if !within_quota {
             return Err(AuthError::QuotaExceeded);
         }

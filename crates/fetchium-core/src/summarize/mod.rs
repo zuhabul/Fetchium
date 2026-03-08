@@ -326,7 +326,10 @@ async fn has_reachable_ai_provider(ai_config: &AiConfig, fetchium_config: &Fetch
     false
 }
 
-async fn fetch_html_with_block_fallback(http: &HttpClient, url: &str) -> Result<String, FetchiumError> {
+async fn fetch_html_with_block_fallback(
+    http: &HttpClient,
+    url: &str,
+) -> Result<String, FetchiumError> {
     match http.fetch_text(url).await {
         Ok(html) => Ok(html),
         Err(err) => {

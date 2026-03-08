@@ -19,7 +19,9 @@ pub fn extract_pdf_file(path: &std::path::Path) -> FetchiumResult<MultimodalCont
         })?;
 
     if !output.status.success() {
-        return Err(FetchiumError::Extraction("pdftotext returned an error".into()));
+        return Err(FetchiumError::Extraction(
+            "pdftotext returned an error".into(),
+        ));
     }
 
     let full_text = String::from_utf8_lossy(&output.stdout).to_string();

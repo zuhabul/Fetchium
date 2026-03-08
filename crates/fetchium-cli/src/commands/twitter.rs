@@ -12,7 +12,11 @@ use fetchium_core::social::twitter::{
 use std::time::Instant;
 
 /// Run the `fetchium twitter` subcommand.
-pub async fn run(args: crate::cli::TwitterArgs, config: &FetchiumConfig, format: Format) -> Result<()> {
+pub async fn run(
+    args: crate::cli::TwitterArgs,
+    config: &FetchiumConfig,
+    format: Format,
+) -> Result<()> {
     let start = Instant::now();
     let http = HttpClient::new(config)?;
 

@@ -256,7 +256,9 @@ mod tests {
 
         async fn search(&self, _query: &str, _max: u32) -> FetchiumResult<Vec<ResultItem>> {
             self.call_count.fetch_add(1, Ordering::SeqCst);
-            Err(crate::error::FetchiumError::Search("mock error".to_string()))
+            Err(crate::error::FetchiumError::Search(
+                "mock error".to_string(),
+            ))
         }
     }
 

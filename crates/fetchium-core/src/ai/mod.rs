@@ -28,8 +28,9 @@ pub mod setup;
 pub mod types;
 
 pub use credentials::{
-    detect_subscription_auth, fetchium_auth_all, fetchium_auth_get, fetchium_auth_path, fetchium_auth_remove,
-    fetchium_auth_set, invalidate_gemini_creds, FetchiumAuth, SubscriptionAuth,
+    detect_subscription_auth, fetchium_auth_all, fetchium_auth_get, fetchium_auth_path,
+    fetchium_auth_remove, fetchium_auth_set, invalidate_gemini_creds, FetchiumAuth,
+    SubscriptionAuth,
 };
 pub use ollama::OllamaClient;
 pub use pipeline::run_ai_pipeline;

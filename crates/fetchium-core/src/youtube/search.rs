@@ -407,7 +407,9 @@ pub async fn trending_videos(
         }
     }
 
-    Err(FetchiumError::YouTube("Could not fetch trending videos".into()))
+    Err(FetchiumError::YouTube(
+        "Could not fetch trending videos".into(),
+    ))
 }
 
 /// Search for related videos given a video ID.
@@ -456,7 +458,9 @@ pub async fn related_videos(
             _ => continue,
         }
     }
-    Err(FetchiumError::YouTube("Could not fetch related videos".into()))
+    Err(FetchiumError::YouTube(
+        "Could not fetch related videos".into(),
+    ))
 }
 
 // ─── Invidious / Piped Parsers ─────────────────────────────────
@@ -497,8 +501,8 @@ fn parse_piped_search_results(
     body: &str,
     max_results: usize,
 ) -> FetchiumResult<Vec<YouTubeSearchResult>> {
-    let v: Value =
-        serde_json::from_str(body).map_err(|e| FetchiumError::YouTube(format!("Piped parse: {e}")))?;
+    let v: Value = serde_json::from_str(body)
+        .map_err(|e| FetchiumError::YouTube(format!("Piped parse: {e}")))?;
 
     let items = v["items"]
         .as_array()
@@ -722,8 +726,8 @@ async fn search_ytdlp(query: &str, max_results: usize) -> FetchiumResult<Vec<You
     }
 
     let body = String::from_utf8_lossy(&output.stdout);
-    let v: Value =
-        serde_json::from_str(&body).map_err(|e| FetchiumError::YouTube(format!("yt-dlp JSON: {e}")))?;
+    let v: Value = serde_json::from_str(&body)
+        .map_err(|e| FetchiumError::YouTube(format!("yt-dlp JSON: {e}")))?;
 
     let entries = v["entries"]
         .as_array()

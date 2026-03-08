@@ -14,7 +14,11 @@ use serde::Serialize;
 use std::time::Duration;
 
 /// Run the YouTube subcommand.
-pub async fn run(args: crate::cli::YouTubeArgs, config: &FetchiumConfig, format: Format) -> Result<()> {
+pub async fn run(
+    args: crate::cli::YouTubeArgs,
+    config: &FetchiumConfig,
+    format: Format,
+) -> Result<()> {
     let http = HttpClient::new(config)?;
 
     match args.action {
