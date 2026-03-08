@@ -32,17 +32,13 @@ struct DomainState {
 
 /// Domains that are blocked by datacenter IPs and require residential proxies.
 /// API-based backends (Serper, Exa, Tavily, Gemini) are NOT in this list.
+/// Bing, Brave, Yahoo, Yandex, Startpage work fine without residential → excluded.
 const RESIDENTIAL_REQUIRED_DOMAINS: &[&str] = &[
     "google.com",
     "www.google.com",
+    "html.duckduckgo.com",
+    "lite.duckduckgo.com",
     "duckduckgo.com",
-    "bing.com",
-    "www.bing.com",
-    "search.brave.com",
-    "brave.com",
-    "startpage.com",
-    "qwant.com",
-    "mojeek.com",
 ];
 
 /// Shared HTTP client with connection pooling, retries, and rate limiting.
@@ -200,6 +196,27 @@ impl HttpClient {
     /// Backwards-compatible wrapper — no locale hint.
     pub fn client_for_domain(&self, domain: &str) -> Client {
         self.client_for_domain_with_locale(domain, None)
+    }
+
+    /// Get a **fresh** client that forces a new residential IP on the next request.
+    ///
+    /// Use when a previous request was blocked (CAPTCHA, 403, empty SERP).
+    /// The fresh client has no connection pool, so DataImpulse assigns a new
+    /// residential IP. Falls back to `client_for_domain_with_locale` if not residential.
+    pub fn fresh_client_for_domain_with_locale(
+        &self,
+        domain: &str,
+        locale: Option<&str>,
+    ) -> Client {
+        if self.needs_residential_proxy(domain) {
+            if let Some(ref di) = self.dataimpulse {
+                if di.is_configured() {
+                    return di.fresh_client(locale);
+                }
+            }
+        }
+        // Non-residential: return normal client (direct or Webshare)
+        self.client_for_domain_with_locale(domain, locale)
     }
 
     /// Whether a domain requires residential IPs to avoid blocks.
