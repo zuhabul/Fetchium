@@ -26,7 +26,7 @@ class FetchiumRetriever(BaseRetriever):
 
     token_budget: int = 3000
     tier: str = "detailed"
-    validate: bool = True
+    validate_results: bool = True
     max_sources: int = 10
     fetchium_binary: str = "fetchium"
     timeout: int = 60
@@ -99,7 +99,7 @@ class FetchiumRetriever(BaseRetriever):
             "token_budget": self.token_budget,
             "tier": self.tier,
             "max_sources": self.max_sources,
-            "validate": self.validate,
+            "validate": self.validate_results,
         }
 
         resp = requests.post(
