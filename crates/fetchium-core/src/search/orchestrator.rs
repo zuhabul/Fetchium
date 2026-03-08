@@ -1194,11 +1194,9 @@ impl SearchOrchestrator {
                 let cap = if domain == "wikipedia.org" || domain == "arxiv.org" {
                     2
                 } else if domain == "reddit.com" {
-                    let want_reddit = matches!(
-                        intent,
-                        rank::fusion::QueryIntent::Comparison | rank::fusion::QueryIntent::Opinion
-                    );
-                    if want_reddit {
+                    // Comparison benefits from community discussion threads (3 allowed).
+                    // Opinion: cap at 2 — Reddit posts hurt authority scores for opinion queries.
+                    if matches!(intent, rank::fusion::QueryIntent::Comparison) {
                         3
                     } else {
                         2
