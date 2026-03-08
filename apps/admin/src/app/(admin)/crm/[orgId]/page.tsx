@@ -138,7 +138,7 @@ export default async function CrmOrgPage({ params }: { params: Promise<{ orgId: 
             </div>
 
             {/* CRM Actions: Stage selector, Assign CSM, Add Note */}
-            <CrmAccountActions account={account} session={session} />
+            <CrmAccountActions account={account} />
 
             {/* Notes Timeline */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">

@@ -1096,6 +1096,102 @@ impl AdminDb {
         )?;
         Ok(())
     }
+
+    pub fn list_audit(&self, limit: i64, offset: i64) -> Result<Vec<serde_json::Value>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT a.id, a.admin_user_id, u.email, u.name, a.role,
+                    a.target_type, a.target_id, a.action, a.ip, a.created_at
+             FROM audit_events a
+             LEFT JOIN admin_users u ON u.id = a.admin_user_id
+             ORDER BY a.created_at DESC LIMIT ?1 OFFSET ?2",
+        )?;
+        let rows = stmt
+            .query_map(params![limit, offset], |row| {
+                Ok(serde_json::json!({
+                    "id":          row.get::<_, String>(0)?,
+                    "user_id":     row.get::<_, Option<String>>(1)?,
+                    "user_email":  row.get::<_, Option<String>>(2)?,
+                    "user_name":   row.get::<_, Option<String>>(3)?,
+                    "role":        row.get::<_, Option<String>>(4)?,
+                    "target_type": row.get::<_, String>(5)?,
+                    "target_id":   row.get::<_, Option<String>>(6)?,
+                    "action":      row.get::<_, String>(7)?,
+                    "ip":          row.get::<_, Option<String>>(8)?,
+                    "created_at":  row.get::<_, String>(9)?,
+                }))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
+        Ok(rows)
+    }
+
+    pub fn count_audit(&self) -> Result<i64> {
+        Ok(self.conn.lock().query_row(
+            "SELECT COUNT(*) FROM audit_events", [], |r| r.get(0),
+        )?)
+    }
+
+    pub fn list_campaigns(&self, limit: i64, offset: i64) -> Result<Vec<serde_json::Value>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT c.id, c.name, c.type, c.status, c.created_at, c.updated_at,
+                    COUNT(at.id) as touch_count
+             FROM campaigns c
+             LEFT JOIN attribution_touches at ON at.campaign_id = c.id
+             GROUP BY c.id
+             ORDER BY c.created_at DESC LIMIT ?1 OFFSET ?2",
+        )?;
+        let rows = stmt
+            .query_map(params![limit, offset], |row| {
+                Ok(serde_json::json!({
+                    "id":          row.get::<_, String>(0)?,
+                    "name":        row.get::<_, String>(1)?,
+                    "type":        row.get::<_, String>(2)?,
+                    "status":      row.get::<_, String>(3)?,
+                    "created_at":  row.get::<_, String>(4)?,
+                    "updated_at":  row.get::<_, String>(5)?,
+                    "touch_count": row.get::<_, i64>(6)?,
+                }))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
+        Ok(rows)
+    }
+
+    pub fn count_campaigns(&self) -> Result<i64> {
+        Ok(self.conn.lock().query_row(
+            "SELECT COUNT(*) FROM campaigns", [], |r| r.get(0),
+        )?)
+    }
+
+    pub fn create_campaign(&self, id: &str, name: &str, campaign_type: &str, created_by: &str) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "INSERT INTO campaigns (id, name, type, status, created_by, created_at, updated_at)
+             VALUES (?1, ?2, ?3, 'draft', ?4, ?5, ?5)",
+            params![id, name, campaign_type, created_by, now],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_proxy_stats(&self) -> serde_json::Value {
+        // Derive live proxy info from audit_events (proxy resets, purges)
+        let conn = self.conn.lock();
+        let reset_count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM audit_events WHERE action='proxy.reset'", [], |r| r.get(0))
+            .unwrap_or(0);
+        let last_reset: Option<String> = conn
+            .query_row("SELECT created_at FROM audit_events WHERE action='proxy.reset' ORDER BY created_at DESC LIMIT 1", [], |r| r.get(0))
+            .ok();
+        serde_json::json!({
+            "provider": "DataImpulse",
+            "endpoint": "gw.dataimpulse.com:823",
+            "reset_count": reset_count,
+            "last_reset": last_reset,
+            "status": "active",
+        })
+    }
 }
 
 #[cfg(test)]
