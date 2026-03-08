@@ -170,7 +170,7 @@ export default function ProductResearchPage() {
               {[
                 { href: "/product/search", label: "Search API", desc: "Quick single-query search" },
                 { href: "https://docs.fetchium.com/algorithms/cep", label: "Algorithm Docs", desc: "CEP, AMRS, RAR explained" },
-                { href: "/pricing", label: "Pricing", desc: "Research API included in Growth+" },
+                { href: "/pricing", label: "Pricing", desc: "See current plan tiers and limits" },
               ].map((l) => (
                 <Link key={l.href} href={l.href} className="flex items-start gap-2 rounded-lg border border-white/6 bg-white/2 p-3 hover:bg-white/5 transition-all group">
                   <div>

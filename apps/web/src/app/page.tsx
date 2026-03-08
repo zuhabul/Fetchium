@@ -14,9 +14,9 @@ import CTABand from "@/components/CTABand";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Fetchium — The Search API That Thinks | Cheapest Full-Pipeline AI Search",
+  title: "Fetchium — The Search API That Thinks | Search, Extraction, and Research API",
   description:
-    "One API call for search + extraction + citations across 11+ backends. Built for RAG pipelines, AI agents, and research workflows. From $0.58/1K queries. 1,000 free requests/month, no credit card.",
+    "One API call for search, extraction, and citations across 11+ backends. Built for RAG pipelines, AI agents, and research workflows. 1,000 free requests per month and docs at docs.fetchium.com.",
   alternates: {
     canonical: "/",
   },
@@ -27,14 +27,14 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: "Fetchium — The Search API That Thinks",
-    description: "11+ federated backends, 8-signal ranking, 5-layer extraction, token-budgeted context. From $0.58/1K queries.",
+    description: "11+ federated backends, 8-signal ranking, 5-layer extraction, and token-budgeted context for AI applications.",
     type: "website",
     url: "https://fetchium.com",
   },
   twitter: {
     card: "summary_large_image",
     title: "Fetchium — The Search API That Thinks",
-    description: "Cheapest full-pipeline search API on the market. From $0.58/1K. Free tier forever.",
+    description: "Search, extraction, research, and MCP tools for AI applications. Free tier available.",
   },
 };
 

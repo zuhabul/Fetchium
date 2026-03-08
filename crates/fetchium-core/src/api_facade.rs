@@ -11,6 +11,21 @@ use uuid::Uuid;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/// Truncate a string at a UTF-8 character boundary (safe for multibyte text like Spanish/French/CJK).
+/// Always returns a valid `&str` slice, never panics.
+#[inline]
+fn safe_trunc(s: &str, max_bytes: usize) -> &str {
+    if s.len() <= max_bytes {
+        return s;
+    }
+    // Walk back from max_bytes to the nearest char boundary
+    let mut end = max_bytes;
+    while end > 0 && !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    &s[..end]
+}
+
 /// Inline cosine similarity (avoids feature-gated embeddings module dependency).
 fn cosine_sim(a: &[f32], b: &[f32]) -> f32 {
     if a.len() != b.len() || a.is_empty() {
@@ -193,7 +208,7 @@ async fn fact_fusion(query: &str, snippets: &[(usize, &str)], http: &HttpClient)
 
     let combined: String = snippets
         .iter()
-        .map(|(i, text)| format!("[Source {}]: {}", i, &text[..text.len().min(400)]))
+        .map(|(i, text)| format!("[Source {}]: {}", i, safe_trunc(text, 400)))
         .collect::<Vec<_>>()
         .join("\n\n");
 
@@ -202,7 +217,7 @@ async fn fact_fusion(query: &str, snippets: &[(usize, &str)], http: &HttpClient)
          Return ONLY a JSON array: [{{'fact': '...', 'keywords': ['word1','word2']}}]\n\n\
          Snippets:\n{}\n\nJSON:",
         query,
-        &combined[..combined.len().min(2000)]
+        safe_trunc(&combined, 2000)
     );
 
     let body = serde_json::json!({
@@ -472,7 +487,7 @@ pub async fn search(
                             let data = json!({
                                 "url": &url,
                                 "title": ext.title,
-                                "content": &ext.text[..ext.text.len().min(8000)],
+                                "content": safe_trunc(&ext.text, 8000),
                                 "prefetched": true,
                             });
                             c2.set(&format!("prefetch:{url}"), &data).await;

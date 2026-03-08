@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 export const metadata: Metadata = {
   title: "Fetchium MCP Tools — Model Context Protocol Server for Claude & Cursor",
   description:
-    "5 MCP tools: search, extract, research, youtube, social. Works with Claude Desktop, Cursor, and any MCP-compatible AI client. JSON-RPC 2.0 stdio. Free to use.",
+    "Fetchium MCP server with 12 tools covering search, fetch, estimate, research, YouTube, and social workflows. Works with Claude Desktop, Cursor, and other MCP-compatible clients.",
 };
 
 const tools = [
@@ -16,24 +16,34 @@ const tools = [
     params: ["query: string", "max_results?: number", "backends?: string[]"],
   },
   {
-    name: "fetchium_extract",
-    desc: "Extract clean content from any URL using the 5-layer CEP pipeline.",
+    name: "fetchium_fetch",
+    desc: "Fetch and extract clean content from a URL using the CEP pipeline.",
     params: ["url: string", "query?: string", "token_budget?: number"],
   },
   {
+    name: "fetchium_estimate",
+    desc: "Estimate token and processing costs before a request.",
+    params: ["query?: string", "url?: string", "token_budget?: number"],
+  },
+  {
     name: "fetchium_research",
-    desc: "Run a full multi-agent research task. Returns a structured report with citations.",
+    desc: "Run a full multi-agent research task and return a structured report with citations.",
     params: ["query: string", "depth?: 'standard' | 'deep'", "max_sources?: number"],
   },
   {
-    name: "fetchium_youtube",
-    desc: "Search and extract YouTube content: transcripts, metadata, and engagement signals.",
-    params: ["query: string", "max_results?: number", "include_transcript?: boolean"],
+    name: "fetchium_youtube_search",
+    desc: "Search YouTube content and return structured video results.",
+    params: ["query: string", "max_results?: number"],
   },
   {
-    name: "fetchium_social",
-    desc: "Search Reddit, HackerNews, and social platforms for community discussions.",
-    params: ["query: string", "platforms?: string[]", "time_range?: string"],
+    name: "fetchium_youtube_analyze",
+    desc: "Analyze a YouTube video, transcript, or channel context.",
+    params: ["url?: string", "video_id?: string"],
+  },
+  {
+    name: "fetchium_social_research",
+    desc: "Run cross-platform social research workflows.",
+    params: ["query: string", "max_results?: number"],
   },
 ];
 
@@ -74,7 +84,7 @@ export default function ProductMCPPage() {
             <p className="text-base sm:text-lg text-slate-400 max-w-2xl leading-relaxed mb-7">
               The Model Context Protocol (MCP) lets AI clients like Claude Desktop and Cursor call external
               tools without writing any integration code. Fetchium ships a JSON-RPC 2.0 stdio MCP server
-              with 5 tools — point your client at it and start searching.
+              with 12 tools spanning search, fetch, estimate, research, YouTube, and social workflows.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
@@ -94,11 +104,11 @@ export default function ProductMCPPage() {
             </div>
           </div>
 
-          {/* 5 tools */}
+          {/* tool overview */}
           <section className="mb-14">
-            <h2 className="text-xl sm:text-2xl font-bold mb-2">5 MCP Tools</h2>
+            <h2 className="text-xl sm:text-2xl font-bold mb-2">12 MCP Tools</h2>
             <p className="text-slate-500 mb-6 text-sm">
-              All tools are available on every plan including Free. No separate MCP subscription required.
+              Fetchium exposes 12 tool definitions in the current MCP server. A representative subset is shown below.
             </p>
             <div className="space-y-3">
               {tools.map((tool) => (

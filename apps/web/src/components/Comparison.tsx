@@ -4,23 +4,6 @@ import { motion } from "framer-motion";
 import { Check, X, Minus, Zap, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-/**
- * Latency data sources (independent benchmarks, 2025):
- *  - Exa: 1.180s avg (50-query test, dev.to benchmark)
- *  - Tavily: 1.885s avg (50-query test, dev.to benchmark)
- *  - SerpAPI: 2.972s avg (50-query test, dev.to benchmark)
- *  - Perplexity: 3–5s (LLM inference + search combined)
- *  - Firecrawl: extraction-focused, not a pure search API
- *  - Fetchium: ~500ms P50 for search-only (parallel Rust tokio dispatch)
- *
- * Pricing data (verified March 2026 from each provider's pricing page):
- *  - Tavily: $8.00/1K (basic search credit rate)
- *  - Exa: $5.00/1K (neural search)
- *  - SerpAPI: $15.00/1K (developer plan)
- *  - Firecrawl: ~$0.83/1K (Standard plan, extraction only)
- *  - Fetchium: $0.58/1K (Growth plan, full pipeline)
- */
-
 type Status = "yes" | "no" | "partial";
 
 interface Feature {
@@ -41,8 +24,8 @@ const features: Feature[] = [
   { label: "MCP protocol support" },
   { label: "Self-hostable" },
   { label: "Free tier (renewing)" },
-  { label: "Search P50 latency", description: "Independent benchmark, 2025" },
-  { label: "Price per 1K queries", description: "Entry-tier, verified Mar 2026" },
+  { label: "Plan-based rate limits", description: "From current API auth configuration" },
+  { label: "Free tier available", description: "1,000 requests/month in current API auth configuration" },
 ];
 
 interface Tool {
@@ -60,7 +43,7 @@ const tools: Tool[] = [
     highlight: true,
     data: [
       "yes", "yes", "yes", "yes", "yes", "yes", "yes",
-      "yes", "yes", "yes", "yes", "yes", "~500ms", "$0.58",
+      "yes", "yes", "yes", "yes", "yes", "60-2000/min", "yes",
     ],
   },
   {
@@ -70,7 +53,7 @@ const tools: Tool[] = [
     compareHref: "/compare/tavily",
     data: [
       "partial", "no", "no", "partial", "partial", "no", "partial",
-      "no", "no", "no", "no", "yes", "~1.9s", "$8.00",
+      "no", "no", "no", "no", "yes", "varies", "yes",
     ],
   },
   {
@@ -80,7 +63,7 @@ const tools: Tool[] = [
     compareHref: "/compare/exa",
     data: [
       "no", "no", "no", "partial", "no", "no", "no",
-      "no", "no", "partial", "no", "yes", "~1.2s", "$5.00",
+      "no", "no", "partial", "no", "yes", "varies", "yes",
     ],
   },
   {
@@ -90,7 +73,7 @@ const tools: Tool[] = [
     compareHref: "/compare/serpapi",
     data: [
       "no", "no", "no", "no", "no", "no", "no",
-      "no", "no", "no", "no", "yes", "~3.0s", "$15.00",
+      "no", "no", "no", "no", "yes", "varies", "yes",
     ],
   },
   {
@@ -100,7 +83,7 @@ const tools: Tool[] = [
     compareHref: "/compare/firecrawl",
     data: [
       "no", "no", "partial", "no", "no", "no", "no",
-      "no", "partial", "no", "yes", "yes", "N/A¹", "$0.83",
+      "no", "partial", "no", "yes", "yes", "varies", "yes",
     ],
   },
 ];
@@ -155,16 +138,16 @@ export default function Comparison() {
         >
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-sm font-semibold text-indigo-200">
             <Zap className="h-4 w-4" strokeWidth={2.5} />
-            Verified Comparison · March 2026
+            Capability Comparison
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-100">
-            More features.{" "}
-            <span className="gradient-text">Fraction of the price.</span>
+            Fetchium capability{" "}
+            <span className="gradient-text">shape at a glance.</span>
           </h2>
           <p className="mt-5 sm:mt-6 mx-auto max-w-2xl text-base sm:text-xl text-slate-300 leading-relaxed">
-            Fetchium is the only API combining search federation, neural ranking,
-            full content extraction, and cross-session AI learning.
-            All at a lower per-query cost than any competitor.
+            This view focuses on first-party Fetchium capabilities and broad product-shape
+            differences. It intentionally avoids hard benchmark and pricing claims for
+            third-party services that can change independently of this repo.
           </p>
         </motion.div>
 
@@ -291,12 +274,12 @@ export default function Comparison() {
             </div>
           </div>
           <p className="text-center text-[12px] sm:text-[13px] text-slate-400 leading-relaxed">
-            ¹ Firecrawl is extraction-only (no search); latency N/A for search comparison.
-            Latency figures from independent 50-query benchmark (dev.to, 2025). Pricing verified from each provider&apos;s public pricing page, March 2026.
+            Fetchium values in this table are tied to the current codebase and auth
+            configuration. Non-Fetchium entries are shown as broad capability comparisons only.
           </p>
         </motion.div>
 
-        {/* Factual value callout */}
+        {/* Fetchium callout */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -307,20 +290,20 @@ export default function Comparison() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-8">
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-10">
               <div className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-emerald-400">9×</div>
-                <div className="text-[14px] sm:text-[15px] text-slate-300 mt-1 font-medium">cheaper than Tavily</div>
-                <div className="text-[12px] sm:text-[13px] text-slate-400">$0.90 vs $8.00 per 1K</div>
+                <div className="text-3xl sm:text-4xl font-bold text-emerald-400">11+</div>
+                <div className="text-[14px] sm:text-[15px] text-slate-300 mt-1 font-medium">federated backends</div>
+                <div className="text-[12px] sm:text-[13px] text-slate-400">single-query fanout</div>
               </div>
               <div className="hidden sm:block w-px h-10 bg-slate-800" />
               <div className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-indigo-300">16×</div>
-                <div className="text-[14px] sm:text-[15px] text-slate-300 mt-1 font-medium">cheaper than SerpAPI</div>
-                <div className="text-[12px] sm:text-[13px] text-slate-400">$0.90 vs $15.00 per 1K</div>
+                <div className="text-3xl sm:text-4xl font-bold text-indigo-300">17</div>
+                <div className="text-[14px] sm:text-[15px] text-slate-300 mt-1 font-medium">algorithms</div>
+                <div className="text-[12px] sm:text-[13px] text-slate-400">ranking, extraction, validation</div>
               </div>
               <div className="hidden sm:block w-px h-10 bg-slate-800" />
               <p className="text-[14px] sm:text-[15px] text-slate-300 max-w-xs text-center sm:text-left leading-relaxed">
-                <span className="font-bold text-slate-100">Full pipeline</span> — search + extraction + citations + ranking.
-                Competitors charge search-only rates for a fraction of the features.
+                <span className="font-bold text-slate-100">Full pipeline</span> means search,
+                extraction, ranking, citations, and research workflows in one product surface.
               </p>
             </div>
             <div className="flex flex-col gap-2 shrink-0">

@@ -18,7 +18,7 @@ const features = [
     icon: Globe,
     title: "11-Backend Search Federation",
     description:
-      "Fan out a single query across SearXNG, Brave, GitHub, Reddit, HackerNews, StackOverflow, YouTube, Wikipedia, ArXiv, Bing, and DuckDuckGo — simultaneously. Adaptive Backend Selector picks the right mix per query intent. No other search API comes close.",
+      "Fan out a single query across SearXNG, Brave, GitHub, Reddit, HackerNews, StackOverflow, YouTube, Wikipedia, ArXiv, Bing, and DuckDuckGo in parallel. Adaptive Backend Selector picks the right mix per query intent.",
     badge: "Unique",
     accent: "from-indigo-500/20 to-indigo-600/5",
     iconBg: "bg-indigo-500/10",
@@ -28,7 +28,7 @@ const features = [
     icon: Brain,
     title: "HyperFusion Neural Ranking",
     description:
-      "8-signal ranking engine: BM25 lexical match + semantic similarity + temporal decay + domain authority + evidence density + source diversity + content depth + cross-source consensus. Results are measurably better than single-signal ranking — every time.",
+      "8-signal ranking engine: BM25 lexical match, semantic similarity, temporal decay, domain authority, evidence density, source diversity, content depth, and cross-source consensus.",
     badge: "Novel",
     accent: "from-violet-500/20 to-violet-600/5",
     iconBg: "bg-violet-500/10",
@@ -38,7 +38,7 @@ const features = [
     icon: Layers,
     title: "5-Layer CEP Content Extraction",
     description:
-      "Content Extraction Protocol: CSS selectors → Readability algorithm → Headless JS rendering → PDF parsing → Screenshot OCR. Every page — SPAs, paywalled content, PDFs — returns clean, structured text. Zero pages escape extraction.",
+      "Content Extraction Protocol: CSS selectors, Readability, headless JS rendering, PDF parsing, and screenshot OCR. Designed to recover structured text from a wide range of pages, including SPAs and PDFs.",
     badge: "Novel",
     accent: "from-blue-500/20 to-blue-600/5",
     iconBg: "bg-blue-500/10",
@@ -58,7 +58,7 @@ const features = [
     icon: FlaskConical,
     title: "Deep Research Pipeline",
     description:
-      "AMRS multi-agent research swarm: 4 specialist agent types communicate over async channels, synthesise findings, and generate full evidence graphs with every claim traced to a source. Auto-generate citations in APA, IEEE, BibTeX, or Chicago.",
+      "AMRS multi-agent research swarm: 4 specialist agent types communicate over async channels, synthesize findings, and generate evidence graphs with claims traced to sources. Citation export supports APA, IEEE, BibTeX, and Chicago.",
     badge: "Novel",
     accent: "from-emerald-500/20 to-emerald-600/5",
     iconBg: "bg-emerald-500/10",
@@ -68,7 +68,7 @@ const features = [
     icon: ShieldCheck,
     title: "Production Resilience",
     description:
-      "Circuit breakers, bulkhead isolation, adaptive rate limiting, and latency prediction across all backends. Automatic failover, retry-and-refine with 5-checkpoint self-correction, and 99.9% uptime SLA on Pro and Enterprise plans.",
+      "Circuit breakers, bulkhead isolation, adaptive rate limiting, and backend-aware timeouts. Automatic failover and retry-and-refine validation help stabilize retrieval across heterogeneous sources.",
     badge: "Production",
     accent: "from-cyan-500/20 to-cyan-600/5",
     iconBg: "bg-cyan-500/10",
@@ -78,7 +78,7 @@ const features = [
     icon: Youtube,
     title: "YouTube & Social Intelligence",
     description:
-      "VideoFusion ranking for YouTube: transcript extraction, comment sentiment, teaching quality scoring. Native Reddit, HackerNews, and StackOverflow backends with community signal weighting. Social search no other API provides.",
+      "VideoFusion ranking for YouTube with transcript extraction and channel/video analysis. Native Reddit, HackerNews, and StackOverflow backends add community-signal retrieval alongside web search.",
     badge: "Novel",
     accent: "from-red-500/20 to-red-600/5",
     iconBg: "bg-red-500/10",
@@ -88,7 +88,7 @@ const features = [
     icon: GitBranch,
     title: "PIE Cross-Session Learning",
     description:
-      "Persistent Intelligence Engine tracks source trust, failure patterns, and query predictions across sessions via SQLite. Fetchium gets smarter with every query your application makes — improving result quality automatically over time.",
+      "Persistent Intelligence Engine tracks source trust, failure patterns, and query predictions across sessions via SQLite for deployments that enable persistence.",
     badge: "Novel",
     accent: "from-pink-500/20 to-pink-600/5",
     iconBg: "bg-pink-500/10",
@@ -98,7 +98,7 @@ const features = [
     icon: Cpu,
     title: "MCP Protocol Native",
     description:
-      "First-class Model Context Protocol support. Expose all 17 algorithms as MCP tools to Claude, GPT-4, and any LLM with tool use. Structured, schema-validated outputs are AI-consumption-ready out of the box — no post-processing needed.",
+      "First-class Model Context Protocol support. Fetchium exposes 12 MCP tools spanning search, fetch, estimate, research, YouTube, and social workflows.",
     badge: "Unique",
     accent: "from-teal-500/20 to-teal-600/5",
     iconBg: "bg-teal-500/10",
@@ -164,8 +164,8 @@ export default function Features() {
             <span className="gradient-text">search API has</span>
           </h2>
           <p className="mt-5 sm:mt-6 mx-auto max-w-2xl text-base sm:text-xl text-slate-300 leading-relaxed">
-            Every algorithm was designed from scratch to solve a real gap in the
-            AI search stack — not a wrapper around an existing tool.
+            Fetchium combines federation, ranking, extraction, and research primitives
+            into one API surface for AI search workloads.
           </p>
         </motion.div>
 
@@ -234,7 +234,7 @@ export default function Features() {
             { value: "11+", label: "Search backends" },
             { value: "17", label: "Novel algorithms" },
             { value: "563+", label: "Unit tests" },
-            { value: "~500ms", label: "P50 search latency" },
+            { value: "12", label: "MCP tools" },
           ].map((stat) => (
             <div
               key={stat.label}

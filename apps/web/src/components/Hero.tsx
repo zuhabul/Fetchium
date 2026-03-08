@@ -256,7 +256,7 @@ function FlowDiagram() {
 
         {/* ── Stats below orb ── */}
         <text x={CTR_X} y={CTR_Y + 54} textAnchor="middle" fill="#475569" fontSize="9" fontFamily="system-ui, sans-serif">
-          17 algorithms · ~500ms P50
+          17 algorithms · 12 MCP tools
         </text>
       </svg>
     </motion.div>
@@ -315,7 +315,7 @@ export default function Hero() {
               style={{ border: "1px solid rgba(99,102,241,0.32)", background: "rgba(99,102,241,0.10)", color: "#c7d2fe" }}
             >
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#34d399", boxShadow: "0 0 6px #34d399" }} />
-              <span className="hidden sm:inline">Open Beta · 17 algorithms · 11+ backends · Free forever</span>
+              <span className="hidden sm:inline">Open Beta · 17 algorithms · 11+ backends · 1,000 free requests/month</span>
               <span className="sm:hidden">Open Beta · Free to start</span>
             </motion.div>
 
@@ -387,7 +387,7 @@ export default function Hero() {
                 { value: "17",     label: "Novel algorithms" },
                 { value: "11+",    label: "Search backends"  },
                 { value: "563+",   label: "Tests passing"    },
-                { value: "~500ms", label: "P50 latency"      },
+                { value: "12",     label: "MCP tools"        },
               ].map((s, i) => (
                 <motion.div
                   key={i}

@@ -34,7 +34,7 @@ const steps: Step[] = [
     subtitle: "QFD + QCE + QXE",
     description:
       "Your query is fingerprinted, classified by intent, scored for complexity, and expanded with semantic variants. The system chooses the optimal backend mix before a single network call is made.",
-    detail: "~2ms",
+    detail: "Stage 1",
     color: "from-indigo-500 to-indigo-600",
     glow: "rgba(99,102,241,0.35)",
     iconBg: "bg-indigo-500/15 border-indigo-500/25",
@@ -48,7 +48,7 @@ const steps: Step[] = [
     subtitle: "ABS + Resilience Layer",
     description:
       "The Adaptive Backend Selector fans your query across up to 11 sources in parallel — SearXNG, Brave, GitHub, Reddit, StackOverflow, YouTube, and more. Circuit breakers handle backend failures invisibly.",
-    detail: "~120ms",
+    detail: "Stage 2",
     color: "from-blue-500 to-blue-600",
     glow: "rgba(59,130,246,0.3)",
     iconBg: "bg-blue-500/15 border-blue-500/25",
@@ -62,7 +62,7 @@ const steps: Step[] = [
     subtitle: "8-Signal Neural Ranking",
     description:
       "Results are scored on 8 signals: BM25 lexical match, semantic similarity, temporal freshness, domain authority, evidence density, source diversity, content depth, and cross-source consensus.",
-    detail: "~18ms",
+    detail: "Stage 3",
     color: "from-violet-500 to-violet-600",
     glow: "rgba(139,92,246,0.3)",
     iconBg: "bg-violet-500/15 border-violet-500/25",
@@ -75,8 +75,8 @@ const steps: Step[] = [
     title: "CEP Content Extraction",
     subtitle: "5-Layer Cascade",
     description:
-      "Top-ranked URLs are deep-extracted via the Content Extraction Protocol: CSS selectors → Readability algorithm → Headless JS rendering → PDF parsing → Screenshot OCR. Zero pages escape clean extraction.",
-    detail: "~40ms",
+      "Top-ranked URLs are deep-extracted via the Content Extraction Protocol: CSS selectors, Readability, headless JS rendering, PDF parsing, and screenshot OCR.",
+    detail: "Stage 4",
     color: "from-cyan-500 to-cyan-600",
     glow: "rgba(6,182,212,0.3)",
     iconBg: "bg-cyan-500/15 border-cyan-500/25",
@@ -90,7 +90,7 @@ const steps: Step[] = [
     subtitle: "QATBE Algorithm",
     description:
       "Extracted content is segmented, BM25-scored for query relevance, then packed into your token budget via greedy knapsack. You always get the most relevant content that fits your LLM context window.",
-    detail: "~5ms",
+    detail: "Stage 5",
     color: "from-amber-500 to-amber-600",
     glow: "rgba(245,158,11,0.3)",
     iconBg: "bg-amber-500/15 border-amber-500/25",
@@ -104,7 +104,7 @@ const steps: Step[] = [
     subtitle: "Evidence Graph + Citations",
     description:
       "The final response includes ranked results, extracted content within your budget, an evidence graph tracing every claim to a source, and auto-generated citations in APA, IEEE, BibTeX, or Chicago format.",
-    detail: "Total < 200ms",
+    detail: "Stage 6",
     color: "from-emerald-500 to-emerald-600",
     glow: "rgba(16,185,129,0.3)",
     iconBg: "bg-emerald-500/15 border-emerald-500/25",
@@ -288,7 +288,7 @@ export default function HowItWorks() {
             <span className="gradient-text">works</span>
           </h2>
           <p className="mt-5 sm:mt-6 mx-auto max-w-xl text-base sm:text-xl text-slate-300 leading-relaxed">
-            Six stages. Under 500ms. Every result traced back to its source with
+            Six stages. Search, extraction, ranking, and evidence tracing in one pipeline with
             an evidence graph.
           </p>
         </motion.div>
