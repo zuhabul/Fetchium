@@ -49,6 +49,10 @@ function healthColor(score: number): string {
   return 'text-red-400'
 }
 
+interface Member { id: string; email: string; name: string | null; status: string; created_at: string }
+interface AuditRow { id: string; action: string; role: string | null; actor_email: string | null; ip: string | null; created_at: string }
+interface ApiKey { id: string; name: string; key_prefix: string; active: boolean; created_at: string }
+
 type Tab = 'overview' | 'members' | 'keys' | 'audit'
 
 export default function OrgProfilePage() {
@@ -59,6 +63,10 @@ export default function OrgProfilePage() {
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('overview')
   const [actionMsg, setActionMsg] = useState<string | null>(null)
+  const [members, setMembers] = useState<Member[]>([])
+  const [auditRows, setAuditRows] = useState<AuditRow[]>([])
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
+  const [tabLoading, setTabLoading] = useState(false)
 
   useEffect(() => {
     fetch(`/api/admin/orgs/${id}`)
@@ -67,6 +75,22 @@ export default function OrgProfilePage() {
       .catch(e => setError(String(e)))
       .finally(() => setLoading(false))
   }, [id])
+
+  async function loadTab(t: Tab) {
+    setTab(t)
+    if (t === 'members' && members.length === 0) {
+      setTabLoading(true)
+      fetch(`/api/admin/orgs/${id}/members`).then(r => r.ok ? r.json() : null).then(d => { if (d) setMembers(d.data ?? []) }).finally(() => setTabLoading(false))
+    }
+    if (t === 'audit' && auditRows.length === 0) {
+      setTabLoading(true)
+      fetch(`/api/admin/orgs/${id}/audit`).then(r => r.ok ? r.json() : null).then(d => { if (d) setAuditRows(d.data ?? []) }).finally(() => setTabLoading(false))
+    }
+    if (t === 'keys' && apiKeys.length === 0) {
+      setTabLoading(true)
+      fetch(`/api/admin/orgs/${id}/keys`).then(r => r.ok ? r.json() : null).then(d => { if (d) setApiKeys(d.data ?? []) }).finally(() => setTabLoading(false))
+    }
+  }
 
   async function handleSuspend() {
     if (!org) return
@@ -165,7 +189,7 @@ export default function OrgProfilePage() {
               {TABS.map(t => (
                 <button
                   key={t.key}
-                  onClick={() => setTab(t.key)}
+                  onClick={() => loadTab(t.key)}
                   className={`px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
                     tab === t.key
                       ? 'border-zinc-300 text-zinc-100'
@@ -199,16 +223,62 @@ export default function OrgProfilePage() {
                 </dl>
               )}
               {tab === 'members' && (
-                <p className="text-sm text-zinc-500">Member list coming soon — connect to /internal/admin/orgs/{id}/members</p>
+                tabLoading ? <div className="text-sm text-zinc-500 animate-pulse">Loading...</div> :
+                members.length === 0 ? <div className="text-sm text-zinc-500">No members found.</div> :
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left text-xs text-zinc-500 uppercase tracking-wider border-b border-zinc-800">
+                    <th className="pb-2 pr-4">Email</th><th className="pb-2 pr-4">Name</th><th className="pb-2 pr-4">Status</th><th className="pb-2">Joined</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-zinc-800">
+                    {members.map(m => (
+                      <tr key={m.id}>
+                        <td className="py-2 pr-4 text-zinc-300">{m.email}</td>
+                        <td className="py-2 pr-4 text-zinc-400">{m.name ?? '—'}</td>
+                        <td className="py-2 pr-4"><span className={`text-xs px-1.5 py-0.5 rounded ${m.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-500/20 text-zinc-400'}`}>{m.status}</span></td>
+                        <td className="py-2 text-zinc-500">{new Date(m.created_at).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
               {tab === 'keys' && (
-                <p className="text-sm text-zinc-500">
-                  API keys for this org — see{' '}
-                  <Link href="/keys" className="text-blue-400 hover:underline">Keys page</Link> filtered by org.
-                </p>
+                tabLoading ? <div className="text-sm text-zinc-500 animate-pulse">Loading...</div> :
+                apiKeys.length === 0 ? <div className="text-sm text-zinc-500">No API keys found.</div> :
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left text-xs text-zinc-500 uppercase tracking-wider border-b border-zinc-800">
+                    <th className="pb-2 pr-4">Name</th><th className="pb-2 pr-4">Prefix</th><th className="pb-2 pr-4">Status</th><th className="pb-2">Created</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-zinc-800">
+                    {apiKeys.map(k => (
+                      <tr key={k.id}>
+                        <td className="py-2 pr-4 text-zinc-300">{k.name}</td>
+                        <td className="py-2 pr-4 font-mono text-zinc-400">{k.key_prefix}…</td>
+                        <td className="py-2 pr-4"><span className={`text-xs px-1.5 py-0.5 rounded ${k.active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{k.active ? 'active' : 'revoked'}</span></td>
+                        <td className="py-2 text-zinc-500">{new Date(k.created_at).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
               {tab === 'audit' && (
-                <p className="text-sm text-zinc-500">Audit log coming soon — connect to /internal/admin/orgs/{id}/audit</p>
+                tabLoading ? <div className="text-sm text-zinc-500 animate-pulse">Loading...</div> :
+                auditRows.length === 0 ? <div className="text-sm text-zinc-500">No audit events found.</div> :
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left text-xs text-zinc-500 uppercase tracking-wider border-b border-zinc-800">
+                    <th className="pb-2 pr-4">Action</th><th className="pb-2 pr-4">Actor</th><th className="pb-2 pr-4">Role</th><th className="pb-2 pr-4">IP</th><th className="pb-2">Time</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-zinc-800">
+                    {auditRows.map(a => (
+                      <tr key={a.id}>
+                        <td className="py-2 pr-4 font-mono text-xs text-zinc-300">{a.action}</td>
+                        <td className="py-2 pr-4 text-zinc-400">{a.actor_email ?? '—'}</td>
+                        <td className="py-2 pr-4 text-zinc-500">{a.role ?? '—'}</td>
+                        <td className="py-2 pr-4 font-mono text-xs text-zinc-500">{a.ip ?? '—'}</td>
+                        <td className="py-2 text-zinc-500">{new Date(a.created_at).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
           </div>
