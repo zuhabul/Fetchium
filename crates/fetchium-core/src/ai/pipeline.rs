@@ -5,8 +5,8 @@ use crate::ai::provider_client::chat_with_fallback;
 use crate::ai::sandwich::{assemble_context, sandwich_layout};
 use crate::ai::setup::{format_setup_guide, DeviceSpec};
 use crate::ai::types::{AiConfig, AiPreviewResult, ChatMessage, RankedSource};
-use crate::config::HsxConfig;
-use crate::error::HsxError;
+use crate::config::FetchiumConfig;
+use crate::error::FetchiumError;
 use crate::extract::pipeline::extract;
 use crate::http::client::HttpClient;
 use crate::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
@@ -33,9 +33,9 @@ pub async fn run_ai_pipeline(
     streaming: bool,
     fast: bool,
     ai_config: &AiConfig,
-    fetchium_config: &HsxConfig,
+    fetchium_config: &FetchiumConfig,
     http_client: &HttpClient,
-) -> Result<AiPreviewResult, HsxError> {
+) -> Result<AiPreviewResult, FetchiumError> {
     let wall_start = Instant::now();
 
     // Step 1: Search

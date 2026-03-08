@@ -16,8 +16,8 @@
 //! YouTube, Vimeo, TikTok, Twitter/X, Facebook, Instagram, Reddit (v.redd.it),
 //! Twitch, Dailymotion, Bilibili, Rumble, Odysee, PeerTube, and ~1000 more.
 
-use crate::config::HsxConfig;
-use crate::error::{HsxError, HsxResult};
+use crate::config::FetchiumConfig;
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::client::HttpClient;
 use crate::youtube::types::*;
 use std::time::Duration;
@@ -38,8 +38,8 @@ const YTDLP_SUBTITLE_TIMEOUT_SECS: u64 = 15;
 pub async fn fetch_universal_transcript(
     url: &str,
     http: &HttpClient,
-    config: &HsxConfig,
-) -> HsxResult<EnhancedTranscript> {
+    config: &FetchiumConfig,
+) -> FetchiumResult<EnhancedTranscript> {
     if is_youtube_url(url) {
         let video_id = crate::multimodal::video::extract_video_id(url)?;
         return crate::youtube::transcript::fetch_transcript(&video_id, http, config).await;
@@ -96,7 +96,7 @@ pub fn detect_platform(url: &str) -> &'static str {
 ///
 /// Races manual subtitles against auto-generated captions simultaneously;
 /// returns the first non-empty result. Cleans up temp files afterward.
-async fn fetch_via_ytdlp_universal(url: &str) -> HsxResult<EnhancedTranscript> {
+async fn fetch_via_ytdlp_universal(url: &str) -> FetchiumResult<EnhancedTranscript> {
     let hash = url_hash(url);
     let tmp_dir = std::env::temp_dir().join(format!("fetchium_subs_{hash}"));
     let _ = tokio::fs::create_dir_all(&tmp_dir).await;
@@ -117,7 +117,7 @@ async fn fetch_via_ytdlp_universal(url: &str) -> HsxResult<EnhancedTranscript> {
         .filter(|e: &Vec<TranscriptEntry>| !e.is_empty())
         .or_else(|| auto_result.ok().filter(|e| !e.is_empty()))
         .ok_or_else(|| {
-            HsxError::YouTube(format!(
+            FetchiumError::YouTube(format!(
                 "No captions/subtitles found for '{url}'. \
                  Make sure yt-dlp is installed (`pip install yt-dlp`) \
                  and the video has captions enabled."
@@ -139,7 +139,7 @@ async fn run_ytdlp_subs(
     url: &str,
     output_template: &str,
     auto_subs: bool,
-) -> HsxResult<Vec<TranscriptEntry>> {
+) -> FetchiumResult<Vec<TranscriptEntry>> {
     let sub_flag = if auto_subs {
         "--write-auto-subs"
     } else {
@@ -172,23 +172,23 @@ async fn run_ytdlp_subs(
             .output(),
     )
     .await
-    .map_err(|_| HsxError::YouTube("yt-dlp subtitle extraction timed out (15s)".into()))?
+    .map_err(|_| FetchiumError::YouTube("yt-dlp subtitle extraction timed out (15s)".into()))?
     .map_err(|e| {
-        HsxError::YouTube(format!(
+        FetchiumError::YouTube(format!(
             "yt-dlp not found — install via `pip install yt-dlp`: {e}"
         ))
     })?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(HsxError::YouTube(format!("yt-dlp error: {stderr}")));
+        return Err(FetchiumError::YouTube(format!("yt-dlp error: {stderr}")));
     }
 
     // Scan temp dir for subtitle file written by yt-dlp.
     // Files are named: `{id}.en.vtt`, `{id}.en-orig.vtt`, `{id}.en.srt`, etc.
     let mut read_dir = tokio::fs::read_dir(&tmp_dir)
         .await
-        .map_err(|e| HsxError::YouTube(format!("temp dir read error: {e}")))?;
+        .map_err(|e| FetchiumError::YouTube(format!("temp dir read error: {e}")))?;
 
     while let Ok(Some(entry)) = read_dir.next_entry().await {
         let path = entry.path();
@@ -219,7 +219,7 @@ async fn run_ytdlp_subs(
         }
     }
 
-    Err(HsxError::YouTube("yt-dlp wrote no subtitle file".into()))
+    Err(FetchiumError::YouTube("yt-dlp wrote no subtitle file".into()))
 }
 
 // ─── Subtitle Format Parsers ───────────────────────────────────

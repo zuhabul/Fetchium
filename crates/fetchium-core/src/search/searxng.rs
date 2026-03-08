@@ -14,7 +14,7 @@
 //!
 //! Set `SEARXNG_URL=***REMOVED***` to make this the exclusive source.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::http::HttpClient;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
@@ -149,7 +149,7 @@ impl SearxngBackend {
         time_range: Option<TimeRange>,
         categories: Option<&str>,
         engines: Option<&str>,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let instances = self.instance_list();
         let is_local_first = self.custom_url.is_none();
 
@@ -243,7 +243,7 @@ impl SearchBackend for SearxngBackend {
         BackendId::Searxng
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         self.search_inner(query, max_results, None, None, Some(FAST_ENGINE_SET))
             .await
     }
@@ -253,7 +253,7 @@ impl SearchBackend for SearxngBackend {
         query: &str,
         max_results: u32,
         ctx: &SearchContext,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         use crate::rank::fusion::QueryIntent;
 
         match ctx.intent {
@@ -393,7 +393,7 @@ mod tests {
         // Without env var, localhost:4040 should be first
         std::env::remove_var("SEARXNG_URL");
         let backend = SearxngBackend {
-            http: crate::http::HttpClient::new(&crate::config::HsxConfig::default()).unwrap(),
+            http: crate::http::HttpClient::new(&crate::config::FetchiumConfig::default()).unwrap(),
             custom_url: None,
         };
         let instances = backend.instance_list();
@@ -405,7 +405,7 @@ mod tests {
     fn instance_list_custom_url_exclusive() {
         // With custom_url set, only that instance should be returned
         let backend = SearxngBackend {
-            http: crate::http::HttpClient::new(&crate::config::HsxConfig::default()).unwrap(),
+            http: crate::http::HttpClient::new(&crate::config::FetchiumConfig::default()).unwrap(),
             custom_url: Some("http://my-searxng.example.com".to_string()),
         };
         let instances = backend.instance_list();

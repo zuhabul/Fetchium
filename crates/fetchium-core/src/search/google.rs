@@ -14,7 +14,7 @@
 //! Chrome/121 User-Agent, Accept-Language, Referer headers; 500ms inter-page
 //! delay; CAPTCHA detection on first-page empty or block-page markers.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
@@ -263,7 +263,7 @@ impl SearchBackend for GoogleBackend {
         cfg!(feature = "headless")
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         // ── Non-headless path: lightweight HTTP scraper ───────────────────────
         #[cfg(not(feature = "headless"))]
         {
@@ -331,7 +331,7 @@ impl SearchBackend for GoogleBackend {
         query: &str,
         max_results: u32,
         ctx: &SearchContext,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let tbs = Self::time_range_to_tbs(ctx.time_range);
         if tbs.is_empty() {
             return self.search(query, max_results).await;
@@ -384,9 +384,9 @@ mod tests {
 
     #[cfg(not(feature = "headless"))]
     fn make_backend() -> GoogleBackend {
-        use crate::config::HsxConfig;
+        use crate::config::FetchiumConfig;
         use crate::http::HttpClient;
-        GoogleBackend::new_http(HttpClient::new(&HsxConfig::default()).expect("http"))
+        GoogleBackend::new_http(HttpClient::new(&FetchiumConfig::default()).expect("http"))
     }
 
     #[cfg(not(feature = "headless"))]

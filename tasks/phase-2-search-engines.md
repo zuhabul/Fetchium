@@ -111,11 +111,11 @@ pub struct BrowserPool {
     browsers: Mutex<Vec<Arc<Browser>>>,
     tab_semaphore: Arc<Semaphore>,
     tier: ResourceTier,
-    config: Arc<HsxConfig>,
+    config: Arc<FetchiumConfig>,
 }
 
 impl BrowserPool {
-    pub fn new(config: &HsxConfig, tier: ResourceTier) -> Self { /* ... */ }
+    pub fn new(config: &FetchiumConfig, tier: ResourceTier) -> Self { /* ... */ }
     pub async fn init(&self) -> anyhow::Result<()> { /* launch browsers */ }
     pub async fn acquire_tab(&self) -> anyhow::Result<ManagedTab> { /* semaphore-gated */ }
     pub async fn shutdown(&self) { /* drop all browsers */ }

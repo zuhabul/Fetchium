@@ -10,7 +10,7 @@ use axum::{
     Json,
 };
 use fetchium_core::cache::MemoryCache;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use parking_lot::Mutex;
 use std::collections::HashMap;
@@ -21,7 +21,7 @@ use std::time::Instant;
 /// AppState is Clone (cheap — all inner fields are Arc-wrapped).
 #[derive(Clone)]
 pub struct AppState {
-    pub config: HsxConfig,
+    pub config: FetchiumConfig,
     pub http: HttpClient,
     pub cache: MemoryCache,
     pub auth_db: Arc<AuthDb>,
@@ -33,7 +33,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(config: HsxConfig, auth_db: Arc<AuthDb>) -> anyhow::Result<Self> {
+    pub fn new(config: FetchiumConfig, auth_db: Arc<AuthDb>) -> anyhow::Result<Self> {
         let http = HttpClient::new(&config)?;
         let cache = MemoryCache::new(
             config.cache.memory_max_entries,
@@ -291,8 +291,12 @@ where
             return Err(AuthError::InvalidToken);
         }
 
-        // Validate against DB (blocking operation — short, so acceptable inline)
-        let record = tokio::task::block_in_place(|| app_state.auth_db.validate_key(raw_key))
+        // Validate against DB (non-blocking via spawn_blocking thread pool)
+        let db = app_state.auth_db.clone();
+        let key_str = raw_key.to_string();
+        let record = tokio::task::spawn_blocking(move || db.validate_key(&key_str))
+            .await
+            .map_err(|_| AuthError::InvalidToken)?
             .map_err(|_| AuthError::InvalidToken)?
             .ok_or(AuthError::InvalidToken)?;
 
@@ -313,8 +317,13 @@ where
         }
 
         // Monthly quota
+        let db2 = app_state.auth_db.clone();
+        let key_id = record.id.clone();
+        let plan = record.plan.clone();
         let within_quota =
-            tokio::task::block_in_place(|| app_state.auth_db.check_quota(&record.id, &record.plan));
+            tokio::task::spawn_blocking(move || db2.check_quota(&key_id, &plan))
+                .await
+                .unwrap_or(false);
         if !within_quota {
             return Err(AuthError::QuotaExceeded);
         }

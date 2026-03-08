@@ -1,7 +1,7 @@
 # Sprint 02: Code Rebrand
 
 **Duration:** 1 week
-**Theme:** Execute the HyperSearchX → Fetchium code rebrand
+**Theme:** Execute the Fetchium → Fetchium code rebrand
 **Goal:** All code references updated, CI green, deployed under the Fetchium domain
 **Dependency:** Sprint 01 must be complete (domain live, GitHub org created)
 
@@ -9,7 +9,7 @@
 
 ## Context
 
-The codebase is currently named HyperSearchX with the `fetchium` binary and `fetchium-*` crates.
+The codebase is currently named Fetchium with the `fetchium` binary and `fetchium-*` crates.
 This sprint renames everything to Fetchium / `fetchium` / `fxm` (short form) while
 preserving all functionality and keeping CI green throughout.
 
@@ -17,7 +17,7 @@ preserving all functionality and keeping CI green throughout.
 - Cargo workspace: crate names, binary names, package metadata
 - Source code: module paths, type names, error types, config paths
 - CLI: binary name `fetchium` → `fetchium`, command names
-- Config file paths: `~/.hypersearchx/` → `~/.fetchium/`
+- Config file paths: `~/.fetchium/` → `~/.fetchium/`
 - Documentation: all references
 - CI/CD: GitHub Actions workflows
 - Web apps: all UI and API endpoints
@@ -110,24 +110,24 @@ find crates/ -name "*.rs" -exec sed -i 's/hsx_api/fetchium_api/g' {} \;
 
 ### Task 2.4 — Rename Type Names and Constants
 
-Types like `HsxConfig`, `HsxError`, `HsxResult` should become `FetchiumConfig`,
+Types like `FetchiumConfig`, `FetchiumError`, `FetchiumResult` should become `FetchiumConfig`,
 `FetchiumError`, `FetchiumResult`. This is the most labour-intensive part.
 
 **Strategy:** Use `cargo fix` where possible; manual review for ambiguous cases.
 
 Key types to rename:
 ```
-HsxConfig       → FetchiumConfig
-HsxError        → FetchiumError
-HsxResult       → FetchiumResult
-HsxAuth         → FetchiumAuth
+FetchiumConfig       → FetchiumConfig
+FetchiumError        → FetchiumError
+FetchiumResult       → FetchiumResult
+FetchiumAuth         → FetchiumAuth
 BackendId::Hsx* → BackendId::Fetchium*  (if any)
 ```
 
 **Config file path:**
 ```rust
 // Before (in config.rs)
-let config_dir = dirs::home_dir().unwrap().join(".hypersearchx");
+let config_dir = dirs::home_dir().unwrap().join(".fetchium");
 
 // After
 let config_dir = dirs::home_dir().unwrap().join(".fetchium");
@@ -135,16 +135,16 @@ let config_dir = dirs::home_dir().unwrap().join(".fetchium");
 
 ### Task 2.5 — Update Error Messages and Log Output
 
-Search for any user-facing strings containing "HyperSearchX" or "fetchium":
+Search for any user-facing strings containing "Fetchium" or "fetchium":
 ```bash
-grep -r "HyperSearchX\|hypersearchx\|fetchium" crates/ --include="*.rs" -n
+grep -r "Fetchium\|fetchium\|fetchium" crates/ --include="*.rs" -n
 ```
 
 Update:
-- `"HyperSearchX v{}"` → `"Fetchium v{}"`
+- `"Fetchium v{}"` → `"Fetchium v{}"`
 - Error messages referencing old name
 - Log output referencing old binary name
-- `"~/.hypersearchx/config.toml"` → `"~/.fetchium/config.toml"`
+- `"~/.fetchium/config.toml"` → `"~/.fetchium/config.toml"`
 
 ### Task 2.6 — Intermediate Compile & Test
 ```bash
@@ -162,7 +162,7 @@ The `fetchium` binary becomes `fetchium`. Update in `fetchium-cli/src/main.rs`:
 
 ```rust
 // Before
-#[command(name = "fetchium", about = "HyperSearchX — AI-powered search CLI")]
+#[command(name = "fetchium", about = "Fetchium — AI-powered search CLI")]
 
 // After
 #[command(name = "fetchium", about = "Fetchium — typed web fetch for AI agents")]
@@ -188,7 +188,7 @@ instead of `fetchium`.
 }
 ```
 
-Update all references from `hypersearchx` to `fetchium` in the npm package files.
+Update all references from `fetchium` to `fetchium` in the npm package files.
 
 ### Task 2.9 — Environment Variable Names
 
@@ -240,7 +240,7 @@ Update Traefik dynamic configuration:
 ```yaml
 # Update router names, service names, middleware names
 # fetchium-api-router → fetchium-api-router
-# api.hypersearchx.zuhabul.com → api.fetchium.com (once DNS propagates)
+# api.fetchium.zuhabul.com → api.fetchium.com (once DNS propagates)
 ```
 
 ### Task 2.13 — GitHub Actions Workflows
@@ -261,11 +261,11 @@ Update all `.github/workflows/` files:
 In `apps/web/` and `apps/dashboard/`:
 ```bash
 # Find all occurrences
-grep -r "HyperSearchX\|hypersearchx\|fetchium\|HsxConfig" apps/ --include="*.tsx" --include="*.ts" -l
+grep -r "Fetchium\|fetchium\|fetchium\|FetchiumConfig" apps/ --include="*.tsx" --include="*.ts" -l
 ```
 
 Update:
-- Page titles: `"HyperSearchX Docs"` → `"Fetchium Docs"`
+- Page titles: `"Fetchium Docs"` → `"Fetchium Docs"`
 - Meta descriptions and OG tags
 - API endpoint references: `/api/fetchium/` → `/api/fetchium/` (or keep routes stable for backwards compat)
 - Import paths if any reference old crate names
@@ -274,7 +274,7 @@ Update:
 
 ```bash
 # Update all markdown files
-find . -name "*.md" -exec grep -l "HyperSearchX\|hypersearchx\|fetchium" {} \;
+find . -name "*.md" -exec grep -l "Fetchium\|fetchium\|fetchium" {} \;
 ```
 
 Key files:
@@ -285,17 +285,17 @@ Key files:
 
 ### Task 2.16 — Config Migration Script
 
-Users upgrading from HyperSearchX to Fetchium need their config migrated:
+Users upgrading from Fetchium to Fetchium need their config migrated:
 
 ```rust
 // In fetchium-core/src/config.rs — on startup, check for legacy config
 pub fn migrate_legacy_config() -> Result<()> {
-    let old_dir = dirs::home_dir()?.join(".hypersearchx");
+    let old_dir = dirs::home_dir()?.join(".fetchium");
     let new_dir = dirs::home_dir()?.join(".fetchium");
 
     if old_dir.exists() && !new_dir.exists() {
         fs::rename(&old_dir, &new_dir)?;
-        eprintln!("Migrated config from ~/.hypersearchx to ~/.fetchium");
+        eprintln!("Migrated config from ~/.fetchium to ~/.fetchium");
     }
     Ok(())
 }
@@ -357,14 +357,14 @@ curl ***REMOVED***/health
 
 ```bash
 git add -A
-git commit -m "feat!: rebrand HyperSearchX to Fetchium
+git commit -m "feat!: rebrand Fetchium to Fetchium
 
 BREAKING CHANGE: binary renamed from fetchium to fetchium;
-config directory moved from ~/.hypersearchx to ~/.fetchium;
+config directory moved from ~/.fetchium to ~/.fetchium;
 auto-migration runs on first startup"
 
 git push origin feat/fetchium-rebrand
-gh pr create --title "feat!: rebrand HyperSearchX to Fetchium"
+gh pr create --title "feat!: rebrand Fetchium to Fetchium"
 ```
 
 ---
@@ -376,7 +376,7 @@ gh pr create --title "feat!: rebrand HyperSearchX to Fetchium"
 - [ ] `cargo test` passes with 0 failures
 - [ ] `cargo clippy -- -D warnings` passes with 0 warnings
 - [ ] `fetchium --help` shows Fetchium branding
-- [ ] Config migrates from `~/.hypersearchx` to `~/.fetchium` on first run
+- [ ] Config migrates from `~/.fetchium` to `~/.fetchium` on first run
 - [ ] Web apps show Fetchium branding
 - [ ] Docs site updated
 - [ ] CI/CD workflows updated and green
@@ -392,7 +392,7 @@ If something breaks catastrophically:
 1. Keep the old branch (`main` before rebrand) for 30 days
 2. Systemd service rollback: `sudo systemctl restart fetchium-api` (old service still on disk)
 3. Database compatibility: SQLite auth.db is not renamed — both old and new binary can read it
-4. Config migration is one-way: `~/.hypersearchx` folder is renamed, not deleted
+4. Config migration is one-way: `~/.fetchium` folder is renamed, not deleted
 
 ---
 
@@ -402,4 +402,4 @@ This is a `feat!` commit (BREAKING CHANGE). The release notes must document:
 - Old binary `fetchium` → new binary `fetchium`
 - Old env vars `FETCHIUM_*` → new env vars `FETCHIUM_*`
 - Config directory migration (automatic on first run)
-- npm package rename from `hypersearchx` to `fetchium`
+- npm package rename from `fetchium` to `fetchium`

@@ -11,7 +11,7 @@ use std::path::PathBuf;
 /// Top-level configuration.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
-pub struct HsxConfig {
+pub struct FetchiumConfig {
     pub general: GeneralConfig,
     pub search: SearchConfig,
     pub fetch: FetchConfig,
@@ -265,7 +265,7 @@ pub struct SocialConfig {
     pub facebook_graph_token: Option<String>,
 }
 
-impl HsxConfig {
+impl FetchiumConfig {
     /// Returns the Facebook Graph API token from config or env var.
     ///
     /// Checks `FETCHIUM_FACEBOOK_TOKEN`, then the config file value.
@@ -414,7 +414,7 @@ impl Default for OutputConfig {
 
 // ─── Validation ──────────────────────────────────────────────────
 
-impl HsxConfig {
+impl FetchiumConfig {
     /// Validate all configuration values are within acceptable bounds.
     /// Returns a list of warnings for non-fatal issues or an error for fatal ones.
     pub fn validate(&self) -> Result<Vec<String>, String> {
@@ -504,7 +504,7 @@ impl HsxConfig {
 
 // ─── Loading ─────────────────────────────────────────────────────
 
-impl HsxConfig {
+impl FetchiumConfig {
     /// Get the data directory, creating it if it doesn't exist.
     ///
     /// Resolution order:
@@ -739,7 +739,7 @@ mod tests {
 
     #[test]
     fn default_config_is_valid() {
-        let config = HsxConfig::default();
+        let config = FetchiumConfig::default();
         assert_eq!(config.search.default_budget, 4000);
         assert!(config.fetch.respect_robots);
         assert!(config.cache.enabled);
@@ -747,15 +747,15 @@ mod tests {
 
     #[test]
     fn config_roundtrip_toml() {
-        let config = HsxConfig::default();
+        let config = FetchiumConfig::default();
         let toml_str = toml::to_string_pretty(&config).unwrap();
-        let back: HsxConfig = toml::from_str(&toml_str).unwrap();
+        let back: FetchiumConfig = toml::from_str(&toml_str).unwrap();
         assert_eq!(back.search.default_budget, config.search.default_budget);
     }
 
     #[test]
     fn data_dir_default() {
-        let config = HsxConfig::default();
+        let config = FetchiumConfig::default();
         let dir = config.data_dir();
         // The canonical default is ~/.fetchium.
         let s = dir.to_string_lossy();
@@ -765,7 +765,7 @@ mod tests {
     #[test]
     fn env_override_budget_new_prefix() {
         std::env::set_var("FETCHIUM_SEARCH_DEFAULT_BUDGET", "8000");
-        let mut config = HsxConfig::default();
+        let mut config = FetchiumConfig::default();
         config.apply_env_overrides();
         assert_eq!(config.search.default_budget, 8000);
         std::env::remove_var("FETCHIUM_SEARCH_DEFAULT_BUDGET");
@@ -774,7 +774,7 @@ mod tests {
     #[test]
     fn env_override_cache_disabled() {
         std::env::set_var("FETCHIUM_CACHE_ENABLED", "false");
-        let mut config = HsxConfig::default();
+        let mut config = FetchiumConfig::default();
         config.apply_env_overrides();
         assert!(!config.cache.enabled);
         std::env::remove_var("FETCHIUM_CACHE_ENABLED");
@@ -785,7 +785,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let config_path = dir.path().join("config.toml");
 
-        let mut config = HsxConfig::default();
+        let mut config = FetchiumConfig::default();
         config.search.default_budget = 9999;
 
         // Save
@@ -793,13 +793,13 @@ mod tests {
         std::fs::write(&config_path, &toml_str).unwrap();
 
         // Reload
-        let loaded = HsxConfig::load_from(Some(&config_path));
+        let loaded = FetchiumConfig::load_from(Some(&config_path));
         assert_eq!(loaded.search.default_budget, 9999);
     }
 
     #[test]
     fn config_file_path_is_fetchium() {
-        let path = HsxConfig::config_file_path();
+        let path = FetchiumConfig::config_file_path();
         let s = path.to_string_lossy();
         assert!(s.contains(".fetchium"));
         assert!(s.ends_with("config.toml"));

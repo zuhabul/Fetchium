@@ -20,7 +20,7 @@ use axum::{
     Json, Router,
 };
 use fetchium_core::cache::MemoryCache;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::summarize::SummarizeConfig;
 use serde::{Deserialize, Serialize};
@@ -58,7 +58,7 @@ struct JsonRpcError {
 
 #[derive(Clone)]
 struct McpHttpState {
-    config: HsxConfig,
+    config: FetchiumConfig,
     http: HttpClient,
     cache: MemoryCache,
 }
@@ -87,7 +87,7 @@ impl JsonRpcResponse {
 ///
 /// Reads JSON-RPC requests from stdin line by line, dispatches to handlers,
 /// and writes JSON-RPC responses to stdout. All diagnostics go to stderr.
-pub async fn run_mcp_stdio(config: HsxConfig) -> anyhow::Result<()> {
+pub async fn run_mcp_stdio(config: FetchiumConfig) -> anyhow::Result<()> {
     eprintln!("[fetchium-mcp] Fetchium MCP server starting (stdio transport)");
 
     let http = HttpClient::new(&config)?;
@@ -125,7 +125,7 @@ pub async fn run_mcp_stdio(config: HsxConfig) -> anyhow::Result<()> {
 }
 
 /// Run the MCP server over HTTP JSON-RPC on `/mcp`.
-pub async fn run_mcp_http(config: HsxConfig, port: u16) -> anyhow::Result<()> {
+pub async fn run_mcp_http(config: FetchiumConfig, port: u16) -> anyhow::Result<()> {
     let http = HttpClient::new(&config)?;
     let cache = MemoryCache::new(50, 3600, true);
     let state = Arc::new(McpHttpState {
@@ -155,7 +155,7 @@ pub async fn run_mcp_http(config: HsxConfig, port: u16) -> anyhow::Result<()> {
 /// Dispatch a single JSON-RPC message line and return the response.
 async fn handle_message(
     line: &str,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     cache: &MemoryCache,
 ) -> JsonRpcResponse {
@@ -171,7 +171,7 @@ async fn handle_message(
 
 async fn handle_request(
     req: JsonRpcRequest,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     cache: &MemoryCache,
 ) -> JsonRpcResponse {
@@ -251,7 +251,7 @@ async fn mcp_http_handler(
 async fn dispatch_tool(
     name: &str,
     args: Value,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     cache: &MemoryCache,
 ) -> Value {
@@ -488,7 +488,7 @@ async fn dispatch_tool(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fetchium_core::config::HsxConfig;
+    use fetchium_core::config::FetchiumConfig;
 
     #[test]
     fn tool_definitions_has_correct_count() {
@@ -513,7 +513,7 @@ mod tests {
 
     #[tokio::test]
     async fn initialize_request_returns_fetchium_server_info() {
-        let config = HsxConfig::default();
+        let config = FetchiumConfig::default();
         let http = HttpClient::new(&config).unwrap();
         let cache = MemoryCache::new(10, 60, true);
         let response = handle_request(

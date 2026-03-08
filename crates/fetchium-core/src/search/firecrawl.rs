@@ -4,7 +4,7 @@
 //! Returns clean markdown content ready for LLM consumption.
 //! API key required: set `FIRECRAWL_API_KEY` env var or `search.firecrawl_api_key` in config.
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::HttpClient;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
@@ -56,14 +56,14 @@ impl SearchBackend for FirecrawlBackend {
         BackendId::Firecrawl
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         let request = FirecrawlSearchRequest {
             query,
             limit: max_results.min(5),
         };
 
         let body = serde_json::to_string(&request)
-            .map_err(|e| HsxError::Search(format!("Firecrawl serialization: {e}")))?;
+            .map_err(|e| FetchiumError::Search(format!("Firecrawl serialization: {e}")))?;
 
         let auth_value = format!("Bearer {}", self.api_key);
         let response = self
@@ -77,7 +77,7 @@ impl SearchBackend for FirecrawlBackend {
             .await?;
 
         let parsed: FirecrawlSearchResponse = serde_json::from_str(&response)
-            .map_err(|e| HsxError::Search(format!("Firecrawl parse: {e}")))?;
+            .map_err(|e| FetchiumError::Search(format!("Firecrawl parse: {e}")))?;
 
         debug!(
             "Firecrawl: {} results (success={})",

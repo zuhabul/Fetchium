@@ -1,6 +1,6 @@
 //! Facebook intelligence pipeline.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::http::client::HttpClient;
 use crate::social::facebook::types::*;
 use crate::social::facebook::{analysis, search};
@@ -13,7 +13,7 @@ use std::time::Instant;
 pub async fn run_facebook_pipeline(
     config: &FacebookPipelineConfig,
     http: &HttpClient,
-) -> HsxResult<FacebookPipelineResult> {
+) -> FetchiumResult<FacebookPipelineResult> {
     let started = Instant::now();
 
     let (posts, pages, data_source) = search::search_posts(&config.query, config, http).await?;

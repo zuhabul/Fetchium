@@ -5,7 +5,7 @@
 //! Model: nomic-embed-text (768-dim, L2-normalised)
 //! Latency: ~76ms warm for 5 texts, ~1.4s cold start
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use once_cell::sync::Lazy;
 use tracing::{debug, warn};
 
@@ -27,7 +27,7 @@ static HTTP_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
 });
 
 /// Embed a single text (sync — uses blocking HTTP, safe from any context).
-pub fn embed(text: &str) -> Result<Vec<f32>, HsxError> {
+pub fn embed(text: &str) -> Result<Vec<f32>, FetchiumError> {
     let results = embed_batch(&[text])?;
     Ok(results
         .into_iter()
@@ -36,7 +36,7 @@ pub fn embed(text: &str) -> Result<Vec<f32>, HsxError> {
 }
 
 /// Embed a batch of texts (sync — blocking HTTP, safe from any context).
-pub fn embed_batch(texts: &[&str]) -> Result<Vec<Vec<f32>>, HsxError> {
+pub fn embed_batch(texts: &[&str]) -> Result<Vec<Vec<f32>>, FetchiumError> {
     if texts.is_empty() {
         return Ok(Vec::new());
     }
@@ -53,29 +53,29 @@ pub fn embed_batch(texts: &[&str]) -> Result<Vec<Vec<f32>>, HsxError> {
     let client = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
         .build()
-        .map_err(|e| HsxError::Internal(format!("HTTP client error: {e}")))?;
+        .map_err(|e| FetchiumError::Internal(format!("HTTP client error: {e}")))?;
 
     let resp = client.post(&url).json(&body).send().map_err(|e| {
         warn!("Ollama embedding request failed: {e}");
-        HsxError::Internal(format!("Ollama embed request failed: {e}"))
+        FetchiumError::Internal(format!("Ollama embed request failed: {e}"))
     })?;
 
     if !resp.status().is_success() {
         let status = resp.status();
         let body = resp.text().unwrap_or_default();
-        return Err(HsxError::Internal(format!(
+        return Err(FetchiumError::Internal(format!(
             "Ollama embed returned {status}: {body}"
         )));
     }
 
     let data: serde_json::Value = resp
         .json()
-        .map_err(|e| HsxError::Internal(format!("Ollama response parse error: {e}")))?;
+        .map_err(|e| FetchiumError::Internal(format!("Ollama response parse error: {e}")))?;
     parse_ollama_response(&data)
 }
 
 /// Async embed a single text.
-pub async fn embed_async(text: &str) -> Result<Vec<f32>, HsxError> {
+pub async fn embed_async(text: &str) -> Result<Vec<f32>, FetchiumError> {
     let results = embed_batch_async(&[text]).await?;
     Ok(results
         .into_iter()
@@ -84,7 +84,7 @@ pub async fn embed_async(text: &str) -> Result<Vec<f32>, HsxError> {
 }
 
 /// Async embed a batch of texts via Ollama's /api/embed endpoint.
-pub async fn embed_batch_async(texts: &[&str]) -> Result<Vec<Vec<f32>>, HsxError> {
+pub async fn embed_batch_async(texts: &[&str]) -> Result<Vec<Vec<f32>>, FetchiumError> {
     if texts.is_empty() {
         return Ok(Vec::new());
     }
@@ -105,13 +105,13 @@ pub async fn embed_batch_async(texts: &[&str]) -> Result<Vec<Vec<f32>>, HsxError
         .await
         .map_err(|e| {
             warn!("Ollama embedding request failed: {e}");
-            HsxError::Internal(format!("Ollama embed request failed: {e}"))
+            FetchiumError::Internal(format!("Ollama embed request failed: {e}"))
         })?;
 
     if !resp.status().is_success() {
         let status = resp.status();
         let body = resp.text().await.unwrap_or_default();
-        return Err(HsxError::Internal(format!(
+        return Err(FetchiumError::Internal(format!(
             "Ollama embed returned {status}: {body}"
         )));
     }
@@ -119,15 +119,15 @@ pub async fn embed_batch_async(texts: &[&str]) -> Result<Vec<Vec<f32>>, HsxError
     let data: serde_json::Value = resp
         .json()
         .await
-        .map_err(|e| HsxError::Internal(format!("Ollama response parse error: {e}")))?;
+        .map_err(|e| FetchiumError::Internal(format!("Ollama response parse error: {e}")))?;
     parse_ollama_response(&data)
 }
 
 /// Parse Ollama /api/embed JSON response.
-fn parse_ollama_response(data: &serde_json::Value) -> Result<Vec<Vec<f32>>, HsxError> {
+fn parse_ollama_response(data: &serde_json::Value) -> Result<Vec<Vec<f32>>, FetchiumError> {
     let embeddings = data["embeddings"]
         .as_array()
-        .ok_or_else(|| HsxError::Internal("Ollama response missing 'embeddings' array".into()))?;
+        .ok_or_else(|| FetchiumError::Internal("Ollama response missing 'embeddings' array".into()))?;
 
     let result: Vec<Vec<f32>> = embeddings
         .iter()

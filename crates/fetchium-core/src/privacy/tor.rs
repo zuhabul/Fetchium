@@ -1,6 +1,6 @@
 //! Tor SOCKS5 proxy helpers (PRD §36).
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 /// Tor SOCKS5 default endpoint.
 pub const TOR_SOCKS5: &str = "socks5://127.0.0.1:9050";
@@ -31,11 +31,11 @@ pub fn install_hint() -> &'static str {
 }
 
 /// Validate Tor availability and return a useful error if not reachable.
-pub fn require_tor() -> Result<(), HsxError> {
+pub fn require_tor() -> Result<(), FetchiumError> {
     if is_tor_available() {
         Ok(())
     } else {
-        Err(HsxError::Internal(format!(
+        Err(FetchiumError::Internal(format!(
             "Tor SOCKS5 proxy not reachable at 127.0.0.1:9050. {}",
             install_hint()
         )))

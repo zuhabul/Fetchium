@@ -11,7 +11,7 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 type ApiResult<T> = Result<Json<T>, (StatusCode, Json<serde_json::Value>)>;
 
@@ -132,16 +132,14 @@ pub async fn create_key(
         ));
     }
 
+    let db = state.auth_db.clone();
+    let name = req.name.clone();
+    let plan_str = req.plan.clone();
     let (raw_key, record) =
-        tokio::task::block_in_place(|| state.auth_db.create_key(&req.name, &req.plan)).map_err(
-            |e| {
-                err(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "db_error",
-                    &e.to_string(),
-                )
-            },
-        )?;
+        tokio::task::spawn_blocking(move || db.create_key(&name, &plan_str))
+            .await
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "db_error", &e.to_string()))?
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "db_error", &e.to_string()))?;
 
     Ok(Json(CreateKeyResponse {
         meta: response_meta(
@@ -184,13 +182,11 @@ pub async fn list_keys(
         ));
     }
 
-    let keys = tokio::task::block_in_place(|| state.auth_db.list_keys()).map_err(|e| {
-        err(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "db_error",
-            &e.to_string(),
-        )
-    })?;
+    let db = state.auth_db.clone();
+    let keys = tokio::task::spawn_blocking(move || db.list_keys())
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "db_error", &e.to_string()))?
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "db_error", &e.to_string()))?;
 
     let response: Vec<KeyInfo> = keys
         .into_iter()
@@ -233,14 +229,12 @@ pub async fn revoke_key(
         ));
     }
 
-    let revoked =
-        tokio::task::block_in_place(|| state.auth_db.revoke_key(&key_id)).map_err(|e| {
-            err(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "db_error",
-                &e.to_string(),
-            )
-        })?;
+    let db = state.auth_db.clone();
+    let kid = key_id.clone();
+    let revoked = tokio::task::spawn_blocking(move || db.revoke_key(&kid))
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "db_error", &e.to_string()))?
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "db_error", &e.to_string()))?;
 
     if revoked {
         Ok(Json(serde_json::json!({
@@ -270,7 +264,12 @@ pub async fn get_usage(
     headers: HeaderMap,
 ) -> impl IntoResponse {
     let start = Instant::now();
-    let stats = tokio::task::block_in_place(|| state.auth_db.get_usage_stats(&key.id, &key.plan));
+    let db = state.auth_db.clone();
+    let key_id = key.id.clone();
+    let key_plan = key.plan.clone();
+    let stats = tokio::task::spawn_blocking(move || db.get_usage_stats(&key_id, &key_plan))
+        .await
+        .unwrap_or_else(|e| Err(anyhow::anyhow!("task join error: {e}")));
 
     match stats {
         Ok(s) => match serde_json::to_value(&s) {
@@ -331,9 +330,18 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
         "{}/search?q=test&format=json",
         searxng_url.trim_end_matches('/')
     );
-    let search_backbone_ok = state.http.fetch_text(&health_url).await.is_ok();
-    let auth_store_ok =
-        tokio::task::block_in_place(|| state.auth_db.list_keys().map(|_| ())).is_ok();
+    let search_backbone_ok = tokio::time::timeout(
+        Duration::from_secs(3),
+        state.http.fetch_text(&health_url),
+    )
+    .await
+    .map(|r| r.is_ok())
+    .unwrap_or(false);
+    let db = state.auth_db.clone();
+    let auth_store_ok = tokio::task::spawn_blocking(move || db.list_keys().map(|_| ()))
+        .await
+        .map(|r| r.is_ok())
+        .unwrap_or(false);
 
     let status = if auth_store_ok && search_backbone_ok {
         "ok"

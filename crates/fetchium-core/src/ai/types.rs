@@ -64,11 +64,11 @@ impl Default for AiConfig {
 }
 
 impl AiConfig {
-    /// Build an `AiConfig` from the top-level `HsxConfig`.
+    /// Build an `AiConfig` from the top-level `FetchiumConfig`.
     ///
     /// Reads `ollama_host`, `default_model`, and `max_tokens` from the `[ai]`
     /// section. The host string may include the port (e.g. `"http://localhost:11434"`).
-    pub fn from_fetchium_config(fetchium_config: &crate::config::HsxConfig) -> Self {
+    pub fn from_fetchium_config(fetchium_config: &crate::config::FetchiumConfig) -> Self {
         let (host, port) = parse_ollama_host(&fetchium_config.ai.ollama_host);
         let default_model = if fetchium_config.ai.default_model.is_empty() {
             None
@@ -109,7 +109,7 @@ fn parse_ollama_host(url: &str) -> (String, u16) {
 #[cfg(test)]
 mod parse_tests {
     use super::*;
-    use crate::config::HsxConfig;
+    use crate::config::FetchiumConfig;
 
     #[test]
     fn parse_host_with_port() {
@@ -127,7 +127,7 @@ mod parse_tests {
 
     #[test]
     fn from_fetchium_config_reads_ollama_host() {
-        let mut fetchium_config = HsxConfig::default();
+        let mut fetchium_config = FetchiumConfig::default();
         fetchium_config.ai.ollama_host = "http://localhost:11434".into();
         fetchium_config.ai.default_model = "deepseek-r1:7b".into();
         fetchium_config.ai.max_tokens = 8192;
@@ -140,7 +140,7 @@ mod parse_tests {
 
     #[test]
     fn from_fetchium_config_empty_model_is_none() {
-        let mut fetchium_config = HsxConfig::default();
+        let mut fetchium_config = FetchiumConfig::default();
         fetchium_config.ai.default_model = String::new();
         let ai = AiConfig::from_fetchium_config(&fetchium_config);
         assert!(ai.default_model.is_none());

@@ -1,6 +1,6 @@
 // Integration: fetch + extract pipeline tests using wiremock.
 
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::extract::layer1;
 use fetchium_core::http::HttpClient;
 use wiremock::matchers::{method, path};
@@ -31,7 +31,7 @@ async fn fetch_returns_html_body() {
         .mount(&server)
         .await;
 
-    let config = HsxConfig::default();
+    let config = FetchiumConfig::default();
     let client = HttpClient::new(&config).unwrap();
     let url = format!("{}/article", server.uri());
     let result = client.fetch(&url).await.unwrap();
@@ -50,7 +50,7 @@ async fn fetch_404_returns_error() {
         .mount(&server)
         .await;
 
-    let config = HsxConfig::default();
+    let config = FetchiumConfig::default();
     let client = HttpClient::new(&config).unwrap();
     let url = format!("{}/missing", server.uri());
     let result = client.fetch(&url).await;

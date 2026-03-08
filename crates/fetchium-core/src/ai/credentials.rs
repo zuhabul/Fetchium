@@ -603,7 +603,7 @@ impl SubscriptionAuth {
 /// Credential stored in `~/.fetchium/auth.json`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-pub enum HsxAuth {
+pub enum FetchiumAuth {
     /// Single API key credential.
     Api { key: String },
     /// Multiple API keys — random selection with 429/rate-limit failover.
@@ -620,7 +620,7 @@ pub enum HsxAuth {
     },
 }
 
-impl HsxAuth {
+impl FetchiumAuth {
     /// True if this credential contains at least one API key.
     pub fn is_api_key(&self) -> bool {
         matches!(self, Self::Api { .. } | Self::ApiPool { .. })
@@ -678,14 +678,14 @@ impl HsxAuth {
 /// Path to the unified auth store file.
 ///
 /// Returns `~/.fetchium/auth.json`.
-pub fn hsx_auth_path() -> std::path::PathBuf {
+pub fn fetchium_auth_path() -> std::path::PathBuf {
     let home = dirs::home_dir().unwrap_or_default();
     home.join(".fetchium").join("auth.json")
 }
 
 /// Read all entries from the auth store.
-pub fn hsx_auth_all() -> std::collections::HashMap<String, HsxAuth> {
-    let path = hsx_auth_path();
+pub fn fetchium_auth_all() -> std::collections::HashMap<String, FetchiumAuth> {
+    let path = fetchium_auth_path();
     let content = match std::fs::read_to_string(&path) {
         Ok(c) => c,
         Err(_) => return std::collections::HashMap::new(),
@@ -698,18 +698,18 @@ pub fn hsx_auth_all() -> std::collections::HashMap<String, HsxAuth> {
 }
 
 /// Read one entry from the auth store.
-pub fn hsx_auth_get(provider: &str) -> Option<HsxAuth> {
-    hsx_auth_all().remove(provider)
+pub fn fetchium_auth_get(provider: &str) -> Option<FetchiumAuth> {
+    fetchium_auth_all().remove(provider)
 }
 
 /// Write one entry to the auth store (creates the file if absent, 0o600 permissions).
 ///
 /// Always writes to `~/.fetchium/auth.json`.
-pub fn hsx_auth_set(provider: &str, auth: HsxAuth) -> Result<(), Box<dyn std::error::Error>> {
+pub fn fetchium_auth_set(provider: &str, auth: FetchiumAuth) -> Result<(), Box<dyn std::error::Error>> {
     let home = dirs::home_dir().unwrap_or_default();
     let path = home.join(".fetchium").join("auth.json");
 
-    let mut map = hsx_auth_all();
+    let mut map = fetchium_auth_all();
     map.insert(provider.to_string(), auth);
 
     if let Some(parent) = path.parent() {
@@ -739,12 +739,12 @@ pub fn hsx_auth_set(provider: &str, auth: HsxAuth) -> Result<(), Box<dyn std::er
 /// - If a single `Api` key exists, converts it to an `ApiPool`.
 /// - Deduplicates: if the key is already in the pool, this is a no-op.
 ///
-/// Use `hsx_auth_set` with `HsxAuth::ApiPool` to **replace** the entire pool.
-pub fn hsx_auth_add_api_key(
+/// Use `fetchium_auth_set` with `FetchiumAuth::ApiPool` to **replace** the entire pool.
+pub fn fetchium_auth_add_api_key(
     provider: &str,
     new_key: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut existing: Vec<String> = hsx_auth_get(provider)
+    let mut existing: Vec<String> = fetchium_auth_get(provider)
         .map(|a| a.api_keys().into_iter().map(|s| s.to_string()).collect())
         .unwrap_or_default();
 
@@ -753,17 +753,17 @@ pub fn hsx_auth_add_api_key(
         existing.push(key_str);
     }
 
-    hsx_auth_set(provider, HsxAuth::ApiPool { keys: existing })
+    fetchium_auth_set(provider, FetchiumAuth::ApiPool { keys: existing })
 }
 
 /// Remove one entry from the auth store.
 ///
 /// Always writes to `~/.fetchium/auth.json` (new canonical location).
-pub fn hsx_auth_remove(provider: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn fetchium_auth_remove(provider: &str) -> Result<(), Box<dyn std::error::Error>> {
     let home = dirs::home_dir().unwrap_or_default();
     let path = home.join(".fetchium").join("auth.json");
 
-    let mut map = hsx_auth_all();
+    let mut map = fetchium_auth_all();
     map.remove(provider);
 
     if let Some(parent) = path.parent() {

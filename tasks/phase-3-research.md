@@ -2257,7 +2257,7 @@ use crate::validate::cross_source::CrossSourceVerifier;
 use crate::citation::formatter::CitationFormatter;
 use crate::citation::evidence_graph::EvidenceGraphBuilder;
 use crate::citation::evidence_tracker::EvidenceTracker;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 pub struct ResearchPipeline;
 
@@ -2280,7 +2280,7 @@ impl ResearchPipeline {
         // orchestrator: &SearchOrchestrator,
         // extractor: &QatbeExtractor,
         // ranker: &HyperFusionRanker,
-    ) -> Result<ResearchReport, HsxError> {
+    ) -> Result<ResearchReport, FetchiumError> {
         let start = std::time::Instant::now();
 
         // Step 1: Decompose query
@@ -2449,7 +2449,7 @@ use crate::research::pipeline::ResearchPipeline;
 use crate::research::ResearchConfig;
 
 impl ResearchCommand {
-    pub async fn run(&self) -> Result<(), HsxError> {
+    pub async fn run(&self) -> Result<(), FetchiumError> {
         let config = ResearchConfig {
             query: self.query.clone(),
             max_sources: self.max_sources,
@@ -2640,7 +2640,7 @@ pub struct AgentSource {
 }
 
 impl AgentResearchCommand {
-    pub async fn run(&self) -> Result<(), HsxError> {
+    pub async fn run(&self) -> Result<(), FetchiumError> {
         let config = ResearchConfig {
             query: self.query.clone(),
             max_sources: self.max_sources,

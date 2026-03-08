@@ -3,7 +3,7 @@
 //! Key derivation: Argon2id with a fixed salt (uniqueness via per-message nonces).
 //! Nonce generation: UUID v4 bytes (CSPRNG-backed via the `uuid` crate).
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use aes_gcm::{
     aead::{Aead, KeyInit},
     Aes256Gcm, Key, Nonce,
@@ -22,11 +22,11 @@ pub struct CacheEncryption {
 
 impl CacheEncryption {
     /// Derive a 256-bit key from `passphrase` using Argon2id.
-    pub fn new(passphrase: &str) -> Result<Self, HsxError> {
+    pub fn new(passphrase: &str) -> Result<Self, FetchiumError> {
         let mut key_bytes = [0u8; 32];
         argon2::Argon2::default()
             .hash_password_into(passphrase.as_bytes(), KDF_SALT, &mut key_bytes)
-            .map_err(|e| HsxError::Internal(format!("argon2 key derivation error: {e}")))?;
+            .map_err(|e| FetchiumError::Internal(format!("argon2 key derivation error: {e}")))?;
 
         let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
         let cipher = Aes256Gcm::new(key);
@@ -34,7 +34,7 @@ impl CacheEncryption {
     }
 
     /// Encrypt `data` with a random nonce. Returns `nonce || ciphertext`.
-    pub fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, HsxError> {
+    pub fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, FetchiumError> {
         // Generate a 12-byte nonce from a UUID v4 (CSPRNG-backed).
         let uuid_bytes = uuid::Uuid::new_v4().into_bytes();
         let nonce_bytes: [u8; NONCE_LEN] = uuid_bytes[..NONCE_LEN]
@@ -45,7 +45,7 @@ impl CacheEncryption {
         let ciphertext = self
             .cipher
             .encrypt(nonce, data)
-            .map_err(|e| HsxError::Internal(format!("encrypt error: {e}")))?;
+            .map_err(|e| FetchiumError::Internal(format!("encrypt error: {e}")))?;
 
         let mut out = nonce_bytes.to_vec();
         out.extend(ciphertext);
@@ -53,15 +53,15 @@ impl CacheEncryption {
     }
 
     /// Decrypt `data` (format: `nonce || ciphertext`).
-    pub fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, HsxError> {
+    pub fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, FetchiumError> {
         if data.len() <= NONCE_LEN {
-            return Err(HsxError::Internal("Data too short to decrypt".into()));
+            return Err(FetchiumError::Internal("Data too short to decrypt".into()));
         }
         let (nonce_bytes, ciphertext) = data.split_at(NONCE_LEN);
         let nonce = Nonce::from_slice(nonce_bytes);
         self.cipher
             .decrypt(nonce, ciphertext)
-            .map_err(|e| HsxError::Internal(format!("decrypt error: {e}")))
+            .map_err(|e| FetchiumError::Internal(format!("decrypt error: {e}")))
     }
 }
 

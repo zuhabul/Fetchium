@@ -31,8 +31,8 @@ async fn main() -> anyhow::Result<()> {
 
     // Load config
     let mut config = match &cli.config {
-        Some(path) => fetchium_core::config::HsxConfig::load_from(Some(std::path::Path::new(path))),
-        None => fetchium_core::config::HsxConfig::load(),
+        Some(path) => fetchium_core::config::FetchiumConfig::load_from(Some(std::path::Path::new(path))),
+        None => fetchium_core::config::FetchiumConfig::load(),
     };
 
     // Apply CLI flag overrides

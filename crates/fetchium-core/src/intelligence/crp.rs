@@ -9,7 +9,7 @@
 //!
 //! Short-circuits at any step if the resolution is conclusive.
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -80,7 +80,7 @@ pub struct Resolution {
 ///
 /// The `stm_trust_fn` callback retrieves the PIE trust score for a domain.
 /// Pass `|_| 0.5` when PIE is unavailable.
-pub fn resolve<F>(contradiction: &CrpContradiction, stm_trust_fn: F) -> Result<Resolution, HsxError>
+pub fn resolve<F>(contradiction: &CrpContradiction, stm_trust_fn: F) -> Result<Resolution, FetchiumError>
 where
     F: Fn(&str) -> f64,
 {

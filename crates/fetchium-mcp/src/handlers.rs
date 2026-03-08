@@ -3,7 +3,7 @@
 use crate::tools::{EstimateInput, ExpandInput, FetchInput, ResearchInput, SearchInput};
 use fetchium_core::cache::MemoryCache;
 use fetchium_core::citation::types::CitationStyle;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::research::pipeline::ResearchPipeline;
 use fetchium_core::research::ResearchConfig;
@@ -12,7 +12,7 @@ use serde_json::{json, Value};
 
 pub async fn handle_search(
     input: SearchInput,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     cache: Option<&MemoryCache>,
 ) -> Value {
@@ -42,7 +42,7 @@ pub async fn handle_search(
 
 pub async fn handle_fetch(
     input: FetchInput,
-    _config: &HsxConfig,
+    _config: &FetchiumConfig,
     http: &HttpClient,
     cache: Option<&MemoryCache>,
 ) -> Value {
@@ -57,7 +57,7 @@ pub async fn handle_fetch(
 
 pub async fn handle_research(
     input: ResearchInput,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     _cache: Option<&MemoryCache>,
 ) -> Value {
@@ -121,7 +121,7 @@ pub async fn handle_research(
 
 pub async fn handle_estimate(
     input: EstimateInput,
-    _config: &HsxConfig,
+    _config: &FetchiumConfig,
     http: &HttpClient,
     _cache: Option<&MemoryCache>,
 ) -> Value {
@@ -147,7 +147,7 @@ pub async fn handle_estimate(
 
 pub async fn handle_expand(
     input: ExpandInput,
-    _config: &HsxConfig,
+    _config: &FetchiumConfig,
     _http: &HttpClient,
     cache: Option<&MemoryCache>,
 ) -> Value {

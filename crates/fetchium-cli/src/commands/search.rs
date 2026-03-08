@@ -15,7 +15,7 @@ use fetchium_core::ai::provider_client::chat_with_fallback;
 use fetchium_core::ai::providers::ProviderKind;
 use fetchium_core::ai::types::{AiConfig, ChatMessage};
 use fetchium_core::cache::{search_key, MemoryCache};
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::output::{format_search_json, format_search_markdown};
 use fetchium_core::query::expansion::ai_perspective_expand;
@@ -33,7 +33,7 @@ use tracing::info;
 /// Run the `fetchium search "<query>"` command.
 pub async fn run(
     args: SearchArgs,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     format: Format,
     quiet: bool,
 ) -> anyhow::Result<()> {
@@ -105,7 +105,7 @@ pub async fn run(
     let orchestrator = {
         use fetchium_core::browser::pool::{BrowserPool, BrowserTier};
         use std::sync::Arc;
-        let tier = match fetchium_core::config::HsxConfig::detect_resource_tier() {
+        let tier = match fetchium_core::config::FetchiumConfig::detect_resource_tier() {
             fetchium_core::types::ResourceTier::Minimal => BrowserTier::Minimal,
             fetchium_core::types::ResourceTier::Standard => BrowserTier::Standard,
             _ => BrowserTier::Performance,
@@ -481,7 +481,7 @@ fn count_unique_domains(items: &[fetchium_core::types::ResultItem]) -> usize {
         .len()
 }
 
-async fn has_reachable_ai_for_expand(ai_config: &AiConfig, config: &HsxConfig) -> bool {
+async fn has_reachable_ai_for_expand(ai_config: &AiConfig, config: &FetchiumConfig) -> bool {
     let configured = ai_config.providers.configured_providers();
     if configured.is_empty() {
         return false;

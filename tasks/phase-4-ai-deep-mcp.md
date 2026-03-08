@@ -170,7 +170,7 @@ use reqwest::Client;
 use tokio::io::AsyncBufReadExt;
 use futures::StreamExt;
 use crate::ai::types::*;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 pub struct OllamaClient {
     client: Client,
@@ -199,12 +199,12 @@ impl OllamaClient {
     }
 
     /// List all locally available models from Ollama.
-    pub async fn list_models(&self) -> Result<Vec<OllamaModel>, HsxError> {
+    pub async fn list_models(&self) -> Result<Vec<OllamaModel>, FetchiumError> {
         let resp = self.client
             .get(format!("{}/api/tags", self.base_url))
             .send()
             .await
-            .map_err(|e| HsxError::AiUnavailable(format!("Ollama unreachable: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Ollama unreachable: {e}")))?;
 
         #[derive(Deserialize)]
         struct TagsResponse {
@@ -212,7 +212,7 @@ impl OllamaClient {
         }
 
         let tags: TagsResponse = resp.json().await
-            .map_err(|e| HsxError::AiUnavailable(format!("Invalid Ollama response: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Invalid Ollama response: {e}")))?;
 
         Ok(tags.models)
     }
@@ -223,7 +223,7 @@ impl OllamaClient {
         model: &str,
         messages: &[ChatMessage],
         temperature: f32,
-    ) -> Result<String, HsxError> {
+    ) -> Result<String, FetchiumError> {
         let body = serde_json::json!({
             "model": model,
             "messages": messages,
@@ -238,10 +238,10 @@ impl OllamaClient {
             .json(&body)
             .send()
             .await
-            .map_err(|e| HsxError::AiUnavailable(format!("Ollama chat failed: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Ollama chat failed: {e}")))?;
 
         let chunk: OllamaChatChunk = resp.json().await
-            .map_err(|e| HsxError::AiUnavailable(format!("Invalid chat response: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Invalid chat response: {e}")))?;
 
         Ok(chunk.message.content)
     }
@@ -254,7 +254,7 @@ impl OllamaClient {
         messages: &[ChatMessage],
         temperature: f32,
         mut on_chunk: F,
-    ) -> Result<String, HsxError>
+    ) -> Result<String, FetchiumError>
     where
         F: FnMut(&str),
     {
@@ -272,7 +272,7 @@ impl OllamaClient {
             .json(&body)
             .send()
             .await
-            .map_err(|e| HsxError::AiUnavailable(format!("Ollama stream failed: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Ollama stream failed: {e}")))?;
 
         let mut full_response = String::new();
         let mut stream = resp.bytes_stream();
@@ -281,7 +281,7 @@ impl OllamaClient {
         let mut buffer = Vec::new();
         while let Some(chunk_result) = stream.next().await {
             let bytes = chunk_result
-                .map_err(|e| HsxError::AiUnavailable(format!("Stream read error: {e}")))?;
+                .map_err(|e| FetchiumError::AiUnavailable(format!("Stream read error: {e}")))?;
             buffer.extend_from_slice(&bytes);
 
             // Process complete JSON lines from the buffer
@@ -659,7 +659,7 @@ use crate::ai::sandwich::{sandwich_layout, assemble_context};
 use crate::ai::prompt::{synthesis_system_prompt, factual_system_prompt};
 use crate::search::SearchOrchestrator;
 use crate::token::qatbe::QatbeExtractor;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 /// Result of the AI preview pipeline.
 #[derive(Debug)]
@@ -680,7 +680,7 @@ pub async fn run_ai_pipeline(
     config: &AiConfig,
     orchestrator: &SearchOrchestrator,
     extractor: &QatbeExtractor,
-) -> Result<AiPreviewResult, HsxError> {
+) -> Result<AiPreviewResult, FetchiumError> {
     // Step 1: Search
     let search_results = orchestrator.search(query).await?;
 
@@ -732,7 +732,7 @@ pub async fn run_ai_pipeline(
     let available_models = ollama.list_models().await?;
     let tier = route_model(query, ordered_sources.len());
     let model_name = select_model(&available_models, tier, model_override)
-        .ok_or_else(|| HsxError::AiUnavailable(
+        .ok_or_else(|| FetchiumError::AiUnavailable(
             "No models available in Ollama. Run `ollama pull llama3.2` first.".into()
         ))?;
 
@@ -1040,7 +1040,7 @@ pub type AgentReceiver = mpsc::Receiver<AgentMessage>;
 // agent.rs
 use async_trait::async_trait;
 use crate::research::amrs::channel::*;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 /// Trait that all AMRS agents implement.
 #[async_trait]
@@ -1054,7 +1054,7 @@ pub trait Agent: Send + Sync {
         &self,
         rx: AgentReceiver,
         tx: AgentSender,
-    ) -> Result<(), HsxError>;
+    ) -> Result<(), FetchiumError>;
 }
 ```
 
@@ -1175,7 +1175,7 @@ use crate::research::amrs::agent::Agent;
 use crate::research::amrs::channel::*;
 use crate::research::amrs::decompose::*;
 use crate::resource::ResourceTier;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 pub mod agent;
 pub mod channel;
@@ -1247,7 +1247,7 @@ impl Coordinator {
     }
 
     /// Execute a full deep research session.
-    pub async fn run(&mut self, query: &str) -> Result<DeepResearchResult, HsxError> {
+    pub async fn run(&mut self, query: &str) -> Result<DeepResearchResult, FetchiumError> {
         let mut audit = Vec::new();
         let mut all_contradictions = Vec::new();
         let decomposition = decompose_query(query, self.config.max_depth);
@@ -1276,7 +1276,7 @@ impl Coordinator {
             search_tx.send(AgentMessage::SpawnSearch {
                 query: node.query.clone(),
                 depth: node.depth,
-            }).await.map_err(|e| HsxError::Internal(e.to_string()))?;
+            }).await.map_err(|e| FetchiumError::Internal(e.to_string()))?;
 
             // Spawn the agent as a tokio task
             tokio::spawn(async move {
@@ -1336,7 +1336,7 @@ use async_trait::async_trait;
 use crate::research::amrs::agent::{Agent, AgentType};
 use crate::research::amrs::channel::*;
 use crate::search::SearchOrchestrator;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 pub struct SearchAgent {
     orchestrator: SearchOrchestrator,
@@ -1386,7 +1386,7 @@ impl Agent for SearchAgent {
         &self,
         mut rx: AgentReceiver,
         tx: AgentSender,
-    ) -> Result<(), HsxError> {
+    ) -> Result<(), FetchiumError> {
         while let Some(msg) = rx.recv().await {
             match msg {
                 AgentMessage::SpawnSearch { query, depth } => {
@@ -1769,7 +1769,7 @@ use tokio::time::{timeout, Duration, Instant};
 use crate::research::srp_types::*;
 use crate::search::SearchOrchestrator;
 use crate::extract::ContentExtractor;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 /// Run the SRP pipeline, emitting chunks through a channel.
 ///
@@ -2167,7 +2167,7 @@ use hsx_core::extract::ContentExtractor;
 use hsx_core::token::qatbe::QatbeExtractor;
 use hsx_core::research::ResearchPipeline;
 use hsx_core::cache::CacheManager;
-use hsx_core::error::HsxError;
+use hsx_core::error::FetchiumError;
 use serde_json::json;
 use std::sync::Arc;
 
@@ -2184,7 +2184,7 @@ pub struct McpAppState {
 pub async fn handle_search(
     input: SearchInput,
     state: &McpAppState,
-) -> Result<serde_json::Value, HsxError> {
+) -> Result<serde_json::Value, FetchiumError> {
     let budget = input.token_budget.unwrap_or(2000);
     let tier = input.tier.as_deref().unwrap_or("summary");
     let max_sources = input.max_sources.unwrap_or(10);
@@ -2238,7 +2238,7 @@ pub async fn handle_search(
 pub async fn handle_fetch(
     input: FetchInput,
     state: &McpAppState,
-) -> Result<serde_json::Value, HsxError> {
+) -> Result<serde_json::Value, FetchiumError> {
     let budget = input.token_budget.unwrap_or(3000);
     let query = input.query.as_deref().unwrap_or("");
 
@@ -2263,7 +2263,7 @@ pub async fn handle_fetch(
 pub async fn handle_research(
     input: ResearchInput,
     state: &McpAppState,
-) -> Result<serde_json::Value, HsxError> {
+) -> Result<serde_json::Value, FetchiumError> {
     let budget = input.token_budget.unwrap_or(4000);
     let depth = input.depth.as_deref().unwrap_or("standard");
 
@@ -2294,7 +2294,7 @@ pub async fn handle_research(
 pub async fn handle_estimate(
     input: EstimateInput,
     state: &McpAppState,
-) -> Result<serde_json::Value, HsxError> {
+) -> Result<serde_json::Value, FetchiumError> {
     // HEAD request + heuristic estimation without full fetch
     let estimate = state.extractor.estimate_tokens(&input.url).await?;
 
@@ -2311,10 +2311,10 @@ pub async fn handle_estimate(
 pub async fn handle_expand(
     input: ExpandInput,
     state: &McpAppState,
-) -> Result<serde_json::Value, HsxError> {
+) -> Result<serde_json::Value, FetchiumError> {
     // Look up previous result by ID in cache
     let cached = state.cache.get_by_result_id(&input.result_id).await
-        .ok_or_else(|| HsxError::NotFound(
+        .ok_or_else(|| FetchiumError::NotFound(
             format!("Result ID {} not found in cache. Results expire after the session.", input.result_id)
         ))?;
 

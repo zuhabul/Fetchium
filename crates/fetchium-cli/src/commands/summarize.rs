@@ -3,12 +3,12 @@
 use crate::cli::SummarizeArgs;
 use anyhow::Result;
 use colored::Colorize;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::summarize::{SummarizeConfig, SummaryLength};
 use std::time::Instant;
 
 /// Run the `fetchium summarize` subcommand.
-pub async fn run(args: SummarizeArgs, config: &HsxConfig) -> Result<()> {
+pub async fn run(args: SummarizeArgs, config: &FetchiumConfig) -> Result<()> {
     let start = Instant::now();
 
     let spinner = indicatif::ProgressBar::new_spinner();

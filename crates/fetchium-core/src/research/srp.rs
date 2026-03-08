@@ -8,7 +8,7 @@
 //! 5. Emits `Update` chunks for confirmations, `Correction` for contradictions
 //! 6. Emits `Final` chunk when all sources are processed
 
-use crate::config::HsxConfig;
+use crate::config::FetchiumConfig;
 use crate::extract::pipeline::extract;
 use crate::http::client::HttpClient;
 use crate::research::srp_types::{SrpChunk, SrpConfig, SrpEvent};
@@ -22,7 +22,7 @@ use tokio::sync::mpsc;
 pub fn run_srp_pipeline(
     query: String,
     config: SrpConfig,
-    fetchium_config: HsxConfig,
+    fetchium_config: FetchiumConfig,
     http_client: HttpClient,
 ) -> mpsc::Receiver<SrpChunk> {
     let (tx, rx) = mpsc::channel::<SrpChunk>(64);

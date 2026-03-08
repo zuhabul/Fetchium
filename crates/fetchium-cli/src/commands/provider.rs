@@ -15,14 +15,14 @@ use colored::Colorize;
 use fetchium_core::ai::credentials::{
     antigravity_auth_available, claude_code_auth_available, codex_auth_available,
     get_claude_code_token, get_codex_token_if_valid, get_gemini_access_token_if_valid,
-    hsx_auth_add_api_key, hsx_auth_get, hsx_auth_set, read_gemini_creds, HsxAuth,
+    fetchium_auth_add_api_key, fetchium_auth_get, fetchium_auth_set, read_gemini_creds, FetchiumAuth,
 };
 use fetchium_core::ai::providers::{ModelCapability, ModelRegistry, ProviderKind};
 use fetchium_core::ai::{check_provider, AiConfig, ProviderStatus};
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use std::io::{self, BufRead, Write};
 
-pub async fn run(action: ProviderAction, config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(action: ProviderAction, config: &FetchiumConfig) -> anyhow::Result<()> {
     match action {
         ProviderAction::List => list(config).await,
         ProviderAction::Setup { provider } => setup(config, provider.as_deref()).await,
@@ -37,7 +37,7 @@ pub async fn run(action: ProviderAction, config: &HsxConfig) -> anyhow::Result<(
 
 // ─── list ─────────────────────────────────────────────────────────────────────
 
-async fn list(config: &HsxConfig) -> anyhow::Result<()> {
+async fn list(config: &FetchiumConfig) -> anyhow::Result<()> {
     let ai_config = AiConfig::from_fetchium_config(config);
     let providers_cfg = &config.ai.providers;
 
@@ -163,7 +163,7 @@ fn provider_auth_note(
             }
         }
         ProviderKind::Gemini => {
-            let pool_count = hsx_auth_get("gemini").map(|a| a.key_count()).unwrap_or(0);
+            let pool_count = fetchium_auth_get("gemini").map(|a| a.key_count()).unwrap_or(0);
             let has_env =
                 std::env::var("GEMINI_API_KEY").is_ok() || std::env::var("GEMINI_API_KEYS").is_ok();
             if pool_count > 1 {
@@ -201,7 +201,7 @@ fn provider_auth_note(
 
 // ─── setup ────────────────────────────────────────────────────────────────────
 
-async fn setup(config: &HsxConfig, provider_slug: Option<&str>) -> anyhow::Result<()> {
+async fn setup(config: &FetchiumConfig, provider_slug: Option<&str>) -> anyhow::Result<()> {
     if let Some(slug) = provider_slug {
         let kind = ProviderKind::from_slug(slug).ok_or_else(|| {
             anyhow::anyhow!(
@@ -215,7 +215,7 @@ async fn setup(config: &HsxConfig, provider_slug: Option<&str>) -> anyhow::Resul
     }
 }
 
-fn setup_wizard(config: &HsxConfig) -> anyhow::Result<()> {
+fn setup_wizard(config: &FetchiumConfig) -> anyhow::Result<()> {
     println!("{}", "Fetchium AI Provider Setup Wizard".bold().cyan());
     println!("{}", "─".repeat(70));
     println!();
@@ -224,7 +224,7 @@ fn setup_wizard(config: &HsxConfig) -> anyhow::Result<()> {
     );
     println!(
         "Config saved to: {}",
-        HsxConfig::config_file_path().display().to_string().cyan()
+        FetchiumConfig::config_file_path().display().to_string().cyan()
     );
     println!();
     println!(
@@ -433,7 +433,7 @@ fn setup_wizard(config: &HsxConfig) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn setup_one(config: &HsxConfig, kind: ProviderKind) -> anyhow::Result<()> {
+fn setup_one(config: &FetchiumConfig, kind: ProviderKind) -> anyhow::Result<()> {
     println!("{} — Setup", kind.display_name().bold().cyan());
     println!("{}", "─".repeat(55));
 
@@ -686,7 +686,7 @@ fn setup_one(config: &HsxConfig, kind: ProviderKind) -> anyhow::Result<()> {
 
 // ─── set ──────────────────────────────────────────────────────────────────────
 
-fn set_provider(config: &HsxConfig, args: &ProviderSetArgs) -> anyhow::Result<()> {
+fn set_provider(config: &FetchiumConfig, args: &ProviderSetArgs) -> anyhow::Result<()> {
     let kind = ProviderKind::from_slug(&args.provider).ok_or_else(|| {
         anyhow::anyhow!(
             "Unknown provider '{}'. Valid: {}",
@@ -702,9 +702,9 @@ fn set_provider(config: &HsxConfig, args: &ProviderSetArgs) -> anyhow::Result<()
     // --key: replace the entire key pool with a single new key.
     // Stored securely in ~/.fetchium/auth.json (0600), not in config.toml.
     if let Some(ref key) = args.key {
-        hsx_auth_set(
+        fetchium_auth_set(
             kind.slug(),
-            HsxAuth::ApiPool {
+            FetchiumAuth::ApiPool {
                 keys: vec![key.clone()],
             },
         )
@@ -712,7 +712,7 @@ fn set_provider(config: &HsxConfig, args: &ProviderSetArgs) -> anyhow::Result<()
         // Clear any plaintext key that might exist in config.toml
         entry.api_key = None;
         key_changed = true;
-        let pool_count = hsx_auth_get(kind.slug())
+        let pool_count = fetchium_auth_get(kind.slug())
             .map(|a| a.key_count())
             .unwrap_or(1);
         println!(
@@ -725,10 +725,10 @@ fn set_provider(config: &HsxConfig, args: &ProviderSetArgs) -> anyhow::Result<()
     // --add-key: append key(s) to the existing pool without replacing.
     if !args.add_key.is_empty() {
         for new_key in &args.add_key {
-            hsx_auth_add_api_key(kind.slug(), new_key)
+            fetchium_auth_add_api_key(kind.slug(), new_key)
                 .map_err(|e| anyhow::anyhow!("Failed to add key: {e}"))?;
         }
-        let pool_count = hsx_auth_get(kind.slug())
+        let pool_count = fetchium_auth_get(kind.slug())
             .map(|a| a.key_count())
             .unwrap_or(0);
         key_changed = true;
@@ -796,7 +796,7 @@ fn set_provider(config: &HsxConfig, args: &ProviderSetArgs) -> anyhow::Result<()
 
 /// Format a masked summary of the key pool for display.
 fn format_key_pool_summary(provider_slug: &str) -> String {
-    let auth = match hsx_auth_get(provider_slug) {
+    let auth = match fetchium_auth_get(provider_slug) {
         Some(a) => a,
         None => return "(none)".dimmed().to_string(),
     };
@@ -823,7 +823,7 @@ fn format_key_pool_summary(provider_slug: &str) -> String {
 
 // ─── chain ────────────────────────────────────────────────────────────────────
 
-fn set_chain(config: &HsxConfig, providers: &[String]) -> anyhow::Result<()> {
+fn set_chain(config: &FetchiumConfig, providers: &[String]) -> anyhow::Result<()> {
     // Validate all slugs first
     let mut parsed: Vec<(ProviderKind, String)> = Vec::new();
     for slug in providers {
@@ -855,7 +855,7 @@ fn set_chain(config: &HsxConfig, providers: &[String]) -> anyhow::Result<()> {
 
 // ─── test ─────────────────────────────────────────────────────────────────────
 
-async fn test(config: &HsxConfig, provider_slug: Option<&str>) -> anyhow::Result<()> {
+async fn test(config: &FetchiumConfig, provider_slug: Option<&str>) -> anyhow::Result<()> {
     let ai_config = AiConfig::from_fetchium_config(config);
     let providers_cfg = &config.ai.providers;
 
@@ -907,9 +907,9 @@ async fn test(config: &HsxConfig, provider_slug: Option<&str>) -> anyhow::Result
 /// Show all API key sources, their storage locations, and how to set them.
 ///
 /// This is the single canonical reference for where Fetchium reads credentials.
-fn show_keys(config: &HsxConfig) -> anyhow::Result<()> {
+fn show_keys(config: &FetchiumConfig) -> anyhow::Result<()> {
     let home = dirs::home_dir().unwrap_or_default();
-    let cfg_path = HsxConfig::config_file_path();
+    let cfg_path = FetchiumConfig::config_file_path();
 
     println!("{}", "Fetchium — API Key Reference".bold().cyan());
     println!("{}", "─".repeat(70));
@@ -985,7 +985,7 @@ fn show_keys(config: &HsxConfig) -> anyhow::Result<()> {
         let entry = config.ai.providers.entry(*kind);
         let has_key = entry.api_key.as_ref().is_some_and(|k| !k.is_empty());
         let has_env = *env_var != "(none)" && std::env::var(env_var).is_ok();
-        let pool_count = hsx_auth_get(kind.slug())
+        let pool_count = fetchium_auth_get(kind.slug())
             .map(|a| a.key_count())
             .unwrap_or(0);
 
@@ -1195,7 +1195,7 @@ fn show_keys(config: &HsxConfig) -> anyhow::Result<()> {
 /// Modelled on OpenCode's `opencode auth login`: shows provider list,
 /// offers API key or OAuth method, saves to `~/.fetchium/auth.json`,
 /// tests connection, and updates the fallback chain.
-async fn auth_wizard(config: &HsxConfig, provider_slug: Option<&str>) -> anyhow::Result<()> {
+async fn auth_wizard(config: &FetchiumConfig, provider_slug: Option<&str>) -> anyhow::Result<()> {
     match provider_slug {
         Some(slug) => {
             let kind = ProviderKind::from_slug(slug).ok_or_else(|| {
@@ -1276,7 +1276,7 @@ async fn auth_wizard(config: &HsxConfig, provider_slug: Option<&str>) -> anyhow:
 }
 
 /// Authenticate a single provider interactively.
-async fn auth_one(config: &HsxConfig, kind: ProviderKind) -> anyhow::Result<()> {
+async fn auth_one(config: &FetchiumConfig, kind: ProviderKind) -> anyhow::Result<()> {
     println!();
     println!("{} — Authentication", kind.display_name().bold().cyan());
     println!("{}", "─".repeat(55));
@@ -1312,8 +1312,8 @@ async fn auth_one(config: &HsxConfig, kind: ProviderKind) -> anyhow::Result<()> 
 }
 
 /// Gemini auth — offers API key or OAuth device flow.
-async fn auth_gemini(config: &HsxConfig) -> anyhow::Result<()> {
-    use fetchium_core::ai::credentials::{hsx_auth_set, HsxAuth};
+async fn auth_gemini(config: &FetchiumConfig) -> anyhow::Result<()> {
+    use fetchium_core::ai::credentials::{fetchium_auth_set, FetchiumAuth};
 
     println!("  Choose authentication method:");
     println!();
@@ -1355,7 +1355,7 @@ async fn auth_gemini(config: &HsxConfig) -> anyhow::Result<()> {
         }
         println!("  Testing connection...");
         // Save to auth store
-        hsx_auth_set("gemini", HsxAuth::Api { key: key.clone() })
+        fetchium_auth_set("gemini", FetchiumAuth::Api { key: key.clone() })
             .map_err(|e| anyhow::anyhow!("Failed to save: {e}"))?;
         // Also save to config for the existing resolve_api_key() path
         let mut cfg = config.clone();
@@ -1377,7 +1377,7 @@ async fn auth_gemini(config: &HsxConfig) -> anyhow::Result<()> {
         println!(
             "  {} API key saved to {}",
             "✓".green().bold(),
-            fetchium_core::ai::credentials::hsx_auth_path()
+            fetchium_core::ai::credentials::fetchium_auth_path()
                 .display()
                 .to_string()
                 .cyan()
@@ -1385,7 +1385,7 @@ async fn auth_gemini(config: &HsxConfig) -> anyhow::Result<()> {
         println!(
             "  {} Config updated: {}",
             "✓".green().bold(),
-            fetchium_core::config::HsxConfig::config_file_path()
+            fetchium_core::config::FetchiumConfig::config_file_path()
                 .display()
                 .to_string()
                 .cyan()
@@ -1401,9 +1401,9 @@ async fn auth_gemini(config: &HsxConfig) -> anyhow::Result<()> {
 }
 
 /// Google OAuth device code flow for the Generative Language API.
-async fn auth_gemini_oauth(config: &HsxConfig) -> anyhow::Result<()> {
+async fn auth_gemini_oauth(config: &FetchiumConfig) -> anyhow::Result<()> {
     use fetchium_core::ai::credentials::{
-        hsx_auth_set, HsxAuth, GEMINI_OAUTH_CLIENT_ID, GEMINI_OAUTH_CLIENT_SECRET,
+        fetchium_auth_set, FetchiumAuth, GEMINI_OAUTH_CLIENT_ID, GEMINI_OAUTH_CLIENT_SECRET,
         GOOGLE_TOKEN_ENDPOINT,
     };
 
@@ -1552,9 +1552,9 @@ async fn auth_gemini_oauth(config: &HsxConfig) -> anyhow::Result<()> {
             .map(|d| d.as_millis() as u64)
             .unwrap_or(0);
 
-        hsx_auth_set(
+        fetchium_auth_set(
             "gemini",
-            HsxAuth::Oauth {
+            FetchiumAuth::Oauth {
                 access: access_token.to_string(),
                 refresh: refresh_token.to_string(),
                 expires: now_ms + expires_in_tok * 1000,
@@ -1582,7 +1582,7 @@ async fn auth_gemini_oauth(config: &HsxConfig) -> anyhow::Result<()> {
         println!(
             "  {} Authorized! Token saved to {}",
             "✓".green().bold(),
-            fetchium_core::ai::credentials::hsx_auth_path()
+            fetchium_core::ai::credentials::fetchium_auth_path()
                 .display()
                 .to_string()
                 .cyan()
@@ -1599,13 +1599,13 @@ async fn auth_gemini_oauth(config: &HsxConfig) -> anyhow::Result<()> {
 
 /// Generic API key auth for Anthropic, OpenAI, OpenRouter.
 fn auth_api_key(
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     kind: ProviderKind,
     url: &str,
     placeholder: &str,
     store_key: &str,
 ) -> anyhow::Result<()> {
-    use fetchium_core::ai::credentials::{hsx_auth_set, HsxAuth};
+    use fetchium_core::ai::credentials::{fetchium_auth_set, FetchiumAuth};
 
     println!("  Get your API key:");
     println!("  {}", url.cyan().bold());
@@ -1647,7 +1647,7 @@ fn auth_api_key(
     }
 
     // Save to auth store
-    hsx_auth_set(store_key, HsxAuth::Api { key: key.clone() })
+    fetchium_auth_set(store_key, FetchiumAuth::Api { key: key.clone() })
         .map_err(|e| anyhow::anyhow!("Failed to save to auth store: {e}"))?;
 
     // Also save to config
@@ -1671,7 +1671,7 @@ fn auth_api_key(
     println!(
         "  {} Key saved to {}",
         "✓".green().bold(),
-        fetchium_core::ai::credentials::hsx_auth_path()
+        fetchium_core::ai::credentials::fetchium_auth_path()
             .display()
             .to_string()
             .cyan()
@@ -1770,7 +1770,7 @@ fn auth_gemini_cli() -> anyhow::Result<()> {
 }
 
 /// Ollama connectivity check.
-async fn auth_ollama(config: &HsxConfig) -> anyhow::Result<()> {
+async fn auth_ollama(config: &FetchiumConfig) -> anyhow::Result<()> {
     use fetchium_core::ai::OllamaClient;
 
     let ai_config = AiConfig::from_fetchium_config(config);

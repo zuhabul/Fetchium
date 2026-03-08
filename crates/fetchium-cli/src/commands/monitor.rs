@@ -1,7 +1,7 @@
 //! `fetchium monitor` — watch a URL for content changes.
 
 use anyhow::{Context, Result};
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::extract::pipeline;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::monitor::diff::{compute_diff_summary, DiffLine};
@@ -10,7 +10,7 @@ use fetchium_core::monitor::snapshot::SnapshotStore;
 
 use crate::cli::{MonitorAction, MonitorArgs};
 
-pub async fn run(args: MonitorArgs, config: &HsxConfig) -> Result<()> {
+pub async fn run(args: MonitorArgs, config: &FetchiumConfig) -> Result<()> {
     let store = SnapshotStore::new()?;
 
     match args.action {

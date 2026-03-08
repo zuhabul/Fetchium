@@ -1,7 +1,7 @@
 //! Twitter/X intelligence pipeline — full orchestration.
 
-use crate::config::HsxConfig;
-use crate::error::HsxResult;
+use crate::config::FetchiumConfig;
+use crate::error::FetchiumResult;
 use crate::http::client::HttpClient;
 use crate::social::twitter::{analysis, search, types::*};
 use std::time::Instant;
@@ -9,9 +9,9 @@ use std::time::Instant;
 /// Run the full Twitter/X intelligence pipeline.
 pub async fn run_twitter_pipeline(
     config_tw: &TwitterPipelineConfig,
-    _config: &HsxConfig,
+    _config: &FetchiumConfig,
     http: &HttpClient,
-) -> HsxResult<TwitterPipelineResult> {
+) -> FetchiumResult<TwitterPipelineResult> {
     let started = Instant::now();
 
     // Parallel: search tweets + fetch trends

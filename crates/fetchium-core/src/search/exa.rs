@@ -4,7 +4,7 @@
 //! Returns results with text content, highlights, author, and published date.
 //! API key required: set `EXA_API_KEY` env var or `search.exa_api_key` in config.
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::HttpClient;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
@@ -88,7 +88,7 @@ impl ExaBackend {
         query: &str,
         max_results: u32,
         start_date: Option<&str>,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let request = ExaRequest {
             query,
             search_type: "auto",
@@ -106,7 +106,7 @@ impl ExaBackend {
         };
 
         let body = serde_json::to_string(&request)
-            .map_err(|e| HsxError::Search(format!("Exa serialization: {e}")))?;
+            .map_err(|e| FetchiumError::Search(format!("Exa serialization: {e}")))?;
 
         let response = self
             .http
@@ -119,7 +119,7 @@ impl ExaBackend {
             .await?;
 
         let parsed: ExaResponse = serde_json::from_str(&response)
-            .map_err(|e| HsxError::Search(format!("Exa parse: {e}")))?;
+            .map_err(|e| FetchiumError::Search(format!("Exa parse: {e}")))?;
 
         debug!(
             "Exa: {} results in {:.0}ms [start_date={:?}]",
@@ -190,7 +190,7 @@ impl SearchBackend for ExaBackend {
         BackendId::Exa
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         self.search_inner(query, max_results, None).await
     }
 
@@ -199,7 +199,7 @@ impl SearchBackend for ExaBackend {
         query: &str,
         max_results: u32,
         ctx: &SearchContext,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let date_str = Self::time_range_to_date(ctx.time_range);
         self.search_inner(query, max_results, date_str.as_deref())
             .await

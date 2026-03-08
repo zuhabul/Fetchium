@@ -79,10 +79,10 @@ impl Default for ApiServerConfig {
 /// - Request ID: `X-Request-Id` injected on every response
 pub async fn start_api_server(
     server_config: ApiServerConfig,
-    hsx_config: fetchium_core::config::HsxConfig,
+    fetchium_config: fetchium_core::config::FetchiumConfig,
 ) -> anyhow::Result<()> {
     let auth_db = AuthDb::open(&server_config.data_dir.join("auth.db"))?;
-    let app_state = AppState::new(hsx_config, auth_db)?;
+    let app_state = AppState::new(fetchium_config, auth_db)?;
 
     // ── CORS: restrict to known dashboard origins ─────────────────────────────
     let allowed: Vec<HeaderValue> = server_config

@@ -4,7 +4,7 @@
 //! Dispatches to all enabled backends in parallel via tokio::spawn,
 //! deduplicates via URL normalization + SimHash, then applies HyperFusion ranking.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::http::HttpClient;
 use crate::query::locale::detect_query_locale;
 use crate::rank;
@@ -122,13 +122,13 @@ impl Default for OrchestratorConfig {
 }
 
 impl OrchestratorConfig {
-    /// Create config from HsxConfig settings.
+    /// Create config from FetchiumConfig settings.
     ///
     /// Always ensures reliable API-based backends (Wikipedia, HN, Reddit, SO,
     /// Arxiv) are included even when the user's config only lists scrapers.
     /// This prevents total search failure when scrapers are CAPTCHA-blocked.
     pub fn from_fetchium_config(
-        fetchium_config: &crate::config::HsxConfig,
+        fetchium_config: &crate::config::FetchiumConfig,
         max_results: u32,
     ) -> Self {
         let mut enabled_backends = fetchium_config
@@ -505,7 +505,7 @@ impl SearchOrchestrator {
         &self,
         query: &str,
         max_results: Option<u32>,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let max = max_results.unwrap_or(self.config.max_total_results);
         let key = format!("{query}\x00{max}");
 
@@ -546,7 +546,7 @@ impl SearchOrchestrator {
     }
 
     /// Internal: run the full search pipeline without singleflight wrapping.
-    async fn execute_search(&self, query: &str, max: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn execute_search(&self, query: &str, max: u32) -> FetchiumResult<Vec<ResultItem>> {
         let per_backend = self.config.max_results_per_backend;
         let timeout_dur = self.config.backend_timeout;
 
@@ -1823,7 +1823,7 @@ mod tests {
 
     #[test]
     fn orchestrator_config_from_hsx() {
-        let mut fetchium_config = crate::config::HsxConfig::default();
+        let mut fetchium_config = crate::config::FetchiumConfig::default();
         fetchium_config.search.backends = vec!["duckduckgo".to_string(), "wikipedia".to_string()];
         fetchium_config.ranking.simhash_threshold = 8;
         fetchium_config.ranking.freshness_need = 0.8;

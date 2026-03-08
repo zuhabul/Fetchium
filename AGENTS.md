@@ -51,7 +51,7 @@ crates/
 └── fetchium-api/      # axum 0.7 REST API server
 ```
 
-Data flow: `CLI args → HsxConfig → fetchium-core pipeline → formatted output`
+Data flow: `CLI args → FetchiumConfig → fetchium-core pipeline → formatted output`
 
 ## Key Module Map (fetchium-core/src/)
 
@@ -166,7 +166,7 @@ call_gemini_oauth(access_token, model, ...)
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use tracing::warn;
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::types::{PdsTier, ResourceTier};
 ```
 
@@ -209,19 +209,19 @@ pub enum Status { Active, Pending, Completed }
 ### Error Handling
 
 ```rust
-// Use HsxResult<T> for fallible operations in fetchium-core
-use crate::error::{HsxError, HsxResult};
+// Use FetchiumResult<T> for fallible operations in fetchium-core
+use crate::error::{FetchiumError, FetchiumResult};
 
-pub fn do_something() -> HsxResult<String> {
+pub fn do_something() -> FetchiumResult<String> {
     let data = fetch_data()?;
     if data.is_empty() {
-        return Err(HsxError::Extraction("No data found".into()));
+        return Err(FetchiumError::Extraction("No data found".into()));
     }
     Ok(data)
 }
 
 // CLI commands use anyhow::Result
-pub async fn run(config: &HsxConfig) -> anyhow::Result<()> { }
+pub async fn run(config: &FetchiumConfig) -> anyhow::Result<()> { }
 ```
 
 ### Documentation
@@ -246,7 +246,7 @@ async fn main() -> anyhow::Result<()> { }
 
 #[async_trait]
 pub trait SearchBackend: Send + Sync {
-    async fn search(&self, query: &str) -> HsxResult<Vec<ResultItem>>;
+    async fn search(&self, query: &str) -> FetchiumResult<Vec<ResultItem>>;
 }
 ```
 
