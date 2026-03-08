@@ -58,7 +58,12 @@ impl SubscriptionStore {
         Ok(Self { conn })
     }
 
-    pub fn add(&self, topic: &str, interval_secs: u64, notify: &NotifyMethod) -> FetchiumResult<String> {
+    pub fn add(
+        &self,
+        topic: &str,
+        interval_secs: u64,
+        notify: &NotifyMethod,
+    ) -> FetchiumResult<String> {
         let id = uuid::Uuid::new_v4().to_string();
         let now = chrono::Utc::now().to_rfc3339();
         let notify_json = serde_json::to_string(notify)?;

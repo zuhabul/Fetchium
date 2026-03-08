@@ -14,8 +14,8 @@ use crate::cli::{ProviderAction, ProviderSetArgs};
 use colored::Colorize;
 use fetchium_core::ai::credentials::{
     antigravity_auth_available, claude_code_auth_available, codex_auth_available,
-    get_claude_code_token, get_codex_token_if_valid, get_gemini_access_token_if_valid,
-    fetchium_auth_add_api_key, fetchium_auth_get, fetchium_auth_set, read_gemini_creds, FetchiumAuth,
+    fetchium_auth_add_api_key, fetchium_auth_get, fetchium_auth_set, get_claude_code_token,
+    get_codex_token_if_valid, get_gemini_access_token_if_valid, read_gemini_creds, FetchiumAuth,
 };
 use fetchium_core::ai::providers::{ModelCapability, ModelRegistry, ProviderKind};
 use fetchium_core::ai::{check_provider, AiConfig, ProviderStatus};
@@ -163,7 +163,9 @@ fn provider_auth_note(
             }
         }
         ProviderKind::Gemini => {
-            let pool_count = fetchium_auth_get("gemini").map(|a| a.key_count()).unwrap_or(0);
+            let pool_count = fetchium_auth_get("gemini")
+                .map(|a| a.key_count())
+                .unwrap_or(0);
             let has_env =
                 std::env::var("GEMINI_API_KEY").is_ok() || std::env::var("GEMINI_API_KEYS").is_ok();
             if pool_count > 1 {
@@ -224,7 +226,10 @@ fn setup_wizard(config: &FetchiumConfig) -> anyhow::Result<()> {
     );
     println!(
         "Config saved to: {}",
-        FetchiumConfig::config_file_path().display().to_string().cyan()
+        FetchiumConfig::config_file_path()
+            .display()
+            .to_string()
+            .cyan()
     );
     println!();
     println!(

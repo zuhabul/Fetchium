@@ -33,7 +33,9 @@ pub fn check_typst() -> Result<String, FetchiumError> {
     let output = Command::new("typst")
         .arg("--version")
         .output()
-        .map_err(|_| FetchiumError::ExternalTool(format!("Typst not found. {TYPST_INSTALL_HELP}")))?;
+        .map_err(|_| {
+            FetchiumError::ExternalTool(format!("Typst not found. {TYPST_INSTALL_HELP}"))
+        })?;
 
     let version = String::from_utf8_lossy(&output.stdout);
     let first_line = version
@@ -49,7 +51,9 @@ pub fn check_pandoc() -> Result<String, FetchiumError> {
     let output = Command::new("pandoc")
         .arg("--version")
         .output()
-        .map_err(|_| FetchiumError::ExternalTool(format!("Pandoc not found. {PANDOC_INSTALL_HELP}")))?;
+        .map_err(|_| {
+            FetchiumError::ExternalTool(format!("Pandoc not found. {PANDOC_INSTALL_HELP}"))
+        })?;
 
     let version = String::from_utf8_lossy(&output.stdout);
     let first_line = version
@@ -64,7 +68,11 @@ pub fn check_pandoc() -> Result<String, FetchiumError> {
 ///
 /// Engine priority: **typst** (~1s) → **xelatex** (Unicode) → pandoc default engine.
 /// Install typst with `brew install typst` for the fastest export experience.
-pub fn export_pdf(markdown: &str, output_path: &Path, title: Option<&str>) -> Result<(), FetchiumError> {
+pub fn export_pdf(
+    markdown: &str,
+    output_path: &Path,
+    title: Option<&str>,
+) -> Result<(), FetchiumError> {
     check_pandoc()?;
 
     let tmp_path = std::env::temp_dir().join(format!("fetchium-export-{}.md", uuid_v4()));

@@ -8,7 +8,10 @@ use std::path::Path;
 ///
 /// For `Local` sync: copies changed files to the shared directory.
 /// For `Git` sync: calls `git add -A && git commit && git push`.
-pub fn sync_workspace(workspace_path: &Path, method: &SyncMethod) -> Result<SyncReport, FetchiumError> {
+pub fn sync_workspace(
+    workspace_path: &Path,
+    method: &SyncMethod,
+) -> Result<SyncReport, FetchiumError> {
     match method {
         SyncMethod::Local { shared_dir } => sync_local(workspace_path, shared_dir),
         SyncMethod::Git { remote_url } => sync_git(workspace_path, remote_url),
@@ -62,7 +65,10 @@ fn run_git(dir: &Path, args: &[&str]) -> Result<(), FetchiumError> {
         .current_dir(dir)
         .status()?;
     if !status.success() {
-        return Err(FetchiumError::Config(format!("git {} failed", args.join(" "))));
+        return Err(FetchiumError::Config(format!(
+            "git {} failed",
+            args.join(" ")
+        )));
     }
     Ok(())
 }

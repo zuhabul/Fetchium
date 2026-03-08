@@ -43,7 +43,10 @@ pub async fn fetch_trends(
     Ok(trends)
 }
 
-async fn fetch_trends24(country: &str, http: &HttpClient) -> Result<Vec<TrendingTopic>, FetchiumError> {
+async fn fetch_trends24(
+    country: &str,
+    http: &HttpClient,
+) -> Result<Vec<TrendingTopic>, FetchiumError> {
     let country_path = match country.to_lowercase().as_str() {
         "us" | "united states" => "united-states",
         "uk" | "united kingdom" => "united-kingdom",

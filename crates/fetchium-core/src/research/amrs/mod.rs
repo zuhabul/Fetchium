@@ -109,7 +109,11 @@ pub struct Coordinator {
 }
 
 impl Coordinator {
-    pub fn new(config: AmrsConfig, http_client: HttpClient, fetchium_config: FetchiumConfig) -> Self {
+    pub fn new(
+        config: AmrsConfig,
+        http_client: HttpClient,
+        fetchium_config: FetchiumConfig,
+    ) -> Self {
         Self {
             config,
             http_client,

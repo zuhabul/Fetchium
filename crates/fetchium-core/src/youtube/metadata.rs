@@ -494,7 +494,10 @@ async fn fetch_metadata_innertube(
 }
 
 /// Parse video metadata from Innertube player API response.
-fn parse_innertube_player_metadata(json_str: &str, video_id: &str) -> FetchiumResult<VideoMetadata> {
+fn parse_innertube_player_metadata(
+    json_str: &str,
+    video_id: &str,
+) -> FetchiumResult<VideoMetadata> {
     let v: serde_json::Value = serde_json::from_str(json_str)
         .map_err(|e| FetchiumError::YouTube(format!("Innertube metadata JSON: {e}")))?;
 
@@ -595,8 +598,8 @@ async fn fetch_metadata_oembed_direct(
     .await
     .map_err(|_| FetchiumError::YouTube(format!("oEmbed timeout for {video_id}")))??;
 
-    let v: serde_json::Value =
-        serde_json::from_str(&body).map_err(|e| FetchiumError::YouTube(format!("oEmbed JSON: {e}")))?;
+    let v: serde_json::Value = serde_json::from_str(&body)
+        .map_err(|e| FetchiumError::YouTube(format!("oEmbed JSON: {e}")))?;
 
     let title = v["title"]
         .as_str()

@@ -143,7 +143,11 @@ async fn search_via_pullpush(
 /// Search Reddit via DuckDuckGo `site:reddit.com <query>`.
 ///
 /// Returns post stubs from DDG snippets — useful when Reddit API is inaccessible.
-async fn search_via_ddg(query: &str, max: usize, http: &HttpClient) -> FetchiumResult<Vec<RedditPost>> {
+async fn search_via_ddg(
+    query: &str,
+    max: usize,
+    http: &HttpClient,
+) -> FetchiumResult<Vec<RedditPost>> {
     let ddg_query = format!("site:reddit.com {query}");
     let form: &[(&str, &str)] = &[("q", &ddg_query), ("b", ""), ("kl", "en-us")];
 
@@ -458,8 +462,8 @@ pub async fn fetch_subreddit_info(
 // ─── Parsers ─────────────────────────────────────────────────────
 
 fn parse_reddit_listing(body: &str) -> FetchiumResult<Vec<RedditPost>> {
-    let v: Value =
-        serde_json::from_str(body).map_err(|e| FetchiumError::Internal(format!("Reddit JSON: {e}")))?;
+    let v: Value = serde_json::from_str(body)
+        .map_err(|e| FetchiumError::Internal(format!("Reddit JSON: {e}")))?;
 
     let children = v["data"]["children"]
         .as_array()

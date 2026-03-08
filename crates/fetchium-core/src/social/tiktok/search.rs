@@ -257,7 +257,11 @@ fn format_unix_ts(ts: u64) -> String {
 const DDG_HTML_URL: &str = "https://html.duckduckgo.com/html/";
 
 /// Search TikTok via DuckDuckGo — tries `site:tiktok.com/@` then general `site:tiktok.com`.
-async fn search_via_ddg(query: &str, max: usize, http: &HttpClient) -> FetchiumResult<Vec<TikTokVideo>> {
+async fn search_via_ddg(
+    query: &str,
+    max: usize,
+    http: &HttpClient,
+) -> FetchiumResult<Vec<TikTokVideo>> {
     // Try targeting user videos specifically, then fall back to general TikTok search
     let ddg_query = format!("site:tiktok.com/@ {query}");
     let form: &[(&str, &str)] = &[("q", &ddg_query), ("b", ""), ("kl", "en-us")];

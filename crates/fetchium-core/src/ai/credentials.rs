@@ -705,7 +705,10 @@ pub fn fetchium_auth_get(provider: &str) -> Option<FetchiumAuth> {
 /// Write one entry to the auth store (creates the file if absent, 0o600 permissions).
 ///
 /// Always writes to `~/.fetchium/auth.json`.
-pub fn fetchium_auth_set(provider: &str, auth: FetchiumAuth) -> Result<(), Box<dyn std::error::Error>> {
+pub fn fetchium_auth_set(
+    provider: &str,
+    auth: FetchiumAuth,
+) -> Result<(), Box<dyn std::error::Error>> {
     let home = dirs::home_dir().unwrap_or_default();
     let path = home.join(".fetchium").join("auth.json");
 
