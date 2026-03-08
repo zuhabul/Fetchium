@@ -94,7 +94,14 @@ outgoing:
   keepalive_expiry: 15.0
   retries: 2
   enable_http2: true
-  # DataImpulse residential proxy — unlimited IPs, 95-99% success rate.
+  # DataImpulse residential proxy — ONLY Google and DDG need residential IPs.
+  # Bing, Brave, Yahoo, Yandex, Startpage work fine direct → eliminates ~80% waste.
   proxies:
-    all://:
+    https://google.com:
+      - http://75e0e5b80d4d887e2f36:6703f7fe0e9ea89c@gw.dataimpulse.com:823
+    https://www.google.com:
+      - http://75e0e5b80d4d887e2f36:6703f7fe0e9ea89c@gw.dataimpulse.com:823
+    https://html.duckduckgo.com:
+      - http://75e0e5b80d4d887e2f36:6703f7fe0e9ea89c@gw.dataimpulse.com:823
+    https://lite.duckduckgo.com:
       - http://75e0e5b80d4d887e2f36:6703f7fe0e9ea89c@gw.dataimpulse.com:823

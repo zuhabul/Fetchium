@@ -18,9 +18,12 @@ use crate::error::HsxResult;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
-use tracing::debug;
+use tracing::{debug, info};
 #[cfg(feature = "headless")]
 use tracing::warn;
+
+/// Max IP-rotation retries on CAPTCHA/block detection (2 = 1 cached + 1 fresh IP).
+const MAX_IP_RETRIES: usize = 2;
 
 /// Browser User-Agent matching Chrome 121 on Windows — reduces bot-detection.
 #[cfg(not(feature = "headless"))]
@@ -79,6 +82,79 @@ impl GoogleBackend {
             Some(TimeRange::Year) => "qdr:y",
             None => "",
         }
+    }
+
+    /// Fetch a Google SERP page with automatic IP rotation on block/CAPTCHA.
+    ///
+    /// Attempt 0 uses the cached residential client (fast path).
+    /// Attempts 1+ use a fresh client (new residential IP via DataImpulse pool_max_idle=0).
+    /// Returns `None` if all retries are exhausted with no results.
+    #[cfg(not(feature = "headless"))]
+    async fn fetch_page_with_retry(
+        &self,
+        url: &str,
+        page: usize,
+        locale: Option<&str>,
+    ) -> Option<Vec<ResultItem>> {
+        for attempt in 0..MAX_IP_RETRIES {
+            let client = if attempt == 0 {
+                self.http.client_for_domain_with_locale("google.com", locale)
+            } else {
+                info!(
+                    "Google: IP block detected — rotating to new residential IP (attempt {}/{})",
+                    attempt + 1,
+                    MAX_IP_RETRIES
+                );
+                // Brief pause before IP rotation to avoid hammering
+                tokio::time::sleep(std::time::Duration::from_millis(300 * attempt as u64)).await;
+                self.http
+                    .fresh_client_for_domain_with_locale("google.com", locale)
+            };
+
+            let result = client
+                .get(url)
+                .header("User-Agent", BROWSER_UA)
+                .header(
+                    "Accept",
+                    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                )
+                .header("Accept-Language", "en-US,en;q=0.9")
+                .header("Referer", "https://www.google.com/")
+                .header("Cache-Control", "no-cache")
+                .send()
+                .await;
+
+            match result {
+                Ok(resp) if resp.status().is_success() => match resp.text().await {
+                    Ok(html) => {
+                        let results = Self::parse_serp(&html, page);
+                        if !results.is_empty() {
+                            return Some(results);
+                        }
+                        // Empty results = CAPTCHA/block → rotate IP
+                        debug!(
+                            "Google: empty SERP page {page} (attempt {attempt}) — rotating IP"
+                        );
+                    }
+                    Err(e) => {
+                        debug!("Google: body read error attempt {attempt}: {e}");
+                    }
+                },
+                Ok(resp) if resp.status().as_u16() == 429 || resp.status().as_u16() == 403 => {
+                    debug!("Google: HTTP {} attempt {attempt} — rotating IP", resp.status());
+                }
+                Ok(resp) => {
+                    debug!("Google: HTTP {} for page {page}", resp.status());
+                    return None; // Non-retryable error
+                }
+                Err(e) => {
+                    debug!("Google: request error attempt {attempt}: {e}");
+                }
+            }
+        }
+
+        debug!("Google: all {MAX_IP_RETRIES} IP rotation attempts exhausted for page {page}");
+        None
     }
 
     /// Parse a Google SERP HTML page into [`ResultItem`]s.
@@ -186,58 +262,17 @@ impl SearchBackend for GoogleBackend {
         // ── Non-headless path: lightweight HTTP scraper ───────────────────────
         #[cfg(not(feature = "headless"))]
         {
-            // Limit to 2 pages to reduce CAPTCHA risk; 20 results is usually plenty.
             let pages = (max_results as usize).div_ceil(10).min(2);
             let mut all_results = Vec::new();
 
             for page in 0..pages {
                 let url = Self::build_url(query, page);
-
-                match self
-                    .http
-                    .client_for_domain("google.com")
-                    .get(&url)
-                    .header("User-Agent", BROWSER_UA)
-                    .header(
-                        "Accept",
-                        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                    )
-                    .header("Accept-Language", "en-US,en;q=0.9")
-                    .header("Referer", "https://www.google.com/")
-                    .header("Cache-Control", "no-cache")
-                    .send()
-                    .await
-                {
-                    Ok(resp) if resp.status().is_success() => match resp.text().await {
-                        Ok(html) => {
-                            let page_results = Self::parse_serp(&html, page);
-                            if page_results.is_empty() && page == 0 {
-                                debug!(
-                                    "Google: 0 results (CAPTCHA or bot detection) for {:?}",
-                                    query
-                                );
-                                break;
-                            }
-                            all_results.extend(page_results);
-                        }
-                        Err(e) => {
-                            debug!("Google: body read error for {query:?}: {e}");
-                            break;
-                        }
-                    },
-                    Ok(resp) => {
-                        debug!("Google: HTTP {} for {query:?}", resp.status());
-                        break;
-                    }
-                    Err(e) => {
-                        debug!("Google: request error for {query:?}: {e}");
-                        break;
-                    }
+                match self.fetch_page_with_retry(&url, page, None).await {
+                    Some(results) => all_results.extend(results),
+                    None => break, // CAPTCHA exhausted or non-retryable
                 }
-
-                // Brief inter-page delay to reduce bot-detection risk.
                 if page + 1 < pages {
-                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
                 }
             }
 
@@ -297,45 +332,21 @@ impl SearchBackend for GoogleBackend {
             return self.search(query, max_results).await;
         }
 
-        // Non-headless path with tbs date filtering
+        // Non-headless path with tbs date filtering + IP rotation
         #[cfg(not(feature = "headless"))]
         {
             let pages = (max_results as usize).div_ceil(10).min(2);
             let mut all_results = Vec::new();
+            let locale = ctx.locale.as_deref();
 
             for page in 0..pages {
                 let url = Self::build_url_with_tbs(query, page, tbs);
-
-                match self
-                    .http
-                    .client_for_domain_with_locale("google.com", ctx.locale.as_deref())
-                    .get(&url)
-                    .header("User-Agent", BROWSER_UA)
-                    .header(
-                        "Accept",
-                        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                    )
-                    .header("Accept-Language", "en-US,en;q=0.9")
-                    .header("Referer", "https://www.google.com/")
-                    .header("Cache-Control", "no-cache")
-                    .send()
-                    .await
-                {
-                    Ok(resp) if resp.status().is_success() => match resp.text().await {
-                        Ok(html) => {
-                            let page_results = Self::parse_serp(&html, page);
-                            if page_results.is_empty() && page == 0 {
-                                break;
-                            }
-                            all_results.extend(page_results);
-                        }
-                        Err(_) => break,
-                    },
-                    _ => break,
+                match self.fetch_page_with_retry(&url, page, locale).await {
+                    Some(results) => all_results.extend(results),
+                    None => break,
                 }
-
                 if page + 1 < pages {
-                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
                 }
             }
 
