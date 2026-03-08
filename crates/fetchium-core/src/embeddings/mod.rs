@@ -8,8 +8,8 @@
 //! ## Pipeline
 //! `Text → fastembed (ort v2 + tokenizers) → Vec<f32> (384-dim, L2-normalised) → SQLite cache`
 
-/// Embedding dimension for all-MiniLM-L6-v2.
-pub const EMBEDDING_DIM: usize = 384;
+/// Embedding dimension for nomic-embed-text (via Ollama).
+pub const EMBEDDING_DIM: usize = 768;
 
 /// Cosine similarity between two equal-length embedding vectors.
 /// Returns a value in `[-1.0, 1.0]`.
@@ -34,7 +34,7 @@ pub mod engine;
 pub mod cache;
 
 #[cfg(feature = "embeddings")]
-pub use engine::{embed, embed_batch};
+pub use engine::{embed, embed_async, embed_batch, embed_batch_async};
 
 #[cfg(test)]
 mod tests {

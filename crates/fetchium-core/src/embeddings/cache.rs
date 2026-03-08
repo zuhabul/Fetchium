@@ -119,11 +119,11 @@ mod tests {
     #[test]
     fn put_and_get_roundtrip() {
         let (cache, _tmp) = make_cache();
-        let emb: Vec<f32> = (0..384).map(|i| i as f32 / 384.0).collect();
+        let emb: Vec<f32> = (0..crate::embeddings::EMBEDDING_DIM).map(|i| i as f32 / crate::embeddings::EMBEDDING_DIM as f32).collect();
         cache.put("hello world", &emb).unwrap();
 
         let retrieved = cache.get("hello world").unwrap().unwrap();
-        assert_eq!(retrieved.len(), 384);
+        assert_eq!(retrieved.len(), crate::embeddings::EMBEDDING_DIM);
         for (a, b) in emb.iter().zip(retrieved.iter()) {
             assert!((a - b).abs() < 1e-7, "mismatch at a={a}, b={b}");
         }
@@ -133,7 +133,7 @@ mod tests {
     fn len_counts_entries() {
         let (cache, _tmp) = make_cache();
         assert_eq!(cache.len().unwrap(), 0);
-        let emb = vec![0.0_f32; 384];
+        let emb = vec![0.0_f32; crate::embeddings::EMBEDDING_DIM];
         cache.put("text1", &emb).unwrap();
         cache.put("text2", &emb).unwrap();
         assert_eq!(cache.len().unwrap(), 2);
@@ -142,7 +142,7 @@ mod tests {
     #[test]
     fn evict_removes_old_entries() {
         let (cache, _tmp) = make_cache();
-        let emb = vec![0.1_f32; 384];
+        let emb = vec![0.1_f32; crate::embeddings::EMBEDDING_DIM];
         cache.put("old entry", &emb).unwrap();
         // Wait 1s so that SQLite `strftime('%s', 'now')` is strictly greater
         std::thread::sleep(std::time::Duration::from_secs(1));

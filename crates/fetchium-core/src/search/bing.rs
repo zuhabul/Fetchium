@@ -193,7 +193,7 @@ impl SearchBackend for BingBackend {
 
                 match self
                     .http
-                    .client()
+                    .client_for_domain("bing.com")
                     .get(&url)
                     .header("User-Agent", BROWSER_UA)
                     .header(

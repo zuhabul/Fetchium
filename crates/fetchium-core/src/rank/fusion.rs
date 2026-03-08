@@ -32,6 +32,11 @@ pub enum QueryIntent {
     Academic,
     Opinion,
     Data,
+    /// Everyday casual queries: "best pizza near me", "coffee stains shirt",
+    /// "cheap flights to paris", "signs of burnout". These should skip all
+    /// specialist backends (ArXiv, Scholar, GitHub, StackOverflow) and rely
+    /// on general web search + Reddit for real-world answers.
+    Casual,
 }
 
 /// Weights for the 8 HyperFusion signals, tuned per query intent.
@@ -62,12 +67,12 @@ impl IntentWeights {
                 consensus: 0.15,
             },
             QueryIntent::Informational => Self {
-                bm25: 0.35,
+                bm25: 0.40,
                 semantic: 0.20,
                 temporal: 0.05,
-                authority: 0.05,
+                authority: 0.03,
                 evidence: 0.10,
-                diversity: 0.10,
+                diversity: 0.07,
                 depth: 0.10,
                 consensus: 0.05,
             },
@@ -102,24 +107,24 @@ impl IntentWeights {
                 consensus: 0.10,
             },
             QueryIntent::Code => Self {
-                bm25: 0.25,
+                bm25: 0.35,
                 semantic: 0.15,
                 temporal: 0.05,
-                authority: 0.15,
+                authority: 0.05,
                 evidence: 0.05,
                 diversity: 0.10,
                 depth: 0.15,
                 consensus: 0.10,
             },
             QueryIntent::HowTo => Self {
-                bm25: 0.20,
+                bm25: 0.35,
                 semantic: 0.15,
-                temporal: 0.10,
-                authority: 0.10,
+                temporal: 0.05,
+                authority: 0.05,
                 evidence: 0.10,
                 diversity: 0.10,
                 depth: 0.15,
-                consensus: 0.10,
+                consensus: 0.05,
             },
             QueryIntent::Comparison => Self {
                 bm25: 0.15,
@@ -140,6 +145,16 @@ impl IntentWeights {
                 diversity: 0.15,
                 depth: 0.10,
                 consensus: 0.20,
+            },
+            QueryIntent::Casual => Self {
+                bm25: 0.35,
+                semantic: 0.15,
+                temporal: 0.05,
+                authority: 0.05,
+                evidence: 0.05,
+                diversity: 0.15,
+                depth: 0.05,
+                consensus: 0.15,
             },
             // Balanced fallback for Verification, Data, and any new variants
             _ => Self {
@@ -232,16 +247,56 @@ fn adjust_authority_for_intent(url: &str, base: f64, intent: QueryIntent) -> f64
             QueryIntent::Code => base,               // repos are the right result
             QueryIntent::Academic => base * 0.6,     // some papers reference repos
             QueryIntent::DeepAnalysis => base * 0.7, // deep dives sometimes cite repos
+            QueryIntent::Casual => base * 0.2,       // repos never useful for casual queries
             _ => base * 0.45,                        // informational/factual: heavily downweight
         };
     }
 
     // Wikipedia bias: great for definitions, poor for "breakthroughs 2025" type queries
     if url.contains("wikipedia.org") {
+        // Extra penalty for "List of..." and biography pages that are usually off-topic
+        let path_lower = url.to_lowercase();
+        let is_list_or_bio = path_lower.contains("list_of_")
+            || path_lower.contains("(academic)")
+            || path_lower.contains("(politician)")
+            || path_lower.contains("(footballer)")
+            || path_lower.contains("(singer)")
+            || path_lower.contains("(actor)");
+        let list_penalty = if is_list_or_bio { 0.5 } else { 1.0 };
+
         return match intent {
-            QueryIntent::CurrentEvents => base * 0.35, // temporal queries: heavily downweight
-            QueryIntent::Factual | QueryIntent::Informational | QueryIntent::Verification => base, // keep full authority
-            _ => base * 0.75, // moderate for other intents
+            QueryIntent::CurrentEvents => base * 0.35 * list_penalty,
+            QueryIntent::Casual => base * 0.50 * list_penalty, // Wikipedia generic articles drown casual results
+            QueryIntent::Factual | QueryIntent::Informational | QueryIntent::Verification => {
+                base * list_penalty
+            }
+            _ => base * 0.75 * list_penalty,
+        };
+    }
+
+    // Reddit/forum bias: great for opinions, but comparison/technical queries need
+    // structured articles over discussion threads.
+    if url.contains("reddit.com") || url.contains("news.ycombinator.com") {
+        return match intent {
+            QueryIntent::Opinion => base,         // discussions add perspective for opinion queries
+            QueryIntent::Casual => base * 0.55,    // prefer authoritative consumer sites over Reddit threads
+            QueryIntent::Comparison => base * 0.55,             // prefer articles over threads
+            QueryIntent::Code | QueryIntent::HowTo => base * 0.60, // prefer docs/tutorials
+            QueryIntent::Academic => base * 0.40,               // not a good source
+            _ => base * 0.70,
+        };
+    }
+
+    // YouTube/video results: deprioritize for comparison/technical where text is better
+    if url.contains("youtube.com") || url.contains("youtu.be") {
+        return match intent {
+            QueryIntent::HowTo => base * 0.80, // tutorials on YouTube can be good
+            QueryIntent::Opinion => base * 0.85,
+            QueryIntent::Comparison => base * 0.50, // articles much better than videos
+            QueryIntent::Code => base * 0.45,       // text tutorials > video
+            QueryIntent::Academic => base * 0.35,
+            QueryIntent::Casual => base * 0.90,
+            _ => base * 0.65,
         };
     }
 
@@ -251,6 +306,7 @@ fn adjust_authority_for_intent(url: &str, base: f64, intent: QueryIntent) -> f64
         return match intent {
             QueryIntent::Academic | QueryIntent::Verification | QueryIntent::Data => base,
             QueryIntent::Opinion | QueryIntent::Comparison => base * 0.45,
+            QueryIntent::Casual => base * 0.15, // ArXiv never relevant for casual queries
             _ => base * 0.75,
         };
     }
@@ -329,9 +385,28 @@ pub fn hyperfusion_rank(
         })
         .collect();
 
-    // Apply fusion scores to result items
+    // Apply power-law spread to widen the score distribution.
+    // Raw fusion scores cluster in [0.3, 0.7] due to min-max normalization.
+    // Spread them across [0.0, 1.0] for more discriminating ranking.
+    let fmin = fusion_scores.iter().cloned().fold(f64::INFINITY, f64::min);
+    let fmax = fusion_scores.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+    let frange = fmax - fmin;
+    let spread_scores: Vec<f64> = if frange > 1e-9 {
+        fusion_scores
+            .iter()
+            .map(|&s| {
+                let normalized = (s - fmin) / frange; // [0, 1]
+                // Apply power curve: pow(x, 0.6) spreads the top end
+                normalized.powf(0.6)
+            })
+            .collect()
+    } else {
+        fusion_scores.iter().map(|_| 0.5).collect()
+    };
+
+    // Apply spread fusion scores to result items
     for (i, result) in results.iter_mut().enumerate() {
-        result.score = Some(fusion_scores[i]);
+        result.score = Some(spread_scores[i]);
     }
 
     // Phase 4: sort by fusion score descending, rank ties broken by original rank
@@ -426,8 +501,41 @@ pub fn detect_intent(query: &str) -> QueryIntent {
         || q.contains("should i use")
         || q.contains("worth it")
         || q.contains("pros and cons");
+    let has_technical_signal = q.contains("protocol")
+        || q.contains("architecture")
+        || q.contains("theorem")
+        || q.contains("equation")
+        || q.contains("compiler")
+        || q.contains("kernel")
+        || q.contains("database")
+        || q.contains("encryption")
+        || q.contains("neural")
+        || q.contains("quantum")
+        || q.contains("molecular")
+        || q.contains("genome")
+        || q.contains("proof")
+        || q.contains("axiom")
+        || q.contains("cryptograph");
 
     // Code intent: explicit code/repo signals
+    // Note: "tutorial" and "example" with programming languages → HowTo (not Code)
+    // because users want articles/docs, not GitHub repos
+    let is_programming_lang = q.contains("python")
+        || q.contains("rust")
+        || q.contains("javascript")
+        || q.contains("typescript")
+        || q.contains("java ")
+        || q.contains("golang")
+        || q.contains("go ")
+        || q.contains("ruby")
+        || q.contains("swift")
+        || q.contains("kotlin")
+        || q.contains("c++")
+        || q.contains("c#");
+    let has_tutorial_signal = q.contains("tutorial")
+        || q.contains("guide")
+        || q.contains("how to")
+        || q.contains("example");
     if q.contains("code")
         || q.contains("github")
         || q.contains("function")
@@ -435,6 +543,11 @@ pub fn detect_intent(query: &str) -> QueryIntent {
         || q.contains("snippet")
         || q.contains("implement")
         || q.contains("algorithm")
+        || (is_programming_lang
+            && !has_tutorial_signal
+            && (q.contains("library")
+                || q.contains("package")
+                || q.contains("crate")))
     {
         return QueryIntent::Code;
     }
@@ -481,6 +594,35 @@ pub fn detect_intent(query: &str) -> QueryIntent {
         return QueryIntent::Informational;
     }
 
+    // Casual consumer queries: "best pizza in new york", "cheap flights to paris",
+    // "best coffee shop near me". These look like Opinion ("best X") but are everyday
+    // consumer searches that should prefer review sites, travel sites, etc. over Reddit.
+    let is_consumer_query = q.contains("pizza")
+        || q.contains("restaurant")
+        || q.contains("hotel")
+        || q.contains("flight")
+        || q.contains("coffee")
+        || q.contains("recipe")
+        || q.contains("movie")
+        || q.contains("near me")
+        || q.contains("in new ")
+        || q.contains("in los ")
+        || q.contains("in san ")
+        || q.contains("in chicago")
+        || q.contains("in london")
+        || q.contains("in paris")
+        || q.contains("in tokyo")
+        || q.contains("shop")
+        || q.contains("store")
+        || q.contains("gym")
+        || q.contains("barber")
+        || q.contains("salon")
+        || q.contains("dentist")
+        || q.contains("plumber");
+    if is_preference_query && is_consumer_query && !is_programming_lang && !has_technical_signal {
+        return QueryIntent::Casual;
+    }
+
     // Opinion: "best X", "top X", "recommended", "should I use"
     if is_preference_query {
         return QueryIntent::Opinion;
@@ -492,8 +634,26 @@ pub fn detect_intent(query: &str) -> QueryIntent {
     if q.contains("arxiv") || q.contains("paper") || q.contains("research") || q.contains("study") {
         return QueryIntent::Academic;
     }
-    if q.contains("deep") || q.contains("analysis") || q.contains("comprehensive") {
+    // DeepAnalysis: explicit analytical intent (but NOT "deep dive" which is just emphasis)
+    if q.contains("analysis") || q.contains("comprehensive") {
         return QueryIntent::DeepAnalysis;
+    }
+    // "deep dive" is a common phrase meaning "thorough article", not DeepAnalysis.
+    // Route to HowTo for "X deep dive" patterns, which performs better than DeepAnalysis
+    // for technical explainers like "kubernetes pod networking deep dive".
+    if q.contains("deep dive") || q.contains("deep-dive") {
+        return QueryIntent::HowTo;
+    }
+    if q.contains("deep") && !q.contains("deep learning") {
+        return QueryIntent::DeepAnalysis;
+    }
+
+    // Casual: everyday queries that don't match any specialist intent.
+    // Short queries (≤6 words) without technical/academic signals are likely casual.
+    // Examples: "best pizza near me", "coffee stains shirt", "signs of burnout"
+    let word_count = q.split_whitespace().count();
+    if word_count <= 6 && !has_technical_signal {
+        return QueryIntent::Casual;
     }
 
     QueryIntent::Factual

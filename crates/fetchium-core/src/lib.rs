@@ -140,6 +140,7 @@ pub mod multimodal;
 pub mod plugin;
 pub mod privacy;
 pub mod proactive;
+pub mod proxy;
 
 // Environment setup utilities (Chromium download, path resolution, checks)
 pub mod setup;

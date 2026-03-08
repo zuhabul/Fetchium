@@ -56,11 +56,14 @@ pub enum TimeRange {
     Year,
 }
 
-/// Context passed to backends for intent-aware, time-filtered searches.
+/// Context passed to backends for intent-aware, locale-targeted searches.
 #[derive(Debug, Clone)]
 pub struct SearchContext {
     pub intent: QueryIntent,
     pub time_range: Option<TimeRange>,
+    /// ISO 3166-1 alpha-2 country code for residential proxy targeting.
+    /// `None` = default/US routing. Set from query locale detection.
+    pub locale: Option<String>,
 }
 
 /// Trait implemented by every search backend.

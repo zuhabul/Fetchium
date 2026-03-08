@@ -178,6 +178,7 @@ pub struct SearchInput {
     pub token_budget: Option<usize>,
     pub tier: Option<String>,
     pub max_sources: Option<usize>,
+    pub include_content: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]

@@ -81,6 +81,8 @@ pub struct SearchRequest {
     /// Max sources to fetch: 1–20 (default 10)
     pub max_sources: Option<usize>,
     pub validate: Option<bool>,
+    /// When true, fetch and extract page content inline for each result (Tavily-style).
+    pub include_content: Option<bool>,
 }
 
 impl SearchRequest {
@@ -125,6 +127,9 @@ pub struct SearchResultItem {
     pub url: String,
     pub snippet: Option<String>,
     pub score: Option<f64>,
+    /// Extracted page content (only present when include_content=true).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<String>,
 }
 
 // ─── Fetch ────────────────────────────────────────────────────────

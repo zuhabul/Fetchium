@@ -1,20 +1,17 @@
-# SearXNG settings for Fetchium local/prod use
-# Optimized for low tail-latency + high quality JSON API retrieval.
+# SearXNG settings for Fetchium — residential proxy unlocks Google, DDG, Brave.
+# DataImpulse residential IPs: 95-99% success vs 40-60% for datacenter.
 
 use_default_settings:
   engines:
-    # Keep a fast, high-signal engine set (Google included per requirement).
     keep_only:
       - google
-      - bing
+      - startpage
       - duckduckgo
       - brave
-      - wikipedia
-      - stackoverflow
-      - github
-      - arxiv
-      - reddit
-      - hackernews
+      - yahoo
+      - yandex
+      - bing
+      - currency
 
 general:
   instance_name: "Fetchium Local"
@@ -24,86 +21,80 @@ general:
   enable_metrics: false
 
 server:
-  # Generate: openssl rand -hex 32
   secret_key: "fetchium-searxng-local-secret-key-replace-in-prod-7f8d92a1b3e4c5d6"
-  # Keep false for single-node local setup.
-  # For production behind a public endpoint, set true + valkey.url.
   limiter: false
   image_proxy: false
-  http_protocol_version: "1.0"
+  http_protocol_version: "1.1"
   method: "GET"
 
 ui:
   static_use_hash: true
   default_locale: "en"
-  query_in_title: false
-  infinite_scroll: false
   default_theme: simple
-  center_alignment: false
-  results_on_new_tab: false
-  simple_style: ""
 
 search:
   safe_search: 0
   autocomplete: ""
-  autocomplete_min: 4
-  default_lang: "en"
+  default_lang: "auto"
   ban_time_on_fail: 5
   max_ban_time_on_fail: 120
   suspended_times:
-    SearxEngineAccessDenied: 86400
-    SearxEngineCaptcha: 86400
-    SearxEngineTooManyRequests: 3600
-    cf_SearxEngineCaptcha: 1296000
-    cf_SearxEngineAccessDenied: 86400
-    recaptcha_SearxEngineCaptcha: 604800
+    SearxEngineAccessDenied: 60
+    SearxEngineCaptcha: 120
+    SearxEngineTooManyRequests: 45
+    cf_SearxEngineCaptcha: 300
+    cf_SearxEngineAccessDenied: 120
+    recaptcha_SearxEngineCaptcha: 600
   formats:
     - html
     - json
 
-# Override kept engines with tighter per-engine timeouts.
 engines:
+  # Google — highest quality (residential proxy bypasses blocks)
   - name: google
-    timeout: 4.0
+    timeout: 6.0
+    weight: 3.0
 
-  - name: bing
-    timeout: 4.0
-
-  - name: duckduckgo
-    timeout: 4.0
-
-  - name: brave
-    timeout: 4.0
-
-  - name: wikipedia
-    timeout: 4.0
-
-  - name: stackoverflow
-    timeout: 4.0
-
-  - name: github
-    timeout: 4.0
-
-  - name: arxiv
+  # Startpage — Google proxy, excellent fallback when Google suspends
+  - name: startpage
     timeout: 5.0
+    weight: 2.0
 
-  - name: reddit
-    timeout: 4.0
+  # DuckDuckGo — residential IPs bypass CAPTCHA, diverse results
+  - name: duckduckgo
+    timeout: 5.0
+    weight: 1.8
 
-  - name: hackernews
+  # Brave — independent index, good for privacy/tech queries
+  - name: brave
+    timeout: 5.0
+    weight: 1.5
+
+  # Yahoo — reliable, fast
+  - name: yahoo
     timeout: 4.0
+    weight: 1.2
+
+  # Yandex — strong for non-English, Cyrillic, multilingual
+  - name: yandex
+    timeout: 4.0
+    weight: 0.8
+
+  # Bing — supplementary coverage
+  - name: bing
+    timeout: 3.0
+    weight: 0.5
 
 outgoing:
-  # Global timeout guard. Engine timeouts above can still override downward.
-  request_timeout: 4.0
-  max_request_timeout: 7.0
+  request_timeout: 6.0
+  max_request_timeout: 10.0
   useragent_suffix: ""
   pool_connections: 200
   pool_maxsize: 64
   keepalive_expiry: 15.0
-  retries: 1
+  retries: 2
   enable_http2: true
-
-# Optional production hardening (recommended for public endpoints):
-# valkey:
-#   url: "valkey://valkey:6379/0"
+  # DataImpulse residential proxy — unlimited IPs, 95-99% success rate.
+  proxies:
+    all://:
+      - http://75e0e5b80d4d887e2f36:6703f7fe0e9ea89c@gw.dataimpulse.com:823
