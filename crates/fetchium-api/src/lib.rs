@@ -7,10 +7,10 @@
 //! | Method | Path              | Auth            | Description                    |
 //! |--------|-------------------|-----------------|--------------------------------|
 //! | GET    | /health           | public          | Health check                   |
-//! | POST   | /v1/search        | Bearer hsx_xxx  | Multi-backend web search       |
-//! | POST   | /v1/scrape        | Bearer hsx_xxx  | URL fetch + content extraction |
-//! | POST   | /v1/research      | Bearer hsx_xxx  | Full research pipeline         |
-//! | GET    | /v1/usage         | Bearer hsx_xxx  | Usage statistics               |
+//! | POST   | /v1/search        | Bearer fetchium_xxx | Multi-backend web search   |
+//! | POST   | /v1/scrape        | Bearer fetchium_xxx | URL fetch + extraction     |
+//! | POST   | /v1/research      | Bearer fetchium_xxx | Full research pipeline     |
+//! | GET    | /v1/usage         | Bearer fetchium_xxx | Usage statistics           |
 //! | POST   | /v1/keys          | X-Admin-Secret  | Create API key (admin)         |
 //! | GET    | /v1/keys          | X-Admin-Secret  | List API keys (admin)          |
 //! | DELETE | /v1/keys/:id      | X-Admin-Secret  | Revoke API key (admin)         |

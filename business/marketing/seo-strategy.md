@@ -22,25 +22,25 @@ Developer tools rank through **genuine helpfulness and technical depth**, not ke
 ### Domain Strategy
 
 ```
-fetchium.dev              → Landing page (product overview, pricing, sign up)
-docs.fetchium.dev         → Documentation site
-app.fetchium.dev          → Dashboard (authenticated, not indexed)
-api.fetchium.dev          → API (not indexed)
-plugins.fetchium.dev      → Plugin marketplace (Phase 4, indexed)
-status.fetchium.dev       → Status page (not indexed)
+fetchium.com              → Landing page (product overview, pricing, sign up)
+docs.fetchium.com         → Documentation site
+app.fetchium.com          → Dashboard (authenticated, not indexed)
+api.fetchium.com          → API (not indexed)
+plugins.fetchium.com      → Plugin marketplace (Phase 4, indexed)
+fetchium.com/status       → Status page (not indexed)
 ```
 
 **Why separate docs subdomain?**
-- Cleaner URL structure (`docs.fetchium.dev/cli/search` vs `fetchium.dev/docs/cli/search`)
+- Cleaner URL structure (`docs.fetchium.com/cli/search` vs `fetchium.com/docs/cli/search`)
 - Independent deployment (docs can update without marketing site deploy)
 - Search Console can track docs separately
 
 ### URL Structure
 
 ```
-fetchium.dev/
+fetchium.com/
   /pricing
-  /docs → redirects to docs.fetchium.dev
+  /docs → redirects to docs.fetchium.com
   /blog/
     /blog/[slug]
   /changelog
@@ -50,7 +50,7 @@ fetchium.dev/
     /vs/exa
     /vs/firecrawl
 
-docs.fetchium.dev/
+docs.fetchium.com/
   /quickstart
   /cli/
     /cli/search
@@ -116,7 +116,7 @@ These searchers are ready to try or buy. Convert at 5-15%.
 
 | Keyword | Monthly Volume | Difficulty | Target Page |
 |---------|--------------|------------|------------|
-| search api for ai agents | 800 | Low | fetchium.dev |
+| search api for ai agents | 800 | Low | fetchium.com |
 | langchain web search tool | 1,200 | Low | /integrations/langchain |
 | tavily alternative | 400 | Low | /vs/tavily |
 | bing api replacement 2025 | 600 | Low | /vs/bing-api |
@@ -130,12 +130,12 @@ These searchers are researching. Convert at 1-3%.
 
 | Keyword | Monthly Volume | Difficulty | Target Page |
 |---------|--------------|------------|------------|
-| ai search api | 3,000 | High | fetchium.dev |
+| ai search api | 3,000 | High | fetchium.com |
 | web scraping api | 15,000 | High | /vs/firecrawl |
 | url to text api | 2,000 | Medium | /api/endpoints/fetch |
 | langchain retriever | 4,000 | High | /integrations/langchain |
 | research automation tool | 1,500 | Medium | /cookbook/research-pipeline |
-| ai agent tools | 5,000 | High | fetchium.dev |
+| ai agent tools | 5,000 | High | fetchium.com |
 
 ### Tier 3 — Educational, High Volume
 
@@ -175,7 +175,7 @@ Examples:
 
 ### Implementation Checklist
 
-**Landing page (fetchium.dev):**
+**Landing page (fetchium.com):**
 - [ ] `robots.txt` allows all crawlers, blocks `/dashboard`, `/api`
 - [ ] `sitemap.xml` auto-generated, submitted to Search Console
 - [ ] Canonical URLs set on all pages (`<link rel="canonical">`)
@@ -188,7 +188,7 @@ Examples:
 - [ ] HTTPS enforced (Cloudflare)
 - [ ] `gzip` / `brotli` compression enabled
 
-**Docs site (docs.fetchium.dev):**
+**Docs site (docs.fetchium.com):**
 - [ ] Every page has a unique `<title>` (`Page Title | Fetchium Docs`)
 - [ ] Meta description on every page (120-150 chars)
 - [ ] Code blocks have `lang` attribute for syntax highlighting
@@ -197,7 +197,7 @@ Examples:
 - [ ] Search (Algolia DocSearch — free for open-source docs)
 - [ ] Version switcher (when API v2 ships — Phase 4)
 
-**Blog (`fetchium.dev/blog`):**
+**Blog (`fetchium.com/blog`):**
 - [ ] Article schema (`@type: "Article"`) with author, date, image
 - [ ] Estimated reading time in post header
 - [ ] Table of contents for posts > 1,500 words
@@ -210,7 +210,7 @@ Examples:
 ```js
 // next.config.js
 module.exports = {
-  images: { domains: ['fetchium.dev'], formats: ['image/avif', 'image/webp'] },
+  images: { domains: ['fetchium.com'], formats: ['image/avif', 'image/webp'] },
   experimental: { optimizeCss: true },
   compress: true,
 }
@@ -248,10 +248,10 @@ module.exports = {
 
 - **Awesome lists:** Submit to `awesome-langchain`, `awesome-llm`, `awesome-selfhosted`
 - **AlternativeTo:** Create Fetchium listing, list alternatives to Bing API, Tavily
-- **Product Hunt:** Listing links back to fetchium.dev (PageRank from PH)
-- **npm:** `fetchium` package links to fetchium.dev
-- **crates.io:** `fetchium` crate links to fetchium.dev
-- **PyPI:** `fetchium` package links to fetchium.dev + docs
+- **Product Hunt:** Listing links back to fetchium.com (PageRank from PH)
+- **npm:** `fetchium` package links to fetchium.com
+- **crates.io:** `fetchium` crate links to fetchium.com
+- **PyPI:** `fetchium` package links to fetchium.com + docs
 
 ### Tier 3 — Content Marketing Links
 
@@ -292,7 +292,7 @@ Monitor backlinks monthly (Google Search Console). Disavow:
 
 ### Search Console Setup
 
-1. Add `fetchium.dev` and `docs.fetchium.dev` as separate properties
+1. Add `fetchium.com` and `docs.fetchium.com` as separate properties
 2. Submit `sitemap.xml` for both
 3. Set up email alerts for coverage issues
 4. Review weekly: new queries ranking on page 2 → optimize those pages

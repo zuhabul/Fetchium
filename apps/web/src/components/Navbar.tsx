@@ -122,7 +122,7 @@ export default function Navbar() {
               Pricing
             </Link>
 
-            <Link href="/docs" className="rounded-lg px-3.5 py-2 text-sm font-medium text-slate-400 transition-all duration-200 hover:bg-white/5 hover:text-slate-100">
+            <Link href="https://docs.fetchium.com" className="rounded-lg px-3.5 py-2 text-sm font-medium text-slate-400 transition-all duration-200 hover:bg-white/5 hover:text-slate-100">
               Docs
             </Link>
 
@@ -218,7 +218,7 @@ export default function Navbar() {
 
               {[
                 { href: "/pricing", label: "Pricing" },
-                { href: "/docs", label: "Documentation" },
+                { href: "https://docs.fetchium.com", label: "Documentation" },
                 { href: "/blog", label: "Blog" },
                 { href: "/security", label: "Security" },
               ].map((link) => (

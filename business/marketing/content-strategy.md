@@ -111,7 +111,7 @@ Tutorial content on topics adjacent to Fetchium. Attracts developers who don't y
 - Link in Discord welcome message
 
 ### Code Examples & Cookbooks
-**Where:** `github.com/fetchium/fetchium-examples` repo + docs.fetchium.dev/cookbook
+**Where:** `github.com/fetchium/fetchium-examples` repo + docs.fetchium.com/cookbook
 
 **Examples to ship by Month 3:**
 - [ ] LangChain agent with web search (Python)
@@ -184,9 +184,9 @@ Tweet 7: "TL;DR: [2-sentence summary]. Try Fetchium: [link]"
 
 ### Link Building
 **Phase 1 targets:**
-- GitHub README → docs.fetchium.dev (massive referral traffic)
-- HN posts → fetchium.dev (domain authority boost)
-- Dev.to posts → fetchium.dev (rel="nofollow" but still traffic)
+- GitHub README → docs.fetchium.com (massive referral traffic)
+- HN posts → fetchium.com (domain authority boost)
+- Dev.to posts → fetchium.com (rel="nofollow" but still traffic)
 - Partner integrations → mutual links (LangChain docs, LlamaIndex docs)
 
 **Phase 3 targets:**
@@ -211,7 +211,7 @@ Tweet 7: "TL;DR: [2-sentence summary]. Try Fetchium: [link]"
 **Day 3 (1 hour):** Edit + publish
 - Cut 20% of words (remove filler)
 - Add SEO metadata (title tag, meta description, slug)
-- Schedule on Dev.to and Hashnode (24 hours after fetchium.dev to avoid duplicate content)
+- Schedule on Dev.to and Hashnode (24 hours after fetchium.com to avoid duplicate content)
 
 **Day 4:** Distribution
 - Twitter thread summarizing the post

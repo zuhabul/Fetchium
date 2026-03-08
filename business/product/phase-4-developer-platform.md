@@ -39,7 +39,7 @@ Phase 4 is about becoming the default web search layer for the agent ecosystem â
 
 API v2 introduces GraphQL alongside REST. REST endpoints remain stable (no breaking changes).
 
-**GraphQL endpoint:** `https://api.fetchium.dev/v2/graphql`
+**GraphQL endpoint:** `https://api.fetchium.com/v2/graphql`
 
 ```graphql
 query SearchAndSynthesize($query: String!, $sources: Int) {
@@ -200,7 +200,7 @@ pub trait FetchiumPlugin: Send + Sync {
 }
 ```
 
-**Plugin registry:** `https://plugins.fetchium.dev`
+**Plugin registry:** `https://plugins.fetchium.com`
 - Searchable catalog
 - Version history + changelog
 - Install count + rating
@@ -248,7 +248,7 @@ fetchium plugin update --all
 
 Browser-based API explorer. No code required to test any endpoint.
 
-URL: `https://app.fetchium.dev/playground`
+URL: `https://app.fetchium.com/playground`
 
 Features:
 - Dropdown: select endpoint

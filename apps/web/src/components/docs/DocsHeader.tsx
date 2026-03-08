@@ -23,7 +23,10 @@ export default function DocsHeader({ onMenuClick }: DocsHeaderProps) {
         </button>
 
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 mr-2 sm:mr-4 shrink-0">
+        <Link
+          href="https://docs.fetchium.com"
+          className="flex items-center gap-2 mr-2 sm:mr-4 shrink-0"
+        >
           <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
             <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -50,8 +53,18 @@ export default function DocsHeader({ onMenuClick }: DocsHeaderProps) {
 
         {/* Right nav */}
         <nav className="flex items-center gap-1 sm:gap-2 ml-auto">
-          <Link href="/" className="text-xs text-slate-500 hover:text-slate-300 transition-colors px-1 sm:px-2 py-1 hidden xs:block">Home</Link>
-          <Link href="/pricing" className="text-xs text-slate-500 hover:text-slate-300 transition-colors px-1 sm:px-2 py-1 hidden sm:block">Pricing</Link>
+          <Link
+            href="https://fetchium.com"
+            className="text-xs text-slate-500 hover:text-slate-300 transition-colors px-1 sm:px-2 py-1 hidden xs:block"
+          >
+            Home
+          </Link>
+          <Link
+            href="https://fetchium.com/pricing"
+            className="text-xs text-slate-500 hover:text-slate-300 transition-colors px-1 sm:px-2 py-1 hidden sm:block"
+          >
+            Pricing
+          </Link>
           <a href="https://github.com/zuhabul/Fetchium" target="_blank" rel="noopener noreferrer"
             className="text-xs text-slate-500 hover:text-slate-300 transition-colors px-1 sm:px-2 py-1 hidden sm:block">GitHub</a>
           <Link href="https://app.fetchium.com"

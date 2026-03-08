@@ -71,10 +71,10 @@ export default function SprePage() {
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/algorithms/hyperfusion", title: "HyperFusion", desc: "Full 8-signal ranking" },
-          { href: "/docs/algorithms/cep", title: "CEP Extraction", desc: "Content extraction layers" },
-          { href: "/docs/algorithms/qatbe", title: "QATBE", desc: "Token budget optimization" },
-          { href: "/docs/api/search", title: "Search API", desc: "See all algorithms in action" },
+          { href: "https://docs.fetchium.com/algorithms/hyperfusion", title: "HyperFusion", desc: "Full 8-signal ranking" },
+          { href: "https://docs.fetchium.com/algorithms/cep", title: "CEP Extraction", desc: "Content extraction layers" },
+          { href: "https://docs.fetchium.com/algorithms/qatbe", title: "QATBE", desc: "Token budget optimization" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "See all algorithms in action" },
         ].map(l => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

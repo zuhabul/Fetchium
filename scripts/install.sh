@@ -26,7 +26,7 @@ detect_platform() {
   case "$ARCH" in
     x86_64|amd64) ARCH="x64" ;;
     aarch64|arm64) ARCH="arm64" ;;
-    *) error "Unsupported architecture: $ARCH. See https://fetchium.com/docs/self-hosting" ;;
+    *) error "Unsupported architecture: $ARCH. See https://docs.fetchium.com/self-hosting" ;;
   esac
   case "$OS" in
     linux)  PLATFORM="linux"  ;;
@@ -127,7 +127,7 @@ main() {
   printf "  fetchium --help\n"
   printf "  fetchium search \"your query\"\n"
   printf "\n"
-  printf "  ${BOLD}Docs:${RESET} https://fetchium.com/docs\n"
+  printf "  ${BOLD}Docs:${RESET} https://docs.fetchium.com\n"
   printf "  ${BOLD}API key:${RESET} https://app.fetchium.com\n\n"
 }
 

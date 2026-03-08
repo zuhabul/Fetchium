@@ -21,16 +21,16 @@
 
 ### Content Readiness
 - [ ] README: animated GIF demo, benchmark table, 60-second quick-start
-- [ ] Docs site live at docs.fetchium.dev (all Phase 1 endpoints documented)
-- [ ] Landing page live at fetchium.dev with pricing + CTA
+- [ ] Docs site live at docs.fetchium.com (all Phase 1 endpoints documented)
+- [ ] Landing page live at fetchium.com with pricing + CTA
 - [ ] Blog post: "Introducing Fetchium" (750 words, drafted + reviewed)
 - [ ] HN Show HN post: drafted, reviewed by 2 beta users for feedback
 - [ ] Twitter thread: 8-tweet launch announcement thread, drafted
 - [ ] Discord server live with 5 channels, 10 beta users seeded
 
 ### Operations Readiness
-- [ ] Support email: support@fetchium.dev forwards to founder's email
-- [ ] Status page live at status.fetchium.dev
+- [ ] Support email: support@fetchium.com forwards to founder's email
+- [ ] Status page live at fetchium.com/status
 - [ ] On-call alert: UptimeRobot → email + SMS for downtime
 - [ ] Backup: daily SQLite dump to separate storage
 - [ ] Logging: errors written to file, reviewed daily
@@ -67,7 +67,7 @@ Would you be interested in early access? Free Pro account for the first month.
 Happy to get on a 15-minute call if you have questions.
 
 Repo: github.com/fetchium/fetchium
-Demo: fetchium.dev
+Demo: fetchium.com
 
 — [Name]
 ```
@@ -170,7 +170,7 @@ Demo: fetchium.dev
 - What we'd do differently
 
 **Distribution for each post:**
-- fetchium.dev/blog (primary)
+- fetchium.com/blog (primary)
 - Dev.to (same day)
 - Hashnode (same day)
 - HN "Ask HN" or plain URL submission (on high-quality posts)

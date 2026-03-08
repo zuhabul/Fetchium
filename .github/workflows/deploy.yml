@@ -3,7 +3,7 @@ name: Deploy
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [production]
 
 permissions:
   contents: read
@@ -12,7 +12,7 @@ jobs:
   deploy-production:
     name: Deploy production stack
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/production'
     steps:
       - uses: actions/checkout@v4
 

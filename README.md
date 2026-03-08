@@ -25,7 +25,7 @@
 
 <br/>
 
-[**Install**](#installation) · [**Quick Start**](#quick-start) · [**Fetch Modes**](#7-fetch-modes) · [**AI Setup**](#ai-provider-setup) · [**API**](#api) · [**Config**](#configuration) · [**Docs**](https://docs.fetchium.dev) · [**Discord**](https://discord.gg/fetchium)
+[**Install**](#installation) · [**Quick Start**](#quick-start) · [**Fetch Modes**](#7-fetch-modes) · [**AI Setup**](#ai-provider-setup) · [**API**](#api) · [**Config**](#configuration) · [**Docs**](https://docs.fetchium.com) · [**Discord**](https://discord.gg/fetchium)
 
 <br/>
 
@@ -55,7 +55,7 @@ npx fetchium search "quantum computing breakthroughs 2025"
 ### Shell installer (Linux / macOS)
 
 ```bash
-curl -sSf https://install.fetchium.dev | sh
+curl -sSf https://install.fetchium.com | sh
 ```
 
 ### cargo-binstall
@@ -1032,7 +1032,7 @@ at your option.
 
 <div align="center">
 
-**[Docs](https://docs.fetchium.dev)** · **[Discord](https://discord.gg/fetchium)** · **[Twitter / X](https://x.com/fetchiumdev)** · **[GitHub](https://github.com/zuhabul/Fetchium)**
+**[Docs](https://docs.fetchium.com)** · **[Discord](https://discord.gg/fetchium)** · **[Twitter / X](https://x.com/fetchiumdev)** · **[GitHub](https://github.com/zuhabul/Fetchium)**
 
 Built with Rust. No tracking. No telemetry. Your queries stay on your machine.
 

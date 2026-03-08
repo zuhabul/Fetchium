@@ -96,10 +96,10 @@ export default function QatbePage() {
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/algorithms/cep", title: "CEP Extraction", desc: "How content is extracted first" },
-          { href: "/docs/algorithms/hyperfusion", title: "HyperFusion", desc: "Ranking after extraction" },
-          { href: "/docs/api/search", title: "Search API", desc: "tier parameter reference" },
-          { href: "/docs/api/scrape", title: "Scrape API", desc: "Direct content extraction" },
+          { href: "https://docs.fetchium.com/algorithms/cep", title: "CEP Extraction", desc: "How content is extracted first" },
+          { href: "https://docs.fetchium.com/algorithms/hyperfusion", title: "HyperFusion", desc: "Ranking after extraction" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "tier parameter reference" },
+          { href: "https://docs.fetchium.com/api/scrape", title: "Scrape API", desc: "Direct content extraction" },
         ].map(l => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

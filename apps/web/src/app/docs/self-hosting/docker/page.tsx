@@ -168,9 +168,9 @@ docker compose --env-file infra/fetchium.env.production.local -f infra/docker-co
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/quickstart", title: "Quick Start", desc: "Make your first API call" },
-          { href: "/docs/authentication", title: "Authentication", desc: "Key management" },
-          { href: "/docs/api/search", title: "Search API", desc: "Full API reference" },
+          { href: "https://docs.fetchium.com/quickstart", title: "Quick Start", desc: "Make your first API call" },
+          { href: "https://docs.fetchium.com/authentication", title: "Authentication", desc: "Key management" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "Full API reference" },
           { href: "https://github.com/zuhabul/Fetchium", title: "GitHub", desc: "Source code and issues" },
         ].map(l => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">

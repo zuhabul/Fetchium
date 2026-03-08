@@ -170,7 +170,7 @@ fetchium ai "explain transformers" --stream
 # API: add Accept: text/event-stream header
 curl -N -H "Accept: text/event-stream" \
   -H "Authorization: Bearer hsx_..." \
-  https://api.fetchium.dev/v1/ai \
+  https://api.fetchium.com/v1/ai \
   -d '{"query": "explain transformers"}'
 ```
 

@@ -47,7 +47,7 @@ const cases = [
     description:
       "Search, extract, and analyze YouTube content at scale. Get transcripts, metadata, engagement signals, and semantic summaries — all through the same unified API.",
     tags: ["Transcripts", "Metadata", "Channels", "Sentiment"],
-    href: "/docs/api/youtube",
+    href: "https://docs.fetchium.com/api/youtube",
     color: "from-red-500/15 to-orange-500/10",
     border: "border-red-500/20 hover:border-red-500/40",
     iconColor: "text-red-400",
@@ -59,7 +59,7 @@ const cases = [
     description:
       "Pull structured data from Reddit, HackerNews, and other social platforms. Understand sentiment, trending topics, and community signals across any niche — at API speed.",
     tags: ["Reddit", "HackerNews", "Sentiment", "Trends"],
-    href: "/docs/api/social",
+    href: "https://docs.fetchium.com/api/social",
     color: "from-emerald-500/15 to-teal-500/10",
     border: "border-emerald-500/20 hover:border-emerald-500/40",
     iconColor: "text-emerald-400",
