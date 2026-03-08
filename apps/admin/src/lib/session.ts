@@ -51,12 +51,13 @@ export async function clearSession(): Promise<void> {
 
 export const INTERNAL_API = process.env.FETCHIUM_INTERNAL_API_URL || 'http://127.0.0.1:3050'
 
-/** Server-side fetch to Rust API with admin session token */
+/** Server-side fetch to Rust API — auto-reads session from cookie */
 export async function adminFetch(
   path: string,
-  session: AdminSession,
   options: RequestInit = {}
 ): Promise<Response> {
+  const session = await getSession()
+  if (!session) throw new Error('Not authenticated')
   return fetch(`${INTERNAL_API}${path}`, {
     ...options,
     headers: {
