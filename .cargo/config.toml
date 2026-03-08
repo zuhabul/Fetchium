@@ -3,3 +3,7 @@ check-all = "check --workspace --all-targets"
 lint      = "clippy --workspace --all-targets -- -D warnings"
 test-fast = "test --workspace -- --skip research::pipeline"
 ship-bin  = "install --path crates/fetchium-cli --force"
+
+[env]
+BINDGEN_EXTRA_CLANG_ARGS_x86_64_unknown_linux_gnu = "-isystem /usr/lib/gcc/x86_64-linux-gnu/13/include -isystem /usr/include"
+BINDGEN_EXTRA_CLANG_ARGS_x86_64-unknown-linux-gnu = "-isystem /usr/lib/gcc/x86_64-linux-gnu/13/include -isystem /usr/include"

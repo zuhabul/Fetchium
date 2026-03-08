@@ -36,3 +36,14 @@ bun.lock
 __pycache__/
 *.pyc
 .agentic/
+
+# Local reports and logs
+report.json
+server.log
+stream.out
+
+# Benchmark and quality artifacts
+tests/benchmark/*.log
+tests/benchmark/*results*.json
+tests/competitive/results/
+tests/quality/results/

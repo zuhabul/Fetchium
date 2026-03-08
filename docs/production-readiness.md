@@ -51,3 +51,7 @@ cargo test --workspace
 python -m unittest adapters.langchain.tests.test_retriever adapters.crewai.tests.test_tool
 npm pack --dry-run ./packages/npm
 ```
+
+## Build Environment Prerequisites
+
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings` requires native build tooling for enabled optional dependencies. On Linux that means standard libc headers plus the usual C/C++ toolchain for crates such as `chromiumoxide`, `fastembed`, or other native transitive dependencies.

@@ -142,6 +142,8 @@ pub struct FetchRequest {
     pub token_budget: Option<usize>,
     /// Format: markdown | text | html (default markdown)
     pub format: Option<String>,
+    /// Optional JSON schema for structured extraction via local Qwen model.
+    pub schema: Option<serde_json::Value>,
 }
 
 impl FetchRequest {

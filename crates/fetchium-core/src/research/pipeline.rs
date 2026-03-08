@@ -656,7 +656,7 @@ impl ResearchPipeline {
         let l3 = temporal.validate(&v3_inputs, &config.query);
 
         let cross = CrossSourceVerifier::new();
-        let l4 = cross.verify(&v4_inputs);
+        let l4 = cross.verify_with_query(&v4_inputs, &config.query);
 
         let l5 = ExtractionValidator::validate(&v5_inputs);
 
@@ -1033,6 +1033,7 @@ mod tests {
     use crate::research::ResearchConfig;
 
     #[tokio::test]
+    #[ignore = "requires network-backed search providers"]
     async fn pipeline_executes_without_error() {
         let config = ResearchConfig {
             query: "what is Rust".into(),
@@ -1049,6 +1050,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires network-backed search providers"]
     async fn pipeline_builds_egp_when_requested() {
         let config = ResearchConfig {
             query: "Rust vs Go".into(),

@@ -87,10 +87,7 @@ impl Default for ProxyConfig {
             proxy_file: None,
             protocol: "http".into(),
             proxy_domains: Vec::new(),
-            bypass_domains: vec![
-                "localhost".into(),
-                "127.0.0.1".into(),
-            ],
+            bypass_domains: vec!["localhost".into(), "127.0.0.1".into()],
         }
     }
 }

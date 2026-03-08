@@ -12,6 +12,9 @@ use_default_settings:
       - yandex
       - bing
       - currency
+      - youtube
+      - stackoverflow
+      - github
 
 general:
   instance_name: "Fetchium Local"
@@ -52,8 +55,8 @@ search:
 engines:
   # Google — highest quality (residential proxy bypasses blocks)
   - name: google
-    timeout: 6.0
-    weight: 3.0
+    timeout: 8.0
+    weight: 4.0
 
   # Startpage — Google proxy, excellent fallback when Google suspends
   - name: startpage
@@ -64,6 +67,11 @@ engines:
   - name: duckduckgo
     timeout: 5.0
     weight: 1.8
+
+  # YouTube — video results for how-to, tutorials, and current events
+  - name: youtube
+    timeout: 5.0
+    weight: 1.3
 
   # Brave — independent index, good for privacy/tech queries
   - name: brave
@@ -86,8 +94,8 @@ engines:
     weight: 0.5
 
 outgoing:
-  request_timeout: 6.0
-  max_request_timeout: 10.0
+  request_timeout: 8.0
+  max_request_timeout: 15.0
   useragent_suffix: ""
   pool_connections: 200
   pool_maxsize: 64

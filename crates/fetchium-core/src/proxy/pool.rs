@@ -122,7 +122,8 @@ impl ProxyEntry {
     pub fn record_success(&self, latency_ms: u64) {
         self.success_count.fetch_add(1, Ordering::Relaxed);
         self.consecutive_fails.store(0, Ordering::Relaxed);
-        self.total_latency_ms.fetch_add(latency_ms, Ordering::Relaxed);
+        self.total_latency_ms
+            .fetch_add(latency_ms, Ordering::Relaxed);
         *self.last_used.write() = Some(Instant::now());
         // Ensure status is active
         let status = *self.status.read();
@@ -149,7 +150,8 @@ impl ProxyEntry {
             // Enter cooldown with exponential backoff
             let cooldown_secs = 30 * (1u64 << (consecutive - 3)).min(16); // 30s, 60s, 120s, ...
             *self.status.write() = ProxyStatus::Cooldown;
-            *self.cooldown_until.write() = Some(Instant::now() + Duration::from_secs(cooldown_secs));
+            *self.cooldown_until.write() =
+                Some(Instant::now() + Duration::from_secs(cooldown_secs));
             debug!(
                 "Proxy {}:{} in cooldown for {}s after {} failures",
                 self.host, self.port, cooldown_secs, consecutive
@@ -170,10 +172,7 @@ impl ProxyEntry {
             1.0
         };
 
-        let last_used_secs = self
-            .last_used
-            .read()
-            .map(|t| t.elapsed().as_secs());
+        let last_used_secs = self.last_used.read().map(|t| t.elapsed().as_secs());
 
         let cooldown_remaining = self.cooldown_until.read().and_then(|until| {
             let now = Instant::now();
@@ -332,7 +331,9 @@ impl ProxyPool {
         warn!("All proxies unavailable, attempting cooldown recovery");
         proxies
             .iter()
-            .find(|p| *p.status.read() != ProxyStatus::Dead && *p.status.read() != ProxyStatus::Disabled)
+            .find(|p| {
+                *p.status.read() != ProxyStatus::Dead && *p.status.read() != ProxyStatus::Disabled
+            })
             .cloned()
     }
 
@@ -359,8 +360,13 @@ impl ProxyPool {
         drop(proxies);
         if let Some(proxy) = self.next_proxy() {
             let proxies = self.inner.proxies.read();
-            if let Some(idx) = proxies.iter().position(|p| std::ptr::eq(p.as_ref(), proxy.as_ref())) {
-                self.inner.domain_assignments.insert(domain.to_string(), idx);
+            if let Some(idx) = proxies
+                .iter()
+                .position(|p| std::ptr::eq(p.as_ref(), proxy.as_ref()))
+            {
+                self.inner
+                    .domain_assignments
+                    .insert(domain.to_string(), idx);
             }
             Some(proxy)
         } else {
@@ -502,8 +508,7 @@ mod tests {
 
     #[test]
     fn parse_url_format() {
-        let entry =
-            ProxyPool::parse_proxy_line("http://user:pass@1.2.3.4:1080").unwrap();
+        let entry = ProxyPool::parse_proxy_line("http://user:pass@1.2.3.4:1080").unwrap();
         assert_eq!(entry.host, "1.2.3.4");
         assert_eq!(entry.port, 1080);
         assert_eq!(entry.protocol, ProxyProtocol::Http);

@@ -157,14 +157,16 @@ pub async fn search(
 
         let include_content = req.include_content.unwrap_or(false);
         let result_json = fetchium_core::api_facade::search(
-            &req.query,
-            max_sources,
-            tier,
-            token_budget,
+            fetchium_core::api_facade::SearchRequest {
+                query: &req.query,
+                max_sources,
+                tier,
+                token_budget,
+                include_content,
+            },
             &state.config,
             &state.http,
             Some(&state.cache),
-            include_content,
         )
         .await
         .map_err(|e| {
@@ -233,10 +235,16 @@ async fn fetch_impl(
     let budget = req.token_budget.unwrap_or(3000);
     let format = req.format.as_deref().unwrap_or("markdown");
 
-    let result_json =
-        fetchium_core::api_facade::fetch(&req.url, budget, format, &state.http, Some(&state.cache))
-            .await
-            .map_err(|e| api_err(StatusCode::BAD_REQUEST, "fetch_failed", e.to_string()))?;
+    let result_json = fetchium_core::api_facade::fetch(
+        &req.url,
+        budget,
+        format,
+        &state.http,
+        Some(&state.cache),
+        req.schema.as_ref(),
+    )
+    .await
+    .map_err(|e| api_err(StatusCode::BAD_REQUEST, "fetch_failed", e.to_string()))?;
 
     let response: FetchResponse = serde_json::from_value(result_json).map_err(|e| {
         api_err(

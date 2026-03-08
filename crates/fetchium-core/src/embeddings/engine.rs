@@ -40,7 +40,10 @@ pub fn embed_batch(texts: &[&str]) -> Result<Vec<Vec<f32>>, HsxError> {
     if texts.is_empty() {
         return Ok(Vec::new());
     }
-    debug!("Embedding batch of {} texts via Ollama (blocking)", texts.len());
+    debug!(
+        "Embedding batch of {} texts via Ollama (blocking)",
+        texts.len()
+    );
     let url = format!("{}/api/embed", &*OLLAMA_URL);
     let body = serde_json::json!({
         "model": EMBED_MODEL,
@@ -60,7 +63,9 @@ pub fn embed_batch(texts: &[&str]) -> Result<Vec<Vec<f32>>, HsxError> {
     if !resp.status().is_success() {
         let status = resp.status();
         let body = resp.text().unwrap_or_default();
-        return Err(HsxError::Internal(format!("Ollama embed returned {status}: {body}")));
+        return Err(HsxError::Internal(format!(
+            "Ollama embed returned {status}: {body}"
+        )));
     }
 
     let data: serde_json::Value = resp
@@ -83,22 +88,32 @@ pub async fn embed_batch_async(texts: &[&str]) -> Result<Vec<Vec<f32>>, HsxError
     if texts.is_empty() {
         return Ok(Vec::new());
     }
-    debug!("Embedding batch of {} texts via Ollama (async)", texts.len());
+    debug!(
+        "Embedding batch of {} texts via Ollama (async)",
+        texts.len()
+    );
     let url = format!("{}/api/embed", &*OLLAMA_URL);
     let body = serde_json::json!({
         "model": EMBED_MODEL,
         "input": texts,
     });
 
-    let resp = HTTP_CLIENT.post(&url).json(&body).send().await.map_err(|e| {
-        warn!("Ollama embedding request failed: {e}");
-        HsxError::Internal(format!("Ollama embed request failed: {e}"))
-    })?;
+    let resp = HTTP_CLIENT
+        .post(&url)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| {
+            warn!("Ollama embedding request failed: {e}");
+            HsxError::Internal(format!("Ollama embed request failed: {e}"))
+        })?;
 
     if !resp.status().is_success() {
         let status = resp.status();
         let body = resp.text().await.unwrap_or_default();
-        return Err(HsxError::Internal(format!("Ollama embed returned {status}: {body}")));
+        return Err(HsxError::Internal(format!(
+            "Ollama embed returned {status}: {body}"
+        )));
     }
 
     let data: serde_json::Value = resp

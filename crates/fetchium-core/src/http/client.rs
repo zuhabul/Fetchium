@@ -85,13 +85,19 @@ impl HttpClient {
 
         // Load proxy pool if configured
         let proxy_pool = if config.proxy.enabled {
-            let proxy_file = config.proxy.proxy_file.clone().unwrap_or_else(|| {
-                config.data_dir().join("proxies.txt")
-            });
+            let proxy_file = config
+                .proxy
+                .proxy_file
+                .clone()
+                .unwrap_or_else(|| config.data_dir().join("proxies.txt"));
             if proxy_file.exists() {
                 match ProxyPool::load_from_file(&proxy_file) {
                     Ok(pool) if !pool.is_empty() => {
-                        info!("Proxy pool loaded: {} proxies from {}", pool.len(), proxy_file.display());
+                        info!(
+                            "Proxy pool loaded: {} proxies from {}",
+                            pool.len(),
+                            proxy_file.display()
+                        );
                         Some(pool)
                     }
                     Ok(_) => {
@@ -112,9 +118,7 @@ impl HttpClient {
         };
 
         // Build DataImpulse residential proxy client if configured
-        let dataimpulse = if config.dataimpulse.enabled
-            && !config.dataimpulse.username.is_empty()
-        {
+        let dataimpulse = if config.dataimpulse.enabled && !config.dataimpulse.username.is_empty() {
             let di = DataImpulseClient::new(
                 &config.dataimpulse.username,
                 &config.dataimpulse.password,
@@ -447,12 +451,23 @@ impl HttpClient {
     /// Check if a domain should use proxies.
     fn should_proxy_domain(&self, domain: &str) -> bool {
         // Never proxy bypass domains
-        if self.config.proxy.bypass_domains.iter().any(|d| domain.contains(d.as_str())) {
+        if self
+            .config
+            .proxy
+            .bypass_domains
+            .iter()
+            .any(|d| domain.contains(d.as_str()))
+        {
             return false;
         }
         // If proxy_domains is specified, only proxy those
         if !self.config.proxy.proxy_domains.is_empty() {
-            return self.config.proxy.proxy_domains.iter().any(|d| domain.contains(d.as_str()));
+            return self
+                .config
+                .proxy
+                .proxy_domains
+                .iter()
+                .any(|d| domain.contains(d.as_str()));
         }
         // Default: proxy everything
         true
@@ -509,8 +524,7 @@ impl HttpClient {
                         elapsed_ms: latency,
                         retries: 0,
                     })
-                } else if status == StatusCode::FORBIDDEN
-                    || status == StatusCode::TOO_MANY_REQUESTS
+                } else if status == StatusCode::FORBIDDEN || status == StatusCode::TOO_MANY_REQUESTS
                 {
                     // Proxy got blocked — record failure and retry with next proxy
                     proxy.record_failure();

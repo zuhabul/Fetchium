@@ -2,6 +2,59 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Risk profile for evidence sufficiency and fail-closed validation behavior.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ValidationRisk {
+    Standard,
+    HighStakes,
+}
+
+impl ValidationRisk {
+    /// Infer validation risk from a user query.
+    pub fn for_query(query: &str) -> Self {
+        let lower = query.to_lowercase();
+        let high_stakes_signals = [
+            "diagnos",
+            "symptom",
+            "treatment",
+            "dose",
+            "dosage",
+            "side effect",
+            "contraindication",
+            "legal",
+            "law",
+            "statute",
+            "regulation",
+            "compliance",
+            "tax",
+            "irs",
+            "investment",
+            "invest",
+            "stock",
+            "etf",
+            "bond",
+            "crypto",
+            "mortgage",
+            "interest rate",
+            "vulnerability",
+            "cve",
+            "exploit",
+            "breach",
+            "security advisory",
+            "incident response",
+        ];
+
+        if high_stakes_signals
+            .iter()
+            .any(|signal| lower.contains(signal))
+        {
+            Self::HighStakes
+        } else {
+            Self::Standard
+        }
+    }
+}
+
 /// Complete result of the 6-layer validation pipeline.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ValidationResult {
@@ -177,5 +230,17 @@ mod tests {
         };
         let json = serde_json::to_string(&result).unwrap();
         assert!(json.contains("V1Source"));
+    }
+
+    #[test]
+    fn risk_detection_for_high_stakes_queries() {
+        assert_eq!(
+            ValidationRisk::for_query("What dosage of aspirin is safe for children"),
+            ValidationRisk::HighStakes
+        );
+        assert_eq!(
+            ValidationRisk::for_query("How does photosynthesis work"),
+            ValidationRisk::Standard
+        );
     }
 }
