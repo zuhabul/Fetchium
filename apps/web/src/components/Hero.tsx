@@ -69,7 +69,7 @@ const outY = [85, 145, 215, 275];
 function FlowDiagram() {
   return (
     <motion.div
-      className="relative w-full select-none"
+      className="relative mx-auto w-full max-w-[520px] xl:max-w-[580px] select-none"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 1, delay: 0.4 }}
@@ -101,6 +101,12 @@ function FlowDiagram() {
               90%  { opacity: 1; }
               100% { offset-distance: 100%; opacity: 0; }
             }
+            @media (prefers-reduced-motion: reduce) {
+              * {
+                animation: none !important;
+                transition: none !important;
+              }
+            }
           `}</style>
 
           {/* Radial glow filter for center orb */}
@@ -130,10 +136,10 @@ function FlowDiagram() {
                 fill="none"
                 stroke={src.color}
                 strokeWidth="1.5"
-                strokeOpacity="0.55"
-                strokeDasharray="6 180"
+                strokeOpacity="0.42"
+                strokeDasharray="10 150"
                 style={{
-                  animation: `flowIn ${dur}s ease-in-out infinite`,
+                  animation: `flowIn ${dur + 0.5}s linear infinite`,
                   animationDelay: `${i * 0.4}s`,
                 }}
               />
@@ -155,10 +161,10 @@ function FlowDiagram() {
                 fill="none"
                 stroke={out.color}
                 strokeWidth="1.5"
-                strokeOpacity="0.55"
-                strokeDasharray="6 180"
+                strokeOpacity="0.42"
+                strokeDasharray="10 150"
                 style={{
-                  animation: `flowOut ${dur}s ease-in-out infinite`,
+                  animation: `flowOut ${dur + 0.5}s linear infinite`,
                   animationDelay: `${0.8 + i * 0.35}s`,
                 }}
               />
@@ -266,19 +272,19 @@ function FlowDiagram() {
 /* ─── Hero ────────────────────────────────────────────────────────────────── */
 export default function Hero() {
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+    <section className="relative flex min-h-[92svh] flex-col items-center justify-center overflow-hidden lg:min-h-screen">
       <div className="absolute inset-0"><NeuralCanvas /></div>
 
       {/* Atmosphere glows */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[650px] rounded-full"
-          style={{ background: "radial-gradient(ellipse, rgba(99,102,241,0.12) 0%, transparent 70%)", filter: "blur(40px)" }}
+        <div className="absolute top-0 left-1/2 h-[520px] w-[900px] -translate-x-1/2 rounded-full"
+          style={{ background: "radial-gradient(ellipse, rgba(99,102,241,0.09) 0%, transparent 72%)", filter: "blur(48px)" }}
         />
-        <div className="absolute top-1/3 left-[15%] w-[400px] h-[400px] rounded-full"
-          style={{ background: "radial-gradient(ellipse, rgba(139,92,246,0.07) 0%, transparent 70%)", filter: "blur(60px)" }}
+        <div className="absolute top-1/3 left-[15%] h-[320px] w-[320px] rounded-full"
+          style={{ background: "radial-gradient(ellipse, rgba(14,165,233,0.06) 0%, transparent 74%)", filter: "blur(62px)" }}
         />
-        <div className="absolute top-1/3 right-[10%] w-[350px] h-[350px] rounded-full"
-          style={{ background: "radial-gradient(ellipse, rgba(99,102,241,0.08) 0%, transparent 70%)", filter: "blur(60px)" }}
+        <div className="absolute top-1/3 right-[10%] h-[280px] w-[280px] rounded-full"
+          style={{ background: "radial-gradient(ellipse, rgba(99,102,241,0.06) 0%, transparent 74%)", filter: "blur(56px)" }}
         />
       </div>
 
@@ -287,8 +293,8 @@ export default function Hero() {
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(99,102,241,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.04) 1px,transparent 1px)",
-          backgroundSize: "72px 72px",
+            "linear-gradient(rgba(148,163,184,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,0.03) 1px,transparent 1px)",
+          backgroundSize: "84px 84px",
         }}
       />
 
@@ -298,24 +304,24 @@ export default function Hero() {
         Other sections use max-w-7xl → content starts ~104px from edge.
         Hero at 1440px: ~1376px content. Clear visual difference.
       */}
-      <div className="relative z-10 w-full pt-24 sm:pt-28 pb-16">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-10 lg:gap-0">
+      <div className="relative z-10 w-full pb-16 pt-24 sm:pt-28">
+        <div className="flex flex-col gap-12 lg:flex-row lg:items-center lg:gap-4 xl:gap-8">
 
           {/* ── LEFT: copy + CTAs + stats ─────────────────────────────────────
               Extra left padding so text aligns with navbar logo.
               xl:pl-20 = slightly more breathing room than before (was pl-14).
           ─────────────────────────────────────────────────────────────────── */}
-          <div className="w-full lg:w-[46%] xl:w-[44%] shrink-0 px-5 sm:px-8 lg:pl-12 xl:pl-20 2xl:pl-28 lg:pr-10 xl:pr-14 text-center lg:text-left">
+          <div className="w-full shrink-0 px-5 text-center sm:px-8 lg:w-[48%] lg:pl-12 lg:pr-8 lg:text-left xl:w-[46%] xl:pl-20 xl:pr-12 2xl:pl-28">
 
             {/* Badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55 }}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-sm mb-6 sm:mb-7 cursor-default"
+              className="mb-6 inline-flex cursor-default items-center gap-2 rounded-full px-3.5 py-2 text-sm sm:mb-7"
               style={{ border: "1px solid rgba(99,102,241,0.32)", background: "rgba(99,102,241,0.10)", color: "#c7d2fe" }}
             >
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#34d399", boxShadow: "0 0 6px #34d399" }} />
-              <span className="hidden sm:inline">Open Beta · 17 algorithms · 11+ backends · 1,000 free requests/month</span>
+              <span className="hidden sm:inline">Open Beta · 17 algorithms · 12 MCP tools · 1,000 free requests/month</span>
               <span className="sm:hidden">Open Beta · Free to start</span>
             </motion.div>
 
@@ -408,7 +414,7 @@ export default function Hero() {
               Communicates "11 sources → Fetchium core → structured output"
               without any panel or container.
           ─────────────────────────────────────────────────────────────────── */}
-          <div className="w-full lg:flex-1 min-w-0 px-6 sm:px-8 lg:pl-4 lg:pr-10 xl:pr-16 2xl:pr-24">
+          <div className="w-full min-w-0 px-6 sm:px-8 lg:w-[52%] lg:pl-2 lg:pr-10 xl:w-[50%] xl:pr-16 2xl:pr-24">
             <FlowDiagram />
           </div>
 
