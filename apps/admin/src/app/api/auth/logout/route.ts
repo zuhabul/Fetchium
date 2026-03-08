@@ -6,7 +6,7 @@ export async function POST() {
   if (session) {
     // Tell Rust to revoke the session
     try {
-      await adminFetch('/internal/admin/auth/logout', session, { method: 'POST' })
+      await adminFetch('/internal/admin/auth/logout', { method: 'POST' })
     } catch { /* ignore — still clear cookie */ }
   }
   await clearSession()
