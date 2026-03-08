@@ -18,6 +18,7 @@
 pub mod auth;
 pub mod handlers;
 pub mod handlers_auth;
+pub mod handlers_proxy;
 pub mod middleware;
 pub mod routes;
 pub mod types;

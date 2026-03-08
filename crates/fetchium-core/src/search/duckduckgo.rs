@@ -270,7 +270,7 @@ impl DuckDuckGoBackend {
 
         match self
             .client
-            .client()
+            .client_for_domain("duckduckgo.com")
             .post(DDG_HTML_URL)
             .form(form)
             .header("User-Agent", BROWSER_UA)
@@ -326,7 +326,7 @@ impl DuckDuckGoBackend {
 
         match self
             .client
-            .client()
+            .client_for_domain("duckduckgo.com")
             .post(DDG_LITE_URL)
             .form(&lite_form)
             .header("User-Agent", BROWSER_UA)

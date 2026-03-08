@@ -195,7 +195,7 @@ impl SearchBackend for GoogleBackend {
 
                 match self
                     .http
-                    .client()
+                    .client_for_domain("google.com")
                     .get(&url)
                     .header("User-Agent", BROWSER_UA)
                     .header(
@@ -308,7 +308,7 @@ impl SearchBackend for GoogleBackend {
 
                 match self
                     .http
-                    .client()
+                    .client_for_domain_with_locale("google.com", ctx.locale.as_deref())
                     .get(&url)
                     .header("User-Agent", BROWSER_UA)
                     .header(

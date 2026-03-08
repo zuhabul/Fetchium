@@ -304,28 +304,68 @@ fn domain_ends_with_dot(host: &str, domain: &str) -> bool {
 
 fn domain_tier_score(domain: &str) -> f64 {
     const HIGH_AUTHORITY: &[&str] = &[
+        // Knowledge & reference
         "wikipedia.org",
-        "github.com",
+        "britannica.com",
+        // Academic & scientific
         "arxiv.org",
         "nature.com",
         "nih.gov",
         "pubmed.ncbi.nlm.nih.gov",
         "scholar.google.com",
+        "sciencedirect.com",
+        "springer.com",
+        // Developer
+        "github.com",
         "docs.rs",
         "crates.io",
         "rust-lang.org",
+        "python.org",
+        "developer.mozilla.org",
+        "docs.microsoft.com",
+        "learn.microsoft.com",
+        // Major news
+        "nytimes.com",
+        "bbc.com",
+        "reuters.com",
+        "apnews.com",
     ];
     const MEDIUM_AUTHORITY: &[&str] = &[
+        // Tech & developer
         "stackoverflow.com",
         "medium.com",
-        "bbc.com",
-        "nytimes.com",
-        "reuters.com",
-        "theguardian.com",
+        "dev.to",
         "techcrunch.com",
         "arstechnica.com",
         "wired.com",
+        "theverge.com",
         "ieee.org",
+        "hackernoon.com",
+        // News & journalism
+        "theguardian.com",
+        "washingtonpost.com",
+        "forbes.com",
+        "bloomberg.com",
+        "cnbc.com",
+        // Consumer & lifestyle
+        "healthline.com",
+        "webmd.com",
+        "mayoclinic.org",
+        "investopedia.com",
+        "nerdwallet.com",
+        "wirecutter.com",
+        "consumerreports.org",
+        "tripadvisor.com",
+        "yelp.com",
+        "allrecipes.com",
+        "epicurious.com",
+        "kayak.com",
+        "skyscanner.com",
+        "timeout.com",
+        "eater.com",
+        "tastingtable.com",
+        "seriouseats.com",
+        "theinfatuation.com",
     ];
 
     if HIGH_AUTHORITY
