@@ -12,6 +12,7 @@ import {
   Zap,
   ExternalLink,
 } from "lucide-react";
+import { ADMIN_KEYS_ENABLED } from "@/lib/client-config";
 
 const nav = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Overview" },
@@ -20,7 +21,7 @@ const nav = [
   { href: "/dashboard/billing", icon: CreditCard, label: "Billing" },
   { href: "/dashboard/playground", icon: Terminal, label: "Playground" },
   { href: "/dashboard/settings", icon: Settings, label: "Settings" },
-];
+].filter((item) => ADMIN_KEYS_ENABLED || item.href !== "/dashboard/keys");
 
 export default function Sidebar() {
   const pathname = usePathname();
