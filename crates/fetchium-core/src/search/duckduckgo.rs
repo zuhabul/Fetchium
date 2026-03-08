@@ -12,7 +12,7 @@
 //! Full HTML: `div.result`, `a.result__a`, `a.result__snippet`, `span.result__url`
 //! Lite HTML:  `b a[href]` (titles), `td[valign=top]` (snippets)
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::http::HttpClient;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
@@ -464,7 +464,7 @@ impl DuckDuckGoBackend {
         max_results: u32,
         df: &str,
         locale: Option<&str>,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         info!("DDG search: query={query:?}, max={max_results}, df={df:?}, locale={locale:?}");
 
         if query.trim().is_empty() {
@@ -524,7 +524,7 @@ impl SearchBackend for DuckDuckGoBackend {
         false
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         self.search_inner(query, max_results, "", None).await
     }
 
@@ -533,7 +533,7 @@ impl SearchBackend for DuckDuckGoBackend {
         query: &str,
         max_results: u32,
         ctx: &SearchContext,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let df = Self::time_range_to_df(ctx.time_range);
         self.search_inner(query, max_results, df, ctx.locale.as_deref())
             .await
@@ -564,10 +564,10 @@ fn percent_decode(input: &str) -> Result<String, ()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::HsxConfig;
+    use crate::config::FetchiumConfig;
 
     fn make_backend() -> DuckDuckGoBackend {
-        let config = HsxConfig::default();
+        let config = FetchiumConfig::default();
         let client = HttpClient::new(&config).expect("client");
         DuckDuckGoBackend::new(client)
     }

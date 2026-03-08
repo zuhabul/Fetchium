@@ -3,8 +3,8 @@
 //! PRD SS14: Domain-aware scheduler with per-domain concurrency caps.
 //! PRD SS44: Structured errors with retry info.
 
-use crate::config::HsxConfig;
-use crate::error::{ErrorKind, HsxError, HsxResult, StructuredError};
+use crate::config::FetchiumConfig;
+use crate::error::{ErrorKind, FetchiumError, FetchiumResult, StructuredError};
 use crate::proxy::{DataImpulseClient, ProxyPool};
 use dashmap::DashMap;
 use reqwest::{Client, StatusCode};
@@ -45,7 +45,7 @@ const RESIDENTIAL_REQUIRED_DOMAINS: &[&str] = &[
 #[derive(Clone)]
 pub struct HttpClient {
     inner: Client,
-    config: Arc<HsxConfig>,
+    config: Arc<FetchiumConfig>,
     /// Per-domain rate limiting state.
     domain_delays: Arc<DashMap<String, DomainState>>,
     /// Optional Webshare proxy pool (datacenter — legacy fallback).
@@ -68,7 +68,7 @@ pub struct FetchResult {
 
 impl HttpClient {
     /// Create a new HTTP client from config.
-    pub fn new(config: &HsxConfig) -> HsxResult<Self> {
+    pub fn new(config: &FetchiumConfig) -> FetchiumResult<Self> {
         let client = Client::builder()
             .user_agent(&config.fetch.user_agent)
             .timeout(Duration::from_secs(config.fetch.timeout_secs))
@@ -81,7 +81,7 @@ impl HttpClient {
             .pool_max_idle_per_host(10)
             .pool_idle_timeout(Duration::from_secs(90))
             .build()
-            .map_err(HsxError::Network)?;
+            .map_err(FetchiumError::Network)?;
 
         // Load proxy pool if configured
         let proxy_pool = if config.proxy.enabled {
@@ -250,7 +250,7 @@ impl HttpClient {
     }
 
     /// Get the config reference.
-    pub fn config(&self) -> &HsxConfig {
+    pub fn config(&self) -> &FetchiumConfig {
         &self.config
     }
 
@@ -317,11 +317,11 @@ impl HttpClient {
 
     /// Fetch a URL with retries, rate limiting, and size enforcement.
     /// Returns the response body as a string along with metadata.
-    pub async fn fetch(&self, url: &str) -> HsxResult<FetchResult> {
+    pub async fn fetch(&self, url: &str) -> FetchiumResult<FetchResult> {
         let domain = Self::extract_domain(url);
         let start = Instant::now();
         let max_size = self.config.fetch.max_page_size;
-        let mut last_err: Option<HsxError> = None;
+        let mut last_err: Option<FetchiumError> = None;
 
         for attempt in 0..=MAX_RETRIES {
             if attempt > 0 {
@@ -341,7 +341,7 @@ impl HttpClient {
                     if !status.is_success() {
                         if Self::is_retryable_status(status) && attempt < MAX_RETRIES {
                             debug!("Retryable status {status} for {url} (attempt {attempt}/{MAX_RETRIES})");
-                            last_err = Some(HsxError::Structured(StructuredError {
+                            last_err = Some(FetchiumError::Structured(StructuredError {
                                 kind: Self::status_to_error_kind(status),
                                 retryable: true,
                                 message: format!("HTTP {status} from {url}"),
@@ -352,7 +352,7 @@ impl HttpClient {
                             continue;
                         }
 
-                        return Err(HsxError::Structured(StructuredError {
+                        return Err(FetchiumError::Structured(StructuredError {
                             kind: Self::status_to_error_kind(status),
                             retryable: false,
                             message: format!("HTTP {status} from {url}"),
@@ -369,7 +369,7 @@ impl HttpClient {
                     let content_length = resp.content_length();
                     if let Some(len) = content_length {
                         if len > max_size {
-                            return Err(HsxError::Structured(StructuredError {
+                            return Err(FetchiumError::Structured(StructuredError {
                                 kind: ErrorKind::ExtractionFailed,
                                 retryable: false,
                                 message: format!(
@@ -391,10 +391,10 @@ impl HttpClient {
 
                     let final_url = resp.url().to_string();
 
-                    let body = resp.text().await.map_err(HsxError::Network)?;
+                    let body = resp.text().await.map_err(FetchiumError::Network)?;
 
                     if body.len() as u64 > max_size {
-                        return Err(HsxError::Structured(StructuredError {
+                        return Err(FetchiumError::Structured(StructuredError {
                             kind: ErrorKind::ExtractionFailed,
                             retryable: false,
                             message: format!("Body too large: {} bytes", body.len()),
@@ -417,16 +417,16 @@ impl HttpClient {
                 Err(e) => {
                     if (e.is_timeout() || e.is_connect()) && attempt < MAX_RETRIES {
                         debug!("Transient error for {url}: {e}");
-                        last_err = Some(HsxError::Network(e));
+                        last_err = Some(FetchiumError::Network(e));
                         continue;
                     }
-                    return Err(HsxError::Network(e));
+                    return Err(FetchiumError::Network(e));
                 }
             }
         }
 
         Err(last_err.unwrap_or_else(|| {
-            HsxError::Structured(StructuredError {
+            FetchiumError::Structured(StructuredError {
                 kind: ErrorKind::NetworkTimeout,
                 retryable: false,
                 message: format!("All {MAX_RETRIES} retries exhausted for {url}"),
@@ -438,7 +438,7 @@ impl HttpClient {
     }
 
     /// Convenience: fetch a URL and return just the body text.
-    pub async fn fetch_text(&self, url: &str) -> HsxResult<String> {
+    pub async fn fetch_text(&self, url: &str) -> FetchiumResult<String> {
         let result = self.fetch(url).await?;
         Ok(result.body)
     }
@@ -474,7 +474,7 @@ impl HttpClient {
     }
 
     /// Fetch a URL through a rotating proxy. Falls back to direct if no proxy available.
-    pub async fn fetch_via_proxy(&self, url: &str) -> HsxResult<FetchResult> {
+    pub async fn fetch_via_proxy(&self, url: &str) -> FetchiumResult<FetchResult> {
         let domain = Self::extract_domain(url);
 
         let pool = match &self.proxy_pool {
@@ -496,7 +496,7 @@ impl HttpClient {
             &self.config.fetch.user_agent,
             Duration::from_secs(self.config.fetch.timeout_secs),
         )
-        .map_err(HsxError::Network)?;
+        .map_err(FetchiumError::Network)?;
 
         match client.get(url).send().await {
             Ok(resp) => {
@@ -513,7 +513,7 @@ impl HttpClient {
                         .to_string();
                     let content_length = resp.content_length();
                     let final_url = resp.url().to_string();
-                    let body = resp.text().await.map_err(HsxError::Network)?;
+                    let body = resp.text().await.map_err(FetchiumError::Network)?;
 
                     Ok(FetchResult {
                         body,
@@ -539,13 +539,13 @@ impl HttpClient {
                             &self.config.fetch.user_agent,
                             Duration::from_secs(self.config.fetch.timeout_secs),
                         )
-                        .map_err(HsxError::Network)?;
+                        .map_err(FetchiumError::Network)?;
 
                         let start2 = Instant::now();
                         match client2.get(url).send().await {
                             Ok(resp2) if resp2.status().is_success() => {
                                 next_proxy.record_success(start2.elapsed().as_millis() as u64);
-                                let body = resp2.text().await.map_err(HsxError::Network)?;
+                                let body = resp2.text().await.map_err(FetchiumError::Network)?;
                                 Ok(FetchResult {
                                     body,
                                     status: 200,
@@ -566,7 +566,7 @@ impl HttpClient {
                     }
                 } else {
                     proxy.record_failure();
-                    Err(HsxError::Structured(StructuredError {
+                    Err(FetchiumError::Structured(StructuredError {
                         kind: Self::status_to_error_kind(status),
                         retryable: false,
                         message: format!("HTTP {status} via proxy for {url}"),
@@ -589,7 +589,7 @@ impl HttpClient {
     }
 
     /// Convenience: fetch text through a proxy.
-    pub async fn fetch_text_via_proxy(&self, url: &str) -> HsxResult<String> {
+    pub async fn fetch_text_via_proxy(&self, url: &str) -> FetchiumResult<String> {
         let result = self.fetch_via_proxy(url).await?;
         Ok(result.body)
     }
@@ -599,16 +599,16 @@ impl HttpClient {
     /// Use this for sources where connection errors are *expected* (e.g. third-party
     /// Piped/Invidious instances that may be down). A single fast attempt is better
     /// than burning 3.5s on retry sleeps when we're racing many sources in parallel.
-    pub async fn fetch_text_once(&self, url: &str) -> HsxResult<String> {
+    pub async fn fetch_text_once(&self, url: &str) -> FetchiumResult<String> {
         let resp = self
             .inner
             .get(url)
             .send()
             .await
-            .map_err(HsxError::Network)?;
+            .map_err(FetchiumError::Network)?;
 
         if !resp.status().is_success() {
-            return Err(HsxError::Structured(crate::error::StructuredError {
+            return Err(FetchiumError::Structured(crate::error::StructuredError {
                 kind: Self::status_to_error_kind(resp.status()),
                 retryable: false,
                 message: format!("HTTP {} from {url}", resp.status()),
@@ -618,14 +618,14 @@ impl HttpClient {
             }));
         }
 
-        resp.text().await.map_err(HsxError::Network)
+        resp.text().await.map_err(FetchiumError::Network)
     }
 
     /// Single-shot POST — no retries, no rate limiting.
     ///
     /// Like `fetch_text_once` but sends a JSON POST body. Used for YouTube Innertube
     /// API calls where each call is time-sensitive and retries are not desired.
-    pub async fn post_json_once(&self, url: &str, body: String) -> HsxResult<String> {
+    pub async fn post_json_once(&self, url: &str, body: String) -> FetchiumResult<String> {
         let resp = self
             .inner
             .post(url)
@@ -633,10 +633,10 @@ impl HttpClient {
             .body(body)
             .send()
             .await
-            .map_err(HsxError::Network)?;
+            .map_err(FetchiumError::Network)?;
 
         if !resp.status().is_success() {
-            return Err(HsxError::Structured(crate::error::StructuredError {
+            return Err(FetchiumError::Structured(crate::error::StructuredError {
                 kind: Self::status_to_error_kind(resp.status()),
                 retryable: false,
                 message: format!("HTTP {} from {url}", resp.status()),
@@ -646,11 +646,11 @@ impl HttpClient {
             }));
         }
 
-        resp.text().await.map_err(HsxError::Network)
+        resp.text().await.map_err(FetchiumError::Network)
     }
 
     /// POST JSON with retry support (uses the standard retry/rate-limit pipeline).
-    pub async fn post_json(&self, url: &str, body: &str) -> HsxResult<String> {
+    pub async fn post_json(&self, url: &str, body: &str) -> FetchiumResult<String> {
         let resp = self
             .inner
             .post(url)
@@ -658,10 +658,10 @@ impl HttpClient {
             .body(body.to_string())
             .send()
             .await
-            .map_err(HsxError::Network)?;
+            .map_err(FetchiumError::Network)?;
 
         if !resp.status().is_success() {
-            return Err(HsxError::Structured(crate::error::StructuredError {
+            return Err(FetchiumError::Structured(crate::error::StructuredError {
                 kind: Self::status_to_error_kind(resp.status()),
                 retryable: resp.status().is_server_error(),
                 message: format!("HTTP {} from {url}", resp.status()),
@@ -671,7 +671,7 @@ impl HttpClient {
             }));
         }
 
-        resp.text().await.map_err(HsxError::Network)
+        resp.text().await.map_err(FetchiumError::Network)
     }
 
     /// POST JSON with a custom header (e.g., API key in non-standard header).
@@ -681,7 +681,7 @@ impl HttpClient {
         body: &str,
         header_name: &str,
         header_value: &str,
-    ) -> HsxResult<String> {
+    ) -> FetchiumResult<String> {
         let resp = self
             .inner
             .post(url)
@@ -690,10 +690,10 @@ impl HttpClient {
             .body(body.to_string())
             .send()
             .await
-            .map_err(HsxError::Network)?;
+            .map_err(FetchiumError::Network)?;
 
         if !resp.status().is_success() {
-            return Err(HsxError::Structured(crate::error::StructuredError {
+            return Err(FetchiumError::Structured(crate::error::StructuredError {
                 kind: Self::status_to_error_kind(resp.status()),
                 retryable: resp.status().is_server_error(),
                 message: format!("HTTP {} from {url}", resp.status()),
@@ -703,7 +703,7 @@ impl HttpClient {
             }));
         }
 
-        resp.text().await.map_err(HsxError::Network)
+        resp.text().await.map_err(FetchiumError::Network)
     }
 }
 
@@ -713,7 +713,7 @@ mod tests {
 
     #[test]
     fn client_creation() {
-        let config = HsxConfig::default();
+        let config = FetchiumConfig::default();
         let client = HttpClient::new(&config);
         assert!(client.is_ok());
     }

@@ -1,6 +1,6 @@
 //! Extract Agent — fetches URLs and runs CEP content extraction (PRD §8.8).
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use crate::extract::pipeline::extract;
 use crate::http::client::HttpClient;
 use crate::research::amrs::agent::Agent;
@@ -39,7 +39,7 @@ impl Agent for ExtractAgent {
         AgentType::Extract
     }
 
-    async fn run(&self, mut rx: AgentReceiver, tx: AgentSender) -> Result<(), HsxError> {
+    async fn run(&self, mut rx: AgentReceiver, tx: AgentSender) -> Result<(), FetchiumError> {
         while let Some(msg) = rx.recv().await {
             match msg {
                 AgentMessage::SpawnExtract { urls, query: _ } => {

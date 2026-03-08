@@ -1,6 +1,6 @@
 use crate::cache::MemoryCache;
-use crate::config::HsxConfig;
-use crate::error::HsxError;
+use crate::config::FetchiumConfig;
+use crate::error::FetchiumError;
 use crate::extract::pipeline::extract as cep_extract;
 use crate::http::client::HttpClient;
 use crate::rank::fusion::{detect_intent, QueryIntent};
@@ -359,10 +359,10 @@ pub struct SearchRequest<'a> {
 
 pub async fn search(
     request: SearchRequest<'_>,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     cache: Option<&MemoryCache>,
-) -> Result<Value, HsxError> {
+) -> Result<Value, FetchiumError> {
     let SearchRequest {
         query,
         max_sources,
@@ -562,7 +562,7 @@ pub async fn fetch(
     http: &HttpClient,
     cache: Option<&MemoryCache>,
     schema: Option<&Value>,
-) -> Result<Value, HsxError> {
+) -> Result<Value, FetchiumError> {
     // Check prefetch cache first
     if let Some(c) = cache {
         if let Some(cached) = c.get::<Value>(&format!("prefetch:{url}")).await {
@@ -584,7 +584,7 @@ pub async fn fetch(
 
     let html = http.fetch_text(url).await?;
     let html = if html.is_empty() {
-        return Err(HsxError::Internal("Empty response from URL".into()));
+        return Err(FetchiumError::Internal("Empty response from URL".into()));
     } else {
         html
     };
@@ -630,7 +630,7 @@ pub async fn expand(
     result_id: &str,
     tier: &str,
     cache: Option<&MemoryCache>,
-) -> Result<Value, HsxError> {
+) -> Result<Value, FetchiumError> {
     if let Some(c) = cache {
         if let Some(cached_data) = c.get::<Value>(&format!("expand:{result_id}")).await {
             let mut expanded_data = cached_data;
@@ -640,7 +640,7 @@ pub async fn expand(
             return Ok(expanded_data);
         }
     }
-    Err(HsxError::Internal(
+    Err(FetchiumError::Internal(
         "Cache miss or cache not configured for session".into(),
     ))
 }

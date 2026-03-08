@@ -1,6 +1,6 @@
 //! YouTube comment fetching, sentiment analysis, authenticity scoring, topic extraction.
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::client::HttpClient;
 use crate::youtube::types::*;
 use serde_json::Value;
@@ -13,9 +13,9 @@ use std::time::Duration;
 pub async fn fetch_comments(
     video_id: &str,
     http: &HttpClient,
-    config: &crate::config::HsxConfig,
+    config: &crate::config::FetchiumConfig,
     max_comments: usize,
-) -> HsxResult<Vec<VideoComment>> {
+) -> FetchiumResult<Vec<VideoComment>> {
     // Source 1: Invidious comments API
     for instance in &config.youtube.invidious_instances {
         let url = format!("{instance}/api/v1/comments/{video_id}");
@@ -56,18 +56,18 @@ pub async fn fetch_comments(
         }
     }
 
-    Err(HsxError::YouTube(format!(
+    Err(FetchiumError::YouTube(format!(
         "Could not fetch comments for video {video_id}"
     )))
 }
 
-fn parse_invidious_comments(body: &str, max: usize) -> HsxResult<Vec<VideoComment>> {
+fn parse_invidious_comments(body: &str, max: usize) -> FetchiumResult<Vec<VideoComment>> {
     let v: Value = serde_json::from_str(body)
-        .map_err(|e| HsxError::YouTube(format!("Comments parse: {e}")))?;
+        .map_err(|e| FetchiumError::YouTube(format!("Comments parse: {e}")))?;
 
     let comments = v["comments"]
         .as_array()
-        .ok_or_else(|| HsxError::YouTube("No comments array".into()))?;
+        .ok_or_else(|| FetchiumError::YouTube("No comments array".into()))?;
 
     Ok(comments
         .iter()
@@ -87,13 +87,13 @@ fn parse_invidious_comments(body: &str, max: usize) -> HsxResult<Vec<VideoCommen
         .collect())
 }
 
-fn parse_piped_comments(body: &str, max: usize) -> HsxResult<Vec<VideoComment>> {
+fn parse_piped_comments(body: &str, max: usize) -> FetchiumResult<Vec<VideoComment>> {
     let v: Value = serde_json::from_str(body)
-        .map_err(|e| HsxError::YouTube(format!("Piped comments parse: {e}")))?;
+        .map_err(|e| FetchiumError::YouTube(format!("Piped comments parse: {e}")))?;
 
     let comments = v["comments"]
         .as_array()
-        .ok_or_else(|| HsxError::YouTube("No comments array".into()))?;
+        .ok_or_else(|| FetchiumError::YouTube("No comments array".into()))?;
 
     Ok(comments
         .iter()

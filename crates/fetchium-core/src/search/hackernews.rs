@@ -3,7 +3,7 @@
 //! Searches HN stories using the Algolia API at `hn.algolia.com`. Great for
 //! tech content, programming discussions, and startup/product announcements.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::http::HttpClient;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
@@ -54,7 +54,7 @@ impl SearchBackend for HackerNewsBackend {
         BackendId::HackerNews
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         let hits_per_page = max_results.min(30);
         let url = format!(
             "{HN_API}?query={}&hitsPerPage={hits_per_page}&tags=story",

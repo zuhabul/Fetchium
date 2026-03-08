@@ -1,6 +1,6 @@
 //! Chart/table data extraction from HTML (PRD §34).
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use serde::{Deserialize, Serialize};
 
 /// Extracted tabular / chart data.
@@ -11,7 +11,7 @@ pub struct TableData {
 }
 
 /// Extract all `<table>` elements from an HTML string.
-pub fn extract_tables(html: &str) -> HsxResult<Vec<TableData>> {
+pub fn extract_tables(html: &str) -> FetchiumResult<Vec<TableData>> {
     let mut results = Vec::new();
 
     let fragment = scraper::Html::parse_fragment(html);

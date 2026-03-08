@@ -196,7 +196,7 @@ pub trait FetchiumPlugin: Send + Sync {
     fn name(&self) -> &str;
     fn version(&self) -> &str;
     fn plugin_type(&self) -> PluginType;
-    async fn execute(&self, ctx: PluginContext) -> HsxResult<PluginOutput>;
+    async fn execute(&self, ctx: PluginContext) -> FetchiumResult<PluginOutput>;
 }
 ```
 

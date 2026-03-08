@@ -92,7 +92,7 @@
   ```json
   { "type": "...", "title": "...", "status": 429, "detail": "..." }
   ```
-- [ ] Map `HsxError` variants → HTTP status codes
+- [ ] Map `FetchiumError` variants → HTTP status codes
 - [ ] Validation error responses with field-level detail
 - [ ] Never expose internal stack traces in production
 

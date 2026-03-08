@@ -184,7 +184,7 @@ mod tests {
 
     #[test]
     fn default_config_has_sane_values() {
-        let config = HsxConfig::default();
+        let config = FetchiumConfig::default();
         assert!(config.max_results > 0);
         assert!(config.timeout_secs > 0);
         assert!(config.max_concurrent_fetches > 0);
@@ -199,7 +199,7 @@ mod tests {
             timeout_secs = 30
             max_concurrent_fetches = 8
         "#).unwrap();
-        let config = HsxConfig::from_file(&config_path).unwrap();
+        let config = FetchiumConfig::from_file(&config_path).unwrap();
         assert_eq!(config.max_results, 20);
         assert_eq!(config.timeout_secs, 30);
     }
@@ -207,7 +207,7 @@ mod tests {
     #[test]
     fn config_env_override_takes_precedence() {
         std::env::set_var("FETCHIUM_MAX_RESULTS", "42");
-        let config = HsxConfig::from_env().unwrap();
+        let config = FetchiumConfig::from_env().unwrap();
         assert_eq!(config.max_results, 42);
         std::env::remove_var("FETCHIUM_MAX_RESULTS");
     }
@@ -217,7 +217,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let config_path = dir.path().join("config.toml");
         std::fs::write(&config_path, "timeout_secs = 0").unwrap();
-        assert!(HsxConfig::from_file(&config_path).is_err());
+        assert!(FetchiumConfig::from_file(&config_path).is_err());
     }
 }
 ```
@@ -231,7 +231,7 @@ mod tests {
 
     #[test]
     fn error_is_retryable_for_network_timeout() {
-        let err = HsxError::NetworkTimeout {
+        let err = FetchiumError::NetworkTimeout {
             url: "https://example.com".into(),
             timeout_ms: 5000,
         };
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn error_is_not_retryable_for_paywall() {
-        let err = HsxError::Paywall {
+        let err = FetchiumError::Paywall {
             url: "https://wsj.com/article".into(),
         };
         assert!(!err.is_retryable());
@@ -1148,11 +1148,11 @@ fuzz_target!(|data: &[u8]| {
 ```rust
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use hsx_core::config::HsxConfig;
+use hsx_core::config::FetchiumConfig;
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(toml_str) = std::str::from_utf8(data) {
-        let _ = toml::from_str::<HsxConfig>(toml_str);
+        let _ = toml::from_str::<FetchiumConfig>(toml_str);
     }
 });
 ```
@@ -1309,7 +1309,7 @@ crates/fetchium-api/src/lib.rs                        -- Add #![deny(missing_doc
 /// let segments = extract_content(html, "https://example.com", &ExtractorConfig::default()).unwrap();
 /// assert!(!segments.is_empty());
 /// ```
-pub fn extract_content(html: &str, url: &str, config: &ExtractorConfig) -> Result<Vec<ContentSegment>, HsxError> {
+pub fn extract_content(html: &str, url: &str, config: &ExtractorConfig) -> Result<Vec<ContentSegment>, FetchiumError> {
     // ...
 }
 ```
@@ -1621,20 +1621,20 @@ mod tests {
 //! TLS enforcement: require HTTPS, allow HTTP only for localhost.
 
 use url::Url;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 /// Reject plain HTTP for remote hosts. Allow for localhost.
-pub fn enforce_tls(url: &str) -> Result<(), HsxError> {
+pub fn enforce_tls(url: &str) -> Result<(), FetchiumError> {
     let parsed = Url::parse(url)
-        .map_err(|e| HsxError::InvalidUrl(format!("{url}: {e}")))?;
+        .map_err(|e| FetchiumError::InvalidUrl(format!("{url}: {e}")))?;
     match parsed.scheme() {
         "https" => Ok(()),
         "http" if is_localhost(&parsed) => Ok(()),
-        "http" => Err(HsxError::InsecureConnection {
+        "http" => Err(FetchiumError::InsecureConnection {
             url: url.to_string(),
             suggestion: format!("Use https://{} instead", parsed.host_str().unwrap_or("unknown")),
         }),
-        scheme => Err(HsxError::InvalidUrl(format!("Unsupported scheme: {scheme}"))),
+        scheme => Err(FetchiumError::InvalidUrl(format!("Unsupported scheme: {scheme}"))),
     }
 }
 
@@ -1812,7 +1812,7 @@ let parsed = Url::parse(&url).unwrap();
 
 // AFTER (safe):
 let parsed = Url::parse(&url)
-    .map_err(|e| HsxError::InvalidUrl(format!("{url}: {e}")))?;
+    .map_err(|e| FetchiumError::InvalidUrl(format!("{url}: {e}")))?;
 ```
 
 **Step 2: Timeout wrapper for all async operations**
@@ -1822,12 +1822,12 @@ use tokio::time::{timeout, Duration};
 
 /// Wrap any async operation with a timeout.
 /// PRD SS44: "Never hang -- every operation has a timeout."
-pub async fn with_timeout<F, T>(duration: Duration, op_name: &str, future: F) -> Result<T, HsxError>
-where F: std::future::Future<Output = Result<T, HsxError>>
+pub async fn with_timeout<F, T>(duration: Duration, op_name: &str, future: F) -> Result<T, FetchiumError>
+where F: std::future::Future<Output = Result<T, FetchiumError>>
 {
     match timeout(duration, future).await {
         Ok(result) => result,
-        Err(_) => Err(HsxError::OperationTimeout {
+        Err(_) => Err(FetchiumError::OperationTimeout {
             operation: op_name.to_string(),
             timeout_ms: duration.as_millis() as u64,
             suggestion: format!("{op_name} timed out after {}ms. Try --timeout to increase.", duration.as_millis()),
@@ -1839,21 +1839,21 @@ where F: std::future::Future<Output = Result<T, HsxError>>
 **Step 3: Verify every error has structured fields**
 
 ```rust
-impl HsxError {
+impl FetchiumError {
     pub fn is_retryable(&self) -> bool {
         matches!(self,
-            HsxError::NetworkTimeout { .. } |
-            HsxError::Http5xx { .. } |
-            HsxError::DnsFailure { .. }
+            FetchiumError::NetworkTimeout { .. } |
+            FetchiumError::Http5xx { .. } |
+            FetchiumError::DnsFailure { .. }
         )
     }
 
     pub fn suggested_action(&self) -> &str {
         match self {
-            HsxError::NetworkTimeout { .. } => "Retry with longer timeout or check network",
-            HsxError::AntiBot { .. } => "Try a different backend or wait before retrying",
-            HsxError::Paywall { .. } => "Content is paywalled. Try a free alternative source",
-            HsxError::AiUnavailable { .. } => "Start Ollama with: ollama serve",
+            FetchiumError::NetworkTimeout { .. } => "Retry with longer timeout or check network",
+            FetchiumError::AntiBot { .. } => "Try a different backend or wait before retrying",
+            FetchiumError::Paywall { .. } => "Content is paywalled. Try a free alternative source",
+            FetchiumError::AiUnavailable { .. } => "Start Ollama with: ollama serve",
             _ => "Check error details and try again",
         }
     }

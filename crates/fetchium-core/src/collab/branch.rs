@@ -1,6 +1,6 @@
 //! Research session branching (PRD §37).
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -23,7 +23,7 @@ impl SessionMeta {
         }
     }
 
-    pub fn save(&self, sessions_dir: &std::path::Path) -> Result<(), HsxError> {
+    pub fn save(&self, sessions_dir: &std::path::Path) -> Result<(), FetchiumError> {
         let dir = sessions_dir.join(&self.id);
         std::fs::create_dir_all(&dir)?;
         let content = serde_json::to_string_pretty(self)?;
@@ -31,7 +31,7 @@ impl SessionMeta {
         Ok(())
     }
 
-    pub fn load(sessions_dir: &std::path::Path, id: &str) -> Result<Self, HsxError> {
+    pub fn load(sessions_dir: &std::path::Path, id: &str) -> Result<Self, FetchiumError> {
         let content = std::fs::read_to_string(sessions_dir.join(id).join("session.json"))?;
         Ok(serde_json::from_str(&content)?)
     }
@@ -44,10 +44,10 @@ pub fn fork_session(
     sessions_dir: &std::path::Path,
     session_id: &str,
     new_name: &str,
-) -> Result<SessionMeta, HsxError> {
+) -> Result<SessionMeta, FetchiumError> {
     let source = sessions_dir.join(session_id);
     if !source.exists() {
-        return Err(HsxError::Config(format!(
+        return Err(FetchiumError::Config(format!(
             "Session '{session_id}' not found"
         )));
     }
@@ -68,7 +68,7 @@ pub fn fork_session(
     Ok(meta)
 }
 
-fn copy_dir(src: &std::path::Path, dst: &std::path::Path) -> Result<(), HsxError> {
+fn copy_dir(src: &std::path::Path, dst: &std::path::Path) -> Result<(), FetchiumError> {
     std::fs::create_dir_all(dst)?;
     for entry in std::fs::read_dir(src)? {
         let entry = entry?;

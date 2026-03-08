@@ -264,7 +264,7 @@ pub async fn build_comparison_ai_unified(
     query: &ComparisonQuery,
     snippet_text: &str,
     sources: &[String],
-    fetchium_config: &crate::config::HsxConfig,
+    fetchium_config: &crate::config::FetchiumConfig,
 ) -> ComparisonResult {
     use crate::ai::types::{AiConfig, ChatMessage};
 
@@ -431,7 +431,7 @@ fn parse_unified_response(response: &str, item: &str, dimension: &str) -> String
 pub async fn build_comparison_ai(
     query: &ComparisonQuery,
     item_data: &[(String, String, Vec<String>)],
-    fetchium_config: &crate::config::HsxConfig,
+    fetchium_config: &crate::config::FetchiumConfig,
 ) -> ComparisonResult {
     use crate::ai::types::{AiConfig, ChatMessage};
 

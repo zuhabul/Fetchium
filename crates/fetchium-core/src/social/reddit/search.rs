@@ -3,7 +3,7 @@
 //! No authentication required for public subreddits.
 //! Appending `.json` to any Reddit URL returns JSON data.
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::client::HttpClient;
 use crate::social::reddit::types::*;
 use serde_json::Value;
@@ -21,7 +21,7 @@ pub async fn search_posts(
     query: &str,
     config: &RedditPipelineConfig,
     http: &HttpClient,
-) -> HsxResult<Vec<RedditPost>> {
+) -> FetchiumResult<Vec<RedditPost>> {
     // ── Tier 1: PullPush API (no auth, bypasses Cloudflare) ────────────
     if let Ok(posts) = search_via_pullpush(query, config, http).await {
         if !posts.is_empty() {
@@ -75,7 +75,7 @@ async fn search_via_pullpush(
     query: &str,
     config: &RedditPipelineConfig,
     http: &HttpClient,
-) -> HsxResult<Vec<RedditPost>> {
+) -> FetchiumResult<Vec<RedditPost>> {
     let encoded: String = url::form_urlencoded::byte_serialize(query.as_bytes()).collect();
 
     let url = if config.subreddits.is_empty() {
@@ -143,7 +143,7 @@ async fn search_via_pullpush(
 /// Search Reddit via DuckDuckGo `site:reddit.com <query>`.
 ///
 /// Returns post stubs from DDG snippets — useful when Reddit API is inaccessible.
-async fn search_via_ddg(query: &str, max: usize, http: &HttpClient) -> HsxResult<Vec<RedditPost>> {
+async fn search_via_ddg(query: &str, max: usize, http: &HttpClient) -> FetchiumResult<Vec<RedditPost>> {
     let ddg_query = format!("site:reddit.com {query}");
     let form: &[(&str, &str)] = &[("q", &ddg_query), ("b", ""), ("kl", "en-us")];
 
@@ -312,7 +312,7 @@ pub async fn fetch_subreddit_posts(
     limit: usize,
     http: &HttpClient,
     timeout_secs: u64,
-) -> HsxResult<Vec<RedditPost>> {
+) -> FetchiumResult<Vec<RedditPost>> {
     let url = format!("https://www.reddit.com/r/{subreddit}/{category}.json?limit={limit}",);
     let resp = tokio::time::timeout(Duration::from_secs(timeout_secs), async {
         http.client()
@@ -323,12 +323,12 @@ pub async fn fetch_subreddit_posts(
             .await
     })
     .await
-    .map_err(|_| HsxError::Internal("Request timeout".into()))?
-    .map_err(|e| HsxError::Search(e.to_string()))?;
+    .map_err(|_| FetchiumError::Internal("Request timeout".into()))?
+    .map_err(|e| FetchiumError::Search(e.to_string()))?;
     let body = resp
         .text()
         .await
-        .map_err(|e| HsxError::Search(e.to_string()))?;
+        .map_err(|e| FetchiumError::Search(e.to_string()))?;
     parse_reddit_listing(&body)
 }
 
@@ -365,12 +365,12 @@ pub async fn fetch_comments(
     max: usize,
     http: &HttpClient,
     timeout_secs: u64,
-) -> HsxResult<Vec<RedditComment>> {
+) -> FetchiumResult<Vec<RedditComment>> {
     let url = format!("https://www.reddit.com{permalink}.json?limit={max}");
     let body = tokio::time::timeout(Duration::from_secs(timeout_secs), http.fetch_text(&url))
         .await
-        .map_err(|_| HsxError::Internal("Request timeout".into()))?
-        .map_err(|e| HsxError::Search(e.to_string()))?;
+        .map_err(|_| FetchiumError::Internal("Request timeout".into()))?
+        .map_err(|e| FetchiumError::Search(e.to_string()))?;
 
     parse_comments(&body)
 }
@@ -384,7 +384,7 @@ pub async fn search_historical(
     after_utc: Option<u64>,
     http: &HttpClient,
     timeout_secs: u64,
-) -> HsxResult<Vec<RedditPost>> {
+) -> FetchiumResult<Vec<RedditPost>> {
     let encoded: String = url::form_urlencoded::byte_serialize(query.as_bytes()).collect();
     let after_param = after_utc.map(|t| format!("&after={t}")).unwrap_or_default();
     let url = format!(
@@ -399,7 +399,7 @@ pub async fn search_historical(
     };
 
     let v: Value = serde_json::from_str(&body)
-        .map_err(|e| HsxError::Internal(format!("PullPush JSON: {e}")))?;
+        .map_err(|e| FetchiumError::Internal(format!("PullPush JSON: {e}")))?;
 
     let children = match v["data"].as_array() {
         Some(a) => a,
@@ -417,7 +417,7 @@ pub async fn fetch_subreddit_info(
     subreddit: &str,
     http: &HttpClient,
     timeout_secs: u64,
-) -> HsxResult<SubredditStats> {
+) -> FetchiumResult<SubredditStats> {
     let url = format!("https://www.reddit.com/r/{subreddit}/about.json");
     let resp = tokio::time::timeout(Duration::from_secs(timeout_secs), async {
         http.client()
@@ -428,15 +428,15 @@ pub async fn fetch_subreddit_info(
             .await
     })
     .await
-    .map_err(|_| HsxError::Internal("Request timeout".into()))?
-    .map_err(|e| HsxError::Search(e.to_string()))?;
+    .map_err(|_| FetchiumError::Internal("Request timeout".into()))?
+    .map_err(|e| FetchiumError::Search(e.to_string()))?;
     let body = resp
         .text()
         .await
-        .map_err(|e| HsxError::Search(e.to_string()))?;
+        .map_err(|e| FetchiumError::Search(e.to_string()))?;
 
     let v: Value = serde_json::from_str(&body)
-        .map_err(|e| HsxError::Internal(format!("Reddit about JSON: {e}")))?;
+        .map_err(|e| FetchiumError::Internal(format!("Reddit about JSON: {e}")))?;
     let data = &v["data"];
 
     Ok(SubredditStats {
@@ -457,13 +457,13 @@ pub async fn fetch_subreddit_info(
 
 // ─── Parsers ─────────────────────────────────────────────────────
 
-fn parse_reddit_listing(body: &str) -> HsxResult<Vec<RedditPost>> {
+fn parse_reddit_listing(body: &str) -> FetchiumResult<Vec<RedditPost>> {
     let v: Value =
-        serde_json::from_str(body).map_err(|e| HsxError::Internal(format!("Reddit JSON: {e}")))?;
+        serde_json::from_str(body).map_err(|e| FetchiumError::Internal(format!("Reddit JSON: {e}")))?;
 
     let children = v["data"]["children"]
         .as_array()
-        .ok_or_else(|| HsxError::Internal("No children in Reddit listing".into()))?;
+        .ok_or_else(|| FetchiumError::Internal("No children in Reddit listing".into()))?;
 
     Ok(children
         .iter()
@@ -505,9 +505,9 @@ fn parse_post(d: &Value) -> Option<RedditPost> {
     })
 }
 
-fn parse_comments(body: &str) -> HsxResult<Vec<RedditComment>> {
+fn parse_comments(body: &str) -> FetchiumResult<Vec<RedditComment>> {
     let v: Value = serde_json::from_str(body)
-        .map_err(|e| HsxError::Internal(format!("Reddit comments JSON: {e}")))?;
+        .map_err(|e| FetchiumError::Internal(format!("Reddit comments JSON: {e}")))?;
 
     // Reddit returns [post_data, comments_data]
     let comments_listing = &v[1]["data"]["children"];

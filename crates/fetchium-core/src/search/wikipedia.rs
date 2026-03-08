@@ -3,7 +3,7 @@
 //! Uses the `action=query&list=search` endpoint which returns JSON.
 //! High authority signal for factual queries (PRD §15 — authority scoring).
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::http::HttpClient;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
@@ -54,7 +54,7 @@ impl SearchBackend for WikipediaBackend {
         BackendId::Wikipedia
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         let limit = max_results.min(20);
         let url = format!(
             "{WIKI_API}?action=query&list=search&srsearch={}&srlimit={limit}\

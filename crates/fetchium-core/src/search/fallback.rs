@@ -9,7 +9,7 @@
 //! - Per-backend timeout prevents slow backends from blocking the chain.
 //! - The best partial result set is returned if all backends fail to meet thresholds.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
 use std::collections::HashMap;
@@ -76,7 +76,7 @@ impl FallbackChain {
     /// - Results from the first backend that meets `min_results`, **or**
     /// - The largest partial result set collected across all backends if none meet the threshold.
     /// - An empty `Vec` if all backends fail entirely.
-    pub async fn execute(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    pub async fn execute(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         let mut best_results: Vec<ResultItem> = Vec::new();
 
         for entry in &self.entries {
@@ -225,7 +225,7 @@ mod tests {
             self.id.clone()
         }
 
-        async fn search(&self, _query: &str, _max: u32) -> HsxResult<Vec<ResultItem>> {
+        async fn search(&self, _query: &str, _max: u32) -> FetchiumResult<Vec<ResultItem>> {
             self.call_count.fetch_add(1, Ordering::SeqCst);
             Ok(self.results.clone())
         }
@@ -254,9 +254,9 @@ mod tests {
             self.id.clone()
         }
 
-        async fn search(&self, _query: &str, _max: u32) -> HsxResult<Vec<ResultItem>> {
+        async fn search(&self, _query: &str, _max: u32) -> FetchiumResult<Vec<ResultItem>> {
             self.call_count.fetch_add(1, Ordering::SeqCst);
-            Err(crate::error::HsxError::Search("mock error".to_string()))
+            Err(crate::error::FetchiumError::Search("mock error".to_string()))
         }
     }
 

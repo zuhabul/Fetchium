@@ -1,6 +1,6 @@
 //! TLS enforcement: require HTTPS, allow HTTP only for localhost (PRD §41).
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use url::Url;
 
 /// Reject plain HTTP for remote hosts; allow localhost for development.
@@ -14,19 +14,19 @@ use url::Url;
 /// assert!(enforce_tls("http://localhost:11434").is_ok());
 /// assert!(enforce_tls("http://example.com").is_err());
 /// ```
-pub fn enforce_tls(url: &str) -> Result<(), HsxError> {
-    let parsed = Url::parse(url).map_err(|e| HsxError::InvalidUrl(format!("{url}: {e}")))?;
+pub fn enforce_tls(url: &str) -> Result<(), FetchiumError> {
+    let parsed = Url::parse(url).map_err(|e| FetchiumError::InvalidUrl(format!("{url}: {e}")))?;
     match parsed.scheme() {
         "https" => Ok(()),
         "http" if is_localhost(&parsed) => Ok(()),
-        "http" => Err(HsxError::InsecureConnection {
+        "http" => Err(FetchiumError::InsecureConnection {
             url: url.to_string(),
             suggestion: format!(
                 "Use https://{} instead",
                 parsed.host_str().unwrap_or("unknown")
             ),
         }),
-        scheme => Err(HsxError::InvalidUrl(format!(
+        scheme => Err(FetchiumError::InvalidUrl(format!(
             "Unsupported URL scheme: '{scheme}'"
         ))),
     }
@@ -60,7 +60,7 @@ mod tests {
     fn http_remote_is_rejected() {
         let err = enforce_tls("http://example.com").unwrap_err();
         match err {
-            HsxError::InsecureConnection { url, .. } => {
+            FetchiumError::InsecureConnection { url, .. } => {
                 assert!(url.contains("example.com"));
             }
             other => panic!("Expected InsecureConnection, got {other:?}"),

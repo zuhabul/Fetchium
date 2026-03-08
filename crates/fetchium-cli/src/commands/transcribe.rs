@@ -3,12 +3,12 @@
 use crate::cli::TranscribeArgs;
 use anyhow::Result;
 use colored::Colorize;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use std::time::Instant;
 
 /// Run the `fetchium transcribe` subcommand.
-pub async fn run(args: TranscribeArgs, config: &HsxConfig) -> Result<()> {
+pub async fn run(args: TranscribeArgs, config: &FetchiumConfig) -> Result<()> {
     let start = Instant::now();
     let http = HttpClient::new(config)?;
 

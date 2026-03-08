@@ -3,8 +3,8 @@
 use crate::citation::evidence_graph::EvidenceGraphBuilder;
 use crate::citation::formatter::CitationFormatter;
 use crate::citation::types::SourceMeta;
-use crate::config::HsxConfig;
-use crate::error::HsxError;
+use crate::config::FetchiumConfig;
+use crate::error::FetchiumError;
 use crate::extract::pipeline::extract;
 use crate::http::client::HttpClient;
 use crate::research::decompose::decompose_query;
@@ -186,7 +186,7 @@ impl ResearchPipeline {
         sources: &[SourceMeta],
         citations: &[crate::citation::types::FormattedCitation],
         extracted_texts: &[String],
-        fetchium_config: &HsxConfig,
+        fetchium_config: &FetchiumConfig,
         thinking: bool,
     ) -> String {
         use crate::ai::types::{AiConfig, ChatMessage};
@@ -292,9 +292,9 @@ impl ResearchPipeline {
     /// This implementation wires the complete pipeline end-to-end.
     pub async fn execute(
         config: &ResearchConfig,
-        fetchium_config: &HsxConfig,
+        fetchium_config: &FetchiumConfig,
         http_client: &HttpClient,
-    ) -> Result<ResearchReport, HsxError> {
+    ) -> Result<ResearchReport, FetchiumError> {
         let start = Instant::now();
 
         // ── FAST PATH ──────────────────────────────────────────────────────
@@ -455,7 +455,7 @@ impl ResearchPipeline {
             let metas_owned = snippet_metas.clone();
             let citations_owned = snippet_citations.clone();
             let texts_owned = snippet_texts.clone();
-            let hsx_owned = fetchium_config.clone();
+            let fetchium_owned = fetchium_config.clone();
             let thinking = config.thinking;
             Some(tokio::spawn(async move {
                 Self::synthesize_with_ai(
@@ -463,7 +463,7 @@ impl ResearchPipeline {
                     &metas_owned,
                     &citations_owned,
                     &texts_owned,
-                    &hsx_owned,
+                    &fetchium_owned,
                     thinking,
                 )
                 .await
@@ -794,10 +794,10 @@ impl ResearchPipeline {
     /// Used when `ai_synthesis = false` (via `--no-ai` flag).
     async fn execute_fast(
         config: &ResearchConfig,
-        fetchium_config: &HsxConfig,
+        fetchium_config: &FetchiumConfig,
         http_client: &HttpClient,
         start: Instant,
-    ) -> Result<ResearchReport, HsxError> {
+    ) -> Result<ResearchReport, FetchiumError> {
         let sub_queries = decompose_query(&config.query);
 
         // Search with tight timeout for speed, larger budget for diversity
@@ -1040,7 +1040,7 @@ mod tests {
             thinking: false,
             ..Default::default()
         };
-        let fetchium_config = crate::config::HsxConfig::default();
+        let fetchium_config = crate::config::FetchiumConfig::default();
         let http = crate::http::client::HttpClient::new(&fetchium_config).unwrap();
         let report = ResearchPipeline::execute(&config, &fetchium_config, &http)
             .await
@@ -1058,7 +1058,7 @@ mod tests {
             thinking: false,
             ..Default::default()
         };
-        let fetchium_config = crate::config::HsxConfig::default();
+        let fetchium_config = crate::config::FetchiumConfig::default();
         let http = crate::http::client::HttpClient::new(&fetchium_config).unwrap();
         let report = ResearchPipeline::execute(&config, &fetchium_config, &http)
             .await

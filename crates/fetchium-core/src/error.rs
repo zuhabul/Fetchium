@@ -56,7 +56,7 @@ impl std::error::Error for StructuredError {}
 
 /// Main error type for fetchium-core.
 #[derive(Debug, thiserror::Error)]
-pub enum HsxError {
+pub enum FetchiumError {
     #[error("Network error: {0}")]
     Network(#[from] reqwest::Error),
 
@@ -126,7 +126,7 @@ pub enum HsxError {
 }
 
 /// Convenience alias.
-pub type HsxResult<T> = Result<T, HsxError>;
+pub type FetchiumResult<T> = Result<T, FetchiumError>;
 
 /// Wrap any async operation with a timeout (PRD SS44: "Never hang").
 ///
@@ -134,7 +134,7 @@ pub type HsxResult<T> = Result<T, HsxError>;
 /// ```rust,no_run
 /// use fetchium_core::error::with_timeout;
 /// use tokio::time::Duration;
-/// # async fn example() -> fetchium_core::error::HsxResult<()> {
+/// # async fn example() -> fetchium_core::error::FetchiumResult<()> {
 /// let result = with_timeout(Duration::from_secs(10), "fetch", async {
 ///     Ok(())
 /// }).await;
@@ -145,13 +145,13 @@ pub async fn with_timeout<F, T>(
     duration: tokio::time::Duration,
     op_name: &str,
     future: F,
-) -> HsxResult<T>
+) -> FetchiumResult<T>
 where
-    F: std::future::Future<Output = HsxResult<T>>,
+    F: std::future::Future<Output = FetchiumResult<T>>,
 {
     match tokio::time::timeout(duration, future).await {
         Ok(result) => result,
-        Err(_) => Err(HsxError::OperationTimeout {
+        Err(_) => Err(FetchiumError::OperationTimeout {
             operation: op_name.to_string(),
             timeout_ms: duration.as_millis() as u64,
             suggestion: format!(
@@ -162,7 +162,7 @@ where
     }
 }
 
-impl HsxError {
+impl FetchiumError {
     /// Whether this error is retryable.
     pub fn is_retryable(&self) -> bool {
         match self {
@@ -243,7 +243,7 @@ mod tests {
 
     #[test]
     fn budget_exceeded_structured() {
-        let err = HsxError::BudgetExceeded {
+        let err = FetchiumError::BudgetExceeded {
             used: 5000,
             budget: 4000,
         };

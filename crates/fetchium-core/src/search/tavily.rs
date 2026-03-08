@@ -3,7 +3,7 @@
 //! Returns relevance-scored results with content extraction in one call.
 //! API key required: set `TAVILY_API_KEY` env var or `search.tavily_api_key` in config.
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::HttpClient;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
@@ -59,7 +59,7 @@ impl TavilyBackend {
         query: &str,
         max_results: u32,
         days: Option<u32>,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let request = TavilyRequest {
             api_key: &self.api_key,
             query,
@@ -71,7 +71,7 @@ impl TavilyBackend {
         };
 
         let body = serde_json::to_string(&request)
-            .map_err(|e| HsxError::Search(format!("Tavily serialization: {e}")))?;
+            .map_err(|e| FetchiumError::Search(format!("Tavily serialization: {e}")))?;
 
         let response = self
             .http
@@ -79,7 +79,7 @@ impl TavilyBackend {
             .await?;
 
         let parsed: TavilyResponse = serde_json::from_str(&response)
-            .map_err(|e| HsxError::Search(format!("Tavily parse: {e}")))?;
+            .map_err(|e| FetchiumError::Search(format!("Tavily parse: {e}")))?;
 
         debug!(
             "Tavily: {} results in {:.2}s [days={:?}]",
@@ -123,7 +123,7 @@ impl SearchBackend for TavilyBackend {
         BackendId::Tavily
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         self.search_inner(query, max_results, None).await
     }
 
@@ -132,7 +132,7 @@ impl SearchBackend for TavilyBackend {
         query: &str,
         max_results: u32,
         ctx: &SearchContext,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let days = Self::time_range_to_days(ctx.time_range);
         self.search_inner(query, max_results, days).await
     }

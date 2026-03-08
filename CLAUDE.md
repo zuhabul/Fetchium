@@ -57,7 +57,7 @@ Fetchium is a Cargo workspace with 4 crates:
 | `fetchium-mcp` | MCP server (Phase 4) — exposes fetchium-core as Model Context Protocol tools |
 | `fetchium-api` | REST API server via axum (Phase 4) |
 
-**Data flow:** `CLI command → HsxConfig → fetchium-core pipeline → formatted output`
+**Data flow:** `CLI command → FetchiumConfig → fetchium-core pipeline → formatted output`
 
 The CLI (`fetchium-cli/src/main.rs`) parses args, loads config, then dispatches to one file per command in `crates/fetchium-cli/src/commands/`. Each command calls into `fetchium-core` modules.
 
@@ -66,10 +66,10 @@ The CLI (`fetchium-cli/src/main.rs`) parses args, loads config, then dispatches 
 Most modules are currently stubs awaiting Phase 1+ implementation. Implemented:
 
 - `types.rs` — All shared data types (PRD §43): `AgentSearchResult`, `SearchResult`, `ResultItem`, `Segment`, `Finding`, `Source`, `EvidenceGraph`, `CepLayer`, `PdsTier`, `ResourceTier`, `BackendId`, etc.
-- `error.rs` — `HsxError`, `StructuredError`, `ErrorKind` (19 variants), `HsxResult<T>`
-- `config.rs` — `HsxConfig` loaded from `~/.fetchium/config.toml` with env var overrides; includes `detect_resource_tier()` and `data_dir()`
+- `error.rs` — `FetchiumError`, `StructuredError`, `ErrorKind` (19 variants), `FetchiumResult<T>`
+- `config.rs` — `FetchiumConfig` loaded from `~/.fetchium/config.toml` with env var overrides; includes `detect_resource_tier()` and `data_dir()`
 - `http/client.rs` — `HttpClient` stub (reqwest with pooling/retries)
-- `resource/mod.rs` — `detect_tier()` delegating to `HsxConfig::detect_resource_tier()`
+- `resource/mod.rs` — `detect_tier()` delegating to `FetchiumConfig::detect_resource_tier()`
 
 Planned modules follow this pipeline order:
 ```

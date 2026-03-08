@@ -36,8 +36,8 @@ Before implementing, note what is **already scaffolded** in the repository:
 | `crates/fetchium-api/Cargo.toml` | **DONE** | Stub package |
 | `crates/fetchium-core/src/lib.rs` | **DONE** | All modules declared, prelude re-exports |
 | `crates/fetchium-core/src/types.rs` | **DONE** | Full types: `AgentSearchResult`, `SearchMeta`, `Segment`, `SegmentType`, `Finding`, `EvidenceLink`, `Contradiction`, `Source`, `FetchMethod`, `Citation`, `CitationStyle`, `EvidenceGraph`, `AuditEntry`, `SearchMode`, `PdsTier`, `ResourceTier`, `BackendId`, `OutputFormat`, `CepLayer` -- all with serde, tests |
-| `crates/fetchium-core/src/error.rs` | **DONE** | `ErrorKind` (19 variants), `StructuredError`, `HsxError` (thiserror), `HsxResult`, `is_retryable()`, `to_structured()`, tests |
-| `crates/fetchium-core/src/config.rs` | **DONE** | `HsxConfig` with `GeneralConfig`, `SearchConfig`, `FetchConfig`, `CacheConfig`, `AiConfig`, `OutputConfig`, all defaults, `load()`, `load_from()`, `data_dir()`, `detect_resource_tier()`, tests |
+| `crates/fetchium-core/src/error.rs` | **DONE** | `ErrorKind` (19 variants), `StructuredError`, `FetchiumError` (thiserror), `FetchiumResult`, `is_retryable()`, `to_structured()`, tests |
+| `crates/fetchium-core/src/config.rs` | **DONE** | `FetchiumConfig` with `GeneralConfig`, `SearchConfig`, `FetchConfig`, `CacheConfig`, `AiConfig`, `OutputConfig`, all defaults, `load()`, `load_from()`, `data_dir()`, `detect_resource_tier()`, tests |
 | `crates/fetchium-core/src/http/client.rs` | **DONE** | `HttpClient` with pooled reqwest, `fetch_text()`, test |
 | `crates/fetchium-core/src/search/mod.rs` | **DONE** | `SearchBackend` trait |
 | `crates/fetchium-core/src/extract/mod.rs` | **DONE** | `ExtractedContent`, `ContentMetadata` structs |
@@ -302,7 +302,7 @@ The file `crates/fetchium-core/src/config.rs` is **fully implemented** with:
 
 | Component | Status |
 |-----------|--------|
-| `HsxConfig` (top-level) | DONE |
+| `FetchiumConfig` (top-level) | DONE |
 | `GeneralConfig` (max_results, format, verbose, data_dir) | DONE |
 | `SearchConfig` (backends, budget, tier, concurrency, timeout, searxng_url) | DONE |
 | `FetchConfig` (user_agent, robots, page size, timeout, redirects) | DONE |
@@ -326,7 +326,7 @@ The following additions make the config system more robust. These are recommende
 The PRD SS11 specifies a layered config: defaults -> file -> **env vars** -> CLI args. Currently env var support is missing. Add it to `crates/fetchium-core/src/config.rs`:
 
 ```rust
-impl HsxConfig {
+impl FetchiumConfig {
     /// Apply environment variable overrides.
     /// Convention: `FETCHIUM_SECTION_KEY` (uppercase, underscore-separated).
     /// Examples: FETCHIUM_SEARCH_DEFAULT_BUDGET=8000, FETCHIUM_CACHE_ENABLED=false
@@ -420,7 +420,7 @@ pub fn load_from(path: Option<&std::path::Path>) -> Self {
 **Step 3: Add `ensure_data_dir()` method**
 
 ```rust
-impl HsxConfig {
+impl FetchiumConfig {
     /// Ensure the data directory exists, creating it if necessary.
     pub fn ensure_data_dir(&self) -> std::io::Result<PathBuf> {
         let dir = self.data_dir();
@@ -457,7 +457,7 @@ impl HsxConfig {
 #[test]
 fn env_override_budget() {
     std::env::set_var("FETCHIUM_SEARCH_DEFAULT_BUDGET", "8000");
-    let mut config = HsxConfig::default();
+    let mut config = FetchiumConfig::default();
     config.apply_env_overrides();
     assert_eq!(config.search.default_budget, 8000);
     std::env::remove_var("FETCHIUM_SEARCH_DEFAULT_BUDGET");
@@ -466,7 +466,7 @@ fn env_override_budget() {
 #[test]
 fn env_override_cache_disabled() {
     std::env::set_var("FETCHIUM_CACHE_ENABLED", "false");
-    let mut config = HsxConfig::default();
+    let mut config = FetchiumConfig::default();
     config.apply_env_overrides();
     assert!(!config.cache.enabled);
     std::env::remove_var("FETCHIUM_CACHE_ENABLED");
@@ -477,7 +477,7 @@ fn save_and_reload() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = dir.path().join("config.toml");
 
-    let mut config = HsxConfig::default();
+    let mut config = FetchiumConfig::default();
     config.search.default_budget = 9999;
 
     // Save
@@ -485,13 +485,13 @@ fn save_and_reload() {
     std::fs::write(&config_path, &toml_str).unwrap();
 
     // Reload
-    let loaded = HsxConfig::load_from(Some(&config_path));
+    let loaded = FetchiumConfig::load_from(Some(&config_path));
     assert_eq!(loaded.search.default_budget, 9999);
 }
 
 #[test]
 fn config_file_path_contains_fetchium() {
-    let path = HsxConfig::config_file_path();
+    let path = FetchiumConfig::config_file_path();
     assert!(path.to_string_lossy().contains(".fetchium"));
     assert!(path.to_string_lossy().ends_with("config.toml"));
 }
@@ -1445,8 +1445,8 @@ async fn main() -> anyhow::Result<()> {
 
     // Load config (file -> env -> CLI overrides)
     let mut config = match &cli.config {
-        Some(path) => hsx_core::config::HsxConfig::load_from(Some(std::path::Path::new(path))),
-        None => hsx_core::config::HsxConfig::load(),
+        Some(path) => hsx_core::config::FetchiumConfig::load_from(Some(std::path::Path::new(path))),
+        None => hsx_core::config::FetchiumConfig::load(),
     };
 
     // CLI flag overrides
@@ -1595,7 +1595,7 @@ The file `crates/fetchium-cli/src/commands/doctor.rs` is **implemented** with:
 | Check | Status |
 |-------|--------|
 | Rust toolchain | DONE (always true since binary is compiled) |
-| Resource tier detection | DONE (via `HsxConfig::detect_resource_tier()`) |
+| Resource tier detection | DONE (via `FetchiumConfig::detect_resource_tier()`) |
 | Data directory existence | DONE |
 | Chromium/Chrome detection | DONE (checks 4 paths) |
 | Ollama availability | DONE (HTTP check to localhost:11434) |
@@ -1610,10 +1610,10 @@ Enhance `crates/fetchium-cli/src/commands/doctor.rs` with more detailed system i
 //! `fetchium doctor` -- system health check (PRD SS13).
 
 use colored::Colorize;
-use hsx_core::config::HsxConfig;
+use hsx_core::config::FetchiumConfig;
 use sysinfo::System;
 
-pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(config: &FetchiumConfig) -> anyhow::Result<()> {
     println!("{}", "Fetchium Doctor".bold().cyan());
     println!("{}", "=".repeat(50));
     println!();
@@ -1639,7 +1639,7 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
     ));
 
     // ---- Resource Tier ----
-    let tier = HsxConfig::detect_resource_tier();
+    let tier = FetchiumConfig::detect_resource_tier();
     let tier_detail = match tier {
         hsx_core::types::ResourceTier::Minimal => "Minimal (< 4 GB RAM)",
         hsx_core::types::ResourceTier::Standard => "Standard (4-16 GB RAM)",
@@ -1660,7 +1660,7 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
         &format!("{} {}", data_dir.display(), if dir_exists { "(exists)" } else { "(will be created)" }),
     );
 
-    let config_path = HsxConfig::config_file_path();
+    let config_path = FetchiumConfig::config_file_path();
     let config_exists = config_path.exists();
     check(
         "Config file",

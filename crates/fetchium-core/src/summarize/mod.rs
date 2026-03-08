@@ -8,8 +8,8 @@ use crate::ai::prompt::summarize_prompt;
 use crate::ai::provider_client::chat_with_fallback;
 use crate::ai::providers::ProviderKind;
 use crate::ai::types::{AiConfig, ChatMessage};
-use crate::config::HsxConfig;
-use crate::error::{ErrorKind, HsxError};
+use crate::config::FetchiumConfig;
+use crate::error::{ErrorKind, FetchiumError};
 use crate::http::client::HttpClient;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
@@ -94,8 +94,8 @@ pub struct SummaryResult {
 pub async fn summarize(
     input: &str,
     config: &SummarizeConfig,
-    fetchium_config: &HsxConfig,
-) -> Result<SummaryResult, HsxError> {
+    fetchium_config: &FetchiumConfig,
+) -> Result<SummaryResult, FetchiumError> {
     let start = Instant::now();
 
     let is_url = input.starts_with("http://") || input.starts_with("https://");
@@ -291,7 +291,7 @@ pub async fn summarize(
     })
 }
 
-async fn has_reachable_ai_provider(ai_config: &AiConfig, fetchium_config: &HsxConfig) -> bool {
+async fn has_reachable_ai_provider(ai_config: &AiConfig, fetchium_config: &FetchiumConfig) -> bool {
     let configured = ai_config.providers.configured_providers();
     if configured.is_empty() {
         return false;
@@ -326,7 +326,7 @@ async fn has_reachable_ai_provider(ai_config: &AiConfig, fetchium_config: &HsxCo
     false
 }
 
-async fn fetch_html_with_block_fallback(http: &HttpClient, url: &str) -> Result<String, HsxError> {
+async fn fetch_html_with_block_fallback(http: &HttpClient, url: &str) -> Result<String, FetchiumError> {
     match http.fetch_text(url).await {
         Ok(html) => Ok(html),
         Err(err) => {
@@ -355,9 +355,9 @@ async fn fetch_html_with_block_fallback(http: &HttpClient, url: &str) -> Result<
     }
 }
 
-fn is_block_like_fetch_error(err: &HsxError) -> bool {
+fn is_block_like_fetch_error(err: &FetchiumError) -> bool {
     match err {
-        HsxError::Structured(se) => {
+        FetchiumError::Structured(se) => {
             if matches!(
                 se.kind,
                 ErrorKind::Http403
@@ -456,7 +456,7 @@ mod tests {
             length: SummaryLength::Short,
             model: None,
         };
-        let fetchium_config = HsxConfig::default();
+        let fetchium_config = FetchiumConfig::default();
         let result = summarize(text, &config, &fetchium_config).await.unwrap();
         assert!(!result.summary.is_empty());
         assert!(result.source_url.is_none());
@@ -465,7 +465,7 @@ mod tests {
     #[tokio::test]
     async fn summarize_empty_text() {
         let config = SummarizeConfig::default();
-        let fetchium_config = HsxConfig::default();
+        let fetchium_config = FetchiumConfig::default();
         let result = summarize("", &config, &fetchium_config).await.unwrap();
         assert!(result.summary.is_empty());
         assert!(!result.ai_used);
@@ -489,7 +489,7 @@ mod tests {
 
     #[test]
     fn is_block_like_fetch_error_detects_403() {
-        let err = HsxError::Structured(crate::error::StructuredError {
+        let err = FetchiumError::Structured(crate::error::StructuredError {
             kind: ErrorKind::Http403,
             retryable: false,
             message: "blocked".into(),
@@ -502,7 +502,7 @@ mod tests {
 
     #[test]
     fn is_block_like_fetch_error_detects_unknown_404() {
-        let err = HsxError::Structured(crate::error::StructuredError {
+        let err = FetchiumError::Structured(crate::error::StructuredError {
             kind: ErrorKind::Unknown,
             retryable: false,
             message: "HTTP 404 Not Found from https://example.com".into(),
@@ -515,7 +515,7 @@ mod tests {
 
     #[tokio::test]
     async fn has_reachable_ai_provider_false_when_unconfigured() {
-        let fetchium_config = HsxConfig::default();
+        let fetchium_config = FetchiumConfig::default();
         let mut ai = AiConfig::from_fetchium_config(&fetchium_config);
         ai.providers.fallback_chain.clear();
         ai.providers.ollama.enabled = false;

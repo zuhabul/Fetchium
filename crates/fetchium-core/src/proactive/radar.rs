@@ -1,6 +1,6 @@
 //! Research radar — surfacing relevant topics from user history (PRD §33.2).
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use serde::{Deserialize, Serialize};
 
 /// A proactive suggestion from the radar.
@@ -34,7 +34,7 @@ pub fn build_radar(
     top_topics: &[(String, f64)],
     candidate_items: Vec<crate::types::ResultItem>,
     limit: usize,
-) -> HsxResult<Vec<RadarItem>> {
+) -> FetchiumResult<Vec<RadarItem>> {
     let mut items: Vec<RadarItem> = Vec::new();
 
     for item in candidate_items {

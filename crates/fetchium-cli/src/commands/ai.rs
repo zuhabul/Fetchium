@@ -3,12 +3,12 @@
 use crate::cli::AiArgs;
 use console::style;
 use fetchium_core::ai::{best_model_name, run_ai_pipeline, AiConfig, DeviceSpec};
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::Duration;
 
-pub async fn run(args: AiArgs, config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(args: AiArgs, config: &FetchiumConfig) -> anyhow::Result<()> {
     let ai_config = AiConfig::from_fetchium_config(config);
     let http_client = HttpClient::new(config)?;
     let streaming = !args.no_stream;

@@ -10,7 +10,7 @@
 
 use clap::Subcommand;
 use colored::Colorize;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::intelligence::{
     cce::ConfidenceCalibrationEngine,
     intelligence_data_dir,
@@ -77,7 +77,7 @@ pub enum IntelligenceSubcmd {
 // ─── Handler ─────────────────────────────────────────────────────────────────
 
 pub async fn run(
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     sub: IntelligenceSubcmd,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let _ = config; // available for future use

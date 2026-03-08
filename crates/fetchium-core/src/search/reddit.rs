@@ -3,7 +3,7 @@
 //! Reddit's public JSON API appends `.json` to the search URL. No auth is
 //! required, but a descriptive `User-Agent` must be provided to avoid 429s.
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::HttpClient;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
@@ -77,7 +77,7 @@ impl SearchBackend for RedditBackend {
         BackendId::Reddit
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         let now = now_ms();
         let cooldown_until = REDDIT_COOLDOWN_UNTIL_MS.load(Ordering::Relaxed);
         if now < cooldown_until {
@@ -96,7 +96,7 @@ impl SearchBackend for RedditBackend {
             Err(e) => {
                 let until = now_ms() + 30_000;
                 REDDIT_COOLDOWN_UNTIL_MS.store(until, Ordering::Relaxed);
-                return Err(HsxError::Search(format!(
+                return Err(FetchiumError::Search(format!(
                     "Reddit request failed: {e} (cooldown 30s)"
                 )));
             }
@@ -107,7 +107,7 @@ impl SearchBackend for RedditBackend {
             if status.as_u16() == 429 || status.as_u16() == 403 {
                 let until = now_ms() + REDDIT_COOLDOWN_SECS * 1000;
                 REDDIT_COOLDOWN_UNTIL_MS.store(until, Ordering::Relaxed);
-                return Err(HsxError::Search(format!(
+                return Err(FetchiumError::Search(format!(
                     "Reddit HTTP {status} — cooling down for {}s",
                     REDDIT_COOLDOWN_SECS
                 )));
