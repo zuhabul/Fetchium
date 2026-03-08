@@ -63,14 +63,6 @@ const NAV: NavItem[] = [
       { title: "SPRE Pre-ranking", href: "https://docs.fetchium.com/algorithms/spre" },
     ],
   },
-  {
-    title: "Self-Hosting",
-    items: [
-      { title: "Docker Setup", href: "https://docs.fetchium.com/self-hosting/docker" },
-      { title: "Configuration", href: "https://docs.fetchium.com/self-hosting/config" },
-      { title: "SearXNG Integration", href: "https://docs.fetchium.com/self-hosting/searxng" },
-    ],
-  },
 ];
 
 function SectionGroup({ item, onLinkClick }: { item: NavItem; onLinkClick?: () => void }) {

@@ -8,7 +8,7 @@ import Link from "next/link";
 /**
  * FAQ section targeting high-intent keywords:
  * "search API", "RAG retrieval", "web scraping for LLMs",
- * "MCP tools", "token budget", "citations", "self-hosting".
+ * "MCP tools", "token budget", and "citations".
  *
  * FAQPage schema is rendered server-side in the parent layout
  * or page component to avoid CSP issues.
@@ -42,10 +42,6 @@ const faqs = [
   {
     q: "How fast is the Fetchium API?",
     a: "Latency depends on which backends respond, whether extraction is enabled, and whether you are using synchronous or async job endpoints. Fetchium is built in Rust with parallel backend dispatch, but exact timings vary by workload, so the docs avoid hard-coded benchmark promises.",
-  },
-  {
-    q: "Can I self-host Fetchium?",
-    a: "Yes. The repo includes the Rust services, CLI, MCP server, and self-hosting docs. The self-hosting guides on docs.fetchium.com cover Docker and configuration paths for running the stack yourself.",
   },
   {
     q: "Does Fetchium store my search queries?",

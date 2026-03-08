@@ -31,7 +31,6 @@ const rows = [
   { feature: "Cross-session learning", f: "yes", fc: "no" },
   { feature: "YouTube & social search", f: "yes", fc: "no" },
   { feature: "MCP protocol support", f: "yes", fc: "no" },
-  { feature: "Self-hostable", f: "yes", fc: "yes", note: "Firecrawl is open-source (43K+ GitHub stars); Fetchium is also self-hostable" },
   { feature: "Open source", f: "partial", fc: "yes", note: "Firecrawl core is Apache-2.0 open source; Fetchium CLI and core are source-available" },
   { feature: "Free tier (renewing)", f: "yes", fc: "partial", note: "Fetchium: 1K/mo forever. Firecrawl: 500 one-time credits (not renewing)." },
   { feature: "Price per 1K operations", f: "$0.58", fc: "$0.83", note: "Fetchium Growth ($29/mo, 50K) vs Firecrawl Standard ($83/mo, 100K pages)" },

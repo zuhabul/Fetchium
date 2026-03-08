@@ -138,7 +138,6 @@ fetchium fetch https://example.com --tokens 2000`} />
           { href: "https://docs.fetchium.com/algorithms/qatbe", title: "QATBE", desc: "Token-budgeted extraction" },
           { href: "https://docs.fetchium.com/algorithms/hyperfusion", title: "HyperFusion", desc: "8-signal ranking" },
           { href: "https://docs.fetchium.com/api/scrape", title: "Scrape API", desc: "CEP via REST API" },
-          { href: "https://docs.fetchium.com/self-hosting/config", title: "Configuration", desc: "Chrome and extraction settings" },
         ].map(l => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

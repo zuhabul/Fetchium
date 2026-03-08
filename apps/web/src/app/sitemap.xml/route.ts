@@ -53,9 +53,6 @@ const docsRoutes = [
   "/sdk/mcp",
   "/sdk/python",
   "/sdk/typescript",
-  "/self-hosting/config",
-  "/self-hosting/docker",
-  "/self-hosting/searxng",
 ];
 
 function resolveHost(hostHeader: string | null): string {

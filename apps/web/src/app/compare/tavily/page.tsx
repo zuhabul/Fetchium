@@ -32,7 +32,6 @@ const rows = [
   { feature: "Multi-agent deep research (AMRS)", f: "yes", t: "partial", note: "Tavily has research mode; Fetchium's AMRS runs 4 agent types in parallel" },
   { feature: "YouTube & social search", f: "yes", t: "no", note: "Fetchium has dedicated YouTube and social intelligence endpoints" },
   { feature: "MCP protocol support", f: "yes", t: "no", note: "Fetchium ships a JSON-RPC 2.0 MCP server out of the box" },
-  { feature: "Self-hostable", f: "yes", t: "no", note: "Fetchium runs on any Docker host with full feature parity" },
   { feature: "Free tier (renewing monthly)", f: "yes", t: "yes", note: "Both offer 1,000 free requests per month" },
   { feature: "SimpleQA accuracy (2025)", f: "tbd", t: "93.3%", note: "Tavily SOTA; Fetchium benchmark pending" },
   { feature: "Search P50 latency", f: "~500ms", t: "~1.9s", note: "Independent 50-query benchmark; Fetchium parallel Rust dispatch" },
@@ -92,7 +91,7 @@ export default function CompareTavilyPage() {
             <div className="rounded-2xl border border-violet-500/20 bg-violet-500/8 p-5 text-center">
               <div className="text-3xl font-bold text-violet-300">+5</div>
               <div className="text-sm text-slate-300 mt-1">exclusive features</div>
-              <div className="text-[12px] text-slate-500 mt-1">CEP, QATBE, PIE, MCP, self-host</div>
+              <div className="text-[12px] text-slate-500 mt-1">CEP, QATBE, PIE, MCP, research</div>
             </div>
           </div>
 
@@ -154,7 +153,6 @@ export default function CompareTavilyPage() {
               <ul className="space-y-2 text-[13px] text-slate-400">
                 <li className="flex gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" strokeWidth={2.5} />You need full content extraction (not just snippets)</li>
                 <li className="flex gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" strokeWidth={2.5} />Cost per query is a key constraint</li>
-                <li className="flex gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" strokeWidth={2.5} />You want to self-host for privacy</li>
                 <li className="flex gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" strokeWidth={2.5} />You need MCP tool integration for Claude/Cursor</li>
                 <li className="flex gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" strokeWidth={2.5} />You want evidence graphs with cross-source validation</li>
               </ul>
