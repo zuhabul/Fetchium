@@ -415,6 +415,15 @@ impl AdminDb {
         Ok(())
     }
 
+    pub fn set_user_active(&self, user_id: &str, active: bool) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "UPDATE admin_users SET is_active = ?1, updated_at = ?2 WHERE id = ?3",
+            params![active as i64, now, user_id],
+        )?;
+        Ok(())
+    }
+
     pub fn set_totp(&self, user_id: &str, secret: &str, enabled: bool) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         self.conn.lock().execute(
@@ -444,6 +453,15 @@ impl AdminDb {
              (id, admin_user_id, token_hash, ip, user_agent, created_at, last_active_at, expires_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6, ?7)",
             params![session_id, user_id, token_hash, ip, user_agent, now_str, expires_at],
+        )?;
+        Ok(())
+    }
+
+    pub fn revoke_all_sessions_for_user(&self, user_id: &str) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "UPDATE admin_sessions SET revoked_at = ?1 WHERE admin_user_id = ?2 AND revoked_at IS NULL",
+            params![now, user_id],
         )?;
         Ok(())
     }
@@ -1173,6 +1191,502 @@ impl AdminDb {
             params![id, name, campaign_type, created_by, now],
         )?;
         Ok(())
+    }
+
+    // ── Incident helpers ─────────────────────────────────────────────────────
+
+    pub fn get_incident(&self, id: &str) -> Result<Option<serde_json::Value>> {
+        let conn = self.conn.lock();
+        conn.query_row(
+            "SELECT id, title, severity, status, owner_id, created_at, resolved_at FROM incidents WHERE id = ?1",
+            params![id],
+            |r| Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "title": r.get::<_,String>(1)?,
+                "severity": r.get::<_,String>(2)?, "status": r.get::<_,String>(3)?,
+                "owner_id": r.get::<_,Option<String>>(4)?,
+                "created_at": r.get::<_,String>(5)?, "resolved_at": r.get::<_,Option<String>>(6)?,
+            })),
+        ).optional().map_err(Into::into)
+    }
+
+    pub fn get_incident_timeline(&self, incident_id: &str) -> Result<Vec<serde_json::Value>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT t.id, t.message, t.created_at, u.name, u.email
+             FROM incident_timeline t LEFT JOIN admin_users u ON u.id = t.author_id
+             WHERE t.incident_id = ?1 ORDER BY t.created_at ASC",
+        )?;
+        let rows = stmt.query_map(params![incident_id], |r| {
+            Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "message": r.get::<_,String>(1)?,
+                "created_at": r.get::<_,String>(2)?,
+                "author_name": r.get::<_,Option<String>>(3)?,
+            }))
+        })?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
+    }
+
+    pub fn add_incident_timeline(&self, incident_id: &str, author_id: Option<&str>, message: &str) -> Result<()> {
+        let id = Uuid::new_v4().to_string();
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "INSERT INTO incident_timeline (id, incident_id, author_id, message, created_at) VALUES (?1,?2,?3,?4,?5)",
+            params![id, incident_id, author_id, message, now],
+        )?;
+        Ok(())
+    }
+
+    pub fn update_incident(&self, id: &str, status: Option<&str>, severity: Option<&str>) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        if let Some(s) = status {
+            self.conn.lock().execute(
+                "UPDATE incidents SET status = ?1, updated_at = ?2 WHERE id = ?3",
+                params![s, now, id],
+            )?;
+        }
+        if let Some(s) = severity {
+            self.conn.lock().execute(
+                "UPDATE incidents SET severity = ?1, updated_at = ?2 WHERE id = ?3",
+                params![s, now, id],
+            )?;
+        }
+        Ok(())
+    }
+
+    pub fn resolve_incident(&self, id: &str) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "UPDATE incidents SET status='resolved', resolved_at=?1, updated_at=?1 WHERE id=?2",
+            params![now, id],
+        )?;
+        Ok(())
+    }
+
+    // ── Support helpers ──────────────────────────────────────────────────────
+
+    pub fn get_ticket(&self, id: &str) -> Result<Option<serde_json::Value>> {
+        let conn = self.conn.lock();
+        conn.query_row(
+            "SELECT id, org_id, subject, status, priority, assignee_id, created_at FROM support_tickets WHERE id = ?1",
+            params![id],
+            |r| Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "org_id": r.get::<_,Option<String>>(1)?,
+                "subject": r.get::<_,String>(2)?, "status": r.get::<_,String>(3)?,
+                "priority": r.get::<_,String>(4)?, "assignee_id": r.get::<_,Option<String>>(5)?,
+                "created_at": r.get::<_,String>(6)?,
+            })),
+        ).optional().map_err(Into::into)
+    }
+
+    pub fn list_tickets_for_org(&self, org_id: &str) -> Result<Vec<serde_json::Value>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id, org_id, subject, status, priority, assignee_id, created_at
+             FROM support_tickets WHERE org_id = ?1 ORDER BY created_at DESC",
+        )?;
+        let rows = stmt.query_map(params![org_id], |r| {
+            Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "org_id": r.get::<_,Option<String>>(1)?,
+                "subject": r.get::<_,String>(2)?, "status": r.get::<_,String>(3)?,
+                "priority": r.get::<_,String>(4)?, "assignee_id": r.get::<_,Option<String>>(5)?,
+                "created_at": r.get::<_,String>(6)?,
+            }))
+        })?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
+    }
+
+    pub fn get_ticket_notes(&self, ticket_id: &str) -> Result<Vec<serde_json::Value>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT n.id, n.body, n.created_at, u.name
+             FROM support_notes n LEFT JOIN admin_users u ON u.id = n.author_id
+             WHERE n.ticket_id = ?1 ORDER BY n.created_at ASC",
+        )?;
+        let rows = stmt.query_map(params![ticket_id], |r| {
+            Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "body": r.get::<_,String>(1)?,
+                "created_at": r.get::<_,String>(2)?, "author_name": r.get::<_,Option<String>>(3)?,
+            }))
+        })?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
+    }
+
+    pub fn add_ticket_note(&self, ticket_id: &str, author_id: Option<&str>, body: &str) -> Result<()> {
+        let id = Uuid::new_v4().to_string();
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "INSERT INTO support_notes (id, ticket_id, author_id, body, created_at) VALUES (?1,?2,?3,?4,?5)",
+            params![id, ticket_id, author_id, body, now],
+        )?;
+        Ok(())
+    }
+
+    pub fn update_ticket_status(&self, id: &str, status: &str) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "UPDATE support_tickets SET status=?1, updated_at=?2 WHERE id=?3",
+            params![status, now, id],
+        )?;
+        Ok(())
+    }
+
+    pub fn update_ticket_assignee(&self, id: &str, assignee_id: &str) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "UPDATE support_tickets SET assignee_id=?1, updated_at=?2 WHERE id=?3",
+            params![assignee_id, now, id],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_support_macros(&self) -> Result<Vec<serde_json::Value>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare("SELECT id, name, body, created_at FROM support_macros ORDER BY name")?;
+        let rows = stmt.query_map([], |r| {
+            Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "name": r.get::<_,String>(1)?,
+                "body": r.get::<_,String>(2)?, "created_at": r.get::<_,String>(3)?,
+            }))
+        })?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
+    }
+
+    pub fn create_support_macro(&self, name: &str, body: &str, created_by: Option<&str>) -> Result<String> {
+        let id = Uuid::new_v4().to_string();
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "INSERT INTO support_macros (id, name, body, created_by, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,?5)",
+            params![id, name, body, created_by, now],
+        )?;
+        Ok(id)
+    }
+
+    // ── Billing helpers ──────────────────────────────────────────────────────
+
+    pub fn list_subscriptions(&self, limit: i64, offset: i64) -> Result<Vec<serde_json::Value>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT s.id, s.org_id, o.name, s.plan, s.status,
+                    s.current_period_start, s.current_period_end, s.created_at
+             FROM subscriptions s LEFT JOIN organizations o ON o.id = s.org_id
+             ORDER BY s.created_at DESC LIMIT ?1 OFFSET ?2",
+        )?;
+        let rows = stmt.query_map(params![limit, offset], |r| {
+            Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "org_id": r.get::<_,String>(1)?,
+                "org_name": r.get::<_,Option<String>>(2)?, "plan": r.get::<_,String>(3)?,
+                "status": r.get::<_,String>(4)?,
+                "current_period_start": r.get::<_,Option<String>>(5)?,
+                "current_period_end": r.get::<_,Option<String>>(6)?,
+                "created_at": r.get::<_,String>(7)?,
+            }))
+        })?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
+    }
+
+    pub fn get_subscription_for_org(&self, org_id: &str) -> Result<Option<serde_json::Value>> {
+        let conn = self.conn.lock();
+        conn.query_row(
+            "SELECT id, plan, status, current_period_start, current_period_end, created_at
+             FROM subscriptions WHERE org_id = ?1 ORDER BY created_at DESC LIMIT 1",
+            params![org_id],
+            |r| Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "plan": r.get::<_,String>(1)?,
+                "status": r.get::<_,String>(2)?,
+                "current_period_start": r.get::<_,Option<String>>(3)?,
+                "current_period_end": r.get::<_,Option<String>>(4)?,
+                "created_at": r.get::<_,String>(5)?,
+            })),
+        ).optional().map_err(Into::into)
+    }
+
+    pub fn list_invoices_for_org(&self, org_id: &str) -> Result<Vec<serde_json::Value>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id, amount, currency, status, due_date, paid_at, created_at
+             FROM invoices WHERE org_id = ?1 ORDER BY created_at DESC",
+        )?;
+        let rows = stmt.query_map(params![org_id], |r| {
+            Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "amount": r.get::<_,i64>(1)?,
+                "currency": r.get::<_,String>(2)?, "status": r.get::<_,String>(3)?,
+                "due_date": r.get::<_,Option<String>>(4)?, "paid_at": r.get::<_,Option<String>>(5)?,
+                "created_at": r.get::<_,String>(6)?,
+            }))
+        })?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
+    }
+
+    pub fn list_credits_for_org(&self, org_id: &str) -> Result<Vec<serde_json::Value>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id, amount, reason, granted_by, created_at FROM credits_ledger WHERE org_id = ?1 ORDER BY created_at DESC",
+        )?;
+        let rows = stmt.query_map(params![org_id], |r| {
+            Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "amount": r.get::<_,i64>(1)?,
+                "reason": r.get::<_,Option<String>>(2)?, "granted_by": r.get::<_,Option<String>>(3)?,
+                "created_at": r.get::<_,String>(4)?,
+            }))
+        })?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
+    }
+
+    pub fn add_credit(&self, org_id: &str, amount_cents: i64, reason: Option<&str>, granted_by: Option<&str>) -> Result<()> {
+        let id = Uuid::new_v4().to_string();
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "INSERT INTO credits_ledger (id, org_id, amount, reason, granted_by, created_at) VALUES (?1,?2,?3,?4,?5,?6)",
+            params![id, org_id, amount_cents, reason, granted_by, now],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_payment_events(&self, limit: usize) -> Result<Vec<serde_json::Value>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT p.id, p.org_id, o.name, p.event_type, p.payload, p.created_at
+             FROM payment_events p LEFT JOIN organizations o ON o.id = p.org_id
+             ORDER BY p.created_at DESC LIMIT ?1",
+        )?;
+        let rows = stmt.query_map(params![limit as i64], |r| {
+            let payload_str: Option<String> = r.get(4)?;
+            let payload = payload_str
+                .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+                .unwrap_or(serde_json::Value::Object(Default::default()));
+            Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "org_id": r.get::<_,Option<String>>(1)?,
+                "org_name": r.get::<_,Option<String>>(2)?, "event_type": r.get::<_,String>(3)?,
+                "payload": payload, "status": "processed", "created_at": r.get::<_,String>(5)?,
+            }))
+        })?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
+    }
+
+    // ── CRM helpers ──────────────────────────────────────────────────────────
+
+    pub fn list_crm_accounts(&self, limit: i64, offset: i64) -> Result<Vec<serde_json::Value>> {
+        let conn = self.conn.lock();
+        let exists: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='crm_accounts'", [], |r| r.get(0),
+        )?;
+        if exists == 0 { return Ok(vec![]); }
+        let mut stmt = conn.prepare(
+            "SELECT c.id, c.org_id, o.name, c.health, c.mrr, c.nps, c.created_at
+             FROM crm_accounts c LEFT JOIN organizations o ON o.id = c.org_id
+             ORDER BY c.mrr DESC LIMIT ?1 OFFSET ?2",
+        )?;
+        let rows = stmt.query_map(params![limit, offset], |r| {
+            Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "org_id": r.get::<_,String>(1)?,
+                "org_name": r.get::<_,Option<String>>(2)?, "health": r.get::<_,String>(3)?,
+                "mrr": r.get::<_,i64>(4)?, "nps": r.get::<_,Option<i64>>(5)?,
+                "created_at": r.get::<_,String>(6)?,
+            }))
+        })?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
+    }
+
+    pub fn get_crm_account(&self, org_id: &str) -> Result<Option<serde_json::Value>> {
+        let conn = self.conn.lock();
+        conn.query_row(
+            "SELECT id, org_id, health, mrr, nps, created_at FROM crm_accounts WHERE org_id = ?1",
+            params![org_id],
+            |r| Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "org_id": r.get::<_,String>(1)?,
+                "health": r.get::<_,String>(2)?, "mrr": r.get::<_,i64>(3)?,
+                "nps": r.get::<_,Option<i64>>(4)?, "created_at": r.get::<_,String>(5)?,
+            })),
+        ).optional().map_err(Into::into)
+    }
+
+    pub fn upsert_crm_account(&self, org_id: &str, health: Option<&str>, csm_id: Option<&str>, mrr: Option<i64>, nps: Option<i64>) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        let id = Uuid::new_v4().to_string();
+        self.conn.lock().execute(
+            "INSERT INTO crm_accounts (id, org_id, health, csm_id, mrr, nps, created_at, updated_at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?7)
+             ON CONFLICT(org_id) DO UPDATE SET
+               health=COALESCE(?3,health), csm_id=COALESCE(?4,csm_id),
+               mrr=COALESCE(?5,mrr), nps=COALESCE(?6,nps), updated_at=?7",
+            params![id, org_id, health.unwrap_or("healthy"), csm_id, mrr.unwrap_or(0), nps, now],
+        )?;
+        Ok(())
+    }
+
+    pub fn add_crm_note(&self, org_id: &str, author_id: Option<&str>, body: &str) -> Result<()> {
+        let id = Uuid::new_v4().to_string();
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "INSERT INTO crm_notes (id, org_id, author_id, body, created_at) VALUES (?1,?2,?3,?4,?5)",
+            params![id, org_id, author_id, body, now],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_crm_notes(&self, org_id: &str) -> Result<Vec<serde_json::Value>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT n.id, n.body, n.created_at, u.name
+             FROM crm_notes n LEFT JOIN admin_users u ON u.id = n.author_id
+             WHERE n.org_id = ?1 ORDER BY n.created_at DESC",
+        )?;
+        let rows = stmt.query_map(params![org_id], |r| {
+            Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "body": r.get::<_,String>(1)?,
+                "created_at": r.get::<_,String>(2)?, "author_name": r.get::<_,Option<String>>(3)?,
+            }))
+        })?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
+    }
+
+    // ── Approval helpers ─────────────────────────────────────────────────────
+
+    pub fn list_approvals(&self) -> Result<Vec<serde_json::Value>> {
+        let conn = self.conn.lock();
+        let exists: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='approval_requests'", [], |r| r.get(0),
+        )?;
+        if exists == 0 { return Ok(vec![]); }
+        let mut stmt = conn.prepare(
+            "SELECT a.id, a.action_type, a.payload, a.status, a.created_at,
+                    u.email, r.email, a.review_note
+             FROM approval_requests a
+             LEFT JOIN admin_users u ON u.id = a.requested_by
+             LEFT JOIN admin_users r ON r.id = a.reviewed_by
+             ORDER BY a.created_at DESC",
+        )?;
+        let rows = stmt.query_map([], |r| {
+            Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "action_type": r.get::<_,String>(1)?,
+                "payload": r.get::<_,Option<String>>(2)?, "status": r.get::<_,String>(3)?,
+                "created_at": r.get::<_,String>(4)?,
+                "requested_by_email": r.get::<_,Option<String>>(5)?,
+                "reviewed_by_email": r.get::<_,Option<String>>(6)?,
+                "review_note": r.get::<_,Option<String>>(7)?,
+            }))
+        })?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
+    }
+
+    pub fn create_approval(&self, action_type: &str, payload: Option<&str>, requested_by: Option<&str>) -> Result<String> {
+        let id = Uuid::new_v4().to_string();
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "INSERT INTO approval_requests (id, action_type, payload, status, requested_by, created_at, updated_at)
+             VALUES (?1,?2,?3,'pending',?4,?5,?5)",
+            params![id, action_type, payload, requested_by, now],
+        )?;
+        Ok(id)
+    }
+
+    pub fn update_approval_status(&self, id: &str, status: &str, reviewed_by: Option<&str>, note: Option<&str>) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "UPDATE approval_requests SET status=?1, reviewed_by=?2, review_note=?3, updated_at=?4 WHERE id=?5",
+            params![status, reviewed_by, note, now, id],
+        )?;
+        Ok(())
+    }
+
+    // ── API key helpers ──────────────────────────────────────────────────────
+
+    fn ensure_api_keys_table(&self) -> Result<()> {
+        self.conn.lock().execute_batch(
+            "CREATE TABLE IF NOT EXISTS api_keys (
+                id         TEXT PRIMARY KEY,
+                org_id     TEXT REFERENCES organizations(id),
+                name       TEXT NOT NULL,
+                key_prefix TEXT NOT NULL,
+                key_hash   TEXT NOT NULL UNIQUE,
+                created_by TEXT REFERENCES admin_users(id),
+                revoked_at TEXT,
+                revoked_by TEXT REFERENCES admin_users(id),
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_api_keys_org ON api_keys(org_id);",
+        )?;
+        Ok(())
+    }
+
+    pub fn list_api_keys(&self, limit: i64, offset: i64) -> Result<Vec<serde_json::Value>> {
+        self.ensure_api_keys_table()?;
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT k.id, k.org_id, o.name, k.name, k.key_prefix, k.revoked_at, k.created_at
+             FROM api_keys k LEFT JOIN organizations o ON o.id = k.org_id
+             ORDER BY k.created_at DESC LIMIT ?1 OFFSET ?2",
+        )?;
+        let rows = stmt.query_map(params![limit, offset], |r| {
+            let revoked: Option<String> = r.get(5)?;
+            Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "org_id": r.get::<_,Option<String>>(1)?,
+                "org_name": r.get::<_,Option<String>>(2)?, "name": r.get::<_,String>(3)?,
+                "key_prefix": r.get::<_,String>(4)?, "revoked_at": revoked,
+                "created_at": r.get::<_,String>(6)?,
+                "active": revoked.is_none(),
+            }))
+        })?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
+    }
+
+    pub fn get_api_key(&self, id: &str) -> Result<Option<serde_json::Value>> {
+        self.ensure_api_keys_table()?;
+        let conn = self.conn.lock();
+        conn.query_row(
+            "SELECT id, org_id, name, key_prefix, revoked_at, created_at FROM api_keys WHERE id = ?1",
+            params![id],
+            |r| {
+                let revoked: Option<String> = r.get(4)?;
+                Ok(serde_json::json!({
+                    "id": r.get::<_,String>(0)?, "org_id": r.get::<_,Option<String>>(1)?,
+                    "name": r.get::<_,String>(2)?, "key_prefix": r.get::<_,String>(3)?,
+                    "revoked_at": revoked, "created_at": r.get::<_,String>(5)?,
+                    "active": revoked.is_none(),
+                }))
+            },
+        ).optional().map_err(Into::into)
+    }
+
+    pub fn create_api_key(&self, org_id: Option<&str>, name: &str, created_by: Option<&str>) -> Result<(String, String)> {
+        self.ensure_api_keys_table()?;
+        let id = Uuid::new_v4().to_string();
+        let raw = format!("fxm_{}", Uuid::new_v4().to_string().replace('-', ""));
+        let prefix = raw[..12].to_string();
+        let key_hash = format!("{:x}", raw.bytes().fold(0u64, |a, b| a.wrapping_mul(31).wrapping_add(b as u64)));
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "INSERT INTO api_keys (id, org_id, name, key_prefix, key_hash, created_by, created_at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7)",
+            params![id, org_id, name, prefix, key_hash, created_by, now],
+        )?;
+        Ok((id, raw))
+    }
+
+    pub fn revoke_api_key(&self, id: &str, revoked_by: Option<&str>) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "UPDATE api_keys SET revoked_at=?1, revoked_by=?2 WHERE id=?3",
+            params![now, revoked_by, id],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_api_keys_for_org(&self, org_id: &str) -> Result<Vec<serde_json::Value>> {
+        self.ensure_api_keys_table()?;
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id, name, key_prefix, revoked_at, created_at FROM api_keys WHERE org_id = ?1 ORDER BY created_at DESC",
+        )?;
+        let rows = stmt.query_map(params![org_id], |r| {
+            let revoked: Option<String> = r.get(3)?;
+            Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "name": r.get::<_,String>(1)?,
+                "key_prefix": r.get::<_,String>(2)?, "revoked_at": revoked,
+                "created_at": r.get::<_,String>(4)?, "active": revoked.is_none(),
+            }))
+        })?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
     }
 
     pub fn get_proxy_stats(&self) -> serde_json::Value {
