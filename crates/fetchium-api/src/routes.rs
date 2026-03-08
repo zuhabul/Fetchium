@@ -83,6 +83,8 @@ pub fn build_router(state: AppState) -> Router {
         .route("/orgs/:id/usage", get(admin::usage::for_org))
         .route("/orgs/:id/billing", get(admin::billing::for_org))
         .route("/orgs/:id/tickets", get(admin::support::for_org))
+        .route("/orgs/:id/members", get(admin::orgs::members))
+        .route("/orgs/:id/audit", get(admin::orgs::org_audit))
         .route(
             "/orgs/:id/crm",
             get(admin::crm::get).patch(admin::crm::update),
@@ -148,6 +150,7 @@ pub fn build_router(state: AppState) -> Router {
             post(admin::incidents::add_timeline),
         )
         .route("/incidents/:id/resolve", post(admin::incidents::resolve))
+        .route("/incidents/:id/postmortem", post(admin::incidents::postmortem))
         // Campaigns — static paths before dynamic :id
         .route(
             "/campaigns",
@@ -174,6 +177,8 @@ pub fn build_router(state: AppState) -> Router {
         .route("/metrics/providers", get(admin::metrics::provider_health))
         // System
         .route("/system/stats", get(admin::metrics::system_stats))
+        .route("/system/logs", get(admin::metrics::system_logs))
+        .route("/system/jobs", get(admin::metrics::system_jobs))
         .route("/db/query", post(admin::db_query::run_query))
         // Universal search
         .route("/search", get(admin::search::search))

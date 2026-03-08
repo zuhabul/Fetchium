@@ -62,14 +62,6 @@ pub struct OrchestratorConfig {
     pub freshness_need: f64,
     /// Use HyperFusion ranking (true) or legacy BM25 rerank (false).
     pub use_hyperfusion: bool,
-    /// Tavily API key.
-    pub tavily_api_key: Option<String>,
-    /// Serper API key.
-    pub serper_api_key: Option<String>,
-    /// Exa API key.
-    pub exa_api_key: Option<String>,
-    /// Firecrawl API key.
-    pub firecrawl_api_key: Option<String>,
 }
 
 /// Reliable API-based backends that never require scraping or CAPTCHAs.
@@ -83,15 +75,11 @@ const RELIABLE_API_BACKENDS: &[BackendId] = &[
     BackendId::Arxiv,
 ];
 
-/// All recommended default backends (scrapers + APIs).
+/// All recommended default backends (free / self-hosted).
 ///
 /// SearXNG self-hosted (localhost:4040) is first — it aggregates Google, Bing,
 /// Brave, DuckDuckGo, Wikipedia, SO, GitHub, ArXiv, Reddit in a single request.
 const ALL_DEFAULT_BACKENDS: &[BackendId] = &[
-    BackendId::Tavily, // Premium: AI-optimized search with content (requires API key)
-    BackendId::Serper, // Premium: fast Google + Scholar + News (requires API key)
-    BackendId::Exa,    // Premium: neural semantic search (requires API key)
-    BackendId::Firecrawl, // Premium: search + full markdown extraction (requires API key)
     BackendId::Searxng, // Primary: self-hosted aggregator (free, unlimited, no CAPTCHA)
     BackendId::DuckDuckGo,
     BackendId::Wikipedia,
@@ -113,10 +101,6 @@ impl Default for OrchestratorConfig {
             simhash_threshold: 6,
             freshness_need: 0.5,
             use_hyperfusion: true,
-            tavily_api_key: None,
-            serper_api_key: None,
-            exa_api_key: None,
-            firecrawl_api_key: None,
         }
     }
 }
@@ -149,24 +133,6 @@ impl OrchestratorConfig {
             }
         }
 
-        // Auto-include premium backends when their API keys are configured,
-        // even if the user's config file doesn't list them explicitly.
-        let premium_backends: &[(BackendId, &Option<String>)] = &[
-            (BackendId::Tavily, &fetchium_config.search.tavily_api_key),
-            (BackendId::Serper, &fetchium_config.search.serper_api_key),
-            (BackendId::Exa, &fetchium_config.search.exa_api_key),
-            (
-                BackendId::Firecrawl,
-                &fetchium_config.search.firecrawl_api_key,
-            ),
-        ];
-        for (backend_id, api_key) in premium_backends {
-            if api_key.is_some() && !enabled_backends.contains(backend_id) {
-                // Insert premium backends at the front for priority
-                enabled_backends.insert(0, backend_id.clone());
-            }
-        }
-
         Self {
             max_results_per_backend: max_results + 5,
             max_total_results: max_results,
@@ -175,10 +141,6 @@ impl OrchestratorConfig {
             simhash_threshold: fetchium_config.ranking.simhash_threshold,
             freshness_need: fetchium_config.ranking.freshness_need,
             use_hyperfusion: true,
-            tavily_api_key: fetchium_config.search.tavily_api_key.clone(),
-            serper_api_key: fetchium_config.search.serper_api_key.clone(),
-            exa_api_key: fetchium_config.search.exa_api_key.clone(),
-            firecrawl_api_key: fetchium_config.search.firecrawl_api_key.clone(),
         }
     }
 }
@@ -410,42 +372,8 @@ impl SearchOrchestrator {
                          use SearchOrchestrator::with_pool(); skipping Bing"
                     );
                 }
-                BackendId::Tavily => {
-                    if let Some(ref key) = config.tavily_api_key {
-                        backends.push(Arc::new(TavilyBackend::new(
-                            http_client.clone(),
-                            key.clone(),
-                        )));
-                    } else {
-                        info!("Tavily backend skipped — no TAVILY_API_KEY configured");
-                    }
-                }
-                BackendId::Serper => {
-                    if let Some(ref key) = config.serper_api_key {
-                        backends.push(Arc::new(SerperBackend::new(
-                            http_client.clone(),
-                            key.clone(),
-                        )));
-                    } else {
-                        info!("Serper backend skipped — no SERPER_API_KEY configured");
-                    }
-                }
-                BackendId::Exa => {
-                    if let Some(ref key) = config.exa_api_key {
-                        backends.push(Arc::new(ExaBackend::new(http_client.clone(), key.clone())));
-                    } else {
-                        info!("Exa backend skipped — no EXA_API_KEY configured");
-                    }
-                }
-                BackendId::Firecrawl => {
-                    if let Some(ref key) = config.firecrawl_api_key {
-                        backends.push(Arc::new(FirecrawlBackend::new(
-                            http_client.clone(),
-                            key.clone(),
-                        )));
-                    } else {
-                        info!("Firecrawl backend skipped — no FIRECRAWL_API_KEY configured");
-                    }
+                BackendId::Tavily | BackendId::Serper | BackendId::Exa | BackendId::Firecrawl => {
+                    warn!("Premium API backend {:?} skipped — third-party APIs are disabled", id);
                 }
                 BackendId::GoogleScholar => {
                     warn!("GoogleScholar backend not yet implemented — skipping");
@@ -628,14 +556,6 @@ impl SearchOrchestrator {
                 continue;
             }
 
-            // DDG runs conditionally after Google result check (Google-first cascade).
-            // DDG internally cascades: direct_full → direct_lite → residential_full → residential_lite.
-            // We only pay DataImpulse GB on DDG when Google AND DDG-direct both fail.
-            if backend.id() == BackendId::DuckDuckGo {
-                skipped_backends.push("DDG:deferred-to-google-first-gate".to_string());
-                continue;
-            }
-
             let backend = Arc::clone(backend);
             let q = effective_query.to_string();
             let cb = self.circuit_breaker.clone();
@@ -696,9 +616,14 @@ impl SearchOrchestrator {
         // Return as soon as we have enough results from quality backends OR a time budget expires.
         // Don't wait for any specific backend — return early when we have enough for ranking.
         let mut all: Vec<ResultItem> = Vec::new();
-        let target_results = (max as usize) * 3; // 3x headroom for dedup/ranking
-        let early_deadline = tokio::time::Instant::now() + Duration::from_millis(4500);
+        let target_results = (max as usize) * 2; // 2x headroom for dedup/ranking is usually enough
+        
+        // Dynamic early-return deadline: 1.5s for fast response, 6.0s hard timeout
+        let early_deadline = tokio::time::Instant::now() + Duration::from_millis(1500);
+        let hard_deadline = tokio::time::Instant::now() + timeout_dur;
+        
         let mut quality_backends_responded: u32 = 0;
+        let mut premium_backends_responded: u32 = 0;
 
         let mut remaining: futures::stream::FuturesUnordered<_> = handles.into_iter().collect();
 
@@ -706,13 +631,20 @@ impl SearchOrchestrator {
         while let Some(result) = tokio::select! {
             r = remaining.next() => r,
             _ = tokio::time::sleep_until(early_deadline) => {
-                if all.len() >= max as usize {
-                    info!("Orchestrator: early-return deadline hit with {} results, {} backends still pending",
+                // If we have enough results from at least 2 quality backends, return early at 1.5s
+                if all.len() >= max as usize && quality_backends_responded >= 2 {
+                    info!("Orchestrator: early-return (fast) with {} results, {} backends still pending",
                           all.len(), remaining.len());
                     None
                 } else {
-                    // Not enough results yet, keep waiting for backends
-                    remaining.next().await
+                    // Not enough yet, wait for next result or hard deadline
+                    tokio::select! {
+                        r = remaining.next() => r,
+                        _ = tokio::time::sleep_until(hard_deadline) => {
+                            info!("Orchestrator: hard timeout hit with {} results", all.len());
+                            None
+                        }
+                    }
                 }
             }
         } {
@@ -721,18 +653,30 @@ impl SearchOrchestrator {
                     let quality = (results.len() as f64 / 10.0).min(1.0);
                     self.backend_selector
                         .report_outcome(&backend_id, results.len(), quality);
-                    // Count quality backends (not Wikipedia/ArXiv which often produce
-                    // noise that gets filtered later)
-                    if !results.is_empty()
-                        && !matches!(backend_id, BackendId::Wikipedia | BackendId::Arxiv)
-                    {
-                        quality_backends_responded += 1;
+                    
+                    if !results.is_empty() {
+                        if matches!(backend_id, BackendId::Tavily | BackendId::Serper | BackendId::Exa | BackendId::Firecrawl) {
+                            premium_backends_responded += 1;
+                            quality_backends_responded += 1;
+                        } else if !matches!(backend_id, BackendId::Wikipedia | BackendId::Arxiv) {
+                            quality_backends_responded += 1;
+                        }
                     }
+                    
                     all.extend(results);
-                    // Early exit when we have enough results from quality web search backends.
-                    // SearXNG (Startpage/Yahoo) is our primary quality source — make sure
-                    // it responds before we return early.
-                    if all.len() >= target_results && quality_backends_responded >= 3 {
+                    
+                    // Super-early return: if we have 2+ premium backends and target results, return immediately
+                    if all.len() >= target_results && premium_backends_responded >= 2 {
+                        info!(
+                            "Orchestrator: super-early return with {} results ({} premium)",
+                            all.len(),
+                            premium_backends_responded
+                        );
+                        break;
+                    }
+                    
+                    // Standard early return: enough results from enough quality sources
+                    if all.len() >= target_results && quality_backends_responded >= 4 {
                         info!(
                             "Orchestrator: early-return with {} results, {} backends still pending",
                             all.len(),
@@ -744,64 +688,6 @@ impl SearchOrchestrator {
                 Err(e) => {
                     self.metrics.record_error("backend_panic");
                     warn!("Backend task panicked: {e}");
-                }
-            }
-        }
-
-        // Google-first gate: dispatch DDG only if Google returned fewer than 5 results.
-        // DDG's 4-tier cascade handles cost internally: direct_full → direct_lite → residential_full → residential_lite.
-        // Residential proxy is only charged when BOTH Google and DDG-direct fail.
-        {
-            let google_count = all
-                .iter()
-                .filter(|r| r.backend == BackendId::Google)
-                .count();
-            let ddg_in_selected = selected_set.contains("DuckDuckGo");
-            let ddg_allowed = self.circuit_breaker.should_allow("DuckDuckGo");
-
-            if ddg_in_selected && ddg_allowed {
-                if google_count >= 5 {
-                    info!("Orchestrator: Google={google_count} results — DDG skipped (cost save)");
-                } else {
-                    info!("Orchestrator: Google={google_count} results — dispatching DDG cascade");
-                    if let Some(ddg_backend) = self
-                        .backends
-                        .iter()
-                        .find(|b| b.id() == BackendId::DuckDuckGo)
-                    {
-                        let ddg = Arc::clone(ddg_backend);
-                        let q = effective_query.to_string();
-                        let ctx = search_ctx.clone();
-                        match timeout(
-                            Duration::from_secs(5),
-                            ddg.search_with_context(&q, per_backend, &ctx),
-                        )
-                        .await
-                        {
-                            Ok(Ok(ddg_results)) => {
-                                self.circuit_breaker.record_success("DuckDuckGo");
-                                self.backend_selector.report_outcome(
-                                    &BackendId::DuckDuckGo,
-                                    ddg_results.len(),
-                                    (ddg_results.len() as f64 / 10.0).min(1.0),
-                                );
-                                info!(
-                                    "DDG conditional: {} results for {:?}",
-                                    ddg_results.len(),
-                                    effective_query
-                                );
-                                all.extend(ddg_results);
-                            }
-                            Ok(Err(e)) => {
-                                self.circuit_breaker.record_failure("DuckDuckGo");
-                                warn!("DDG conditional error: {e}");
-                            }
-                            Err(_) => {
-                                self.circuit_breaker.record_failure("DuckDuckGo");
-                                warn!("DDG conditional timed out");
-                            }
-                        }
-                    }
                 }
             }
         }

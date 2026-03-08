@@ -37,18 +37,7 @@ export default async function ConfigPage() {
     }
   } catch { /* non-fatal */ }
 
-  // Fallback demo flags if API returns empty
-  if (flags.length === 0) {
-    flags = [
-      { id: 'kill_search', name: 'Kill Search', description: 'Disable all /v1/search endpoints immediately', enabled: false, is_dangerous: true },
-      { id: 'kill_research', name: 'Kill Research', description: 'Disable all /v1/research endpoints immediately', enabled: false, is_dangerous: true },
-      { id: 'maintenance_mode', name: 'Maintenance Mode', description: 'Return 503 to all API consumers with retry-after header', enabled: false, is_dangerous: true },
-      { id: 'semantic_rerank', name: 'Semantic Reranking', description: 'Enable nomic-embed-text reranking via Ollama', enabled: true, is_dangerous: false, rollout_percent: 100 },
-      { id: 'fact_fusion', name: 'Fact Fusion', description: 'Concurrent Qwen fact extraction for research queries', enabled: true, is_dangerous: false, rollout_percent: 80 },
-      { id: 'reddit_boost', name: 'Reddit Boost', description: 'Increase Reddit result weighting for comparison queries', enabled: true, is_dangerous: false, rollout_percent: 100 },
-      { id: 'new_ranker', name: 'New HyperFusion Ranker v2', description: 'Experimental ranking model — 30% rollout only', enabled: false, is_dangerous: false, rollout_percent: 30 },
-    ]
-  }
+  // flags stays empty — ConfigEditorClient shows "No flags yet" empty state
 
   return (
     <>

@@ -5,12 +5,34 @@ use crate::middleware::AppState;
 use axum::{extract::State, Json};
 use libc;
 
-pub async fn realtime(_auth: AdminAuth, State(_state): State<AppState>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({"ok": true, "data": {}}))
+pub async fn realtime(_auth: AdminAuth, State(state): State<AppState>) -> Json<serde_json::Value> {
+    let (requests_last_hour, active_users, error_rate) = state.admin_db.as_ref()
+        .map(|db| {
+            let reqs = db.run_select_query(
+                "SELECT COUNT(*) FROM audit_events WHERE created_at >= datetime('now','-1 hour')", 1,
+            ).ok().and_then(|r| r.rows.first()?.first()?.as_i64()).unwrap_or(0);
+            let users = db.run_select_query(
+                "SELECT COUNT(DISTINCT admin_user_id) FROM audit_events WHERE created_at >= datetime('now','-1 hour')", 1,
+            ).ok().and_then(|r| r.rows.first()?.first()?.as_i64()).unwrap_or(0);
+            let errors = db.run_select_query(
+                "SELECT COUNT(*) FROM audit_events WHERE (action LIKE '%.error' OR action LIKE '%.fail') AND created_at >= datetime('now','-1 hour')", 1,
+            ).ok().and_then(|r| r.rows.first()?.first()?.as_i64()).unwrap_or(0);
+            (reqs, users, if reqs > 0 { errors * 100 / reqs } else { 0 })
+        })
+        .unwrap_or((0, 0, 0));
+
+    Json(serde_json::json!({
+        "ok": true,
+        "requests_last_hour": requests_last_hour,
+        "active_users": active_users,
+        "error_rate_pct": error_rate,
+        "latency_p50_ms": 0,
+        "latency_p99_ms": 0,
+    }))
 }
 
 pub async fn summary(_auth: AdminAuth, State(state): State<AppState>) -> Json<serde_json::Value> {
-    let (total_orgs, open_incidents, open_tickets) = state.admin_db.as_ref()
+    let (total_orgs, open_incidents, open_tickets, admin_db_size_bytes) = state.admin_db.as_ref()
         .map(|db| {
             let orgs = db.count_orgs().unwrap_or(0);
             let incidents = db.list_incidents().unwrap_or_default()
@@ -18,15 +40,17 @@ pub async fn summary(_auth: AdminAuth, State(state): State<AppState>) -> Json<se
                 .filter(|i| i.get("status").and_then(|s| s.as_str()) != Some("resolved"))
                 .count() as i64;
             let tickets = db.count_tickets_by_status("open").unwrap_or(0);
-            (orgs, incidents, tickets)
+            let db_size = db.db_size_bytes();
+            (orgs, incidents, tickets, db_size)
         })
-        .unwrap_or((0, 0, 0));
+        .unwrap_or((0, 0, 0, 0));
 
     Json(serde_json::json!({
         "ok": true,
         "total_orgs": total_orgs,
         "open_incidents": open_incidents,
         "open_tickets": open_tickets,
+        "admin_db_size_bytes": admin_db_size_bytes,
         "jobs_active": 0,
         "jobs_queued": 0,
         "jobs_completed_today": 0,
@@ -38,7 +62,27 @@ pub async fn provider_health(
     _auth: AdminAuth,
     State(_state): State<AppState>,
 ) -> Json<serde_json::Value> {
-    Json(serde_json::json!({"ok": true, "data": []}))
+    // Static provider registry — status checked via config/env presence
+    let providers = vec![
+        ("Google", "google", std::env::var("PROXY_USER").is_ok()),
+        ("DuckDuckGo", "ddg", true),
+        ("Bing", "bing", true),
+        ("Brave", "brave", true),
+        ("SearXNG", "searxng", true),
+        ("OpenAI", "openai", std::env::var("OPENAI_API_KEY").is_ok()),
+        ("Anthropic", "anthropic", std::env::var("ANTHROPIC_API_KEY").is_ok()),
+        ("Gemini", "gemini", std::env::var("GEMINI_API_KEY").is_ok() || std::env::var("GEMINI_API_KEYS").is_ok()),
+    ];
+
+    let data: Vec<_> = providers.iter().map(|(name, id, configured)| {
+        serde_json::json!({
+            "name": name,
+            "id": id,
+            "status": if *configured { "ok" } else { "unconfigured" },
+        })
+    }).collect();
+
+    Json(serde_json::json!({"ok": true, "data": data}))
 }
 
 /// GET /internal/admin/system/stats

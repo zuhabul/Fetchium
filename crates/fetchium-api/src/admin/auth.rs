@@ -410,7 +410,7 @@ pub async fn list_staff(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     let admin_db = state.admin_db.as_ref().ok_or_else(db_not_init)?;
-    let users = admin_db.list_users().map_err(db_err)?;
+    let users = admin_db.list_users(100, 0, None, None).map_err(db_err)?;
     Ok(Json(serde_json::json!({"ok": true, "data": users})))
 }
 
@@ -418,46 +418,73 @@ pub async fn list_staff(
 
 /// POST /internal/admin/staff — create a new staff member.
 pub async fn create_staff(
-    _auth: AdminAuth,
-    State(_state): State<AppState>,
-) -> Json<serde_json::Value> {
-    Json(serde_json::json!({"ok": true, "data": null}))
+    auth: AdminAuth,
+    State(state): State<AppState>,
+    Json(body): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    let admin_db = state.admin_db.as_ref().ok_or_else(db_not_init)?;
+    let email = body.get("email").and_then(|v| v.as_str()).ok_or_else(|| (StatusCode::BAD_REQUEST, Json(serde_json::json!({"error": "email required"}))))?;
+    let password = body.get("password").and_then(|v| v.as_str()).ok_or_else(|| (StatusCode::BAD_REQUEST, Json(serde_json::json!({"error": "password required"}))))?;
+    let name = body.get("name").and_then(|v| v.as_str()).unwrap_or("Staff");
+    let role = body.get("role").and_then(|v| v.as_str()).unwrap_or("support");
+    let hash = hash_password(password).map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"error": "hash failed"}))))?;
+    let id = Uuid::new_v4().to_string();
+    admin_db.create_user(&id, email, &hash, role, name).map_err(db_err)?;
+    let _ = admin_db.log_audit(Some(&auth.user.id), Some(&auth.user.role), "staff", Some(&id), "staff.create", None);
+    Ok(Json(serde_json::json!({"ok": true, "id": id})))
 }
 
 /// PATCH /internal/admin/staff/:id — update a staff member.
 pub async fn update_staff(
-    _auth: AdminAuth,
-    State(_state): State<AppState>,
-    Path(_id): Path<String>,
-) -> Json<serde_json::Value> {
-    Json(serde_json::json!({"ok": true}))
+    auth: AdminAuth,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(body): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    let admin_db = state.admin_db.as_ref().ok_or_else(db_not_init)?;
+    if let Some(role) = body.get("role").and_then(|v| v.as_str()) {
+        admin_db.update_staff_role(&id, role).map_err(db_err)?;
+    }
+    if let Some(active) = body.get("is_active").and_then(|v| v.as_bool()) {
+        admin_db.set_user_active(&id, active).map_err(db_err)?;
+    }
+    let _ = admin_db.log_audit(Some(&auth.user.id), Some(&auth.user.role), "staff", Some(&id), "staff.update", None);
+    Ok(Json(serde_json::json!({"ok": true})))
 }
 
-/// DELETE /internal/admin/staff/:id — remove a staff member.
+/// DELETE /internal/admin/staff/:id — remove a staff member (deactivate).
 pub async fn remove_staff(
-    _auth: AdminAuth,
-    State(_state): State<AppState>,
-    Path(_id): Path<String>,
-) -> Json<serde_json::Value> {
-    Json(serde_json::json!({"ok": true}))
+    auth: AdminAuth,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    let admin_db = state.admin_db.as_ref().ok_or_else(db_not_init)?;
+    admin_db.set_user_active(&id, false).map_err(db_err)?;
+    let _ = admin_db.log_audit(Some(&auth.user.id), Some(&auth.user.role), "staff", Some(&id), "staff.remove", None);
+    Ok(Json(serde_json::json!({"ok": true})))
 }
 
 /// GET /internal/admin/staff/:id/sessions — list sessions for a staff member.
 pub async fn staff_sessions(
     _auth: AdminAuth,
-    State(_state): State<AppState>,
-    Path(_id): Path<String>,
-) -> Json<serde_json::Value> {
-    Json(serde_json::json!({"ok": true, "data": []}))
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    let admin_db = state.admin_db.as_ref().ok_or_else(db_not_init)?;
+    let sessions = admin_db.list_sessions(&id).map_err(db_err)?;
+    Ok(Json(serde_json::json!({"ok": true, "data": sessions})))
 }
 
 /// DELETE /internal/admin/staff/:id/sessions — revoke all sessions for a staff member.
 pub async fn revoke_all_sessions(
-    _auth: AdminAuth,
-    State(_state): State<AppState>,
-    Path(_id): Path<String>,
-) -> Json<serde_json::Value> {
-    Json(serde_json::json!({"ok": true}))
+    auth: AdminAuth,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    let admin_db = state.admin_db.as_ref().ok_or_else(db_not_init)?;
+    admin_db.revoke_all_sessions_for_user(&id).map_err(db_err)?;
+    let _ = admin_db.log_audit(Some(&auth.user.id), Some(&auth.user.role), "staff", Some(&id), "staff.revoke_sessions", None);
+    Ok(Json(serde_json::json!({"ok": true})))
 }
 
 // ── Error helpers ────────────────────────────────────────────────────────────

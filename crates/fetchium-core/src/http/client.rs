@@ -255,7 +255,7 @@ impl HttpClient {
     }
 
     /// Extract domain from a URL for rate limiting.
-    fn extract_domain(url: &str) -> String {
+    pub fn extract_domain(url: &str) -> String {
         Url::parse(url)
             .map(|u| u.host_str().unwrap_or("unknown").to_string())
             .unwrap_or_else(|_| "unknown".to_string())

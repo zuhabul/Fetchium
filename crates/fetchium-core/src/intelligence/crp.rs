@@ -329,7 +329,7 @@ fn step_weighted_synthesis(c: &CrpContradiction, prior_steps: &[ResolutionStep])
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-fn shared_word_ratio(a: &str, b: &str) -> f64 {
+pub fn shared_word_ratio(a: &str, b: &str) -> f64 {
     let stop_words: std::collections::HashSet<&str> = [
         "the", "a", "an", "is", "was", "are", "were", "of", "in", "to", "and", "or",
     ]

@@ -6,26 +6,34 @@ export default function RevokeButton({ keyId }: { keyId: string }) {
   const [confirming, setConfirming] = useState(false)
   const [revoked, setRevoked] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleRevoke() {
     setLoading(true)
+    setError(null)
     try {
       const res = await fetch(`/api/admin/keys/${keyId}`, { method: 'DELETE' })
       if (res.ok) {
         setRevoked(true)
         setConfirming(false)
+      } else {
+        setError(`Failed (${res.status})`)
+        setConfirming(false)
       }
     } catch {
-      // silently fail — parent page will show stale state
+      setError('Network error')
+      setConfirming(false)
     } finally {
       setLoading(false)
     }
   }
 
+  if (error) {
+    return <span className="text-xs text-red-400">{error}</span>
+  }
+
   if (revoked) {
-    return (
-      <span className="text-xs text-zinc-500">Revoked</span>
-    )
+    return <span className="text-xs text-zinc-500">Revoked</span>
   }
 
   if (confirming) {

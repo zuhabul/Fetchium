@@ -117,12 +117,28 @@ fn clean_snippet(raw: &str) -> String {
 // ─── Semantic Reranking ───────────────────────────────────────────────────────
 
 /// Semantically rerank results: blend HyperFusion score (70%) + nomic-embed-text cosine (30%).
-/// Falls back to original order if Ollama is unavailable (3s timeout).
+/// Falls back to original order if Ollama is unavailable (500ms timeout).
 async fn semantic_rerank(
     query: &str,
     mut results: Vec<crate::types::ResultItem>,
 ) -> Vec<crate::types::ResultItem> {
     if results.len() <= 1 {
+        return results;
+    }
+
+    let ollama_url =
+        std::env::var("OLLAMA_URL").unwrap_or_else(|_| "http://localhost:11434".to_string());
+    
+    let client = match reqwest::Client::builder()
+        .timeout(Duration::from_millis(500))
+        .build()
+    {
+        Ok(c) => c,
+        Err(_) => return results,
+    };
+
+    // Fast check if Ollama is even there
+    if tokio::time::timeout(Duration::from_millis(100), client.get(&ollama_url).send()).await.is_err() {
         return results;
     }
 
@@ -133,20 +149,10 @@ async fn semantic_rerank(
     let mut all_texts: Vec<&str> = vec![query];
     all_texts.extend(snippet_texts.iter().map(|s| s.as_str()));
 
-    let ollama_url =
-        std::env::var("OLLAMA_URL").unwrap_or_else(|_| "http://localhost:11434".to_string());
     let body = serde_json::json!({ "model": "nomic-embed-text", "input": all_texts });
 
-    let client = match reqwest::Client::builder()
-        .timeout(Duration::from_secs(3))
-        .build()
-    {
-        Ok(c) => c,
-        Err(_) => return results,
-    };
-
     let resp = match tokio::time::timeout(
-        Duration::from_secs(3),
+        Duration::from_millis(800),
         client
             .post(format!("{ollama_url}/api/embed"))
             .json(&body)
@@ -156,7 +162,7 @@ async fn semantic_rerank(
     {
         Ok(Ok(r)) => r,
         _ => {
-            tracing::debug!("Semantic rerank: Ollama unavailable, keeping HyperFusion order");
+            tracing::debug!("Semantic rerank: Ollama timed out, keeping HyperFusion order");
             return results;
         }
     };
@@ -233,7 +239,7 @@ async fn fact_fusion(query: &str, snippets: &[(usize, &str)], http: &HttpClient)
     };
 
     let resp_text = match tokio::time::timeout(
-        Duration::from_secs(3),
+        Duration::from_millis(1500),
         http.post_json("http://localhost:11434/api/chat", &body_str),
     )
     .await
@@ -343,6 +349,9 @@ async fn extract_structured(content: &str, schema: &Value, http: &HttpClient) ->
     serde_json::from_str(&extract_json_from_text(&content_str)).ok()
 }
 
+use crate::intelligence::acs::{AdversarialContentShield, AcsAction};
+use crate::intelligence::crp::{CrpContradiction, Severity, resolve as crp_resolve, shared_word_ratio};
+
 // ─── Search Pipeline ──────────────────────────────────────────────────────────
 
 /// Execute a search pipeline: Orchestrator → Semantic Rerank → Fact Fusion → Cache
@@ -384,11 +393,13 @@ pub async fn search(
         800
     };
 
-    // Limit + semantic reranking (blend HyperFusion 70% + nomic-embed-text 30%)
-    let results: Vec<_> = results.into_iter().take(max_sources as usize).collect();
-    let results = semantic_rerank(query, results).await;
+    // Parallelize reranking, fact fusion, and ACS analysis
+    let results_for_rerank = results.clone();
+    let query_for_rerank = query.to_string();
+    let rerank_handle = tokio::spawn(async move {
+        semantic_rerank(&query_for_rerank, results_for_rerank).await
+    });
 
-    // Fact fusion: run concurrently with item-building (no latency penalty)
     let top_snippets: Vec<(usize, String)> = results
         .iter()
         .take(5)
@@ -402,14 +413,17 @@ pub async fn search(
         fact_fusion(&query_owned, &refs, &http_ff).await
     });
 
+    // Initialize ACS
+    let acs = AdversarialContentShield::new();
+
     let items: Vec<Value> = if needs_extraction {
-        // Parallel URL fetching + CEP extraction
-        let mut handles = Vec::with_capacity(results.len());
+        // Parallel URL fetching + CEP extraction (starts immediately, doesn't wait for rerank)
+        let mut handles = std::collections::HashMap::with_capacity(results.len());
         for r in &results {
             let http2 = http.clone();
             let url = r.url.clone();
             let fallback = r.snippet.clone();
-            handles.push(tokio::spawn(async move {
+            let handle = tokio::spawn(async move {
                 match tokio::time::timeout(Duration::from_secs(5), http2.fetch_text(&url)).await {
                     Ok(Ok(html)) if !html.is_empty() => {
                         let ext = cep_extract(&html, &url);
@@ -418,13 +432,29 @@ pub async fn search(
                     }
                     _ => (fallback, None),
                 }
-            }));
+            });
+            handles.insert(r.url.clone(), handle);
         }
 
-        let mut items = Vec::with_capacity(results.len());
-        for (idx, (r, handle)) in results.iter().zip(handles).enumerate() {
-            let (snippet, extracted) = handle.await.unwrap_or_else(|_| (r.snippet.clone(), None));
+        // Wait for rerank result to know the final order
+        let reranked_results = rerank_handle.await.unwrap_or_else(|_| results.clone());
+        
+        let mut items = Vec::with_capacity(reranked_results.len());
+        for (idx, r) in reranked_results.iter().enumerate() {
+            // Take the handle for this URL
+            let handle = handles.remove(&r.url);
+            
+            // Wait for extraction if needed (but it was already running!)
+            let (snippet, extracted) = if let Some(h) = handle {
+                h.await.unwrap_or_else(|_| (r.snippet.clone(), None))
+            } else {
+                (r.snippet.clone(), None)
+            };
+            
             let clean = clean_snippet(&snippet);
+            let domain = HttpClient::extract_domain(&r.url);
+            let acs_result = acs.analyze(extracted.as_deref().unwrap_or(&clean), &domain);
+
             let mut item = if include_content {
                 json!({
                     "title": r.title,
@@ -433,6 +463,8 @@ pub async fn search(
                     "score": r.score,
                     "content": extracted,
                     "source_index": idx + 1,
+                    "trust_score": acs_result.trust_score,
+                    "acs_flags": acs_result.flags,
                 })
             } else {
                 json!({
@@ -441,6 +473,8 @@ pub async fn search(
                     "snippet": extracted.unwrap_or(clean),
                     "score": r.score,
                     "source_index": idx + 1,
+                    "trust_score": acs_result.trust_score,
+                    "acs_flags": acs_result.flags,
                 })
             };
             if let Some(ref date) = r.published_date {
@@ -450,17 +484,22 @@ pub async fn search(
         }
         items
     } else {
-        // Fast path: snippets only
-        results
+        // Fast path: wait for rerank then build items
+        let reranked_results = rerank_handle.await.unwrap_or(results.clone());
+        reranked_results
             .iter()
             .enumerate()
             .map(|(idx, r)| {
+                let domain = HttpClient::extract_domain(&r.url);
+                let acs_result = acs.analyze(&r.snippet, &domain);
                 let mut item = json!({
                     "title": r.title,
                     "url": r.url,
                     "snippet": clean_snippet(&r.snippet),
                     "score": r.score,
                     "source_index": idx + 1,
+                    "trust_score": acs_result.trust_score,
+                    "acs_flags": acs_result.flags,
                 });
                 if let Some(ref date) = r.published_date {
                     item["published_date"] = json!(date);
@@ -469,6 +508,35 @@ pub async fn search(
             })
             .collect()
     };
+
+    // --- CRP: Contradiction Resolution ---
+    // If we have at least 2 top results, check for simple contradictions
+    let mut contradictions = Vec::new();
+    if items.len() >= 2 {
+        let claim_a = items[0]["snippet"].as_str().unwrap_or("");
+        let claim_b = items[1]["snippet"].as_str().unwrap_or("");
+        
+        // Simple heuristic: if they share keywords but have different numbers or negations
+        let share_keywords = shared_word_ratio(claim_a, claim_b) > 0.3;
+        let contains_negation = (claim_a.contains(" not ") || claim_a.contains(" no ")) != (claim_b.contains(" not ") || claim_b.contains(" no "));
+        
+        if share_keywords && contains_negation {
+            let c = CrpContradiction {
+                claim_a: claim_a.to_string(),
+                source_a_domain: HttpClient::extract_domain(items[0]["url"].as_str().unwrap_or("")),
+                source_a_trust: items[0]["trust_score"].as_f64().unwrap_or(0.5),
+                source_a_date: items[0].get("published_date").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                claim_b: claim_b.to_string(),
+                source_b_domain: HttpClient::extract_domain(items[1]["url"].as_str().unwrap_or("")),
+                source_b_trust: items[1]["trust_score"].as_f64().unwrap_or(0.5),
+                source_b_date: items[1].get("published_date").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                severity: Severity::Medium,
+            };
+            if let Ok(res) = crp_resolve(&c, |_| 0.5) {
+                contradictions.push(res);
+            }
+        }
+    }
 
     // Predictive pre-fetch: fire-and-forget background fetch of top-3 URLs
     if !needs_extraction {
@@ -530,6 +598,7 @@ pub async fn search(
             "credits_used": 1,
             "citations": citations,
             "verified_facts": verified_facts,
+            "contradictions": contradictions,
         },
         "results": items,
     });

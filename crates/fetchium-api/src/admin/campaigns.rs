@@ -82,16 +82,60 @@ pub async fn create(
 
 pub async fn attribution_report(
     auth: AdminAuth,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::CampaignsRead)?;
-    Ok(Json(serde_json::json!({"data": []})))
+    let db = state.admin_db.as_ref().ok_or_else(|| (
+        axum::http::StatusCode::SERVICE_UNAVAILABLE,
+        Json(serde_json::json!({"error": "admin db not initialized"})),
+    ))?;
+    let data = db.run_select_query(
+        "SELECT c.id, c.name, c.type, c.status,
+                COUNT(at.id) as touch_count,
+                COUNT(DISTINCT at.org_id) as unique_orgs,
+                MIN(at.occurred_at) as first_touch,
+                MAX(at.occurred_at) as last_touch
+         FROM campaigns c
+         LEFT JOIN attribution_touches at ON at.campaign_id = c.id
+         GROUP BY c.id ORDER BY touch_count DESC LIMIT 100",
+        100,
+    ).map(|r| {
+        r.rows.iter().map(|row| serde_json::json!({
+            "campaign_id": row.first(), "campaign_name": row.get(1),
+            "type": row.get(2), "status": row.get(3),
+            "touch_count": row.get(4), "unique_orgs": row.get(5),
+            "first_touch": row.get(6), "last_touch": row.get(7),
+        })).collect::<Vec<_>>()
+    }).unwrap_or_default();
+    Ok(Json(serde_json::json!({"data": data, "total": data.len()})))
 }
 
 pub async fn funnel(
     auth: AdminAuth,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::CampaignsRead)?;
-    Ok(Json(serde_json::json!({"data": []})))
+    let db = state.admin_db.as_ref().ok_or_else(|| (
+        axum::http::StatusCode::SERVICE_UNAVAILABLE,
+        Json(serde_json::json!({"error": "admin db not initialized"})),
+    ))?;
+    // Funnel: draft → active → touch → conversion (org created after touch)
+    let stages = db.run_select_query(
+        "SELECT
+           (SELECT COUNT(*) FROM campaigns) as total_campaigns,
+           (SELECT COUNT(*) FROM campaigns WHERE status='active') as active_campaigns,
+           (SELECT COUNT(*) FROM attribution_touches) as total_touches,
+           (SELECT COUNT(DISTINCT org_id) FROM attribution_touches WHERE org_id IS NOT NULL) as touched_orgs",
+        1,
+    ).map(|r| {
+        r.rows.first().map(|row| serde_json::json!({
+            "stages": [
+                {"name": "Campaigns Created", "count": row.first()},
+                {"name": "Active Campaigns", "count": row.get(1)},
+                {"name": "Attribution Touches", "count": row.get(2)},
+                {"name": "Touched Orgs", "count": row.get(3)},
+            ]
+        }))
+    }).unwrap_or(None);
+    Ok(Json(serde_json::json!({"data": stages})))
 }
