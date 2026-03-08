@@ -160,12 +160,12 @@ async function main() {
     console.log(`\n✓ fetchium v${VERSION} installed`);
   }
   console.log(`  Run: fetchium --help`);
-  console.log(`  Docs: https://fetchium.com/docs\n`);
+  console.log(`  Docs: https://docs.fetchium.com\n`);
 }
 
 main().catch((err) => {
   // Swallow errors so npm install never fails because of this postinstall
   console.warn(`\n⚠  fetchium postinstall warning: ${err.message}`);
-  console.warn("  You can install manually: https://fetchium.com/docs/self-hosting\n");
+  console.warn("  You can install manually: https://docs.fetchium.com/self-hosting\n");
   process.exitCode = 0;
 });

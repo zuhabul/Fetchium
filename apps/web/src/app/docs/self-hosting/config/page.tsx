@@ -157,10 +157,10 @@ SEARXNG_URL=https://search.yourdomain.com fetchium search "rust async"`} />
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/self-hosting/docker", title: "Docker Setup", desc: "Full Docker Compose stack" },
-          { href: "/docs/self-hosting/searxng", title: "SearXNG Integration", desc: "Configure search backbone" },
-          { href: "/docs/authentication", title: "Authentication", desc: "API key management" },
-          { href: "/docs/quickstart", title: "Quick Start", desc: "Make your first request" },
+          { href: "https://docs.fetchium.com/self-hosting/docker", title: "Docker Setup", desc: "Full Docker Compose stack" },
+          { href: "https://docs.fetchium.com/self-hosting/searxng", title: "SearXNG Integration", desc: "Configure search backbone" },
+          { href: "https://docs.fetchium.com/authentication", title: "Authentication", desc: "API key management" },
+          { href: "https://docs.fetchium.com/quickstart", title: "Quick Start", desc: "Make your first request" },
         ].map(l => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

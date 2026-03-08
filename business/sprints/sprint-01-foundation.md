@@ -215,7 +215,7 @@ Sprint 01 is complete when:
 
 | Risk | Mitigation |
 |------|-----------|
-| `fetchium.com` is taken | Fallback: `getfetchium.com` or `fetchium.dev` |
+| `fetchium.com` is taken | Fallback: `getfetchium.com` |
 | Logo design takes too long | Use Looka for a quick v1; iterate later |
 | Business registration is slow | Start legal entity on Day 1; sprint runs in parallel |
 | `@fetchium` Twitter handle taken | Try `@fetchiumai` or `@getfetchium` |

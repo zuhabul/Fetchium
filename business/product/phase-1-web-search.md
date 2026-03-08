@@ -37,14 +37,14 @@ fetchium provider set gemini --key AIza...
 ```
 
 **Install methods:**
-- `curl -sSf https://install.fetchium.dev | sh` (primary)
+- `curl -sSf https://install.fetchium.com | sh` (primary)
 - `npm install -g fetchium` (for JS ecosystem users)
 - `cargo binstall fetchium` (for Rust developers)
 - `brew install fetchium/tap/fetchium` (macOS)
 
 ### REST API v1
 
-Base URL: `https://api.fetchium.dev/v1`
+Base URL: `https://api.fetchium.com/v1`
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -86,13 +86,13 @@ Response:
 
 ### Web Assets
 
-- **Landing page:** `https://fetchium.dev`
+- **Landing page:** `https://fetchium.com`
   - Hero: benchmark vs Perplexity API / Tavily
   - Pricing: Free / Pro / Enterprise
   - Quick-start code snippet (copy/paste → working in 60 seconds)
   - Live demo embed
 
-- **Docs site:** `https://docs.fetchium.dev`
+- **Docs site:** `https://docs.fetchium.com`
   - Getting started guide
   - API reference (auto-generated from OpenAPI spec)
   - CLI reference
@@ -223,7 +223,7 @@ Errors: simple file logging → upgrade to Sentry at M2
 | Week | Deliverable | Done When |
 |------|-------------|-----------|
 | W1 | SearXNG backend stable, `fetchium search` working | CLI returns results for 10 test queries |
-| W2 | REST API `/search` and `/health` live | curl to api.fetchium.dev returns results |
+| W2 | REST API `/search` and `/health` live | curl to api.fetchium.com returns results |
 | W3 | `fetchium fetch` + CEP extraction working | Fetches HN front page, returns markdown |
 | W4 | First 10 beta users invited (Discord + GitHub) | 10 users with API keys |
 
@@ -233,7 +233,7 @@ Errors: simple file logging → upgrade to Sentry at M2
 |------|-------------|-----------|
 | W5 | `fetchium ai --fast` working (snippet-only) | < 10s latency for factual queries |
 | W6 | AI synthesis with full fetch + citations | Sources cited with URLs in response |
-| W7 | Docs site live at docs.fetchium.dev | All Phase 1 endpoints documented |
+| W7 | Docs site live at docs.fetchium.com | All Phase 1 endpoints documented |
 | W8 | 50 beta users, first NPS survey sent | Survey responses collected |
 
 ### Month 3

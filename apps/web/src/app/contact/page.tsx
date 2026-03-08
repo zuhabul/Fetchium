@@ -105,7 +105,7 @@ export default function ContactPage() {
               {[
                 { label: "Discord Community", desc: "Developer support + announcements", href: "https://discord.gg/fetchium" },
                 { label: "GitHub Issues", desc: "Bug reports + feature requests", href: "https://github.com/zuhabul/Fetchium/issues" },
-                { label: "Documentation", desc: "API reference, quickstart, guides", href: "/docs" },
+                { label: "Documentation", desc: "API reference, quickstart, guides", href: "https://docs.fetchium.com" },
               ].map((l) => (
                 <Link key={l.label} href={l.href} target={l.href.startsWith("http") ? "_blank" : undefined} rel={l.href.startsWith("http") ? "noopener noreferrer" : undefined} className="rounded-xl border border-white/6 bg-white/2 p-4 hover:bg-white/5 transition-all group">
                   <div className="text-[13px] font-medium text-slate-300 group-hover:text-white">{l.label}</div>

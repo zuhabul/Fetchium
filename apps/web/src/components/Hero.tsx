@@ -366,7 +366,7 @@ export default function Hero() {
                 </svg>
               </Link>
               <Link
-                href="/docs"
+                href="https://docs.fetchium.com"
                 className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl font-bold text-base transition-all duration-200 min-h-[52px]"
                 style={{ border: "1px solid rgba(99,102,241,0.28)", background: "rgba(99,102,241,0.06)", color: "#c7d2fe" }}
               >

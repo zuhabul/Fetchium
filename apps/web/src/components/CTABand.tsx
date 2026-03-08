@@ -60,7 +60,7 @@ export default function CTABand() {
               <ExternalLink className="h-5 w-5" />
             </Link>
             <Link
-              href="/docs/quickstart"
+              href="https://docs.fetchium.com/quickstart"
               className="inline-flex items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/40 px-8 py-4 text-base font-bold text-slate-200 hover:bg-slate-700/50 hover:text-white hover:border-slate-600/60 transition-all duration-200 min-h-[56px]"
             >
               Read the Quickstart

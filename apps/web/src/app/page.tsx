@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   title: "Fetchium — The Search API That Thinks | Cheapest Full-Pipeline AI Search",
   description:
     "One API call for search + extraction + citations across 11+ backends. Built for RAG pipelines, AI agents, and research workflows. From $0.58/1K queries. 1,000 free requests/month, no credit card.",
+  alternates: {
+    canonical: "/",
+  },
   keywords: [
     "search API", "web search API for AI", "RAG retrieval API", "AI search API",
     "firecrawl alternative", "tavily alternative", "serpapi alternative", "web scraping for LLMs",

@@ -110,10 +110,10 @@ export default function HyperFusionPage() {
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/algorithms/spre", title: "SPRE Pre-ranking", desc: "Speculative pre-ranking for speed" },
-          { href: "/docs/algorithms/cep", title: "CEP Extraction", desc: "Content extraction pipeline" },
-          { href: "/docs/algorithms/qatbe", title: "QATBE", desc: "Token-budgeted extraction" },
-          { href: "/docs/api/search", title: "Search API", desc: "See HyperFusion in action" },
+          { href: "https://docs.fetchium.com/algorithms/spre", title: "SPRE Pre-ranking", desc: "Speculative pre-ranking for speed" },
+          { href: "https://docs.fetchium.com/algorithms/cep", title: "CEP Extraction", desc: "Content extraction pipeline" },
+          { href: "https://docs.fetchium.com/algorithms/qatbe", title: "QATBE", desc: "Token-budgeted extraction" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "See HyperFusion in action" },
         ].map(l => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

@@ -10,55 +10,65 @@ interface NavItem {
   items?: { title: string; href: string; badge?: string }[];
 }
 
+function hrefPath(href: string): string {
+  try {
+    return new URL(href).pathname;
+  } catch {
+    return href;
+  }
+}
+
 const NAV: NavItem[] = [
   {
     title: "Getting Started",
     items: [
-      { title: "Introduction", href: "/docs" },
-      { title: "Quick Start", href: "/docs/quickstart" },
-      { title: "Authentication", href: "/docs/authentication" },
-      { title: "Rate Limits", href: "/docs/rate-limits" },
-      { title: "Error Handling", href: "/docs/errors" },
+      { title: "Introduction", href: "https://docs.fetchium.com" },
+      { title: "Quick Start", href: "https://docs.fetchium.com/quickstart" },
+      { title: "Authentication", href: "https://docs.fetchium.com/authentication" },
+      { title: "Rate Limits", href: "https://docs.fetchium.com/rate-limits" },
+      { title: "Error Handling", href: "https://docs.fetchium.com/errors" },
     ],
   },
   {
     title: "API Reference",
     items: [
-      { title: "Search", href: "/docs/api/search", badge: "POST" },
-      { title: "Scrape / Fetch", href: "/docs/api/scrape", badge: "POST" },
-      { title: "Research", href: "/docs/api/research", badge: "POST" },
-      { title: "Estimate", href: "/docs/api/estimate", badge: "POST" },
-      { title: "YouTube", href: "/docs/api/youtube", badge: "POST" },
-      { title: "Social", href: "/docs/api/social", badge: "POST" },
-      { title: "Usage Stats", href: "/docs/api/usage", badge: "GET" },
-      { title: "Health Check", href: "/docs/api/health", badge: "GET" },
-      { title: "Admin Keys", href: "/docs/api/admin-keys", badge: "ADMIN" },
+      { title: "Search", href: "https://docs.fetchium.com/api/search", badge: "POST" },
+      { title: "Scrape / Fetch", href: "https://docs.fetchium.com/api/scrape", badge: "POST" },
+      { title: "Research", href: "https://docs.fetchium.com/api/research", badge: "POST" },
+      { title: "Async Jobs", href: "https://docs.fetchium.com/api/async-jobs", badge: "ASYNC" },
+      { title: "Estimate", href: "https://docs.fetchium.com/api/estimate", badge: "POST" },
+      { title: "YouTube", href: "https://docs.fetchium.com/api/youtube", badge: "POST" },
+      { title: "Social", href: "https://docs.fetchium.com/api/social", badge: "POST" },
+      { title: "Usage Stats", href: "https://docs.fetchium.com/api/usage", badge: "GET" },
+      { title: "Health Check", href: "https://docs.fetchium.com/api/health", badge: "GET" },
+      { title: "Admin Keys", href: "https://docs.fetchium.com/api/admin-keys", badge: "ADMIN" },
+      { title: "Proxy Admin", href: "https://docs.fetchium.com/api/proxy-admin", badge: "ADMIN" },
     ],
   },
   {
     title: "SDKs & Integrations",
     items: [
-      { title: "TypeScript / Node.js", href: "/docs/sdk/typescript" },
-      { title: "Python", href: "/docs/sdk/python" },
-      { title: "curl Examples", href: "/docs/sdk/curl" },
-      { title: "MCP Protocol", href: "/docs/sdk/mcp", badge: "NEW" },
+      { title: "TypeScript / Node.js", href: "https://docs.fetchium.com/sdk/typescript" },
+      { title: "Python", href: "https://docs.fetchium.com/sdk/python" },
+      { title: "curl Examples", href: "https://docs.fetchium.com/sdk/curl" },
+      { title: "MCP Protocol", href: "https://docs.fetchium.com/sdk/mcp", badge: "NEW" },
     ],
   },
   {
     title: "Algorithms",
     items: [
-      { title: "HyperFusion Ranking", href: "/docs/algorithms/hyperfusion" },
-      { title: "CEP Extraction", href: "/docs/algorithms/cep" },
-      { title: "QATBE Token Budget", href: "/docs/algorithms/qatbe" },
-      { title: "SPRE Pre-ranking", href: "/docs/algorithms/spre" },
+      { title: "HyperFusion Ranking", href: "https://docs.fetchium.com/algorithms/hyperfusion" },
+      { title: "CEP Extraction", href: "https://docs.fetchium.com/algorithms/cep" },
+      { title: "QATBE Token Budget", href: "https://docs.fetchium.com/algorithms/qatbe" },
+      { title: "SPRE Pre-ranking", href: "https://docs.fetchium.com/algorithms/spre" },
     ],
   },
   {
     title: "Self-Hosting",
     items: [
-      { title: "Docker Setup", href: "/docs/self-hosting/docker" },
-      { title: "Configuration", href: "/docs/self-hosting/config" },
-      { title: "SearXNG Integration", href: "/docs/self-hosting/searxng" },
+      { title: "Docker Setup", href: "https://docs.fetchium.com/self-hosting/docker" },
+      { title: "Configuration", href: "https://docs.fetchium.com/self-hosting/config" },
+      { title: "SearXNG Integration", href: "https://docs.fetchium.com/self-hosting/searxng" },
     ],
   },
 ];
@@ -66,7 +76,10 @@ const NAV: NavItem[] = [
 function SectionGroup({ item, onLinkClick }: { item: NavItem; onLinkClick?: () => void }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(
-    item.items?.some((i) => pathname === i.href || pathname.startsWith(i.href + "/")) ?? true,
+    item.items?.some((i) => {
+      const path = hrefPath(i.href);
+      return pathname === path || pathname.startsWith(path + "/");
+    }) ?? true,
   );
 
   return (
@@ -97,7 +110,8 @@ function SectionGroup({ item, onLinkClick }: { item: NavItem; onLinkClick?: () =
             style={{ overflow: "hidden" }}
           >
             {item.items?.map((link) => {
-              const active = pathname === link.href;
+              const path = hrefPath(link.href);
+              const active = pathname === path;
               return (
                 <Link
                   key={link.href}
@@ -115,10 +129,12 @@ function SectionGroup({ item, onLinkClick }: { item: NavItem; onLinkClick?: () =
                       className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${
                         link.badge === "NEW"
                           ? "bg-emerald-500/15 text-emerald-400"
-                          : link.badge === "POST"
+                        : link.badge === "POST"
                             ? "bg-indigo-500/15 text-indigo-400"
-                            : link.badge === "GET"
+                        : link.badge === "GET"
                               ? "bg-sky-500/15 text-sky-400"
+                              : link.badge === "ASYNC"
+                                ? "bg-fuchsia-500/15 text-fuchsia-400"
                               : "bg-amber-500/15 text-amber-400"
                       }`}
                     >

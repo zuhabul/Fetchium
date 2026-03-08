@@ -17,7 +17,7 @@
 | Code identifiers | `fetchium` (lowercase) | Fetchium, FETCHIUM |
 | CLI binary | `fetchium` | Fetchium |
 | Package names | `fetchium` | Fetchium |
-| Domain | `fetchium.dev` | fetchium.com, FetchiumAI.com |
+| Domain | `fetchium.com` | fetchium.com, FetchiumAI.com |
 | Twitter/X | `@fetchiumdev` | @Fetchium, @FetchiumAI |
 
 **Never:**

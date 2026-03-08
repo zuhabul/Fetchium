@@ -14,7 +14,7 @@ const services = [
   { name: "Research API", endpoint: "/v1/research", status: "operational", uptime: "99.90%" },
   { name: "MCP Server", endpoint: "stdio", status: "operational", uptime: "99.99%" },
   { name: "Dashboard", endpoint: "app.fetchium.com", status: "operational", uptime: "99.98%" },
-  { name: "Documentation", endpoint: "fetchium.com/docs", status: "operational", uptime: "100%" },
+  { name: "Documentation", endpoint: "docs.fetchium.com", status: "operational", uptime: "100%" },
 ];
 
 function StatusBadge({ status }: { status: string }) {
