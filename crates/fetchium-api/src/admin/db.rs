@@ -557,12 +557,20 @@ impl AdminDb {
         Ok(sessions)
     }
 
-    pub fn list_users(&self) -> Result<Vec<serde_json::Value>> {
+    pub fn list_users(&self, limit: i64, offset: i64, search: Option<&str>, status: Option<&str>) -> Result<Vec<serde_json::Value>> {
         let conn = self.conn.lock();
-        let mut stmt = conn.prepare(
-            "SELECT id, email, role, name, is_active, created_at, last_login_at
-             FROM admin_users ORDER BY created_at DESC",
-        )?;
+        let mut where_parts: Vec<String> = vec![];
+        if let Some(s) = search.filter(|s| !s.is_empty()) {
+            let s = s.replace('\'', "''");
+            where_parts.push(format!("(email LIKE '%{s}%' OR name LIKE '%{s}%')"));
+        }
+        if let Some(st) = status.filter(|s| !s.is_empty()) {
+            let active = if st == "active" { "1" } else { "0" };
+            where_parts.push(format!("is_active = {active}"));
+        }
+        let where_str = if where_parts.is_empty() { String::new() } else { format!("WHERE {}", where_parts.join(" AND ")) };
+        let sql = format!("SELECT id, email, role, name, is_active, created_at, last_login_at FROM admin_users {where_str} ORDER BY created_at DESC LIMIT {limit} OFFSET {offset}");
+        let mut stmt = conn.prepare(&sql)?;
         let rows = stmt
             .query_map([], |r| {
                 Ok((
@@ -596,7 +604,7 @@ impl AdminDb {
 
     // ── Org operations ───────────────────────────────────────────────────────
 
-    pub fn list_orgs(&self, limit: i64, offset: i64) -> Result<Vec<serde_json::Value>> {
+    pub fn list_orgs(&self, limit: i64, offset: i64, search: Option<&str>, plan: Option<&str>, status: Option<&str>) -> Result<Vec<serde_json::Value>> {
         let conn = self.conn.lock();
         // organizations table added in migration 2 — guard against missing table
         let exists: i64 = conn.query_row(
@@ -607,12 +615,24 @@ impl AdminDb {
         if exists == 0 {
             return Ok(vec![]);
         }
-        let mut stmt = conn.prepare(
-            "SELECT id, name, slug, status, plan, owner_email, created_at
-             FROM organizations ORDER BY created_at DESC LIMIT ?1 OFFSET ?2",
-        )?;
+        let mut where_parts: Vec<String> = vec![];
+        if let Some(s) = search.filter(|s| !s.is_empty()) {
+            let s = s.replace('\'', "''");
+            where_parts.push(format!("(name LIKE '%{s}%' OR slug LIKE '%{s}%' OR owner_email LIKE '%{s}%')"));
+        }
+        if let Some(p) = plan.filter(|s| !s.is_empty()) {
+            let p = p.replace('\'', "''");
+            where_parts.push(format!("plan = '{p}'"));
+        }
+        if let Some(st) = status.filter(|s| !s.is_empty()) {
+            let st = st.replace('\'', "''");
+            where_parts.push(format!("status = '{st}'"));
+        }
+        let where_str = if where_parts.is_empty() { String::new() } else { format!("WHERE {}", where_parts.join(" AND ")) };
+        let sql = format!("SELECT id, name, slug, status, plan, owner_email, created_at FROM organizations {where_str} ORDER BY created_at DESC LIMIT {limit} OFFSET {offset}");
+        let mut stmt = conn.prepare(&sql)?;
         let rows = stmt
-            .query_map([limit, offset], |r| {
+            .query_map([], |r| {
                 Ok((
                     r.get::<_, String>(0)?,
                     r.get::<_, String>(1)?,
@@ -1193,6 +1213,30 @@ impl AdminDb {
         Ok(())
     }
 
+    pub fn update_staff_role(&self, user_id: &str, role: &str) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "UPDATE admin_users SET role = ?1, updated_at = ?2 WHERE id = ?3",
+            params![role, now, user_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_org_members(&self, org_id: &str) -> Result<Vec<serde_json::Value>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id, email, name, status, created_at FROM customer_users WHERE org_id = ?1 ORDER BY created_at DESC LIMIT 200",
+        )?;
+        let rows = stmt.query_map(params![org_id], |r| {
+            Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?, "email": r.get::<_,String>(1)?,
+                "name": r.get::<_,Option<String>>(2)?, "status": r.get::<_,String>(3)?,
+                "created_at": r.get::<_,String>(4)?,
+            }))
+        })?.filter_map(|r| r.ok()).collect();
+        Ok(rows)
+    }
+
     // ── Incident helpers ─────────────────────────────────────────────────────
 
     pub fn get_incident(&self, id: &str) -> Result<Option<serde_json::Value>> {
@@ -1609,15 +1653,22 @@ impl AdminDb {
         Ok(())
     }
 
-    pub fn list_api_keys(&self, limit: i64, offset: i64) -> Result<Vec<serde_json::Value>> {
+    pub fn list_api_keys(&self, limit: i64, offset: i64, status: Option<&str>, plan: Option<&str>) -> Result<Vec<serde_json::Value>> {
         self.ensure_api_keys_table()?;
         let conn = self.conn.lock();
-        let mut stmt = conn.prepare(
-            "SELECT k.id, k.org_id, o.name, k.name, k.key_prefix, k.revoked_at, k.created_at
-             FROM api_keys k LEFT JOIN organizations o ON o.id = k.org_id
-             ORDER BY k.created_at DESC LIMIT ?1 OFFSET ?2",
-        )?;
-        let rows = stmt.query_map(params![limit, offset], |r| {
+        let mut where_parts: Vec<String> = vec![];
+        if let Some(st) = status.filter(|s| !s.is_empty()) {
+            if st == "active" { where_parts.push("k.revoked_at IS NULL".into()); }
+            else if st == "revoked" { where_parts.push("k.revoked_at IS NOT NULL".into()); }
+        }
+        if let Some(p) = plan.filter(|s| !s.is_empty()) {
+            let p = p.replace('\'', "''");
+            where_parts.push(format!("o.plan = '{p}'"));
+        }
+        let where_str = if where_parts.is_empty() { String::new() } else { format!("WHERE {}", where_parts.join(" AND ")) };
+        let sql = format!("SELECT k.id, k.org_id, o.name, k.name, k.key_prefix, k.revoked_at, k.created_at FROM api_keys k LEFT JOIN organizations o ON o.id = k.org_id {where_str} ORDER BY k.created_at DESC LIMIT {limit} OFFSET {offset}");
+        let mut stmt = conn.prepare(&sql)?;
+        let rows = stmt.query_map([], |r| {
             let revoked: Option<String> = r.get(5)?;
             Ok(serde_json::json!({
                 "id": r.get::<_,String>(0)?, "org_id": r.get::<_,Option<String>>(1)?,

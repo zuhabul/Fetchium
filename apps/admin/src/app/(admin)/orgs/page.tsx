@@ -1,7 +1,9 @@
 import { getSession, adminFetch } from '@/lib/session'
 import TopBar from '@/components/layout/TopBar'
 import Link from 'next/link'
-import { Building2, Plus } from 'lucide-react'
+import { Building2 } from 'lucide-react'
+import FilterBar from '@/components/FilterBar'
+import PaginationBar from '@/components/PaginationBar'
 
 interface Org {
   id: string
@@ -12,13 +14,6 @@ interface Org {
   mrr_cents: number
   member_count: number
   created_at: string
-}
-
-interface OrgsResponse {
-  orgs: Org[]
-  total: number
-  page: number
-  per_page: number
 }
 
 const PLAN_BADGE: Record<string, string> = {
@@ -44,17 +39,31 @@ function Badge({ value, map }: { value: string; map: Record<string, string> }) {
   )
 }
 
-export default async function OrgsPage() {
-  const session = await getSession()
+const PAGE_SIZE = 50
 
-  let data: OrgsResponse = { orgs: [], total: 0, page: 1, per_page: 50 }
+export default async function OrgsPage({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
+  const [session, params] = await Promise.all([getSession(), searchParams])
+
+  const page = Math.max(1, parseInt(params.page ?? '1'))
+  const offset = (page - 1) * PAGE_SIZE
+  const filters = { search: params.search ?? '', plan: params.plan ?? '', status: params.status ?? '' }
+
+  const qs = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) })
+  if (filters.search) qs.set('search', filters.search)
+  if (filters.plan) qs.set('plan', filters.plan)
+  if (filters.status) qs.set('status', filters.status)
+
+  let orgs: Org[] = []
+  let total = 0
   let error: string | null = null
 
   try {
     if (session) {
-      const res = await adminFetch('/internal/admin/orgs?page=1&per_page=50')
+      const res = await adminFetch(`/internal/admin/orgs?${qs}`)
       if (res.ok) {
-        data = await res.json()
+        const data = await res.json()
+        orgs = data.data ?? []
+        total = data.total ?? orgs.length
       } else {
         error = `API error: ${res.status}`
       }
@@ -63,41 +72,18 @@ export default async function OrgsPage() {
     error = e instanceof Error ? e.message : 'Failed to fetch orgs'
   }
 
-  const orgs = data.orgs ?? []
-
   return (
     <>
-      <TopBar title="Organizations" subtitle={`${data.total ?? orgs.length} orgs total`} />
+      <TopBar title="Organizations" subtitle={`${total} orgs total`} />
       <div className="p-6 space-y-4">
-        {/* Filter bar + actions */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <input
-            type="search"
-            placeholder="Search orgs..."
-            className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 w-56"
-          />
-          <select className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:border-zinc-500">
-            <option value="">All plans</option>
-            <option value="free">Free</option>
-            <option value="starter">Starter</option>
-            <option value="pro">Pro</option>
-            <option value="enterprise">Enterprise</option>
-          </select>
-          <select className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:border-zinc-500">
-            <option value="">All statuses</option>
-            <option value="active">Active</option>
-            <option value="suspended">Suspended</option>
-            <option value="trial">Trial</option>
-            <option value="churned">Churned</option>
-          </select>
-          <div className="flex-1" />
-          {session?.role === 'owner' && (
-            <button className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm px-3 py-1.5 rounded-md transition-colors">
-              <Plus className="w-3.5 h-3.5" />
-              New Org
-            </button>
-          )}
-        </div>
+        <FilterBar
+          filters={[
+            { key: 'search', type: 'search', placeholder: 'Search orgs...' },
+            { key: 'plan', type: 'select', options: [{ value: '', label: 'All plans' }, { value: 'free', label: 'Free' }, { value: 'starter', label: 'Starter' }, { value: 'pro', label: 'Pro' }, { value: 'enterprise', label: 'Enterprise' }] },
+            { key: 'status', type: 'select', options: [{ value: '', label: 'All statuses' }, { value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended' }, { value: 'trial', label: 'Trial' }, { value: 'churned', label: 'Churned' }] },
+          ]}
+          current={filters}
+        />
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-400">
@@ -105,7 +91,6 @@ export default async function OrgsPage() {
           </div>
         )}
 
-        {/* Table */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
           {orgs.length === 0 && !error ? (
             <div className="flex flex-col items-center justify-center py-16 text-zinc-600">
@@ -117,9 +102,7 @@ export default async function OrgsPage() {
               <thead>
                 <tr className="border-b border-zinc-800">
                   {['Name', 'Plan', 'Status', 'MRR', 'Members', 'Created', 'Actions'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                      {h}
-                    </th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -130,26 +113,13 @@ export default async function OrgsPage() {
                       <div>{org.name}</div>
                       <div className="text-xs text-zinc-500">{org.slug}</div>
                     </td>
+                    <td className="px-4 py-3"><Badge value={org.plan ?? 'free'} map={PLAN_BADGE} /></td>
+                    <td className="px-4 py-3"><Badge value={org.status ?? 'active'} map={STATUS_BADGE} /></td>
+                    <td className="px-4 py-3 text-zinc-300">{org.mrr_cents ? `$${(org.mrr_cents / 100).toFixed(2)}` : '—'}</td>
+                    <td className="px-4 py-3 text-zinc-300">{org.member_count ?? '—'}</td>
+                    <td className="px-4 py-3 text-zinc-400">{org.created_at ? new Date(org.created_at).toLocaleDateString() : '—'}</td>
                     <td className="px-4 py-3">
-                      <Badge value={org.plan ?? 'free'} map={PLAN_BADGE} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge value={org.status ?? 'active'} map={STATUS_BADGE} />
-                    </td>
-                    <td className="px-4 py-3 text-zinc-300">
-                      {org.mrr_cents ? `$${(org.mrr_cents / 100).toFixed(2)}` : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-zinc-300">
-                      {org.member_count ?? '—'}
-                    </td>
-                    <td className="px-4 py-3 text-zinc-400">
-                      {org.created_at ? new Date(org.created_at).toLocaleDateString() : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/orgs/${org.id}`}
-                        className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm px-3 py-1.5 rounded-md transition-colors inline-block"
-                      >
+                      <Link href={`/orgs/${org.id}`} className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm px-3 py-1.5 rounded-md transition-colors inline-block">
                         View
                       </Link>
                     </td>
@@ -160,25 +130,8 @@ export default async function OrgsPage() {
           )}
         </div>
 
-        {/* Pagination */}
         {orgs.length > 0 && (
-          <div className="flex items-center justify-between text-sm text-zinc-500">
-            <span>Showing {orgs.length} of {data.total ?? orgs.length}</span>
-            <div className="flex items-center gap-2">
-              <button
-                disabled
-                className="bg-zinc-800 border border-zinc-700 text-zinc-500 text-sm px-3 py-1.5 rounded-md disabled:opacity-40"
-              >
-                Previous
-              </button>
-              <button
-                disabled={orgs.length < (data.per_page ?? 50)}
-                className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm px-3 py-1.5 rounded-md disabled:opacity-40 transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+          <PaginationBar page={page} total={total} pageSize={PAGE_SIZE} shown={orgs.length} />
         )}
       </div>
     </>

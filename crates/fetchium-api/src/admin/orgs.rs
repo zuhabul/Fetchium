@@ -12,6 +12,9 @@ use serde::Deserialize;
 pub struct ListParams {
     pub limit: Option<i64>,
     pub offset: Option<i64>,
+    pub search: Option<String>,
+    pub plan: Option<String>,
+    pub status: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -41,7 +44,7 @@ pub async fn list(
     ))?;
     let limit = p.limit.unwrap_or(50).min(200);
     let offset = p.offset.unwrap_or(0);
-    let data = db.list_orgs(limit, offset).unwrap_or_default();
+    let data = db.list_orgs(limit, offset, p.search.as_deref(), p.plan.as_deref(), p.status.as_deref()).unwrap_or_default();
     let total = db.count_orgs().unwrap_or(0);
     Ok(Json(serde_json::json!({"data": data, "total": total})))
 }
@@ -141,6 +144,45 @@ pub async fn change_plan(
     ))?;
     let _ = db.log_audit(Some(&auth.user.id), Some(&auth.user.role), "org", Some(&id), "org.plan_change", None);
     Ok(Json(serde_json::json!({"ok": true})))
+}
+
+pub async fn members(
+    auth: AdminAuth,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
+    require(&auth.user, Permission::OrgsRead)?;
+    let db = state.admin_db.as_ref().ok_or_else(|| (
+        axum::http::StatusCode::SERVICE_UNAVAILABLE,
+        Json(serde_json::json!({"error": "admin db not initialized"})),
+    ))?;
+    let data = db.list_org_members(&id).unwrap_or_default();
+    Ok(Json(serde_json::json!({"data": data, "total": data.len()})))
+}
+
+pub async fn org_audit(
+    auth: AdminAuth,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
+    require(&auth.user, Permission::AuditRead)?;
+    let db = state.admin_db.as_ref().ok_or_else(|| (
+        axum::http::StatusCode::SERVICE_UNAVAILABLE,
+        Json(serde_json::json!({"error": "admin db not initialized"})),
+    ))?;
+    let data = db.run_select_query(
+        &format!("SELECT a.id, a.action, a.role, u.email, a.ip, a.created_at
+                  FROM audit_events a LEFT JOIN admin_users u ON u.id = a.admin_user_id
+                  WHERE a.target_type='org' AND a.target_id='{id}'
+                  ORDER BY a.created_at DESC LIMIT 100"),
+        100,
+    ).map(|r| {
+        r.rows.iter().map(|row| serde_json::json!({
+            "id": row.first(), "action": row.get(1), "role": row.get(2),
+            "actor_email": row.get(3), "ip": row.get(4), "created_at": row.get(5),
+        })).collect::<Vec<_>>()
+    }).unwrap_or_default();
+    Ok(Json(serde_json::json!({"data": data, "total": data.len()})))
 }
 
 pub async fn override_quota(
