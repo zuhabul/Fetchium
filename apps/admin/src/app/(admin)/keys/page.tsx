@@ -1,8 +1,11 @@
+import { redirect } from 'next/navigation'
 import { getSession, adminFetch } from '@/lib/session'
 import TopBar from '@/components/layout/TopBar'
 import Link from 'next/link'
 import { Key } from 'lucide-react'
 import RevokeButton from './RevokeButton'
+import FilterBar from '@/components/FilterBar'
+import PaginationBar from '@/components/PaginationBar'
 
 interface ApiKey {
   id: string
@@ -10,17 +13,10 @@ interface ApiKey {
   org_id: string
   org_name: string
   plan: string
-  status: string
+  active: boolean
   created_at: string
   last_used_at: string | null
   requests_this_month: number
-}
-
-interface KeysResponse {
-  keys: ApiKey[]
-  total: number
-  page: number
-  per_page: number
 }
 
 const PLAN_BADGE: Record<string, string> = {
@@ -28,11 +24,6 @@ const PLAN_BADGE: Record<string, string> = {
   starter: 'bg-blue-500/20 text-blue-400',
   pro: 'bg-purple-500/20 text-purple-400',
   enterprise: 'bg-amber-500/20 text-amber-400',
-}
-
-const STATUS_BADGE: Record<string, string> = {
-  active: 'bg-emerald-500/20 text-emerald-400',
-  revoked: 'bg-red-500/20 text-red-400',
 }
 
 function Badge({ value, map }: { value: string; map: Record<string, string> }) {
@@ -44,46 +35,48 @@ function Badge({ value, map }: { value: string; map: Record<string, string> }) {
   )
 }
 
-export default async function KeysPage() {
-  const session = await getSession()
+const PAGE_SIZE = 50
 
-  let data: KeysResponse = { keys: [], total: 0, page: 1, per_page: 50 }
+export default async function KeysPage({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
+  const [session, params] = await Promise.all([getSession(), searchParams])
+  if (!session) redirect('/login')
+
+  const page = Math.max(1, parseInt(params.page ?? '1'))
+  const offset = (page - 1) * PAGE_SIZE
+  const filters = { status: params.status ?? '', plan: params.plan ?? '' }
+
+  const qs = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) })
+  if (filters.status) qs.set('status', filters.status)
+  if (filters.plan) qs.set('plan', filters.plan)
+
+  let keys: ApiKey[] = []
+  let total = 0
   let error: string | null = null
 
   try {
-    if (session) {
-      const res = await adminFetch('/internal/admin/keys?page=1&per_page=50')
-      if (res.ok) {
-        data = await res.json()
-      } else {
-        error = `API error: ${res.status}`
-      }
+    const res = await adminFetch(`/internal/admin/keys?${qs}`)
+    if (res.ok) {
+      const data = await res.json()
+      keys = data.data ?? []
+      total = data.total ?? keys.length
+    } else {
+      error = `API error: ${res.status}`
     }
   } catch (e) {
     error = e instanceof Error ? e.message : 'Failed to fetch keys'
   }
 
-  const keys = data.keys ?? []
-
   return (
     <>
-      <TopBar title="API Keys" subtitle={`${data.total ?? keys.length} keys total`} />
+      <TopBar title="API Keys" subtitle={`${total} keys total`} />
       <div className="p-6 space-y-4">
-        {/* Filter bar */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <select className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:border-zinc-500">
-            <option value="">All statuses</option>
-            <option value="active">Active</option>
-            <option value="revoked">Revoked</option>
-          </select>
-          <select className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:border-zinc-500">
-            <option value="">All plans</option>
-            <option value="free">Free</option>
-            <option value="starter">Starter</option>
-            <option value="pro">Pro</option>
-            <option value="enterprise">Enterprise</option>
-          </select>
-        </div>
+        <FilterBar
+          filters={[
+            { key: 'status', type: 'select', options: [{ value: '', label: 'All statuses' }, { value: 'active', label: 'Active' }, { value: 'revoked', label: 'Revoked' }] },
+            { key: 'plan', type: 'select', options: [{ value: '', label: 'All plans' }, { value: 'free', label: 'Free' }, { value: 'starter', label: 'Starter' }, { value: 'pro', label: 'Pro' }, { value: 'enterprise', label: 'Enterprise' }] },
+          ]}
+          current={filters}
+        />
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-400">
@@ -91,7 +84,6 @@ export default async function KeysPage() {
           </div>
         )}
 
-        {/* Table */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
           {keys.length === 0 && !error ? (
             <div className="flex flex-col items-center justify-center py-16 text-zinc-600">
@@ -102,10 +94,8 @@ export default async function KeysPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-zinc-800">
-                  {['Key ID', 'Org', 'Plan', 'Status', 'Created', 'Last Used', 'Req/Mo', 'Actions'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                      {h}
-                    </th>
+                  {['Key Prefix', 'Org', 'Plan', 'Status', 'Created', 'Last Used', 'Actions'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -113,9 +103,7 @@ export default async function KeysPage() {
                 {keys.map(k => (
                   <tr key={k.id} className="bg-zinc-900 hover:bg-zinc-800/60 transition-colors">
                     <td className="px-4 py-3">
-                      <span className="font-mono text-xs text-zinc-300">
-                        {k.key_prefix ? `${k.key_prefix.slice(0, 8)}...` : k.id.slice(0, 8) + '...'}
-                      </span>
+                      <span className="font-mono text-xs text-zinc-300">{k.key_prefix}…</span>
                     </td>
                     <td className="px-4 py-3">
                       {k.org_id ? (
@@ -124,29 +112,19 @@ export default async function KeysPage() {
                         </Link>
                       ) : '—'}
                     </td>
+                    <td className="px-4 py-3"><Badge value={k.plan ?? 'free'} map={PLAN_BADGE} /></td>
                     <td className="px-4 py-3">
-                      <Badge value={k.plan ?? 'free'} map={PLAN_BADGE} />
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${k.active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {k.active ? 'active' : 'revoked'}
+                      </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <Badge value={k.status ?? 'active'} map={STATUS_BADGE} />
-                    </td>
-                    <td className="px-4 py-3 text-zinc-400">
-                      {k.created_at ? new Date(k.created_at).toLocaleDateString() : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-zinc-400">
-                      {k.last_used_at ? new Date(k.last_used_at).toLocaleDateString() : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-zinc-300">
-                      {k.requests_this_month != null ? k.requests_this_month.toLocaleString() : '—'}
-                    </td>
+                    <td className="px-4 py-3 text-zinc-400">{k.created_at ? new Date(k.created_at).toLocaleDateString() : '—'}</td>
+                    <td className="px-4 py-3 text-zinc-400">{k.last_used_at ? new Date(k.last_used_at).toLocaleDateString() : '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        {k.status !== 'revoked' && <RevokeButton keyId={k.id} />}
-                        <Link
-                          href={`/orgs/${k.org_id}`}
-                          className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-xs px-2.5 py-1.5 rounded-md transition-colors"
-                        >
-                          View
+                        {k.active && <RevokeButton keyId={k.id} />}
+                        <Link href={`/orgs/${k.org_id}`} className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-xs px-2.5 py-1.5 rounded-md transition-colors">
+                          Org
                         </Link>
                       </div>
                     </td>
@@ -157,22 +135,8 @@ export default async function KeysPage() {
           )}
         </div>
 
-        {/* Pagination */}
         {keys.length > 0 && (
-          <div className="flex items-center justify-between text-sm text-zinc-500">
-            <span>Showing {keys.length} of {data.total ?? keys.length}</span>
-            <div className="flex items-center gap-2">
-              <button disabled className="bg-zinc-800 border border-zinc-700 text-zinc-500 text-sm px-3 py-1.5 rounded-md disabled:opacity-40">
-                Previous
-              </button>
-              <button
-                disabled={keys.length < (data.per_page ?? 50)}
-                className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm px-3 py-1.5 rounded-md disabled:opacity-40 transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+          <PaginationBar page={page} total={total} pageSize={PAGE_SIZE} shown={keys.length} />
         )}
       </div>
     </>
