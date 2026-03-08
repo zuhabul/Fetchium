@@ -13,7 +13,6 @@ headless = ["dep:chromiumoxide"]
 embeddings = []
 vector-search = ["dep:usearch"]
 mcp = ["dep:rmcp"]
-llama = ["dep:llama-cpp-2"]
 
 [dependencies]
 # Async
@@ -81,9 +80,6 @@ usearch = { version = "2", optional = true }
 
 # Optional: MCP server
 rmcp = { version = "0.1", optional = true, features = ["server"] }
-
-# Optional: Local LLM
-llama-cpp-2 = { version = "0.1", optional = true }
 tiktoken-rs = "0.5"
 
 ammonia.workspace = true

@@ -206,11 +206,45 @@ pub fn deduplicate(mut results: Vec<ResultItem>, simhash_threshold: u32) -> Vec<
         }
     }
 
-    // ── Phase 2: SimHash near-dup dedup ──────────────────────────────────────
-    let mut seen_hashes: Vec<SimHash> = Vec::with_capacity(phase1.len());
-    let mut final_results: Vec<ResultItem> = Vec::with_capacity(phase1.len());
-
+    // ── Phase 1.5: Title-exact dedup ─────────────────────────────────────────
+    // Catches same paper/article appearing with different URLs (e.g. arxiv.org/abs/1234
+    // vs semanticscholar.org/paper/1234, or different URL params on the same article).
+    // Normalise: lowercase, collapse whitespace, strip punctuation.
+    let mut title_seen: HashMap<String, usize> = HashMap::with_capacity(phase1.len());
+    let mut phase15: Vec<ResultItem> = Vec::with_capacity(phase1.len());
     for item in phase1 {
+        let norm_title: String = item
+            .title
+            .to_lowercase()
+            .split(|c: char| !c.is_alphanumeric())
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>()
+            .join(" ");
+        if norm_title.len() < 8 {
+            // Very short titles (≤7 chars) are not reliable dedup keys — always keep.
+            phase15.push(item);
+            continue;
+        }
+        match title_seen.get(&norm_title).copied() {
+            Some(existing_idx) => {
+                let existing_score = phase15[existing_idx].score.unwrap_or(0.0);
+                let new_score = item.score.unwrap_or(0.0);
+                if new_score > existing_score {
+                    phase15[existing_idx] = item;
+                }
+            }
+            None => {
+                title_seen.insert(norm_title, phase15.len());
+                phase15.push(item);
+            }
+        }
+    }
+
+    // ── Phase 2: SimHash near-dup dedup ──────────────────────────────────────
+    let mut seen_hashes: Vec<SimHash> = Vec::with_capacity(phase15.len());
+    let mut final_results: Vec<ResultItem> = Vec::with_capacity(phase15.len());
+
+    for item in phase15 {
         let text = format!("{} {}", item.title, item.snippet);
         let hash = SimHash::compute(&text);
 

@@ -270,26 +270,43 @@ impl DuckDuckGoBackend {
     /// Fetch results from the full DDG HTML endpoint with automatic IP rotation on block.
     /// Fetch from DDG full HTML endpoint.
     /// `use_proxy=false` → direct (free); `use_proxy=true` → residential with IP rotation.
-    async fn try_full(&self, query: &str, max_results: u32, df: &str, use_proxy: bool, locale: Option<&str>) -> Vec<ResultItem> {
-        let form: Vec<(&str, &str)> = vec![("q", query), ("b", ""), ("s", "0"), ("kl", ""), ("df", df)];
+    async fn try_full(
+        &self,
+        query: &str,
+        max_results: u32,
+        df: &str,
+        use_proxy: bool,
+        locale: Option<&str>,
+    ) -> Vec<ResultItem> {
+        let form: Vec<(&str, &str)> =
+            vec![("q", query), ("b", ""), ("s", "0"), ("kl", ""), ("df", df)];
         let retries = if use_proxy { MAX_IP_RETRIES } else { 1 };
 
         for attempt in 0..retries {
             let client = if !use_proxy {
                 self.client.client_direct()
             } else if attempt == 0 {
-                self.client.client_for_domain_with_locale("duckduckgo.com", locale)
+                self.client
+                    .client_for_domain_with_locale("duckduckgo.com", locale)
             } else {
-                info!("DDG full: block — rotating residential IP (attempt {}/{})", attempt + 1, MAX_IP_RETRIES);
+                info!(
+                    "DDG full: block — rotating residential IP (attempt {}/{})",
+                    attempt + 1,
+                    MAX_IP_RETRIES
+                );
                 tokio::time::sleep(std::time::Duration::from_millis(300 * attempt as u64)).await;
-                self.client.fresh_client_for_domain_with_locale("duckduckgo.com", locale)
+                self.client
+                    .fresh_client_for_domain_with_locale("duckduckgo.com", locale)
             };
 
             match client
                 .post(DDG_HTML_URL)
                 .form(&form)
                 .header("User-Agent", BROWSER_UA)
-                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header(
+                    "Accept",
+                    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                )
                 .header("Accept-Language", "en-US,en;q=0.9")
                 .header("Referer", "https://duckduckgo.com/")
                 .header("Cache-Control", "no-cache")
@@ -305,7 +322,10 @@ impl DuckDuckGoBackend {
                             }
                             let r = self.parse_results(&html, max_results);
                             if !r.is_empty() {
-                                debug!("DDG full: {} results proxy={use_proxy} for {query:?}", r.len());
+                                debug!(
+                                    "DDG full: {} results proxy={use_proxy} for {query:?}",
+                                    r.len()
+                                );
                                 return r;
                             }
                         }
@@ -313,10 +333,16 @@ impl DuckDuckGoBackend {
                     }
                 }
                 Ok(resp) if resp.status().as_u16() == 403 || resp.status().as_u16() == 429 => {
-                    debug!("DDG full: HTTP {} attempt {attempt} proxy={use_proxy}", resp.status());
+                    debug!(
+                        "DDG full: HTTP {} attempt {attempt} proxy={use_proxy}",
+                        resp.status()
+                    );
                 }
                 Ok(resp) => {
-                    debug!("DDG full: HTTP {} proxy={use_proxy} for {query:?}", resp.status());
+                    debug!(
+                        "DDG full: HTTP {} proxy={use_proxy} for {query:?}",
+                        resp.status()
+                    );
                     return vec![];
                 }
                 Err(e) => {
@@ -329,11 +355,24 @@ impl DuckDuckGoBackend {
 
     /// Fetch from DDG lite endpoint.
     /// `use_proxy=false` → direct (free); `use_proxy=true` → residential with IP rotation.
-    async fn try_lite(&self, query: &str, max_results: u32, df: &str, use_proxy: bool, locale: Option<&str>) -> Vec<ResultItem> {
+    async fn try_lite(
+        &self,
+        query: &str,
+        max_results: u32,
+        df: &str,
+        use_proxy: bool,
+        locale: Option<&str>,
+    ) -> Vec<ResultItem> {
         let lite_form: Vec<(&str, &str)> = if df.is_empty() {
             vec![("q", query), ("s", "0"), ("o", "json"), ("dc", "1")]
         } else {
-            vec![("q", query), ("s", "0"), ("o", "json"), ("dc", "1"), ("df", df)]
+            vec![
+                ("q", query),
+                ("s", "0"),
+                ("o", "json"),
+                ("dc", "1"),
+                ("df", df),
+            ]
         };
         let retries = if use_proxy { MAX_IP_RETRIES } else { 1 };
 
@@ -341,18 +380,27 @@ impl DuckDuckGoBackend {
             let client = if !use_proxy {
                 self.client.client_direct()
             } else if attempt == 0 {
-                self.client.client_for_domain_with_locale("duckduckgo.com", locale)
+                self.client
+                    .client_for_domain_with_locale("duckduckgo.com", locale)
             } else {
-                info!("DDG lite: block — rotating residential IP (attempt {}/{})", attempt + 1, MAX_IP_RETRIES);
+                info!(
+                    "DDG lite: block — rotating residential IP (attempt {}/{})",
+                    attempt + 1,
+                    MAX_IP_RETRIES
+                );
                 tokio::time::sleep(std::time::Duration::from_millis(300 * attempt as u64)).await;
-                self.client.fresh_client_for_domain_with_locale("duckduckgo.com", locale)
+                self.client
+                    .fresh_client_for_domain_with_locale("duckduckgo.com", locale)
             };
 
             match client
                 .post(DDG_LITE_URL)
                 .form(&lite_form)
                 .header("User-Agent", BROWSER_UA)
-                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header(
+                    "Accept",
+                    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                )
                 .header("Accept-Language", "en-US,en;q=0.9")
                 .header("Referer", "https://duckduckgo.com/")
                 .send()
@@ -367,7 +415,10 @@ impl DuckDuckGoBackend {
                             }
                             let r = self.parse_lite_results(&html, max_results);
                             if !r.is_empty() {
-                                debug!("DDG lite: {} results proxy={use_proxy} for {query:?}", r.len());
+                                debug!(
+                                    "DDG lite: {} results proxy={use_proxy} for {query:?}",
+                                    r.len()
+                                );
                                 return r;
                             }
                         }
@@ -375,10 +426,16 @@ impl DuckDuckGoBackend {
                     }
                 }
                 Ok(resp) if resp.status().as_u16() == 403 || resp.status().as_u16() == 429 => {
-                    debug!("DDG lite: HTTP {} attempt {attempt} proxy={use_proxy}", resp.status());
+                    debug!(
+                        "DDG lite: HTTP {} attempt {attempt} proxy={use_proxy}",
+                        resp.status()
+                    );
                 }
                 Ok(resp) => {
-                    debug!("DDG lite: HTTP {} proxy={use_proxy} for {query:?}", resp.status());
+                    debug!(
+                        "DDG lite: HTTP {} proxy={use_proxy} for {query:?}",
+                        resp.status()
+                    );
                     return vec![];
                 }
                 Err(e) => {
@@ -436,13 +493,19 @@ impl DuckDuckGoBackend {
 
         let r = self.try_full(query, max_results, df, true, locale).await;
         if !r.is_empty() {
-            info!("DDG: {} results via residential full for {query:?}", r.len());
+            info!(
+                "DDG: {} results via residential full for {query:?}",
+                r.len()
+            );
             return Ok(r);
         }
 
         let r = self.try_lite(query, max_results, df, true, locale).await;
         if !r.is_empty() {
-            info!("DDG: {} results via residential lite for {query:?}", r.len());
+            info!(
+                "DDG: {} results via residential lite for {query:?}",
+                r.len()
+            );
             return Ok(r);
         }
 
@@ -472,7 +535,8 @@ impl SearchBackend for DuckDuckGoBackend {
         ctx: &SearchContext,
     ) -> HsxResult<Vec<ResultItem>> {
         let df = Self::time_range_to_df(ctx.time_range);
-        self.search_inner(query, max_results, df, ctx.locale.as_deref()).await
+        self.search_inner(query, max_results, df, ctx.locale.as_deref())
+            .await
     }
 }
 

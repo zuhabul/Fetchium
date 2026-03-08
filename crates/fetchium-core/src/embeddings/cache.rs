@@ -119,7 +119,9 @@ mod tests {
     #[test]
     fn put_and_get_roundtrip() {
         let (cache, _tmp) = make_cache();
-        let emb: Vec<f32> = (0..crate::embeddings::EMBEDDING_DIM).map(|i| i as f32 / crate::embeddings::EMBEDDING_DIM as f32).collect();
+        let emb: Vec<f32> = (0..crate::embeddings::EMBEDDING_DIM)
+            .map(|i| i as f32 / crate::embeddings::EMBEDDING_DIM as f32)
+            .collect();
         cache.put("hello world", &emb).unwrap();
 
         let retrieved = cache.get("hello world").unwrap().unwrap();

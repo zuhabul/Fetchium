@@ -278,11 +278,11 @@ fn adjust_authority_for_intent(url: &str, base: f64, intent: QueryIntent) -> f64
     // structured articles over discussion threads.
     if url.contains("reddit.com") || url.contains("news.ycombinator.com") {
         return match intent {
-            QueryIntent::Opinion => base,         // discussions add perspective for opinion queries
-            QueryIntent::Casual => base * 0.55,    // prefer authoritative consumer sites over Reddit threads
-            QueryIntent::Comparison => base * 0.55,             // prefer articles over threads
+            QueryIntent::Opinion => base, // discussions add perspective for opinion queries
+            QueryIntent::Casual => base * 0.55, // prefer authoritative consumer sites over Reddit threads
+            QueryIntent::Comparison => base * 0.85, // community discussions valuable for comparisons
             QueryIntent::Code | QueryIntent::HowTo => base * 0.60, // prefer docs/tutorials
-            QueryIntent::Academic => base * 0.40,               // not a good source
+            QueryIntent::Academic => base * 0.40,   // not a good source
             _ => base * 0.70,
         };
     }
@@ -389,14 +389,17 @@ pub fn hyperfusion_rank(
     // Raw fusion scores cluster in [0.3, 0.7] due to min-max normalization.
     // Spread them across [0.0, 1.0] for more discriminating ranking.
     let fmin = fusion_scores.iter().cloned().fold(f64::INFINITY, f64::min);
-    let fmax = fusion_scores.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+    let fmax = fusion_scores
+        .iter()
+        .cloned()
+        .fold(f64::NEG_INFINITY, f64::max);
     let frange = fmax - fmin;
     let spread_scores: Vec<f64> = if frange > 1e-9 {
         fusion_scores
             .iter()
             .map(|&s| {
                 let normalized = (s - fmin) / frange; // [0, 1]
-                // Apply power curve: pow(x, 0.6) spreads the top end
+                                                      // Apply power curve: pow(x, 0.6) spreads the top end
                 normalized.powf(0.6)
             })
             .collect()
@@ -545,9 +548,7 @@ pub fn detect_intent(query: &str) -> QueryIntent {
         || q.contains("algorithm")
         || (is_programming_lang
             && !has_tutorial_signal
-            && (q.contains("library")
-                || q.contains("package")
-                || q.contains("crate")))
+            && (q.contains("library") || q.contains("package") || q.contains("crate")))
     {
         return QueryIntent::Code;
     }

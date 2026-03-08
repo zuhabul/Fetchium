@@ -18,11 +18,14 @@ use crate::error::HsxResult;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
-use tracing::{debug, info};
+use tracing::debug;
+#[cfg(not(feature = "headless"))]
+use tracing::info;
 #[cfg(feature = "headless")]
 use tracing::warn;
 
 /// Max IP-rotation retries on CAPTCHA/block detection (2 = 1 cached + 1 fresh IP).
+#[cfg(not(feature = "headless"))]
 const MAX_IP_RETRIES: usize = 2;
 
 /// Browser User-Agent matching Chrome 121 on Windows — reduces bot-detection.
@@ -98,7 +101,8 @@ impl GoogleBackend {
     ) -> Option<Vec<ResultItem>> {
         for attempt in 0..MAX_IP_RETRIES {
             let client = if attempt == 0 {
-                self.http.client_for_domain_with_locale("google.com", locale)
+                self.http
+                    .client_for_domain_with_locale("google.com", locale)
             } else {
                 info!(
                     "Google: IP block detected — rotating to new residential IP (attempt {}/{})",
@@ -132,16 +136,17 @@ impl GoogleBackend {
                             return Some(results);
                         }
                         // Empty results = CAPTCHA/block → rotate IP
-                        debug!(
-                            "Google: empty SERP page {page} (attempt {attempt}) — rotating IP"
-                        );
+                        debug!("Google: empty SERP page {page} (attempt {attempt}) — rotating IP");
                     }
                     Err(e) => {
                         debug!("Google: body read error attempt {attempt}: {e}");
                     }
                 },
                 Ok(resp) if resp.status().as_u16() == 429 || resp.status().as_u16() == 403 => {
-                    debug!("Google: HTTP {} attempt {attempt} — rotating IP", resp.status());
+                    debug!(
+                        "Google: HTTP {} attempt {attempt} — rotating IP",
+                        resp.status()
+                    );
                 }
                 Ok(resp) => {
                     debug!("Google: HTTP {} for page {page}", resp.status());
