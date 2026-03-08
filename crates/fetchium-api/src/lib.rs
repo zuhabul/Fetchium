@@ -15,6 +15,7 @@
 //! | GET    | /v1/keys          | X-Admin-Secret  | List API keys (admin)          |
 //! | DELETE | /v1/keys/:id      | X-Admin-Secret  | Revoke API key (admin)         |
 
+pub mod admin;
 pub mod auth;
 pub mod handlers;
 pub mod handlers_auth;
@@ -63,8 +64,10 @@ impl Default for ApiServerConfig {
                 "https://api.fetchium.com".into(),
                 "https://app.ogroshor.com".into(),
                 "https://admin.ogroshor.com".into(),
+                "https://admin.fetchium.com".into(),
                 "http://localhost:3200".into(),
                 "http://localhost:3100".into(),
+                "http://localhost:3300".into(),
             ],
         }
     }
@@ -82,7 +85,13 @@ pub async fn start_api_server(
     fetchium_config: fetchium_core::config::FetchiumConfig,
 ) -> anyhow::Result<()> {
     let auth_db = AuthDb::open(&server_config.data_dir.join("auth.db"))?;
-    let app_state = AppState::new(fetchium_config, auth_db)?;
+    let admin_db = admin::db::AdminDb::open(&server_config.data_dir.join("admin.db"))
+        .map(Some)
+        .unwrap_or_else(|e| {
+            tracing::warn!("admin.db failed to open (admin panel disabled): {e}");
+            None
+        });
+    let app_state = AppState::new(fetchium_config, auth_db, admin_db)?;
 
     // ── CORS: restrict to known dashboard origins ─────────────────────────────
     let allowed: Vec<HeaderValue> = server_config
