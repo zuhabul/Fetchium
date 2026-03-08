@@ -160,7 +160,7 @@ pub fn normalize_url(url: &str) -> String {
                 };
                 // Also normalize /pdf/ → /abs/ so PDF and abstract links dedup
                 let normalized_path = normalized_path.replace("/pdf/", "/abs/");
-                let _ = parsed.set_path(&normalized_path);
+                parsed.set_path(&normalized_path);
             }
 
             // Filter out tracking query parameters

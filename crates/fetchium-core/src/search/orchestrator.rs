@@ -1858,7 +1858,7 @@ mod tests {
         );
         assert_eq!(
             backend_timeout_for(&BackendId::Searxng, default),
-            Duration::from_secs(6)
+            Duration::from_millis(4500)
         );
         assert_eq!(
             backend_timeout_for(&BackendId::Wikipedia, default),

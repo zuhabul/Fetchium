@@ -327,7 +327,10 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
         .clone()
         .or_else(|| std::env::var("SEARXNG_URL").ok())
         .unwrap_or_else(|| "***REMOVED***".to_string());
-    let health_url = format!("{}/healthz", searxng_url.trim_end_matches('/'));
+    let health_url = format!(
+        "{}/search?q=test&format=json",
+        searxng_url.trim_end_matches('/')
+    );
     let search_backbone_ok = state.http.fetch_text(&health_url).await.is_ok();
     let auth_store_ok =
         tokio::task::block_in_place(|| state.auth_db.list_keys().map(|_| ())).is_ok();
