@@ -22,6 +22,77 @@ pub struct HsxConfig {
     pub youtube: YouTubeConfig,
     pub social: SocialConfig,
     pub headless: HeadlessConfig,
+    pub proxy: ProxyConfig,
+    pub dataimpulse: DataImpulseConfig,
+}
+
+/// DataImpulse residential proxy configuration.
+///
+/// Country targeting: `{username}__cr.{cc}:{password}@{host}:{port}`
+/// Only activates for scraper backends blocked by datacenter IPs (Google, DDG, Bing, Brave).
+/// API backends (Serper, Exa, Tavily) are never routed through DataImpulse.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DataImpulseConfig {
+    /// Enable DataImpulse residential proxy routing.
+    pub enabled: bool,
+    /// DataImpulse account username.
+    pub username: String,
+    /// DataImpulse account password.
+    pub password: String,
+    /// Gateway host (default: gw.dataimpulse.com).
+    pub host: String,
+    /// Gateway port (default: 823).
+    pub port: u16,
+    /// Domains to route through DataImpulse (empty = use built-in blocked-domain list).
+    #[serde(default)]
+    pub proxy_domains: Vec<String>,
+}
+
+impl Default for DataImpulseConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            username: String::new(),
+            password: String::new(),
+            host: "gw.dataimpulse.com".into(),
+            port: 823,
+            proxy_domains: Vec::new(),
+        }
+    }
+}
+
+/// Proxy rotation configuration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ProxyConfig {
+    /// Enable proxy rotation for search backends.
+    pub enabled: bool,
+    /// Path to proxy list file (default: ~/.fetchium/proxies.txt).
+    pub proxy_file: Option<PathBuf>,
+    /// Proxy protocol (http, https, socks5).
+    pub protocol: String,
+    /// Domains that should use proxies (empty = all search backends).
+    #[serde(default)]
+    pub proxy_domains: Vec<String>,
+    /// Domains that should never use proxies.
+    #[serde(default)]
+    pub bypass_domains: Vec<String>,
+}
+
+impl Default for ProxyConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            proxy_file: None,
+            protocol: "http".into(),
+            proxy_domains: Vec::new(),
+            bypass_domains: vec![
+                "localhost".into(),
+                "127.0.0.1".into(),
+            ],
+        }
+    }
 }
 
 /// Headless browser configuration.

@@ -144,6 +144,7 @@ fn intent_base_budget(intent: QueryIntent) -> u32 {
         QueryIntent::Opinion => 800,
         QueryIntent::Data => 1000,
         QueryIntent::Informational => 500, // concise definitions
+        QueryIntent::Casual => 400,        // quick answers for everyday queries
     }
 }
 

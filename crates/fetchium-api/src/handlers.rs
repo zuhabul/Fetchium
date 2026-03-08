@@ -20,12 +20,12 @@ use tokio::time::{timeout, Duration};
 type ApiResult<T> = Result<Json<T>, (StatusCode, Json<ApiError>)>;
 type ApiResponse = Result<axum::response::Response, (StatusCode, Json<ApiError>)>;
 
-const SEARCH_TIMEOUT_SECS: u64 = 12;
-const FETCH_TIMEOUT_SECS: u64 = 15;
+const SEARCH_TIMEOUT_SECS: u64 = 25;
+const FETCH_TIMEOUT_SECS: u64 = 12;
 const ESTIMATE_TIMEOUT_SECS: u64 = 5;
-const RESEARCH_TIMEOUT_SECS: u64 = 20;
-const YOUTUBE_TIMEOUT_SECS: u64 = 20;
-const SOCIAL_TIMEOUT_SECS: u64 = 20;
+const RESEARCH_TIMEOUT_SECS: u64 = 30;
+const YOUTUBE_TIMEOUT_SECS: u64 = 15;
+const SOCIAL_TIMEOUT_SECS: u64 = 15;
 
 fn request_id_from_headers(headers: &HeaderMap) -> String {
     headers
@@ -139,11 +139,23 @@ pub async fn search(
         let req = req
             .validated()
             .map_err(|e| api_err(StatusCode::BAD_REQUEST, "invalid_request", e.to_string()))?;
+
+        // Acquire search concurrency permit (queues if too many concurrent searches)
+        let sem = state.search_semaphore.clone();
+        let _permit = sem.acquire().await.map_err(|_| {
+            api_err(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "overloaded",
+                "Too many concurrent searches — try again shortly".to_string(),
+            )
+        })?;
+
         let start = Instant::now();
         let max_sources = req.max_sources.unwrap_or(10) as u32;
         let tier = req.tier.as_deref().unwrap_or("summary");
         let token_budget = req.token_budget.unwrap_or(2000);
 
+        let include_content = req.include_content.unwrap_or(false);
         let result_json = fetchium_core::api_facade::search(
             &req.query,
             max_sources,
@@ -152,6 +164,7 @@ pub async fn search(
             &state.config,
             &state.http,
             Some(&state.cache),
+            include_content,
         )
         .await
         .map_err(|e| {

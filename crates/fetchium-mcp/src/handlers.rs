@@ -20,6 +20,7 @@ pub async fn handle_search(
     let tier = input.tier.as_deref().unwrap_or("summary");
     let token_budget = input.token_budget.unwrap_or(2000);
 
+    let include_content = input.include_content.unwrap_or(false);
     match fetchium_core::api_facade::search(
         &input.query,
         max_sources,
@@ -28,6 +29,7 @@ pub async fn handle_search(
         config,
         http,
         cache,
+        include_content,
     )
     .await
     {

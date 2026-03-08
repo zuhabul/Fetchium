@@ -9,6 +9,9 @@ use std::time::Instant;
 use uuid::Uuid;
 
 /// Execute a search pipeline: Orchestrator -> Extraction -> Format -> Cache
+///
+/// For `key_facts` and `summary` tiers, uses search snippets directly (fast path).
+/// For `detailed` and `complete` tiers, fetches URLs in parallel for richer content.
 pub async fn search(
     query: &str,
     max_sources: u32,
@@ -17,6 +20,7 @@ pub async fn search(
     config: &HsxConfig,
     http: &HttpClient,
     cache: Option<&MemoryCache>,
+    include_content: bool,
 ) -> Result<Value, HsxError> {
     let start = Instant::now();
 
@@ -24,27 +28,80 @@ pub async fn search(
     let orchestrator = SearchOrchestrator::new(http.clone(), orch_config);
     let results = orchestrator.search(query, Some(max_sources)).await?;
 
-    let mut items = Vec::new();
     let result_id = Uuid::new_v4().to_string();
+    let needs_extraction = include_content || matches!(tier, "detailed" | "complete");
+    let max_content_chars = if include_content { token_budget * 4 } else { 800 };
+    let results: Vec<_> = results.into_iter().take(max_sources as usize).collect();
 
-    for r in results.into_iter().take(max_sources as usize) {
-        // Run QATBE Extraction
-        let html = http.fetch_text(&r.url).await.unwrap_or_default();
-        let snippet = if html.is_empty() {
-            r.snippet.clone()
-        } else {
-            let ext = cep_extract(&html, &r.url);
-            let snippet = ext.text.chars().take(400).collect::<String>();
-            snippet
-        };
-
-        items.push(json!({
-            "title": r.title,
-            "url": r.url,
-            "snippet": snippet,
-            "score": r.score,
-        }));
-    }
+    let items: Vec<Value> = if needs_extraction {
+        // Parallel URL fetching + CEP extraction
+        let mut handles = Vec::with_capacity(results.len());
+        for r in &results {
+            let http = http.clone();
+            let url = r.url.clone();
+            let fallback_snippet = r.snippet.clone();
+            let max_chars = max_content_chars;
+            handles.push(tokio::spawn(async move {
+                match tokio::time::timeout(
+                    std::time::Duration::from_secs(5),
+                    http.fetch_text(&url),
+                )
+                .await
+                {
+                    Ok(Ok(html)) if !html.is_empty() => {
+                        let ext = cep_extract(&html, &url);
+                        let extracted: String = ext.text.chars().take(max_chars).collect();
+                        (fallback_snippet, Some(extracted))
+                    }
+                    _ => (fallback_snippet, None),
+                }
+            }));
+        }
+        let mut items = Vec::with_capacity(results.len());
+        for (r, handle) in results.iter().zip(handles) {
+            let (snippet, extracted) = handle.await.unwrap_or_else(|_| (r.snippet.clone(), None));
+            let mut item = if include_content {
+                // Tavily-style: snippet stays as search snippet, content is extracted page text
+                json!({
+                    "title": r.title,
+                    "url": r.url,
+                    "snippet": snippet,
+                    "score": r.score,
+                    "content": extracted,
+                })
+            } else {
+                // Legacy detailed/complete: replace snippet with extracted content
+                json!({
+                    "title": r.title,
+                    "url": r.url,
+                    "snippet": extracted.unwrap_or(snippet),
+                    "score": r.score,
+                })
+            };
+            if let Some(ref date) = r.published_date {
+                item["published_date"] = json!(date);
+            }
+            items.push(item);
+        }
+        items
+    } else {
+        // Fast path: use search snippets directly (no URL fetching)
+        results
+            .iter()
+            .map(|r| {
+                let mut item = json!({
+                    "title": r.title,
+                    "url": r.url,
+                    "snippet": r.snippet,
+                    "score": r.score,
+                });
+                if let Some(ref date) = r.published_date {
+                    item["published_date"] = json!(date);
+                }
+                item
+            })
+            .collect()
+    };
 
     let duration_ms = start.elapsed().as_millis() as u64;
 

@@ -5,12 +5,13 @@
 
 use crate::config::HsxConfig;
 use crate::error::{ErrorKind, HsxError, HsxResult, StructuredError};
+use crate::proxy::{DataImpulseClient, ProxyPool};
 use dashmap::DashMap;
 use reqwest::{Client, StatusCode};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
-use tracing::debug;
+use tracing::{debug, info};
 use url::Url;
 
 /// Maximum retry attempts for transient errors.
@@ -29,6 +30,21 @@ struct DomainState {
     min_delay: Duration,
 }
 
+/// Domains that are blocked by datacenter IPs and require residential proxies.
+/// API-based backends (Serper, Exa, Tavily, Gemini) are NOT in this list.
+const RESIDENTIAL_REQUIRED_DOMAINS: &[&str] = &[
+    "google.com",
+    "www.google.com",
+    "duckduckgo.com",
+    "bing.com",
+    "www.bing.com",
+    "search.brave.com",
+    "brave.com",
+    "startpage.com",
+    "qwant.com",
+    "mojeek.com",
+];
+
 /// Shared HTTP client with connection pooling, retries, and rate limiting.
 #[derive(Clone)]
 pub struct HttpClient {
@@ -36,6 +52,10 @@ pub struct HttpClient {
     config: Arc<HsxConfig>,
     /// Per-domain rate limiting state.
     domain_delays: Arc<DashMap<String, DomainState>>,
+    /// Optional Webshare proxy pool (datacenter — legacy fallback).
+    proxy_pool: Option<ProxyPool>,
+    /// DataImpulse residential proxy client (country-targeted, pay-per-GB).
+    dataimpulse: Option<DataImpulseClient>,
 }
 
 /// Fetch result with metadata about the request.
@@ -67,16 +87,136 @@ impl HttpClient {
             .build()
             .map_err(HsxError::Network)?;
 
+        // Load proxy pool if configured
+        let proxy_pool = if config.proxy.enabled {
+            let proxy_file = config.proxy.proxy_file.clone().unwrap_or_else(|| {
+                config.data_dir().join("proxies.txt")
+            });
+            if proxy_file.exists() {
+                match ProxyPool::load_from_file(&proxy_file) {
+                    Ok(pool) if !pool.is_empty() => {
+                        info!("Proxy pool loaded: {} proxies from {}", pool.len(), proxy_file.display());
+                        Some(pool)
+                    }
+                    Ok(_) => {
+                        tracing::warn!("Proxy file is empty: {}", proxy_file.display());
+                        None
+                    }
+                    Err(e) => {
+                        tracing::warn!("Failed to load proxy file {}: {e}", proxy_file.display());
+                        None
+                    }
+                }
+            } else {
+                tracing::warn!("Proxy file not found: {}", proxy_file.display());
+                None
+            }
+        } else {
+            None
+        };
+
+        // Build DataImpulse residential proxy client if configured
+        let dataimpulse = if config.dataimpulse.enabled
+            && !config.dataimpulse.username.is_empty()
+        {
+            let di = DataImpulseClient::new(
+                &config.dataimpulse.username,
+                &config.dataimpulse.password,
+                &config.dataimpulse.host,
+                config.dataimpulse.port,
+                &config.fetch.user_agent,
+                Duration::from_secs(config.fetch.timeout_secs),
+            );
+            info!(
+                "DataImpulse residential proxy enabled ({}:{})",
+                config.dataimpulse.host, config.dataimpulse.port
+            );
+            Some(di)
+        } else {
+            None
+        };
+
         Ok(Self {
             inner: client,
             config: Arc::new(config.clone()),
             domain_delays: Arc::new(DashMap::new()),
+            proxy_pool,
+            dataimpulse,
         })
     }
 
     /// Get the inner reqwest client for direct use.
     pub fn client(&self) -> &Client {
         &self.inner
+    }
+
+    /// Get a reqwest client for a specific domain with locale-aware residential proxy routing.
+    ///
+    /// Priority order:
+    /// 1. DataImpulse residential proxy (country-targeted) — for domains blocked by datacenter IPs
+    /// 2. Webshare datacenter pool — legacy fallback for non-residential-required domains
+    /// 3. Direct connection — when no proxy is configured or available
+    ///
+    /// GB efficiency: DataImpulse only activates for `RESIDENTIAL_REQUIRED_DOMAINS`.
+    /// API backends (Serper, Exa, Tavily) use direct connections.
+    pub fn client_for_domain_with_locale(&self, domain: &str, locale: Option<&str>) -> Client {
+        let needs_residential = self.needs_residential_proxy(domain);
+
+        // 1. DataImpulse residential proxy for blocked domains
+        if needs_residential {
+            if let Some(ref di) = self.dataimpulse {
+                if di.is_configured() {
+                    debug!("DataImpulse residential proxy for {domain} locale={locale:?}");
+                    return di.client(locale);
+                }
+            }
+        }
+
+        // 2. Webshare datacenter pool (legacy, for non-residential-required domains)
+        if let Some(ref pool) = self.proxy_pool {
+            if self.should_proxy_domain(domain) {
+                if let Some(proxy) = pool.proxy_for_domain(domain) {
+                    match ProxyPool::build_client_with_proxy(
+                        &proxy,
+                        &self.config.fetch.user_agent,
+                        Duration::from_secs(self.config.fetch.timeout_secs),
+                    ) {
+                        Ok(client) => {
+                            debug!("Webshare proxy {}:{} for {domain}", proxy.host, proxy.port);
+                            return client;
+                        }
+                        Err(e) => {
+                            debug!("Failed to build proxied client for {domain}: {e}");
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Direct connection
+        self.inner.clone()
+    }
+
+    /// Backwards-compatible wrapper — no locale hint.
+    pub fn client_for_domain(&self, domain: &str) -> Client {
+        self.client_for_domain_with_locale(domain, None)
+    }
+
+    /// Whether a domain requires residential IPs to avoid blocks.
+    fn needs_residential_proxy(&self, domain: &str) -> bool {
+        // Check user-configured override list first
+        if !self.config.dataimpulse.proxy_domains.is_empty() {
+            return self
+                .config
+                .dataimpulse
+                .proxy_domains
+                .iter()
+                .any(|d| domain.ends_with(d.as_str()) || domain == d.as_str());
+        }
+        // Built-in list of search engines blocked by datacenter IPs
+        RESIDENTIAL_REQUIRED_DOMAINS
+            .iter()
+            .any(|&d| domain == d || domain.ends_with(&format!(".{d}")))
     }
 
     /// Get the config reference.
@@ -270,6 +410,147 @@ impl HttpClient {
     /// Convenience: fetch a URL and return just the body text.
     pub async fn fetch_text(&self, url: &str) -> HsxResult<String> {
         let result = self.fetch(url).await?;
+        Ok(result.body)
+    }
+
+    /// Get the proxy pool (if configured).
+    pub fn proxy_pool(&self) -> Option<&ProxyPool> {
+        self.proxy_pool.as_ref()
+    }
+
+    /// Check if a domain should use proxies.
+    fn should_proxy_domain(&self, domain: &str) -> bool {
+        // Never proxy bypass domains
+        if self.config.proxy.bypass_domains.iter().any(|d| domain.contains(d.as_str())) {
+            return false;
+        }
+        // If proxy_domains is specified, only proxy those
+        if !self.config.proxy.proxy_domains.is_empty() {
+            return self.config.proxy.proxy_domains.iter().any(|d| domain.contains(d.as_str()));
+        }
+        // Default: proxy everything
+        true
+    }
+
+    /// Fetch a URL through a rotating proxy. Falls back to direct if no proxy available.
+    pub async fn fetch_via_proxy(&self, url: &str) -> HsxResult<FetchResult> {
+        let domain = Self::extract_domain(url);
+
+        let pool = match &self.proxy_pool {
+            Some(p) if !p.is_empty() && self.should_proxy_domain(&domain) => p,
+            _ => return self.fetch(url).await,
+        };
+
+        let proxy = match pool.proxy_for_domain(&domain) {
+            Some(p) => p,
+            None => {
+                debug!("No available proxy for {domain}, falling back to direct");
+                return self.fetch(url).await;
+            }
+        };
+
+        let start = Instant::now();
+        let client = ProxyPool::build_client_with_proxy(
+            &proxy,
+            &self.config.fetch.user_agent,
+            Duration::from_secs(self.config.fetch.timeout_secs),
+        )
+        .map_err(HsxError::Network)?;
+
+        match client.get(url).send().await {
+            Ok(resp) => {
+                let status = resp.status();
+                let latency = start.elapsed().as_millis() as u64;
+
+                if status.is_success() {
+                    proxy.record_success(latency);
+                    let content_type = resp
+                        .headers()
+                        .get("content-type")
+                        .and_then(|v| v.to_str().ok())
+                        .unwrap_or("text/html")
+                        .to_string();
+                    let content_length = resp.content_length();
+                    let final_url = resp.url().to_string();
+                    let body = resp.text().await.map_err(HsxError::Network)?;
+
+                    Ok(FetchResult {
+                        body,
+                        status: status.as_u16(),
+                        content_type,
+                        content_length,
+                        url: final_url,
+                        elapsed_ms: latency,
+                        retries: 0,
+                    })
+                } else if status == StatusCode::FORBIDDEN
+                    || status == StatusCode::TOO_MANY_REQUESTS
+                {
+                    // Proxy got blocked — record failure and retry with next proxy
+                    proxy.record_failure();
+                    debug!(
+                        "Proxy {}:{} blocked (HTTP {}) for {domain}, trying next",
+                        proxy.host, proxy.port, status
+                    );
+                    // One retry with a different proxy
+                    if let Some(next_proxy) = pool.next_proxy() {
+                        let client2 = ProxyPool::build_client_with_proxy(
+                            &next_proxy,
+                            &self.config.fetch.user_agent,
+                            Duration::from_secs(self.config.fetch.timeout_secs),
+                        )
+                        .map_err(HsxError::Network)?;
+
+                        let start2 = Instant::now();
+                        match client2.get(url).send().await {
+                            Ok(resp2) if resp2.status().is_success() => {
+                                next_proxy.record_success(start2.elapsed().as_millis() as u64);
+                                let body = resp2.text().await.map_err(HsxError::Network)?;
+                                Ok(FetchResult {
+                                    body,
+                                    status: 200,
+                                    content_type: "text/html".into(),
+                                    content_length: None,
+                                    url: url.to_string(),
+                                    elapsed_ms: start.elapsed().as_millis() as u64,
+                                    retries: 1,
+                                })
+                            }
+                            _ => {
+                                next_proxy.record_failure();
+                                self.fetch(url).await // fall back to direct
+                            }
+                        }
+                    } else {
+                        self.fetch(url).await
+                    }
+                } else {
+                    proxy.record_failure();
+                    Err(HsxError::Structured(StructuredError {
+                        kind: Self::status_to_error_kind(status),
+                        retryable: false,
+                        message: format!("HTTP {status} via proxy for {url}"),
+                        source_url: Some(url.to_string()),
+                        suggested_action: "Try different proxy or direct".into(),
+                        alternatives: vec![],
+                    }))
+                }
+            }
+            Err(e) => {
+                proxy.record_failure();
+                debug!(
+                    "Proxy {}:{} connection failed for {domain}: {e}",
+                    proxy.host, proxy.port
+                );
+                // Fall back to direct connection
+                self.fetch(url).await
+            }
+        }
+    }
+
+    /// Convenience: fetch text through a proxy.
+    pub async fn fetch_text_via_proxy(&self, url: &str) -> HsxResult<String> {
+        let result = self.fetch_via_proxy(url).await?;
         Ok(result.body)
     }
 

@@ -1,7 +1,7 @@
 //! REST API route definitions — v1 API under /v1/ prefix.
 
 use crate::middleware::AppState;
-use crate::{handlers, handlers_auth};
+use crate::{handlers, handlers_auth, handlers_proxy};
 use axum::{
     routing::{delete, get, post},
     Router,
@@ -49,7 +49,12 @@ pub fn build_router(state: AppState) -> Router {
     let v1_admin = Router::new()
         .route("/keys", post(handlers_auth::create_key))
         .route("/keys", get(handlers_auth::list_keys))
-        .route("/keys/:id", delete(handlers_auth::revoke_key));
+        .route("/keys/:id", delete(handlers_auth::revoke_key))
+        // Proxy management
+        .route("/proxy/stats", get(handlers_proxy::proxy_stats))
+        .route("/proxy/reset", post(handlers_proxy::proxy_reset))
+        .route("/proxy/purge", post(handlers_proxy::proxy_purge))
+        .route("/proxy/test", post(handlers_proxy::proxy_test));
 
     Router::new()
         // Public endpoints (no auth)
