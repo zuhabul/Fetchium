@@ -90,17 +90,17 @@ export default function Footer() {
             </Link>
 
             <p className="mt-4 max-w-[240px] text-[13px] sm:text-[14px] leading-relaxed text-slate-300">
-              The search API that thinks. 17 novel algorithms. 11+ federated
-              backends. Cheapest full-pipeline search API on the market.
+              The search API that thinks. 17 algorithms, 11+ federated
+              backends, and docs at docs.fetchium.com.
             </p>
 
             {/* Status indicator */}
-            <div className="mt-4 sm:mt-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1.5 text-[12px] font-semibold text-emerald-300">
+            <div className="mt-4 sm:mt-5 inline-flex items-center gap-2 rounded-full border border-indigo-500/25 bg-indigo-500/10 px-3 py-1.5 text-[12px] font-semibold text-indigo-300">
               <Circle
-                className="h-2 w-2 fill-emerald-400 text-emerald-400"
+                className="h-2 w-2 fill-indigo-400 text-indigo-400"
                 style={{ animation: "pulse 2s ease-in-out infinite" }}
               />
-              All systems operational
+              Documentation on docs.fetchium.com
             </div>
 
             {/* Social links */}
@@ -167,7 +167,7 @@ export default function Footer() {
 
           {/* Tech badges */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            {["Rust", "563+ tests", "17 algos", "~500ms P50"].map(
+            {["Rust", "563+ tests", "17 algos", "12 MCP tools"].map(
               (badge) => (
                 <span
                   key={badge}

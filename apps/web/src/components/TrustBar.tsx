@@ -5,7 +5,7 @@ import { Zap, Shield, Cpu, Clock, FlaskConical, Lock } from "lucide-react";
 
 const items = [
   { icon: Zap,         label: "17 novel algorithms",    sub: "not available anywhere else" },
-  { icon: Clock,       label: "~500ms P50",              sub: "parallel search, no LLM overhead" },
+  { icon: Clock,       label: "12 MCP tools",           sub: "search, fetch, research, YouTube, and social workflows" },
   { icon: FlaskConical,label: "11+ search backends",     sub: "federated in a single call" },
   { icon: Shield,      label: "563+ unit tests",         sub: "production-grade reliability" },
   { icon: Cpu,         label: "Built in Rust",           sub: "zero GC pauses, safe concurrency" },
@@ -73,11 +73,11 @@ export default function TrustBar() {
           transition={{ delay: 0.4, duration: 0.5 }}
         >
           <p className="text-[16px] sm:text-[17px] text-slate-200 max-w-lg leading-relaxed">
-            The only search API with{" "}
+            A search API with{" "}
             <span className="text-slate-100 font-semibold">federated backends</span>,{" "}
             <span className="text-slate-100 font-semibold">neural ranking</span>, and{" "}
             <span className="text-slate-100 font-semibold">cross-session learning</span>{" "}
-            — features no competitor offers at any price.
+            built into a single retrieval pipeline.
           </p>
           <a
             href="#compare"

@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 export const metadata: Metadata = {
   title: "Fetchium Search API — 11-Backend Federated Web Search for AI Apps",
   description:
-    "Parallel search across DuckDuckGo, Brave, Bing, GitHub, Reddit, StackOverflow, YouTube, and 4+ more backends. BM25 + semantic HyperFusion reranking. JSON with citations in ~500ms.",
+    "Parallel search across DuckDuckGo, Brave, Bing, GitHub, Reddit, StackOverflow, YouTube, and more backends. BM25 plus HyperFusion reranking with structured JSON responses and citations.",
 };
 
 const backends = [
@@ -63,7 +63,7 @@ export default function ProductSearchPage() {
             <p className="text-base sm:text-lg text-slate-400 max-w-2xl leading-relaxed mb-7">
               One query dispatched to 11+ backends in parallel. Results ranked by 8 independent
               signals — BM25, semantic similarity, temporal freshness, source authority, and more.
-              Returns structured JSON with citations in approximately 500ms.
+              Returns structured JSON with citations for AI retrieval workflows.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
@@ -87,9 +87,9 @@ export default function ProductSearchPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-14">
             {[
               { v: "11+", l: "Search backends" },
-              { v: "~500ms", l: "P50 latency" },
               { v: "8", l: "Ranking signals" },
-              { v: "$0.58", l: "per 1K queries" },
+              { v: "12", l: "MCP tools" },
+              { v: "60/min", l: "Free tier rate" },
             ].map((s) => (
               <div key={s.l} className="rounded-xl border border-white/6 bg-white/[0.02] p-4 text-center">
                 <div className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">{s.v}</div>
@@ -172,7 +172,7 @@ export default function ProductSearchPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
                 { href: "/product/extract", label: "Extract API", desc: "Full CEP content extraction" },
-                { href: "/compare/tavily", label: "vs Tavily", desc: "Feature + price comparison" },
+                { href: "/compare/tavily", label: "vs Tavily", desc: "Feature comparison" },
                 { href: "https://docs.fetchium.com/api/search", label: "API Reference", desc: "Full parameter documentation" },
               ].map((l) => (
                 <Link

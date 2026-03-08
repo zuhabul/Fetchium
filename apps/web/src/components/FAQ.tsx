@@ -25,7 +25,7 @@ const faqs = [
   },
   {
     q: "How does Fetchium compare to Tavily and Exa?",
-    a: "Tavily ($8/1K) and Exa ($5/1K) focus on search + snippets. Fetchium ($0.58/1K on Growth) adds full content extraction, token budgeting, evidence graphs, and cross-session learning. Fetchium's Starter plan at $0.90/1K is 9× cheaper than Tavily and 5× cheaper than Exa for a feature superset. Latency sources: Exa averages ~1.2s and Tavily ~1.9s per an independent 50-query benchmark (2025). Fetchium targets ~500ms P50 for search-only mode.",
+    a: "Fetchium is designed as a broader retrieval pipeline rather than a single-purpose search endpoint. In addition to search federation, it includes content extraction, token budgeting, citations, async research jobs, and MCP tooling. Because third-party pricing and benchmarks change frequently, the docs focus on capability differences rather than frozen competitor numbers.",
   },
   {
     q: "What is token-budgeted extraction (QATBE)?",
@@ -33,19 +33,19 @@ const faqs = [
   },
   {
     q: "Does Fetchium work with LangChain, LlamaIndex, and other RAG frameworks?",
-    a: "Yes. Fetchium has official adapters for LangChain (Python retriever) and CrewAI (Python tool). The REST API works with any framework that can make HTTP requests. MCP support lets Claude Desktop, Cursor, and any MCP-compatible client call Fetchium without any code. TypeScript and Python SDKs are available on npm and PyPI.",
+    a: "Yes. The REST API works with any framework that can make HTTP requests, and MCP support lets Claude Desktop, Cursor, and other MCP-compatible clients call Fetchium without a custom integration layer. TypeScript and Python SDK examples are documented in the docs site.",
   },
   {
     q: "What is the Model Context Protocol (MCP) and how does Fetchium support it?",
-    a: "The Model Context Protocol (MCP) is an open standard that lets AI clients (Claude Desktop, Cursor, etc.) call external tools without custom integrations. Fetchium runs a JSON-RPC 2.0 stdio MCP server with 5 tools: search, extract, research, youtube, and social. Any MCP-compatible client can call Fetchium just by pointing at the server — no code required.",
+    a: "The Model Context Protocol (MCP) is an open standard that lets AI clients call external tools without custom integrations. Fetchium runs a JSON-RPC 2.0 MCP server and currently exposes 12 tools covering search, fetch, estimate, research, YouTube, and social workflows.",
   },
   {
     q: "How fast is the Fetchium API?",
-    a: "Fetchium targets ~500ms P50 for search-only mode (results without full content extraction). The full pipeline — search + CEP extraction + QATBE token budgeting + citations — typically completes in 1–4 seconds. For comparison: independent 2025 benchmarks show Exa at ~1.2s avg and Tavily at ~1.9s avg for search-only. Fetchium is built in Rust with tokio for minimal overhead; latency is dominated by external backend response times, not the server.",
+    a: "Latency depends on which backends respond, whether extraction is enabled, and whether you are using synchronous or async job endpoints. Fetchium is built in Rust with parallel backend dispatch, but exact timings vary by workload, so the docs avoid hard-coded benchmark promises.",
   },
   {
     q: "Can I self-host Fetchium?",
-    a: "Yes — Fetchium is fully self-hostable with complete feature parity. The Rust binary runs anywhere Docker runs. All 17 algorithms, all 11+ backends, the MCP server, and the complete CLI are available in self-hosted mode. No feature is cloud-only. This is unique in the space: all major competitors restrict advanced features to their hosted API.",
+    a: "Yes. The repo includes the Rust services, CLI, MCP server, and self-hosting docs. The self-hosting guides on docs.fetchium.com cover Docker and configuration paths for running the stack yourself.",
   },
   {
     q: "Does Fetchium store my search queries?",
@@ -53,7 +53,7 @@ const faqs = [
   },
   {
     q: "What programming languages does Fetchium support?",
-    a: "The REST API is language-agnostic. Official SDKs: TypeScript/JavaScript (npm: fetchium) and Python (pypi: fetchium). The CLI is available via cargo, npm, or Homebrew. LangChain and CrewAI adapters are Python-native. MCP server integration works with any MCP client. cURL examples are in the docs for direct API access.",
+    a: "The REST API is language-agnostic. The docs include TypeScript, Python, and cURL examples, and the CLI can be installed through the project-supported distribution channels described in the repository and docs.",
   },
   {
     q: "How does Fetchium handle citations and evidence graphs?",
@@ -61,7 +61,7 @@ const faqs = [
   },
   {
     q: "What does the Free tier include?",
-    a: "The Free tier gives you 1,000 API requests per month, forever — no credit card required, no time limit. It includes all features: all 11+ search backends, 5-layer CEP extraction, HyperFusion 8-signal ranking, QATBE token budgeting, evidence graphs, citations, and MCP tools. Paid plans only differ by volume (10K–200K/mo) and rate limit (60–600 req/min).",
+    a: "The Free tier gives you 1,000 API requests per month. In the current auth configuration, paid tiers differ primarily by monthly quota and per-minute rate limits: Free 60/min, Starter 200/min, Pro 500/min, and Enterprise 2,000/min.",
   },
 ];
 
