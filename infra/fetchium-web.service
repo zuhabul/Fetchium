@@ -1,17 +1,16 @@
 [Unit]
-Description=Fetchium Admin Panel
-After=network.target fetchium-api.service
+Description=Fetchium Landing Page
+After=network.target
 StartLimitIntervalSec=60
 StartLimitBurst=5
 
 [Service]
 Type=simple
 User=echo
-WorkingDirectory=/home/echo/projects/Fetchium/apps/admin
-Environment=PORT=3300
+WorkingDirectory=/home/echo/projects/Fetchium/apps/web
+Environment=PORT=3100
 Environment=HOSTNAME=127.0.0.1
 Environment=NODE_ENV=production
-# SecretOps owns this runtime file after cutover.
 EnvironmentFile=/home/echo/.fetchium/env
 ExecStart=/home/echo/.bun/bin/bun run start
 
@@ -21,21 +20,20 @@ KillSignal=SIGTERM
 Restart=always
 RestartSec=5
 
-# Resource limits
-MemoryMax=512M
+MemoryMax=1G
 MemorySwapMax=0
-CPUQuota=30%
-TasksMax=128
+CPUQuota=50%
+TasksMax=256
 
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=fetchium-admin
+SyslogIdentifier=fetchium-web
 
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=/home/echo/projects/Fetchium/apps/admin
+ReadWritePaths=/home/echo/projects/Fetchium/apps/web
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
