@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
-const SECRET = new TextEncoder().encode(
-  process.env.***REMOVED*** || 'dev-secret-change-in-production-32chars'
-)
+const VERIFY_SECRETS = [
+  process.env.***REMOVED*** || 'dev-secret-change-in-production-32chars',
+  process.env.***REMOVED*** || '',
+]
+  .filter(Boolean)
+  .map((value) => new TextEncoder().encode(value))
 const PUBLIC = ['/login', '/api/auth', '/robots.txt', '/_next', '/favicon.ico']
 
 export async function middleware(req: NextRequest) {
@@ -15,7 +18,17 @@ export async function middleware(req: NextRequest) {
   if (!cookie) return NextResponse.redirect(new URL('/login', req.url))
 
   try {
-    await jwtVerify(cookie.value, SECRET)
+    let verified = false
+    for (const secret of VERIFY_SECRETS) {
+      try {
+        await jwtVerify(cookie.value, secret)
+        verified = true
+        break
+      } catch {
+        continue
+      }
+    }
+    if (!verified) throw new Error('invalid session')
     return NextResponse.next()
   } catch {
     const res = NextResponse.redirect(new URL('/login', req.url))

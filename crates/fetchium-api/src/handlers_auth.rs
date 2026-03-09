@@ -50,18 +50,21 @@ fn response_meta(request_id: String, endpoint: &str, duration_ms: u64) -> Respon
 
 /// Validate the admin secret from `X-Admin-Secret`.
 ///
-/// Reads `***REMOVED***` from the environment.
+/// Reads `***REMOVED***` and optionally
+/// `***REMOVED***` from the environment.
 /// Panics at startup if neither is set in the environment,
 /// preventing insecure "changeme" defaults in production.
 fn check_admin(headers: &HeaderMap) -> bool {
     let secret = std::env::var("***REMOVED***")
         .expect("***REMOVED*** must be set (generate with: openssl rand -hex 32).");
+    let previous = std::env::var("***REMOVED***").unwrap_or_default();
     let provided = headers
         .get("X-Admin-Secret")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
-    // Constant-time comparison to prevent timing attacks
+    // Constant-time comparison to prevent timing attacks during overlap rotation windows.
     constant_time_eq(provided.as_bytes(), secret.as_bytes())
+        || (!previous.is_empty() && constant_time_eq(provided.as_bytes(), previous.as_bytes()))
 }
 
 /// Constant-time byte slice comparison (prevents timing attacks on secret comparison).

@@ -4,7 +4,28 @@
 
 - Rust toolchain (`rustup`, stable)
 - SearXNG running at `***REMOVED***`
-- Secrets in `~/.fetchium/env` (never commit this file)
+- SecretOps manifest at `secrets.yml`
+- Runtime env in `~/.fetchium/env` (never commit this file, managed by `isecd` after cutover)
+
+## Preferred Production Model
+
+Fetchium now targets ***REMOVED*** delivery for all internal runtime secrets:
+
+- Source of truth: Infisical project `fetchium`
+- Checked-in contract: `secrets.yml`
+- Delivered runtime file: `~/.fetchium/env`
+- Restart fan-out target: `***REMOVED***`
+
+`isecd` owns the runtime env file after cutover. Any internal secret changed in Infisical should
+sync into `~/.fetchium/env`, then restart:
+
+- `fetchium-api`
+- `fetchium-admin`
+- `fetchium-dashboard`
+- `fetchium-web`
+
+Third-party provider credentials are intentionally outside the internal auto-rotation bucket unless
+they are moved behind a broker or explicit provider rotation flow.
 
 ## Deploy Procedure
 
@@ -43,15 +64,41 @@ curl -s ***REMOVED***/v1/health | jq .
 
 ## Environment File
 
-Secrets live in `~/.fetchium/env` (loaded by systemd `EnvironmentFile=`):
+Runtime values live in `~/.fetchium/env` (loaded by systemd `EnvironmentFile=`):
 
 ```
-***REMOVED***=<openssl rand -hex 32>
+***REMOVED***=<managed-by-infisical>
+***REMOVED***=
+***REMOVED***=<managed-by-infisical>
+***REMOVED***=<managed-by-infisical>
+***REMOVED***=
+AUTH_SECRET=<managed-by-infisical>
+NEXTAUTH_SECRET=<managed-by-infisical>
+***REMOVED***=<managed-by-infisical>
+***REMOVED***=false
+***REMOVED***=***REMOVED***
+***REMOVED***=***REMOVED***
 SEARXNG_URL=***REMOVED***
 RUST_LOG=info
 ```
 
-Never commit `~/.fetchium/env`. It is outside the repository by design.
+Never commit `~/.fetchium/env`. It is outside the repository by design. Use `infra/fetchium.env.production`
+only as a bootstrap reference, not as the long-term source of truth.
+
+## Systemd Units
+
+Install the repo-managed unit files so SecretOps can restart the full stack deterministically:
+
+```bash
+sudo cp infra/fetchium-admin.service /etc/systemd/system/fetchium-admin.service
+sudo cp infra/fetchium-dashboard.service /etc/systemd/system/fetchium-dashboard.service
+sudo cp infra/fetchium-web.service /etc/systemd/system/fetchium-web.service
+sudo cp infra/***REMOVED*** /etc/systemd/system/***REMOVED***
+sudo systemctl daemon-reload
+```
+
+`fetchium-dashboard.service` and `fetchium-web.service` now read `EnvironmentFile=***REMOVED***`
+so the API, admin UI, dashboard, and marketing site all share the same managed runtime contract.
 
 ## Service Management
 

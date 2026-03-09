@@ -11,16 +11,19 @@ export interface AdminSession {
 }
 
 const COOKIE = 'fetchium_admin_session'
-const SECRET = new TextEncoder().encode(
-  process.env.***REMOVED*** || 'dev-secret-change-in-production-32chars'
-)
+const CURRENT_SECRET = process.env.***REMOVED*** || 'dev-secret-change-in-production-32chars'
+const PREVIOUS_SECRET = process.env.***REMOVED*** || ''
+const SIGNING_SECRET = new TextEncoder().encode(CURRENT_SECRET)
+const VERIFY_SECRETS = [CURRENT_SECRET, PREVIOUS_SECRET]
+  .filter(Boolean)
+  .map((value) => new TextEncoder().encode(value))
 
 export async function createSession(session: AdminSession): Promise<void> {
   const token = await new SignJWT({ ...session })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('8h')
-    .sign(SECRET)
+    .sign(SIGNING_SECRET)
 
   const cookieStore = await cookies()
   cookieStore.set(COOKIE, token, {
@@ -37,8 +40,15 @@ export async function getSession(): Promise<AdminSession | null> {
     const cookieStore = await cookies()
     const cookie = cookieStore.get(COOKIE)
     if (!cookie) return null
-    const { payload } = await jwtVerify(cookie.value, SECRET)
-    return payload as unknown as AdminSession
+    for (const secret of VERIFY_SECRETS) {
+      try {
+        const { payload } = await jwtVerify(cookie.value, secret)
+        return payload as unknown as AdminSession
+      } catch {
+        continue
+      }
+    }
+    return null
   } catch {
     return null
   }
