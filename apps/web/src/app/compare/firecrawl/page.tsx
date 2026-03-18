@@ -81,7 +81,7 @@ export default function CompareFirecrawlPage() {
             <p className="text-[13px] text-slate-400 leading-relaxed">
               <strong className="text-slate-300">Firecrawl</strong>: You provide URLs → get clean markdown. Best for crawling known sites, building knowledge bases, structured data extraction.
               <br />
-              <strong className="text-slate-300">Fetchium</strong>: You provide a query → get ranked, extracted, cited results from 11+ backends. Best for RAG pipelines, AI agents, research workflows.
+              <strong className="text-slate-300">Fetchium</strong>: You provide a query → get ranked, extracted, cited results from 17 backends. Best for RAG pipelines, AI agents, research workflows.
             </p>
           </div>
 

@@ -273,7 +273,7 @@ tokio.workspace = true
 3. Run `cargo clippy -- -D warnings` before committing
 4. All public APIs must have `///` doc comments
 5. Reference PRD sections in comments: `(PRD §16)`
-6. After any change: verify `cargo test` shows 563+ tests, 0 failures
+6. After any change: verify `cargo test` shows 1,100+ tests, 0 failures
 
 ## Global Infrastructure SSOT
 - Canonical infrastructure source: `/home/echo/INFRASTRUCTURE_SOURCE_OF_TRUTH.md`

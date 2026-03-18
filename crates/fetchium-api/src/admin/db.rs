@@ -41,6 +41,26 @@ pub struct QueryResult {
     pub rows: Vec<Vec<serde_json::Value>>,
 }
 
+type OrganizationRow = (
+    String,
+    String,
+    String,
+    String,
+    String,
+    Option<String>,
+    String,
+);
+
+type FeatureFlagRow = (
+    String,
+    String,
+    i64,
+    Option<String>,
+    Option<String>,
+    String,
+    String,
+);
+
 /// SQLite-backed admin database.
 pub struct AdminDb {
     conn: Mutex<Connection>,
@@ -323,8 +343,33 @@ impl AdminDb {
                 created_at   TEXT NOT NULL,
                 updated_at   TEXT NOT NULL
             );
+
+            -- Migration 10: pending refunds
+            CREATE TABLE IF NOT EXISTS pending_refunds (
+                id           TEXT PRIMARY KEY,
+                org_id       TEXT NOT NULL REFERENCES organizations(id),
+                amount_cents INTEGER,
+                reason       TEXT,
+                requested_by TEXT REFERENCES admin_users(id),
+                status       TEXT NOT NULL DEFAULT 'pending',
+                created_at   TEXT NOT NULL
+            );
         "#,
         )?;
+
+        // Migration 10b: safe additive column migrations.
+        // SQLite does not support IF NOT EXISTS in ALTER TABLE, so we run
+        // each statement individually and ignore duplicate-column errors.
+        // NOTE: reuse the outer `conn` guard — do NOT call self.conn.lock() again
+        // (parking_lot::Mutex is not re-entrant; double-locking on the same thread deadlocks).
+        for stmt in &[
+            "ALTER TABLE organizations ADD COLUMN notes TEXT",
+            "ALTER TABLE organizations ADD COLUMN quota_override INTEGER",
+            "ALTER TABLE payment_events ADD COLUMN replayed_at TEXT",
+        ] {
+            let _ = conn.execute(stmt, []);
+        }
+
         Ok(())
     }
 
@@ -559,12 +604,22 @@ impl AdminDb {
 
     pub fn db_size_bytes(&self) -> i64 {
         let conn = self.conn.lock();
-        let page_count: i64 = conn.query_row("PRAGMA page_count", [], |r| r.get(0)).unwrap_or(0);
-        let page_size: i64 = conn.query_row("PRAGMA page_size", [], |r| r.get(0)).unwrap_or(4096);
+        let page_count: i64 = conn
+            .query_row("PRAGMA page_count", [], |r| r.get(0))
+            .unwrap_or(0);
+        let page_size: i64 = conn
+            .query_row("PRAGMA page_size", [], |r| r.get(0))
+            .unwrap_or(4096);
         page_count * page_size
     }
 
-    pub fn list_users(&self, limit: i64, offset: i64, search: Option<&str>, status: Option<&str>) -> Result<Vec<serde_json::Value>> {
+    pub fn list_users(
+        &self,
+        limit: i64,
+        offset: i64,
+        search: Option<&str>,
+        status: Option<&str>,
+    ) -> Result<Vec<serde_json::Value>> {
         let conn = self.conn.lock();
         let mut where_parts: Vec<String> = vec![];
         if let Some(s) = search.filter(|s| !s.is_empty()) {
@@ -575,7 +630,11 @@ impl AdminDb {
             let active = if st == "active" { "1" } else { "0" };
             where_parts.push(format!("is_active = {active}"));
         }
-        let where_str = if where_parts.is_empty() { String::new() } else { format!("WHERE {}", where_parts.join(" AND ")) };
+        let where_str = if where_parts.is_empty() {
+            String::new()
+        } else {
+            format!("WHERE {}", where_parts.join(" AND "))
+        };
         let sql = format!("SELECT id, email, role, name, is_active, created_at, last_login_at FROM admin_users {where_str} ORDER BY created_at DESC LIMIT {limit} OFFSET {offset}");
         let mut stmt = conn.prepare(&sql)?;
         let rows = stmt
@@ -611,7 +670,14 @@ impl AdminDb {
 
     // ── Org operations ───────────────────────────────────────────────────────
 
-    pub fn list_orgs(&self, limit: i64, offset: i64, search: Option<&str>, plan: Option<&str>, status: Option<&str>) -> Result<Vec<serde_json::Value>> {
+    pub fn list_orgs(
+        &self,
+        limit: i64,
+        offset: i64,
+        search: Option<&str>,
+        plan: Option<&str>,
+        status: Option<&str>,
+    ) -> Result<Vec<serde_json::Value>> {
         let conn = self.conn.lock();
         // organizations table added in migration 2 — guard against missing table
         let exists: i64 = conn.query_row(
@@ -625,7 +691,9 @@ impl AdminDb {
         let mut where_parts: Vec<String> = vec![];
         if let Some(s) = search.filter(|s| !s.is_empty()) {
             let s = s.replace('\'', "''");
-            where_parts.push(format!("(name LIKE '%{s}%' OR slug LIKE '%{s}%' OR owner_email LIKE '%{s}%')"));
+            where_parts.push(format!(
+                "(name LIKE '%{s}%' OR slug LIKE '%{s}%' OR owner_email LIKE '%{s}%')"
+            ));
         }
         if let Some(p) = plan.filter(|s| !s.is_empty()) {
             let p = p.replace('\'', "''");
@@ -635,7 +703,11 @@ impl AdminDb {
             let st = st.replace('\'', "''");
             where_parts.push(format!("status = '{st}'"));
         }
-        let where_str = if where_parts.is_empty() { String::new() } else { format!("WHERE {}", where_parts.join(" AND ")) };
+        let where_str = if where_parts.is_empty() {
+            String::new()
+        } else {
+            format!("WHERE {}", where_parts.join(" AND "))
+        };
         let sql = format!("SELECT id, name, slug, status, plan, owner_email, created_at FROM organizations {where_str} ORDER BY created_at DESC LIMIT {limit} OFFSET {offset}");
         let mut stmt = conn.prepare(&sql)?;
         let rows = stmt
@@ -669,15 +741,7 @@ impl AdminDb {
 
     pub fn get_org(&self, id: &str) -> Result<Option<serde_json::Value>> {
         let conn = self.conn.lock();
-        let row: Option<(
-            String,
-            String,
-            String,
-            String,
-            String,
-            Option<String>,
-            String,
-        )> = conn
+        let row: Option<OrganizationRow> = conn
             .query_row(
                 "SELECT id, name, slug, status, plan, owner_email, created_at
                  FROM organizations WHERE id = ?1",
@@ -735,6 +799,48 @@ impl AdminDb {
         self.conn.lock().execute(
             "UPDATE organizations SET plan = ?1, updated_at = ?2 WHERE id = ?3",
             params![plan, now, id],
+        )?;
+        Ok(())
+    }
+
+    /// Update mutable org fields (name, owner_email, notes). Only non-None
+    /// values are written, so callers can do partial updates.
+    pub fn update_org_fields(
+        &self,
+        id: &str,
+        name: Option<&str>,
+        owner_email: Option<&str>,
+        notes: Option<&str>,
+    ) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        let conn = self.conn.lock();
+        if let Some(v) = name {
+            conn.execute(
+                "UPDATE organizations SET name = ?1, updated_at = ?2 WHERE id = ?3",
+                params![v, now, id],
+            )?;
+        }
+        if let Some(v) = owner_email {
+            conn.execute(
+                "UPDATE organizations SET owner_email = ?1, updated_at = ?2 WHERE id = ?3",
+                params![v, now, id],
+            )?;
+        }
+        if let Some(v) = notes {
+            conn.execute(
+                "UPDATE organizations SET notes = ?1, updated_at = ?2 WHERE id = ?3",
+                params![v, now, id],
+            )?;
+        }
+        Ok(())
+    }
+
+    /// Set a hard monthly request quota override for an org (requests/month).
+    pub fn update_org_quota(&self, id: &str, quota_override: i64) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "UPDATE organizations SET quota_override = ?1, updated_at = ?2 WHERE id = ?3",
+            params![quota_override, now, id],
         )?;
         Ok(())
     }
@@ -847,15 +953,7 @@ impl AdminDb {
 
     pub fn get_flag(&self, id: &str) -> Result<Option<serde_json::Value>> {
         let conn = self.conn.lock();
-        let row: Option<(
-            String,
-            String,
-            i64,
-            Option<String>,
-            Option<String>,
-            String,
-            String,
-        )> = conn
+        let row: Option<FeatureFlagRow> = conn
             .query_row(
                 "SELECT id, key, enabled, description, owner_id, created_at, updated_at
                  FROM feature_flags WHERE id = ?1",
@@ -1010,9 +1108,11 @@ impl AdminDb {
     /// Returns the current size of the admin DB in kilobytes.
     pub fn db_size_kb(&self) -> Result<u64, String> {
         let conn = self.conn.lock();
-        let pages: u64 = conn.query_row("PRAGMA page_count", [], |r| r.get(0))
+        let pages: u64 = conn
+            .query_row("PRAGMA page_count", [], |r| r.get(0))
             .map_err(|e| e.to_string())?;
-        let page_size: u64 = conn.query_row("PRAGMA page_size", [], |r| r.get(0))
+        let page_size: u64 = conn
+            .query_row("PRAGMA page_size", [], |r| r.get(0))
             .map_err(|e| e.to_string())?;
         Ok((pages * page_size) / 1024)
     }
@@ -1046,17 +1146,62 @@ impl AdminDb {
             .query_map([], |row| {
                 let mut vals = Vec::new();
                 for i in 0..col_count {
-                    let val: serde_json::Value = row.get_ref(i)
+                    let val: serde_json::Value = row
+                        .get_ref(i)
                         .map(|v| match v {
                             rusqlite::types::ValueRef::Null => serde_json::Value::Null,
                             rusqlite::types::ValueRef::Integer(n) => serde_json::json!(n),
                             rusqlite::types::ValueRef::Real(f) => serde_json::json!(f),
                             rusqlite::types::ValueRef::Text(s) => {
                                 serde_json::Value::String(String::from_utf8_lossy(s).to_string())
-                            },
+                            }
                             rusqlite::types::ValueRef::Blob(b) => {
                                 serde_json::Value::String(format!("<blob {} bytes>", b.len()))
-                            },
+                            }
+                        })
+                        .unwrap_or(serde_json::Value::Null);
+                    vals.push(val);
+                }
+                Ok(vals)
+            })
+            .map_err(|e| e.to_string())?
+            .filter_map(|r| r.ok())
+            .take(limit)
+            .collect();
+
+        Ok(QueryResult { columns, rows })
+    }
+
+    /// Execute a read-only SELECT with a single bound text parameter.
+    /// Use this instead of `run_select_query` whenever the query includes
+    /// user-supplied or path-derived values — prevents SQL injection.
+    pub fn run_select_query_params1(
+        &self,
+        sql: &str,
+        param: &str,
+        limit: usize,
+    ) -> Result<QueryResult, String> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(sql).map_err(|e| e.to_string())?;
+        let columns: Vec<String> = stmt.column_names().iter().map(|s| s.to_string()).collect();
+        let col_count = columns.len();
+
+        let rows: Vec<Vec<serde_json::Value>> = stmt
+            .query_map([param], |row| {
+                let mut vals = Vec::new();
+                for i in 0..col_count {
+                    let val: serde_json::Value = row
+                        .get_ref(i)
+                        .map(|v| match v {
+                            rusqlite::types::ValueRef::Null => serde_json::Value::Null,
+                            rusqlite::types::ValueRef::Integer(n) => serde_json::json!(n),
+                            rusqlite::types::ValueRef::Real(f) => serde_json::json!(f),
+                            rusqlite::types::ValueRef::Text(s) => {
+                                serde_json::Value::String(String::from_utf8_lossy(s).to_string())
+                            }
+                            rusqlite::types::ValueRef::Blob(b) => {
+                                serde_json::Value::String(format!("<blob {} bytes>", b.len()))
+                            }
                         })
                         .unwrap_or(serde_json::Value::Null);
                     vals.push(val);
@@ -1076,14 +1221,15 @@ impl AdminDb {
     pub fn search_orgs(&self, q: &str, limit: usize) -> Result<Vec<serde_json::Value>, String> {
         let conn = self.conn.lock();
         let pattern = format!("%{}%", q);
-        let mut stmt = conn.prepare(
-            "SELECT id, name, slug, plan, status FROM organizations
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, name, slug, plan, status FROM organizations
              WHERE lower(name) LIKE ?1 OR lower(slug) LIKE ?1 OR lower(owner_email) LIKE ?1
-             LIMIT ?2"
-        ).map_err(|e| e.to_string())?;
-        let rows: Vec<_> = stmt.query_map(
-            rusqlite::params![pattern, limit as i64],
-            |row| {
+             LIMIT ?2",
+            )
+            .map_err(|e| e.to_string())?;
+        let rows: Vec<_> = stmt
+            .query_map(rusqlite::params![pattern, limit as i64], |row| {
                 Ok(serde_json::json!({
                     "id": row.get::<_, String>(0)?,
                     "name": row.get::<_, String>(1)?,
@@ -1091,29 +1237,38 @@ impl AdminDb {
                     "plan": row.get::<_, String>(3)?,
                     "status": row.get::<_, String>(4)?,
                 }))
-            }
-        ).map_err(|e| e.to_string())?.filter_map(|r| r.ok()).collect();
+            })
+            .map_err(|e| e.to_string())?
+            .filter_map(|r| r.ok())
+            .collect();
         Ok(rows)
     }
 
-    pub fn search_incidents(&self, q: &str, limit: usize) -> Result<Vec<serde_json::Value>, String> {
+    pub fn search_incidents(
+        &self,
+        q: &str,
+        limit: usize,
+    ) -> Result<Vec<serde_json::Value>, String> {
         let conn = self.conn.lock();
         let pattern = format!("%{}%", q);
-        let mut stmt = conn.prepare(
-            "SELECT id, title, severity, status FROM incidents
-             WHERE lower(title) LIKE ?1 LIMIT ?2"
-        ).map_err(|e| e.to_string())?;
-        let rows: Vec<_> = stmt.query_map(
-            rusqlite::params![pattern, limit as i64],
-            |row| {
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, title, severity, status FROM incidents
+             WHERE lower(title) LIKE ?1 LIMIT ?2",
+            )
+            .map_err(|e| e.to_string())?;
+        let rows: Vec<_> = stmt
+            .query_map(rusqlite::params![pattern, limit as i64], |row| {
                 Ok(serde_json::json!({
                     "id": row.get::<_, String>(0)?,
                     "title": row.get::<_, String>(1)?,
                     "severity": row.get::<_, String>(2)?,
                     "status": row.get::<_, String>(3)?,
                 }))
-            }
-        ).map_err(|e| e.to_string())?.filter_map(|r| r.ok()).collect();
+            })
+            .map_err(|e| e.to_string())?
+            .filter_map(|r| r.ok())
+            .collect();
         Ok(rows)
     }
 
@@ -1172,9 +1327,34 @@ impl AdminDb {
     }
 
     pub fn count_audit(&self) -> Result<i64> {
-        Ok(self.conn.lock().query_row(
-            "SELECT COUNT(*) FROM audit_events", [], |r| r.get(0),
-        )?)
+        Ok(self
+            .conn
+            .lock()
+            .query_row("SELECT COUNT(*) FROM audit_events", [], |r| r.get(0))?)
+    }
+
+    /// Fetch a single audit event by its UUID.  Returns None if not found.
+    pub fn get_audit_entry(&self, id: &str) -> Result<Option<serde_json::Value>> {
+        let conn = self.conn.lock();
+        conn.query_row(
+            "SELECT id, admin_user_id, role, target_type, target_id, action, ip, created_at
+             FROM audit_events WHERE id = ?1",
+            params![id],
+            |r| {
+                Ok(serde_json::json!({
+                    "id":            r.get::<_, String>(0)?,
+                    "admin_user_id": r.get::<_, Option<String>>(1)?,
+                    "role":          r.get::<_, Option<String>>(2)?,
+                    "target_type":   r.get::<_, String>(3)?,
+                    "target_id":     r.get::<_, Option<String>>(4)?,
+                    "action":        r.get::<_, String>(5)?,
+                    "ip":            r.get::<_, Option<String>>(6)?,
+                    "created_at":    r.get::<_, String>(7)?,
+                }))
+            },
+        )
+        .optional()
+        .map_err(Into::into)
     }
 
     pub fn list_campaigns(&self, limit: i64, offset: i64) -> Result<Vec<serde_json::Value>> {
@@ -1205,12 +1385,19 @@ impl AdminDb {
     }
 
     pub fn count_campaigns(&self) -> Result<i64> {
-        Ok(self.conn.lock().query_row(
-            "SELECT COUNT(*) FROM campaigns", [], |r| r.get(0),
-        )?)
+        Ok(self
+            .conn
+            .lock()
+            .query_row("SELECT COUNT(*) FROM campaigns", [], |r| r.get(0))?)
     }
 
-    pub fn create_campaign(&self, id: &str, name: &str, campaign_type: &str, created_by: &str) -> Result<()> {
+    pub fn create_campaign(
+        &self,
+        id: &str,
+        name: &str,
+        campaign_type: &str,
+        created_by: &str,
+    ) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         self.conn.lock().execute(
             "INSERT INTO campaigns (id, name, type, status, created_by, created_at, updated_at)
@@ -1234,13 +1421,16 @@ impl AdminDb {
         let mut stmt = conn.prepare(
             "SELECT id, email, name, status, created_at FROM customer_users WHERE org_id = ?1 ORDER BY created_at DESC LIMIT 200",
         )?;
-        let rows = stmt.query_map(params![org_id], |r| {
-            Ok(serde_json::json!({
-                "id": r.get::<_,String>(0)?, "email": r.get::<_,String>(1)?,
-                "name": r.get::<_,Option<String>>(2)?, "status": r.get::<_,String>(3)?,
-                "created_at": r.get::<_,String>(4)?,
-            }))
-        })?.filter_map(|r| r.ok()).collect();
+        let rows = stmt
+            .query_map(params![org_id], |r| {
+                Ok(serde_json::json!({
+                    "id": r.get::<_,String>(0)?, "email": r.get::<_,String>(1)?,
+                    "name": r.get::<_,Option<String>>(2)?, "status": r.get::<_,String>(3)?,
+                    "created_at": r.get::<_,String>(4)?,
+                }))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
         Ok(rows)
     }
 
@@ -1267,17 +1457,25 @@ impl AdminDb {
              FROM incident_timeline t LEFT JOIN admin_users u ON u.id = t.author_id
              WHERE t.incident_id = ?1 ORDER BY t.created_at ASC",
         )?;
-        let rows = stmt.query_map(params![incident_id], |r| {
-            Ok(serde_json::json!({
-                "id": r.get::<_,String>(0)?, "message": r.get::<_,String>(1)?,
-                "created_at": r.get::<_,String>(2)?,
-                "author_name": r.get::<_,Option<String>>(3)?,
-            }))
-        })?.filter_map(|r| r.ok()).collect();
+        let rows = stmt
+            .query_map(params![incident_id], |r| {
+                Ok(serde_json::json!({
+                    "id": r.get::<_,String>(0)?, "message": r.get::<_,String>(1)?,
+                    "created_at": r.get::<_,String>(2)?,
+                    "author_name": r.get::<_,Option<String>>(3)?,
+                }))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
         Ok(rows)
     }
 
-    pub fn add_incident_timeline(&self, incident_id: &str, author_id: Option<&str>, message: &str) -> Result<()> {
+    pub fn add_incident_timeline(
+        &self,
+        incident_id: &str,
+        author_id: Option<&str>,
+        message: &str,
+    ) -> Result<()> {
         let id = Uuid::new_v4().to_string();
         let now = Utc::now().to_rfc3339();
         self.conn.lock().execute(
@@ -1287,7 +1485,12 @@ impl AdminDb {
         Ok(())
     }
 
-    pub fn update_incident(&self, id: &str, status: Option<&str>, severity: Option<&str>) -> Result<()> {
+    pub fn update_incident(
+        &self,
+        id: &str,
+        status: Option<&str>,
+        severity: Option<&str>,
+    ) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         if let Some(s) = status {
             self.conn.lock().execute(
@@ -1335,14 +1538,17 @@ impl AdminDb {
             "SELECT id, org_id, subject, status, priority, assignee_id, created_at
              FROM support_tickets WHERE org_id = ?1 ORDER BY created_at DESC",
         )?;
-        let rows = stmt.query_map(params![org_id], |r| {
-            Ok(serde_json::json!({
-                "id": r.get::<_,String>(0)?, "org_id": r.get::<_,Option<String>>(1)?,
-                "subject": r.get::<_,String>(2)?, "status": r.get::<_,String>(3)?,
-                "priority": r.get::<_,String>(4)?, "assignee_id": r.get::<_,Option<String>>(5)?,
-                "created_at": r.get::<_,String>(6)?,
-            }))
-        })?.filter_map(|r| r.ok()).collect();
+        let rows = stmt
+            .query_map(params![org_id], |r| {
+                Ok(serde_json::json!({
+                    "id": r.get::<_,String>(0)?, "org_id": r.get::<_,Option<String>>(1)?,
+                    "subject": r.get::<_,String>(2)?, "status": r.get::<_,String>(3)?,
+                    "priority": r.get::<_,String>(4)?, "assignee_id": r.get::<_,Option<String>>(5)?,
+                    "created_at": r.get::<_,String>(6)?,
+                }))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
         Ok(rows)
     }
 
@@ -1362,7 +1568,12 @@ impl AdminDb {
         Ok(rows)
     }
 
-    pub fn add_ticket_note(&self, ticket_id: &str, author_id: Option<&str>, body: &str) -> Result<()> {
+    pub fn add_ticket_note(
+        &self,
+        ticket_id: &str,
+        author_id: Option<&str>,
+        body: &str,
+    ) -> Result<()> {
         let id = Uuid::new_v4().to_string();
         let now = Utc::now().to_rfc3339();
         self.conn.lock().execute(
@@ -1370,6 +1581,23 @@ impl AdminDb {
             params![id, ticket_id, author_id, body, now],
         )?;
         Ok(())
+    }
+
+    pub fn create_ticket(
+        &self,
+        org_id: Option<&str>,
+        subject: &str,
+        body: Option<&str>,
+        priority: &str,
+    ) -> Result<String> {
+        let id = uuid::Uuid::new_v4().to_string();
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "INSERT INTO support_tickets (id, org_id, subject, body, status, priority, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, 'open', ?5, ?6, ?6)",
+            params![id, org_id, subject, body, priority, now],
+        )?;
+        Ok(id)
     }
 
     pub fn update_ticket_status(&self, id: &str, status: &str) -> Result<()> {
@@ -1392,17 +1620,26 @@ impl AdminDb {
 
     pub fn list_support_macros(&self) -> Result<Vec<serde_json::Value>> {
         let conn = self.conn.lock();
-        let mut stmt = conn.prepare("SELECT id, name, body, created_at FROM support_macros ORDER BY name")?;
-        let rows = stmt.query_map([], |r| {
-            Ok(serde_json::json!({
-                "id": r.get::<_,String>(0)?, "name": r.get::<_,String>(1)?,
-                "body": r.get::<_,String>(2)?, "created_at": r.get::<_,String>(3)?,
-            }))
-        })?.filter_map(|r| r.ok()).collect();
+        let mut stmt =
+            conn.prepare("SELECT id, name, body, created_at FROM support_macros ORDER BY name")?;
+        let rows = stmt
+            .query_map([], |r| {
+                Ok(serde_json::json!({
+                    "id": r.get::<_,String>(0)?, "name": r.get::<_,String>(1)?,
+                    "body": r.get::<_,String>(2)?, "created_at": r.get::<_,String>(3)?,
+                }))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
         Ok(rows)
     }
 
-    pub fn create_support_macro(&self, name: &str, body: &str, created_by: Option<&str>) -> Result<String> {
+    pub fn create_support_macro(
+        &self,
+        name: &str,
+        body: &str,
+        created_by: Option<&str>,
+    ) -> Result<String> {
         let id = Uuid::new_v4().to_string();
         let now = Utc::now().to_rfc3339();
         self.conn.lock().execute(
@@ -1422,16 +1659,19 @@ impl AdminDb {
              FROM subscriptions s LEFT JOIN organizations o ON o.id = s.org_id
              ORDER BY s.created_at DESC LIMIT ?1 OFFSET ?2",
         )?;
-        let rows = stmt.query_map(params![limit, offset], |r| {
-            Ok(serde_json::json!({
-                "id": r.get::<_,String>(0)?, "org_id": r.get::<_,String>(1)?,
-                "org_name": r.get::<_,Option<String>>(2)?, "plan": r.get::<_,String>(3)?,
-                "status": r.get::<_,String>(4)?,
-                "current_period_start": r.get::<_,Option<String>>(5)?,
-                "current_period_end": r.get::<_,Option<String>>(6)?,
-                "created_at": r.get::<_,String>(7)?,
-            }))
-        })?.filter_map(|r| r.ok()).collect();
+        let rows = stmt
+            .query_map(params![limit, offset], |r| {
+                Ok(serde_json::json!({
+                    "id": r.get::<_,String>(0)?, "org_id": r.get::<_,String>(1)?,
+                    "org_name": r.get::<_,Option<String>>(2)?, "plan": r.get::<_,String>(3)?,
+                    "status": r.get::<_,String>(4)?,
+                    "current_period_start": r.get::<_,Option<String>>(5)?,
+                    "current_period_end": r.get::<_,Option<String>>(6)?,
+                    "created_at": r.get::<_,String>(7)?,
+                }))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
         Ok(rows)
     }
 
@@ -1441,14 +1681,18 @@ impl AdminDb {
             "SELECT id, plan, status, current_period_start, current_period_end, created_at
              FROM subscriptions WHERE org_id = ?1 ORDER BY created_at DESC LIMIT 1",
             params![org_id],
-            |r| Ok(serde_json::json!({
-                "id": r.get::<_,String>(0)?, "plan": r.get::<_,String>(1)?,
-                "status": r.get::<_,String>(2)?,
-                "current_period_start": r.get::<_,Option<String>>(3)?,
-                "current_period_end": r.get::<_,Option<String>>(4)?,
-                "created_at": r.get::<_,String>(5)?,
-            })),
-        ).optional().map_err(Into::into)
+            |r| {
+                Ok(serde_json::json!({
+                    "id": r.get::<_,String>(0)?, "plan": r.get::<_,String>(1)?,
+                    "status": r.get::<_,String>(2)?,
+                    "current_period_start": r.get::<_,Option<String>>(3)?,
+                    "current_period_end": r.get::<_,Option<String>>(4)?,
+                    "created_at": r.get::<_,String>(5)?,
+                }))
+            },
+        )
+        .optional()
+        .map_err(Into::into)
     }
 
     pub fn list_invoices_for_org(&self, org_id: &str) -> Result<Vec<serde_json::Value>> {
@@ -1483,7 +1727,13 @@ impl AdminDb {
         Ok(rows)
     }
 
-    pub fn add_credit(&self, org_id: &str, amount_cents: i64, reason: Option<&str>, granted_by: Option<&str>) -> Result<()> {
+    pub fn add_credit(
+        &self,
+        org_id: &str,
+        amount_cents: i64,
+        reason: Option<&str>,
+        granted_by: Option<&str>,
+    ) -> Result<()> {
         let id = Uuid::new_v4().to_string();
         let now = Utc::now().to_rfc3339();
         self.conn.lock().execute(
@@ -1500,18 +1750,75 @@ impl AdminDb {
              FROM payment_events p LEFT JOIN organizations o ON o.id = p.org_id
              ORDER BY p.created_at DESC LIMIT ?1",
         )?;
-        let rows = stmt.query_map(params![limit as i64], |r| {
-            let payload_str: Option<String> = r.get(4)?;
-            let payload = payload_str
-                .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
-                .unwrap_or(serde_json::Value::Object(Default::default()));
-            Ok(serde_json::json!({
-                "id": r.get::<_,String>(0)?, "org_id": r.get::<_,Option<String>>(1)?,
-                "org_name": r.get::<_,Option<String>>(2)?, "event_type": r.get::<_,String>(3)?,
-                "payload": payload, "status": "processed", "created_at": r.get::<_,String>(5)?,
-            }))
-        })?.filter_map(|r| r.ok()).collect();
+        let rows = stmt
+            .query_map(params![limit as i64], |r| {
+                let payload_str: Option<String> = r.get(4)?;
+                let payload = payload_str
+                    .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+                    .unwrap_or(serde_json::Value::Object(Default::default()));
+                Ok(serde_json::json!({
+                    "id": r.get::<_,String>(0)?, "org_id": r.get::<_,Option<String>>(1)?,
+                    "org_name": r.get::<_,Option<String>>(2)?, "event_type": r.get::<_,String>(3)?,
+                    "payload": payload, "status": "processed", "created_at": r.get::<_,String>(5)?,
+                }))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
         Ok(rows)
+    }
+
+    /// Queue a manual refund for an org.  Returns the new refund_id.
+    pub fn create_pending_refund(
+        &self,
+        org_id: &str,
+        amount_cents: Option<i64>,
+        reason: Option<&str>,
+        requested_by: Option<&str>,
+    ) -> Result<String> {
+        let id = Uuid::new_v4().to_string();
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "INSERT INTO pending_refunds (id, org_id, amount_cents, reason, requested_by, status, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, 'pending', ?6)",
+            params![id, org_id, amount_cents, reason, requested_by, now],
+        )?;
+        Ok(id)
+    }
+
+    /// Fetch a single payment event by id.
+    pub fn get_payment_event(&self, id: &str) -> Result<Option<serde_json::Value>> {
+        let conn = self.conn.lock();
+        conn.query_row(
+            "SELECT id, org_id, event_type, payload, created_at, replayed_at
+             FROM payment_events WHERE id = ?1",
+            params![id],
+            |r| {
+                let payload_str: Option<String> = r.get(3)?;
+                let payload = payload_str
+                    .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+                    .unwrap_or(serde_json::Value::Null);
+                Ok(serde_json::json!({
+                    "id":         r.get::<_, String>(0)?,
+                    "org_id":     r.get::<_, Option<String>>(1)?,
+                    "event_type": r.get::<_, String>(2)?,
+                    "payload":    payload,
+                    "created_at": r.get::<_, String>(4)?,
+                    "replayed_at": r.get::<_, Option<String>>(5)?,
+                }))
+            },
+        )
+        .optional()
+        .map_err(Into::into)
+    }
+
+    /// Stamp `replayed_at` on a payment event row.
+    pub fn mark_payment_event_replayed(&self, id: &str) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        self.conn.lock().execute(
+            "UPDATE payment_events SET replayed_at = ?1 WHERE id = ?2",
+            params![now, id],
+        )?;
+        Ok(())
     }
 
     // ── CRM helpers ──────────────────────────────────────────────────────────
@@ -1519,22 +1826,29 @@ impl AdminDb {
     pub fn list_crm_accounts(&self, limit: i64, offset: i64) -> Result<Vec<serde_json::Value>> {
         let conn = self.conn.lock();
         let exists: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='crm_accounts'", [], |r| r.get(0),
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='crm_accounts'",
+            [],
+            |r| r.get(0),
         )?;
-        if exists == 0 { return Ok(vec![]); }
+        if exists == 0 {
+            return Ok(vec![]);
+        }
         let mut stmt = conn.prepare(
             "SELECT c.id, c.org_id, o.name, c.health, c.mrr, c.nps, c.created_at
              FROM crm_accounts c LEFT JOIN organizations o ON o.id = c.org_id
              ORDER BY c.mrr DESC LIMIT ?1 OFFSET ?2",
         )?;
-        let rows = stmt.query_map(params![limit, offset], |r| {
-            Ok(serde_json::json!({
-                "id": r.get::<_,String>(0)?, "org_id": r.get::<_,String>(1)?,
-                "org_name": r.get::<_,Option<String>>(2)?, "health": r.get::<_,String>(3)?,
-                "mrr": r.get::<_,i64>(4)?, "nps": r.get::<_,Option<i64>>(5)?,
-                "created_at": r.get::<_,String>(6)?,
-            }))
-        })?.filter_map(|r| r.ok()).collect();
+        let rows = stmt
+            .query_map(params![limit, offset], |r| {
+                Ok(serde_json::json!({
+                    "id": r.get::<_,String>(0)?, "org_id": r.get::<_,String>(1)?,
+                    "org_name": r.get::<_,Option<String>>(2)?, "health": r.get::<_,String>(3)?,
+                    "mrr": r.get::<_,i64>(4)?, "nps": r.get::<_,Option<i64>>(5)?,
+                    "created_at": r.get::<_,String>(6)?,
+                }))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
         Ok(rows)
     }
 
@@ -1543,15 +1857,26 @@ impl AdminDb {
         conn.query_row(
             "SELECT id, org_id, health, mrr, nps, created_at FROM crm_accounts WHERE org_id = ?1",
             params![org_id],
-            |r| Ok(serde_json::json!({
-                "id": r.get::<_,String>(0)?, "org_id": r.get::<_,String>(1)?,
-                "health": r.get::<_,String>(2)?, "mrr": r.get::<_,i64>(3)?,
-                "nps": r.get::<_,Option<i64>>(4)?, "created_at": r.get::<_,String>(5)?,
-            })),
-        ).optional().map_err(Into::into)
+            |r| {
+                Ok(serde_json::json!({
+                    "id": r.get::<_,String>(0)?, "org_id": r.get::<_,String>(1)?,
+                    "health": r.get::<_,String>(2)?, "mrr": r.get::<_,i64>(3)?,
+                    "nps": r.get::<_,Option<i64>>(4)?, "created_at": r.get::<_,String>(5)?,
+                }))
+            },
+        )
+        .optional()
+        .map_err(Into::into)
     }
 
-    pub fn upsert_crm_account(&self, org_id: &str, health: Option<&str>, csm_id: Option<&str>, mrr: Option<i64>, nps: Option<i64>) -> Result<()> {
+    pub fn upsert_crm_account(
+        &self,
+        org_id: &str,
+        health: Option<&str>,
+        csm_id: Option<&str>,
+        mrr: Option<i64>,
+        nps: Option<i64>,
+    ) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         let id = Uuid::new_v4().to_string();
         self.conn.lock().execute(
@@ -1596,9 +1921,13 @@ impl AdminDb {
     pub fn list_approvals(&self) -> Result<Vec<serde_json::Value>> {
         let conn = self.conn.lock();
         let exists: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='approval_requests'", [], |r| r.get(0),
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='approval_requests'",
+            [],
+            |r| r.get(0),
         )?;
-        if exists == 0 { return Ok(vec![]); }
+        if exists == 0 {
+            return Ok(vec![]);
+        }
         let mut stmt = conn.prepare(
             "SELECT a.id, a.action_type, a.payload, a.status, a.created_at,
                     u.email, r.email, a.review_note
@@ -1607,20 +1936,28 @@ impl AdminDb {
              LEFT JOIN admin_users r ON r.id = a.reviewed_by
              ORDER BY a.created_at DESC",
         )?;
-        let rows = stmt.query_map([], |r| {
-            Ok(serde_json::json!({
-                "id": r.get::<_,String>(0)?, "action_type": r.get::<_,String>(1)?,
-                "payload": r.get::<_,Option<String>>(2)?, "status": r.get::<_,String>(3)?,
-                "created_at": r.get::<_,String>(4)?,
-                "requested_by_email": r.get::<_,Option<String>>(5)?,
-                "reviewed_by_email": r.get::<_,Option<String>>(6)?,
-                "review_note": r.get::<_,Option<String>>(7)?,
-            }))
-        })?.filter_map(|r| r.ok()).collect();
+        let rows = stmt
+            .query_map([], |r| {
+                Ok(serde_json::json!({
+                    "id": r.get::<_,String>(0)?, "action_type": r.get::<_,String>(1)?,
+                    "payload": r.get::<_,Option<String>>(2)?, "status": r.get::<_,String>(3)?,
+                    "created_at": r.get::<_,String>(4)?,
+                    "requested_by_email": r.get::<_,Option<String>>(5)?,
+                    "reviewed_by_email": r.get::<_,Option<String>>(6)?,
+                    "review_note": r.get::<_,Option<String>>(7)?,
+                }))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
         Ok(rows)
     }
 
-    pub fn create_approval(&self, action_type: &str, payload: Option<&str>, requested_by: Option<&str>) -> Result<String> {
+    pub fn create_approval(
+        &self,
+        action_type: &str,
+        payload: Option<&str>,
+        requested_by: Option<&str>,
+    ) -> Result<String> {
         let id = Uuid::new_v4().to_string();
         let now = Utc::now().to_rfc3339();
         self.conn.lock().execute(
@@ -1631,7 +1968,13 @@ impl AdminDb {
         Ok(id)
     }
 
-    pub fn update_approval_status(&self, id: &str, status: &str, reviewed_by: Option<&str>, note: Option<&str>) -> Result<()> {
+    pub fn update_approval_status(
+        &self,
+        id: &str,
+        status: &str,
+        reviewed_by: Option<&str>,
+        note: Option<&str>,
+    ) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         self.conn.lock().execute(
             "UPDATE approval_requests SET status=?1, reviewed_by=?2, review_note=?3, updated_at=?4 WHERE id=?5",
@@ -1660,31 +2003,47 @@ impl AdminDb {
         Ok(())
     }
 
-    pub fn list_api_keys(&self, limit: i64, offset: i64, status: Option<&str>, plan: Option<&str>) -> Result<Vec<serde_json::Value>> {
+    pub fn list_api_keys(
+        &self,
+        limit: i64,
+        offset: i64,
+        status: Option<&str>,
+        plan: Option<&str>,
+    ) -> Result<Vec<serde_json::Value>> {
         self.ensure_api_keys_table()?;
         let conn = self.conn.lock();
         let mut where_parts: Vec<String> = vec![];
         if let Some(st) = status.filter(|s| !s.is_empty()) {
-            if st == "active" { where_parts.push("k.revoked_at IS NULL".into()); }
-            else if st == "revoked" { where_parts.push("k.revoked_at IS NOT NULL".into()); }
+            if st == "active" {
+                where_parts.push("k.revoked_at IS NULL".into());
+            } else if st == "revoked" {
+                where_parts.push("k.revoked_at IS NOT NULL".into());
+            }
         }
         if let Some(p) = plan.filter(|s| !s.is_empty()) {
             let p = p.replace('\'', "''");
             where_parts.push(format!("o.plan = '{p}'"));
         }
-        let where_str = if where_parts.is_empty() { String::new() } else { format!("WHERE {}", where_parts.join(" AND ")) };
+        let where_str = if where_parts.is_empty() {
+            String::new()
+        } else {
+            format!("WHERE {}", where_parts.join(" AND "))
+        };
         let sql = format!("SELECT k.id, k.org_id, o.name, k.name, k.key_prefix, k.revoked_at, k.created_at FROM api_keys k LEFT JOIN organizations o ON o.id = k.org_id {where_str} ORDER BY k.created_at DESC LIMIT {limit} OFFSET {offset}");
         let mut stmt = conn.prepare(&sql)?;
-        let rows = stmt.query_map([], |r| {
-            let revoked: Option<String> = r.get(5)?;
-            Ok(serde_json::json!({
-                "id": r.get::<_,String>(0)?, "org_id": r.get::<_,Option<String>>(1)?,
-                "org_name": r.get::<_,Option<String>>(2)?, "name": r.get::<_,String>(3)?,
-                "key_prefix": r.get::<_,String>(4)?, "revoked_at": revoked,
-                "created_at": r.get::<_,String>(6)?,
-                "active": revoked.is_none(),
-            }))
-        })?.filter_map(|r| r.ok()).collect();
+        let rows = stmt
+            .query_map([], |r| {
+                let revoked: Option<String> = r.get(5)?;
+                Ok(serde_json::json!({
+                    "id": r.get::<_,String>(0)?, "org_id": r.get::<_,Option<String>>(1)?,
+                    "org_name": r.get::<_,Option<String>>(2)?, "name": r.get::<_,String>(3)?,
+                    "key_prefix": r.get::<_,String>(4)?, "revoked_at": revoked,
+                    "created_at": r.get::<_,String>(6)?,
+                    "active": revoked.is_none(),
+                }))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
         Ok(rows)
     }
 
@@ -1706,12 +2065,21 @@ impl AdminDb {
         ).optional().map_err(Into::into)
     }
 
-    pub fn create_api_key(&self, org_id: Option<&str>, name: &str, created_by: Option<&str>) -> Result<(String, String)> {
+    pub fn create_api_key(
+        &self,
+        org_id: Option<&str>,
+        name: &str,
+        created_by: Option<&str>,
+    ) -> Result<(String, String)> {
         self.ensure_api_keys_table()?;
         let id = Uuid::new_v4().to_string();
         let raw = format!("fxm_{}", Uuid::new_v4().to_string().replace('-', ""));
         let prefix = raw[..12].to_string();
-        let key_hash = format!("{:x}", raw.bytes().fold(0u64, |a, b| a.wrapping_mul(31).wrapping_add(b as u64)));
+        let key_hash = format!(
+            "{:x}",
+            raw.bytes()
+                .fold(0u64, |a, b| a.wrapping_mul(31).wrapping_add(b as u64))
+        );
         let now = Utc::now().to_rfc3339();
         self.conn.lock().execute(
             "INSERT INTO api_keys (id, org_id, name, key_prefix, key_hash, created_by, created_at)
@@ -1736,22 +2104,55 @@ impl AdminDb {
         let mut stmt = conn.prepare(
             "SELECT id, name, key_prefix, revoked_at, created_at FROM api_keys WHERE org_id = ?1 ORDER BY created_at DESC",
         )?;
-        let rows = stmt.query_map(params![org_id], |r| {
-            let revoked: Option<String> = r.get(3)?;
-            Ok(serde_json::json!({
-                "id": r.get::<_,String>(0)?, "name": r.get::<_,String>(1)?,
-                "key_prefix": r.get::<_,String>(2)?, "revoked_at": revoked,
-                "created_at": r.get::<_,String>(4)?, "active": revoked.is_none(),
-            }))
-        })?.filter_map(|r| r.ok()).collect();
+        let rows = stmt
+            .query_map(params![org_id], |r| {
+                let revoked: Option<String> = r.get(3)?;
+                Ok(serde_json::json!({
+                    "id": r.get::<_,String>(0)?, "name": r.get::<_,String>(1)?,
+                    "key_prefix": r.get::<_,String>(2)?, "revoked_at": revoked,
+                    "created_at": r.get::<_,String>(4)?, "active": revoked.is_none(),
+                }))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
         Ok(rows)
+    }
+
+    pub fn find_org_by_api_key_prefix(&self, key_prefix: &str) -> Result<Option<serde_json::Value>> {
+        self.ensure_api_keys_table()?;
+        let conn = self.conn.lock();
+        conn.query_row(
+            "SELECT o.id, o.name, o.slug, o.plan, o.status, o.owner_email
+             FROM api_keys k
+             JOIN organizations o ON o.id = k.org_id
+             WHERE k.key_prefix = ?1 AND k.revoked_at IS NULL
+             ORDER BY k.created_at DESC
+             LIMIT 1",
+            params![key_prefix],
+            |r| {
+                Ok(serde_json::json!({
+                    "id": r.get::<_,String>(0)?,
+                    "name": r.get::<_,String>(1)?,
+                    "slug": r.get::<_,String>(2)?,
+                    "plan": r.get::<_,String>(3)?,
+                    "status": r.get::<_,String>(4)?,
+                    "owner_email": r.get::<_,Option<String>>(5)?,
+                }))
+            },
+        )
+        .optional()
+        .map_err(Into::into)
     }
 
     pub fn get_proxy_stats(&self) -> serde_json::Value {
         // Derive live proxy info from audit_events (proxy resets, purges)
         let conn = self.conn.lock();
         let reset_count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM audit_events WHERE action='proxy.reset'", [], |r| r.get(0))
+            .query_row(
+                "SELECT COUNT(*) FROM audit_events WHERE action='proxy.reset'",
+                [],
+                |r| r.get(0),
+            )
             .unwrap_or(0);
         let last_reset: Option<String> = conn
             .query_row("SELECT created_at FROM audit_events WHERE action='proxy.reset' ORDER BY created_at DESC LIMIT 1", [], |r| r.get(0))
@@ -1792,26 +2193,40 @@ mod tests {
     #[test]
     fn test_has_any_users_empty() {
         let db = test_db();
-        assert!(!db.has_any_users().expect("should not error"), "fresh db has no users");
+        assert!(
+            !db.has_any_users().expect("should not error"),
+            "fresh db has no users"
+        );
     }
 
     #[test]
     fn test_has_any_users_after_create() {
         let db = test_db();
         let id = Uuid::new_v4().to_string();
-        db.create_user(&id, "admin@test.com", "pw", "owner", "Admin").unwrap();
-        assert!(db.has_any_users().expect("should not error"), "should have users now");
+        db.create_user(&id, "admin@test.com", "pw", "owner", "Admin")
+            .unwrap();
+        assert!(
+            db.has_any_users().expect("should not error"),
+            "should have users now"
+        );
     }
 
     #[test]
     fn test_session_create_and_validate() {
         let db = test_db();
         let user_id = Uuid::new_v4().to_string();
-        db.create_user(&user_id, "alice@test.com", "pw", "ops", "Alice").unwrap();
+        db.create_user(&user_id, "alice@test.com", "pw", "ops", "Alice")
+            .unwrap();
         let token_hash = "abc123hash";
         let session_id = Uuid::new_v4().to_string();
-        db.create_session(&session_id, &user_id, token_hash, "127.0.0.1", "TestAgent/1.0")
-            .expect("create session");
+        db.create_session(
+            &session_id,
+            &user_id,
+            token_hash,
+            "127.0.0.1",
+            "TestAgent/1.0",
+        )
+        .expect("create session");
         let result = db.validate_session(token_hash).expect("validate session");
         assert!(result.is_some(), "session should be valid");
         let (user, sid) = result.unwrap();
@@ -1823,12 +2238,16 @@ mod tests {
     fn test_revoke_session() {
         let db = test_db();
         let user_id = Uuid::new_v4().to_string();
-        db.create_user(&user_id, "bob@test.com", "pw", "support", "Bob").unwrap();
+        db.create_user(&user_id, "bob@test.com", "pw", "support", "Bob")
+            .unwrap();
         let token_hash = "revoketest123";
         let session_id = Uuid::new_v4().to_string();
-        db.create_session(&session_id, &user_id, token_hash, "10.0.0.1", "UA/1").unwrap();
+        db.create_session(&session_id, &user_id, token_hash, "10.0.0.1", "UA/1")
+            .unwrap();
         db.revoke_session(&session_id).expect("revoke");
-        let result = db.validate_session(token_hash).expect("validate after revoke");
+        let result = db
+            .validate_session(token_hash)
+            .expect("validate after revoke");
         assert!(result.is_none(), "revoked session should be invalid");
     }
 
@@ -1836,10 +2255,17 @@ mod tests {
     fn test_totp_replay_prevention() {
         let db = test_db();
         let user_id = Uuid::new_v4().to_string();
-        db.create_user(&user_id, "carol@test.com", "pw", "owner", "Carol").unwrap();
+        db.create_user(&user_id, "carol@test.com", "pw", "owner", "Carol")
+            .unwrap();
         let code = "123456";
-        assert!(!db.is_totp_code_used(&user_id, code).unwrap(), "code not yet used");
+        assert!(
+            !db.is_totp_code_used(&user_id, code).unwrap(),
+            "code not yet used"
+        );
         db.mark_totp_code_used(&user_id, code).unwrap();
-        assert!(db.is_totp_code_used(&user_id, code).unwrap(), "code should be used now");
+        assert!(
+            db.is_totp_code_used(&user_id, code).unwrap(),
+            "code should be used now"
+        );
     }
 }

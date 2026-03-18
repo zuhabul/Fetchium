@@ -3,6 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Copy, Trash2, Check } from "lucide-react";
 import { ADMIN_KEYS_ENABLED } from "@/lib/client-config";
+import {
+  DASHBOARD_ALERT,
+  DASHBOARD_PAGE_LEAD,
+  DASHBOARD_PAGE_STACK,
+  DASHBOARD_PANEL,
+  DASHBOARD_PANEL_EMPTY,
+  DASHBOARD_PANEL_ROW,
+} from "@/lib/dashboard-layout";
 
 type KeyInfo = {
   id: string;
@@ -127,11 +135,11 @@ export default function KeysPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className={DASHBOARD_PAGE_STACK}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">API Keys</h1>
-          <p className="text-sm text-white/40 mt-1">
+          <p className={DASHBOARD_PAGE_LEAD}>
             Real-time key management via `/v1/keys` admin endpoints.
           </p>
         </div>
@@ -147,13 +155,13 @@ export default function KeysPage() {
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-300">
+        <div className={`${DASHBOARD_ALERT} border-red-500/20 bg-red-500/5 text-red-300`}>
           {error}
         </div>
       )}
 
       {newKey && (
-        <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-4">
+        <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-4 sm:p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-green-400 mb-1">New API key created</p>
@@ -175,13 +183,13 @@ export default function KeysPage() {
       )}
 
       {!ADMIN_KEYS_ENABLED ? (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-200">
+        <div className={`${DASHBOARD_ALERT} border-amber-500/20 bg-amber-500/5 text-amber-200`}>
           API key management is disabled on the hosted dashboard until authenticated admin access exists.
         </div>
       ) : creating && !newKey ? (
-        <div className="rounded-xl border border-white/10 bg-surface-2 p-4">
+        <div className="rounded-xl border border-white/10 bg-surface-2 p-4 sm:p-5">
           <h3 className="font-medium text-white mb-3">Create new key</h3>
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <input
               autoFocus
               type="text"
@@ -219,14 +227,14 @@ export default function KeysPage() {
         </div>
       ) : null}
 
-      <div className="rounded-xl border border-white/5 bg-surface-1 divide-y divide-white/5">
+      <div className={DASHBOARD_PANEL}>
         {loading ? (
-          <div className="py-12 text-center text-white/30 text-sm">Loading keys...</div>
+          <div className={DASHBOARD_PANEL_EMPTY}>Loading keys...</div>
         ) : sorted.length === 0 ? (
-          <div className="py-12 text-center text-white/30 text-sm">No API keys yet.</div>
+          <div className={DASHBOARD_PANEL_EMPTY}>No API keys yet.</div>
         ) : (
           sorted.map((k) => (
-            <div key={k.id} className="flex items-center gap-4 px-5 py-4">
+            <div key={k.id} className={`flex items-center gap-4 ${DASHBOARD_PANEL_ROW}`}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-medium text-white text-sm">{k.name}</span>
@@ -252,7 +260,7 @@ export default function KeysPage() {
               </button>
               <button
                 onClick={() => void revokeKey(k.id)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/5 text-white/30 hover:text-red-400 transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/5 text-white/30 transition-colors hover:text-red-400"
                 title="Revoke key"
               >
                 <Trash2 className="h-3.5 w-3.5" />

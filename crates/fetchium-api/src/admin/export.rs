@@ -13,10 +13,12 @@ pub async fn export_csv(
     Path(entity): Path<String>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::AuditRead)?;
-    let db = state.admin_db.as_ref().ok_or_else(|| (
-        axum::http::StatusCode::SERVICE_UNAVAILABLE,
-        Json(serde_json::json!({"error": "admin db not initialized"})),
-    ))?;
+    let db = state.admin_db.as_ref().ok_or_else(|| {
+        (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "admin db not initialized"})),
+        )
+    })?;
 
     let sql = match entity.as_str() {
         "orgs" => "SELECT id, name, slug, status, plan, owner_email, created_at FROM organizations ORDER BY created_at DESC LIMIT 10000",
@@ -32,27 +34,40 @@ pub async fn export_csv(
         )),
     };
 
-    let result = db.run_select_query(sql, 10000).map_err(|e| (
-        axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({"error": e})),
-    ))?;
+    let result = db.run_select_query(sql, 10000).map_err(|e| {
+        (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error": e})),
+        )
+    })?;
 
     // Build CSV string
     let mut csv = result.columns.join(",") + "\n";
     for row in &result.rows {
-        let line = row.iter().map(|v| {
-            let s = match v {
-                serde_json::Value::Null => String::new(),
-                serde_json::Value::String(s) => format!("\"{}\"", s.replace('"', "\"\"")),
-                other => other.to_string(),
-            };
-            s
-        }).collect::<Vec<_>>().join(",");
+        let line = row
+            .iter()
+            .map(|v| {
+                let s = match v {
+                    serde_json::Value::Null => String::new(),
+                    serde_json::Value::String(s) => format!("\"{}\"", s.replace('"', "\"\"")),
+                    other => other.to_string(),
+                };
+                s
+            })
+            .collect::<Vec<_>>()
+            .join(",");
         csv.push_str(&line);
         csv.push('\n');
     }
 
-    let _ = db.log_audit(Some(&auth.user.id), Some(&auth.user.role), entity.as_str(), None, &format!("export.{entity}"), None);
+    let _ = db.log_audit(
+        Some(&auth.user.id),
+        Some(&auth.user.role),
+        entity.as_str(),
+        None,
+        &format!("export.{entity}"),
+        None,
+    );
 
     Ok(Json(serde_json::json!({
         "ok": true,

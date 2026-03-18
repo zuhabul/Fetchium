@@ -374,6 +374,12 @@ impl ProxyPool {
         }
     }
 
+    /// Force a new proxy assignment for a domain, bypassing sticky reuse.
+    pub fn fresh_proxy_for_domain(&self, domain: &str) -> Option<Arc<ProxyEntry>> {
+        self.inner.domain_assignments.remove(domain);
+        self.proxy_for_domain(domain)
+    }
+
     /// Get stats for all proxies.
     pub fn stats(&self) -> Vec<ProxyStats> {
         self.inner
@@ -611,5 +617,17 @@ mod tests {
         // Should skip dead proxy and return the second
         let p = pool.next_proxy().unwrap();
         assert_eq!(p.host, "2.2.2.2");
+    }
+
+    #[test]
+    fn fresh_proxy_for_domain_rotates_assignment() {
+        let pool = ProxyPool::new();
+        pool.add_proxy(ProxyEntry::new("1.1.1.1".into(), 8080, None, None));
+        pool.add_proxy(ProxyEntry::new("2.2.2.2".into(), 8080, None, None));
+
+        let first = pool.proxy_for_domain("duckduckgo.com").unwrap();
+        let second = pool.fresh_proxy_for_domain("duckduckgo.com").unwrap();
+
+        assert_ne!(first.host, second.host);
     }
 }

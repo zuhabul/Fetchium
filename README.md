@@ -390,7 +390,7 @@ Fetchium federates across these backends and merges results with HyperFusion ran
 
 Backend selection is automatic via **ABS (Adaptive Backend Selector)** — a UCB1 multi-armed bandit that routes queries to optimal backends based on query intent, historical success rates, and backend health. Academic queries prefer ArXiv + Scholar; code queries prefer GitHub + StackOverflow; SearXNG is always included as a meta-search aggregator.
 
-**Premium backends are optional** — Fetchium works great standalone with 11 free backends. Premium backends add extra coverage when API keys are configured.
+**Premium backends are optional** — Fetchium works great standalone with 17 free backends. Premium backends add extra coverage when API keys are configured.
 
 ---
 

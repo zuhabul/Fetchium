@@ -3,6 +3,8 @@
 //! Transforms raw user queries into optimized search queries without API calls.
 //! Applied before dispatch to backends in the search orchestrator.
 
+use crate::query::crosslingual::{expand_crosslingual, Language};
+
 /// Result of autoprompt query rewriting.
 #[derive(Debug, Clone)]
 pub struct AutopromptResult {
@@ -33,7 +35,30 @@ pub fn autoprompt(query: &str) -> AutopromptResult {
         };
     }
 
-    // Skip rewriting for non-ASCII queries (multilingual) — our patterns are English-only
+    let crosslingual = expand_crosslingual(&q);
+    if is_non_latin_bridge_query(&crosslingual) {
+        let rewritten = crosslingual
+            .expansions
+            .first()
+            .map(|expansion| expansion.query.trim().to_string())
+            .unwrap_or_else(|| q.clone());
+        return AutopromptResult {
+            changed: rewritten != q,
+            rewritten,
+            original,
+        };
+    }
+
+    if is_latin_foreign_query(&crosslingual) {
+        let rewritten = bridge_crosslingual_query(&q, &crosslingual);
+        return AutopromptResult {
+            changed: rewritten != q,
+            rewritten,
+            original,
+        };
+    }
+
+    // Skip rewriting for non-ASCII non-Latin queries — our patterns are English-only
     if q.chars().any(|c| c.is_alphabetic() && !c.is_ascii()) {
         return AutopromptResult {
             rewritten: q,
@@ -53,7 +78,16 @@ pub fn autoprompt(query: &str) -> AutopromptResult {
     // Step 3: Inline abbreviation expansion
     q = expand_abbreviations(&q);
 
-    // Step 4: Length guard
+    // Step 4: Normalize health-sensitive comparison/treatment queries into facets.
+    q = normalize_medical_query(&q);
+
+    // Step 5: Condense long natural-language queries into lexical anchors.
+    // Skip health-sensitive rewrites so medical facets survive into retrieval.
+    if !is_health_sensitive_query(&q) {
+        q = condense_long_query(&q);
+    }
+
+    // Step 6: Length guard
     if q.len() > 150 {
         q = q.chars().take(150).collect::<String>().trim().to_string();
     }
@@ -252,6 +286,242 @@ fn expand_abbreviations(query: &str) -> String {
     }
 }
 
+fn condense_long_query(query: &str) -> String {
+    let words: Vec<&str> = query.split_whitespace().collect();
+    if words.len() <= 12 {
+        return query.to_string();
+    }
+    let lower = query.to_lowercase();
+    let preserve_howto =
+        lower.contains("how to") || lower.contains("guide") || lower.contains("step by step");
+
+    const STOPWORDS: &[&str] = &[
+        "a", "an", "the", "and", "or", "but", "to", "for", "of", "with", "by", "in", "on", "at",
+        "is", "are", "was", "were", "be", "been", "being", "this", "that", "these", "those",
+        "what", "which", "who", "when", "where", "why", "how", "using", "into", "from", "step",
+        "steps", "guide", "best",
+    ];
+
+    let mut anchors = Vec::new();
+    for word in words {
+        let clean = word
+            .trim_matches(|c: char| !c.is_alphanumeric() && c != '/')
+            .to_lowercase();
+        if clean.len() < 2 || STOPWORDS.contains(&clean.as_str()) {
+            continue;
+        }
+        if !anchors.contains(&clean) {
+            anchors.push(clean);
+        }
+    }
+
+    if anchors.len() <= 10 {
+        let condensed = anchors.join(" ");
+        return if preserve_howto {
+            format!("how to {condensed}")
+        } else {
+            condensed
+        };
+    }
+
+    let tail_start = anchors.len().saturating_sub(4);
+    let mut reduced = Vec::with_capacity(10);
+    for word in anchors
+        .iter()
+        .take(6)
+        .chain(anchors.iter().skip(tail_start))
+    {
+        if !reduced.contains(word) {
+            reduced.push(word.clone());
+        }
+    }
+    let condensed = reduced.join(" ");
+    if preserve_howto {
+        format!("how to {condensed}")
+    } else {
+        condensed
+    }
+}
+
+fn normalize_medical_query(query: &str) -> String {
+    if !is_health_sensitive_query(query) {
+        return expand_medical_phrases(query);
+    }
+
+    let lower = query.to_lowercase();
+    let mut facets = Vec::new();
+
+    if lower.contains("blood pressure") || lower.contains("hypertension") {
+        facets.push("hypertension".to_string());
+    }
+
+    if lower.contains("sleep apnea") {
+        facets.push("obstructive sleep apnea".to_string());
+    }
+
+    if lower.contains("medication")
+        || lower.contains("medicine")
+        || lower.contains("drug")
+        || lower.contains("blood pressure medication")
+    {
+        facets.push("antihypertensive".to_string());
+        facets.push("drug classes".to_string());
+    }
+
+    if lower.contains("comparison")
+        || lower.contains("compare")
+        || lower.contains("vs")
+        || lower.contains("versus")
+    {
+        facets.push("comparison".to_string());
+    }
+
+    if lower.contains("side effects") || lower.contains("adverse effects") {
+        facets.push("adverse effects".to_string());
+    }
+
+    if lower.contains("blood pressure medication")
+        && (lower.contains("comparison") || lower.contains("side effects"))
+    {
+        facets.push("ace inhibitor".to_string());
+        facets.push("arb".to_string());
+        facets.push("beta blocker".to_string());
+        facets.push("diuretic".to_string());
+        facets.push("calcium channel blocker".to_string());
+    }
+
+    if facets.is_empty() {
+        return expand_medical_phrases(query);
+    }
+
+    if is_strict_medical_query(&lower) {
+        return facets.join(" ");
+    }
+
+    let mut parts = vec![query.to_string()];
+    for facet in facets {
+        if !contains_phrase_ci(&lower, &facet) {
+            parts.push(facet);
+        }
+    }
+
+    parts.join(" ")
+}
+
+fn expand_medical_phrases(query: &str) -> String {
+    let lower = query.to_lowercase();
+    let mut result = query.to_string();
+
+    if lower.contains("blood pressure medication") && !lower.contains("antihypertensive") {
+        result.push_str(" antihypertensive");
+    }
+    if lower.contains("blood pressure") && !lower.contains("hypertension") {
+        result.push_str(" hypertension");
+    }
+    if (lower.contains("medication comparison") || lower.contains("drug comparison"))
+        && !lower.contains("drug classes")
+    {
+        result.push_str(" drug classes");
+    }
+    if lower.contains("side effects") && !lower.contains("adverse effects") {
+        result.push_str(" adverse effects");
+    }
+    if lower.contains("blood pressure medication")
+        && lower.contains("comparison")
+        && !lower.contains("ace inhibitor")
+    {
+        result.push_str(" ace inhibitor arb beta blocker diuretic calcium channel blocker");
+    }
+
+    result
+}
+
+fn is_health_sensitive_query(query: &str) -> bool {
+    let lower = query.to_lowercase();
+    [
+        "medication",
+        "medicine",
+        "drug",
+        "drugs",
+        "dose",
+        "dosage",
+        "side effect",
+        "side effects",
+        "symptom",
+        "symptoms",
+        "treatment",
+        "treatments",
+        "diagnosis",
+        "disease",
+        "blood pressure",
+        "hypertension",
+        "diabetes",
+        "vaccine",
+        "vaccination",
+        "therapy",
+        "supplement",
+        "supplements",
+        "supplementation",
+        "creatine",
+        "pain",
+        "cancer",
+    ]
+    .iter()
+    .any(|pattern| lower.contains(pattern))
+}
+
+fn is_strict_medical_query(lower_query: &str) -> bool {
+    [
+        "medication",
+        "medicine",
+        "drug",
+        "drugs",
+        "dose",
+        "dosage",
+        "side effect",
+        "side effects",
+        "treatment",
+        "treatments",
+        "therapy",
+        "compare",
+        "comparison",
+        "versus",
+        "vs",
+    ]
+    .iter()
+    .any(|pattern| lower_query.contains(pattern))
+}
+
+fn contains_phrase_ci(lower_query: &str, phrase: &str) -> bool {
+    lower_query.contains(&phrase.to_lowercase())
+}
+
+fn is_latin_foreign_query(result: &crate::query::crosslingual::CrossLingualResult) -> bool {
+    matches!(
+        result.detected_language,
+        Language::French | Language::Spanish | Language::German | Language::Portuguese
+    ) && !result.expansions.is_empty()
+}
+
+fn is_non_latin_bridge_query(result: &crate::query::crosslingual::CrossLingualResult) -> bool {
+    matches!(result.detected_language, Language::Bengali) && !result.expansions.is_empty()
+}
+
+fn bridge_crosslingual_query(
+    query: &str,
+    result: &crate::query::crosslingual::CrossLingualResult,
+) -> String {
+    let Some(expansion) = result.expansions.first() else {
+        return query.to_string();
+    };
+    let query_lower = query.to_lowercase();
+    let expansion_lower = expansion.query.to_lowercase();
+    if expansion_lower == query_lower || query_lower.contains(&expansion_lower) {
+        return query.to_string();
+    }
+    format!("{query} {}", expansion.query.trim())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -340,5 +610,73 @@ mod tests {
         let r = autoprompt("machine learning ML models");
         // "ML" shouldn't expand since "machine learning" is already present
         assert_eq!(r.rewritten, "machine learning ML models");
+    }
+
+    #[test]
+    fn condenses_long_technical_query() {
+        let r = autoprompt(
+            "step by step guide to deploying a machine learning model to production using Docker Kubernetes and CI CD pipelines",
+        );
+        assert!(r.rewritten.starts_with("how to "));
+        assert!(r.rewritten.contains("machine learning"));
+        assert!(r.rewritten.contains("docker"));
+        assert!(r.rewritten.contains("kubernetes"));
+        assert!(r.rewritten.contains("ci"));
+        assert!(r.rewritten.contains("cd"));
+        assert!(!r.rewritten.contains("step by step"));
+    }
+
+    #[test]
+    fn expands_medical_phrases() {
+        let r = autoprompt("blood pressure medication side effects comparison");
+        assert!(r.rewritten.contains("antihypertensive"));
+        assert!(r.rewritten.contains("hypertension"));
+        assert!(r.rewritten.contains("drug classes"));
+        assert!(r.rewritten.contains("adverse effects"));
+        assert!(r.rewritten.contains("ace inhibitor"));
+        assert!(r.rewritten.contains("beta blocker"));
+    }
+
+    #[test]
+    fn normalize_medical_query_builds_facets_for_comparison() {
+        let normalized =
+            normalize_medical_query("blood pressure medication side effects comparison");
+        assert!(!normalized.contains("blood pressure medication"));
+        assert!(normalized.contains("hypertension"));
+        assert!(normalized.contains("antihypertensive"));
+        assert!(normalized.contains("drug classes"));
+        assert!(normalized.contains("adverse effects"));
+        assert!(normalized.contains("calcium channel blocker"));
+    }
+
+    #[test]
+    fn normalize_medical_query_leaves_non_health_queries_alone() {
+        let normalized = normalize_medical_query("vector database comparison pinecone vs weaviate");
+        assert_eq!(
+            normalized,
+            "vector database comparison pinecone vs weaviate"
+        );
+    }
+
+    #[test]
+    fn bridge_crosslingual_query_adds_english_anchor_terms() {
+        let r = autoprompt("comment apprendre le français rapidement");
+        assert!(
+            r.rewritten.contains("learn french fast"),
+            "rewritten={}",
+            r.rewritten
+        );
+    }
+
+    #[test]
+    fn normalize_medical_query_adds_sleep_apnea_facet() {
+        let normalized = normalize_medical_query("sleep apnea causes diagnosis treatment options");
+        assert!(normalized.contains("obstructive sleep apnea"));
+    }
+
+    #[test]
+    fn bengali_query_rewrites_to_english_bridge() {
+        let r = autoprompt("মেশিন লার্নিং কি");
+        assert_eq!(r.rewritten, "what is machine learning");
     }
 }

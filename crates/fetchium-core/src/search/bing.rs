@@ -152,6 +152,14 @@ impl BingBackend {
 
         results
     }
+
+    #[cfg(not(feature = "headless"))]
+    fn is_captcha_page(html: &str) -> bool {
+        let lower = html.to_lowercase();
+        lower.contains("class=\"captcha\"")
+            || lower.contains("id=\"turnstile-widget\"")
+            || lower.contains("challenges.cloudflare.com/turnstile")
+    }
 }
 
 /// Decode Bing's `/ck/a?...&u=a1<base64url>` redirect to the real destination URL.
@@ -252,6 +260,10 @@ impl BingBackend {
                         Ok(resp) if resp.status().is_success() => {
                             match resp.text().await {
                                 Ok(html) => {
+                                    if Self::is_captcha_page(&html) {
+                                        debug!("Bing: CAPTCHA page detected on page {page} attempt {attempt}");
+                                        continue;
+                                    }
                                     let page_results = Self::parse_serp(&html, page);
                                     if !page_results.is_empty() {
                                         all_results.extend(page_results);
@@ -370,6 +382,17 @@ mod tests {
     fn parse_serp_empty_html() {
         let results = BingBackend::parse_serp("<html></html>", 0);
         assert!(results.is_empty());
+    }
+
+    #[cfg(not(feature = "headless"))]
+    #[test]
+    fn detects_captcha_page() {
+        assert!(BingBackend::is_captcha_page(
+            "<html><div class=\"captcha\"></div><div id=\"turnstile-widget\"></div></html>"
+        ));
+        assert!(!BingBackend::is_captcha_page(
+            "<html><li class=\"b_algo\"></li></html>"
+        ));
     }
 
     #[cfg(not(feature = "headless"))]

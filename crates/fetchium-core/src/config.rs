@@ -123,6 +123,22 @@ pub struct GeneralConfig {
 pub struct SearchConfig {
     /// Enabled backends.
     pub backends: Vec<String>,
+    /// Tavily API key.
+    pub tavily_api_key: Option<String>,
+    /// Tavily API keys for rotation.
+    pub tavily_api_keys: Vec<String>,
+    /// Serper API key.
+    pub serper_api_key: Option<String>,
+    /// Serper API keys for rotation.
+    pub serper_api_keys: Vec<String>,
+    /// Exa API key.
+    pub exa_api_key: Option<String>,
+    /// Exa API keys for rotation.
+    pub exa_api_keys: Vec<String>,
+    /// Firecrawl API key.
+    pub firecrawl_api_key: Option<String>,
+    /// Firecrawl API keys for rotation.
+    pub firecrawl_api_keys: Vec<String>,
     /// Default token budget for agent commands.
     pub default_budget: u32,
     /// Default PDS tier.
@@ -323,10 +339,18 @@ impl Default for SearchConfig {
                 "arxiv".into(),
                 "github".into(),
             ],
+            tavily_api_key: None,
+            tavily_api_keys: Vec::new(),
+            serper_api_key: None,
+            serper_api_keys: Vec::new(),
+            exa_api_key: None,
+            exa_api_keys: Vec::new(),
+            firecrawl_api_key: None,
+            firecrawl_api_keys: Vec::new(),
             default_budget: 4000,
             default_tier: PdsTier::Summary,
-            max_concurrent: 10,
-            timeout_secs: 30,
+            max_concurrent: 100,
+            timeout_secs: 60,
             searxng_url: Some("http://localhost:4040".into()),
         }
     }

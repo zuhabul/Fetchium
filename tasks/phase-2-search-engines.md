@@ -1335,7 +1335,7 @@ P1-E3-T1 (BM25) ─────── P2-E4-T1 (8 Signals) ── P2-E4-T2 (Fusi
 
 - [ ] All 16 tasks completed and passing tests
 - [ ] Browser pool manages Chromium lifecycle correctly
-- [ ] All 11 search backends implemented and returning results
+- [ ] All 17 search backends implemented and returning results
 - [ ] Parallel orchestrator dispatches to all backends with timeout
 - [ ] Cross-source deduplication working (URL + SimHash)
 - [ ] Fallback chains handle backend failures gracefully

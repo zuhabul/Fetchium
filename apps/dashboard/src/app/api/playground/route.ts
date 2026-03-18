@@ -5,21 +5,40 @@ import { resolve_api_base } from "@/lib/server-api";
 
 export const runtime = "nodejs";
 
-const ALLOWED_ENDPOINTS = new Set([
+const ALLOWED_POST_ENDPOINTS = new Set([
   "/v1/search",
   "/v1/scrape",
   "/v1/fetch",
   "/v1/research",
+  "/v1/research/jobs",
   "/v1/youtube/search",
+  "/v1/youtube/search/jobs",
   "/v1/youtube/analyze",
+  "/v1/youtube/analyze/jobs",
   "/v1/social/reddit",
+  "/v1/social/reddit/jobs",
   "/v1/social/hackernews",
+  "/v1/social/hackernews/jobs",
   "/v1/social/research",
+  "/v1/social/research/jobs",
   "/v1/estimate",
 ]);
 
+const ALLOWED_GET_PREFIXES = ["/v1/jobs/"];
+
+function isAllowedEndpoint(endpoint: string, method: string): boolean {
+  if (method === "POST") {
+    return ALLOWED_POST_ENDPOINTS.has(endpoint);
+  }
+  if (method === "GET") {
+    return ALLOWED_GET_PREFIXES.some((prefix) => endpoint.startsWith(prefix));
+  }
+  return false;
+}
+
 type PlaygroundRequest = {
   endpoint?: string;
+  method?: string;
   payload?: unknown;
 };
 
@@ -42,22 +61,31 @@ export async function POST(req: NextRequest) {
 
     const body = (await req.json()) as PlaygroundRequest;
     const endpoint = (body.endpoint || "").trim();
-    if (!ALLOWED_ENDPOINTS.has(endpoint)) {
+    const method = (body.method || "POST").toUpperCase();
+
+    if (!isAllowedEndpoint(endpoint, method)) {
       return NextResponse.json(
         { error: "invalid_endpoint", message: "Endpoint is not allowed in dashboard playground." },
         { status: 400 },
       );
     }
+
     const apiBase = resolve_api_base(token && typeof token.apiBase === "string" ? token.apiBase : undefined);
-    const res = await fetch(`${apiBase}${endpoint}`, {
-      method: "POST",
+
+    const fetchOptions: RequestInit = {
+      method,
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify(body.payload ?? {}),
       cache: "no-store",
-    });
+    };
+
+    if (method === "POST") {
+      (fetchOptions.headers as Record<string, string>)["Content-Type"] = "application/json";
+      fetchOptions.body = JSON.stringify(body.payload ?? {});
+    }
+
+    const res = await fetch(`${apiBase}${endpoint}`, fetchOptions);
     const responseText = await res.text();
     let parsed: unknown = responseText;
     try {

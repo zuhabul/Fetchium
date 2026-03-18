@@ -16,7 +16,7 @@ import Footer from "@/components/Footer";
 export const metadata: Metadata = {
   title: "Fetchium — The Search API That Thinks | Search, Extraction, and Research API",
   description:
-    "One API call for search, extraction, and citations across 11+ backends. Built for RAG pipelines, AI agents, and research workflows. 1,000 free requests per month and docs at docs.fetchium.com.",
+    "One API call for search, extraction, and citations across 17 backends. Built for RAG pipelines, AI agents, and research workflows. 1,000 free requests per month and docs at docs.fetchium.com.",
   alternates: {
     canonical: "/",
   },
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: "Fetchium — The Search API That Thinks",
-    description: "11+ federated backends, 8-signal ranking, 5-layer extraction, and token-budgeted context for AI applications.",
+    description: "17+ federated backends, 8-signal ranking, 5-layer extraction, and token-budgeted context for AI applications.",
     type: "website",
     url: "https://fetchium.com",
   },

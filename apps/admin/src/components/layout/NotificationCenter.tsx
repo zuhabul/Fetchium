@@ -90,7 +90,7 @@ export default function NotificationCenter() {
     <div className="relative" ref={panelRef}>
       <button
         onClick={() => setIsOpen(v => !v)}
-        className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 transition-colors relative"
+        className="relative flex h-11 w-11 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
         aria-label="Notifications"
       >
         <Bell className="w-4 h-4" />
@@ -100,7 +100,7 @@ export default function NotificationCenter() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-10 w-80 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden z-50">
+        <div className="absolute right-0 top-12 z-50 w-[min(20rem,calc(100vw-1rem))] overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
             <span className="text-sm font-semibold text-zinc-100">Notifications</span>

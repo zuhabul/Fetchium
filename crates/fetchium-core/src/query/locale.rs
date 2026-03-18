@@ -28,6 +28,19 @@ pub fn detect_query_locale(query: &str) -> Option<&'static str> {
     detect_language_words(&q)
 }
 
+/// Detect the query language when it appears to be non-English.
+///
+/// Unlike [`detect_query_locale`], this avoids country/city heuristics so callers
+/// can distinguish foreign-language phrasing from English queries about a place.
+pub fn detect_query_language(query: &str) -> Option<&'static str> {
+    if let Some(cc) = detect_by_script(query) {
+        return Some(cc);
+    }
+
+    let q = query.to_lowercase();
+    detect_language_words(&q)
+}
+
 /// Detect locale from Unicode script ranges — O(n) char scan.
 fn detect_by_script(query: &str) -> Option<&'static str> {
     let mut has_cjk = false;
@@ -49,6 +62,8 @@ fn detect_by_script(query: &str) -> Option<&'static str> {
             '\u{0900}'..='\u{097F}' => return Some("in"),
             // Thai
             '\u{0E00}'..='\u{0E7F}' => return Some("th"),
+            // Bengali
+            '\u{0980}'..='\u{09FF}' => return Some("bd"),
             // Greek
             '\u{0370}'..='\u{03FF}' => return Some("gr"),
             // CJK Unified — could be Chinese or Japanese kanji

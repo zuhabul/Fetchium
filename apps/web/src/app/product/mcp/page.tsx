@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 const tools = [
   {
     name: "fetchium_search",
-    desc: "Search the web via 11+ backends. Returns ranked results with content snippets.",
+    desc: "Search the web via 17 backends. Returns ranked results with content snippets.",
     params: ["query: string", "max_results?: number", "backends?: string[]"],
   },
   {

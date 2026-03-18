@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 export const metadata: Metadata = {
   title: "About Fetchium — The Search API That Thinks",
   description:
-    "Fetchium is building the information layer for the AI age. 17 novel algorithms, 11+ backends, built in Rust. Learn about our mission, team, and roadmap.",
+    "Fetchium is building the information layer for the AI age. 17 novel algorithms, 17 backends, built in Rust. Learn about our mission, team, and roadmap.",
 };
 
 const values = [
@@ -24,7 +24,7 @@ const values = [
   },
   {
     title: "Built to last",
-    desc: "Written in Rust. 563+ tests. Zero warnings policy. Production-grade resilience with circuit breakers, retries, and graceful degradation.",
+    desc: "Written in Rust. 1,100+ tests. Zero warnings policy. Production-grade resilience with circuit breakers, retries, and graceful degradation.",
   },
 ];
 
@@ -65,7 +65,7 @@ export default function AboutPage() {
               is a hard engineering problem that most teams shouldn&apos;t have to solve themselves.
             </p>
             <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-2xl">
-              Fetchium is the API that solves it. 17 novel algorithms, 11+ backends, built in Rust.
+              Fetchium is the API that solves it. 17 novel algorithms, 17 backends, built in Rust.
               From individual developers building their first RAG prototype to teams running production
               AI pipelines — one API handles every retrieval workload.
             </p>
@@ -90,8 +90,8 @@ export default function AboutPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
                 { v: "17", l: "Novel algorithms", sub: "CEP, QATBE, AMRS, PIE, RAR..." },
-                { v: "563+", l: "Tests passing", sub: "Zero failures, zero warnings" },
-                { v: "11+", l: "Search backends", sub: "Federated in one call" },
+                { v: "1,100+", l: "Tests passing", sub: "Zero failures, zero warnings" },
+                { v: "17+", l: "Search backends", sub: "Federated in one call" },
                 { v: "26", l: "CLI commands", sub: "Complete developer toolset" },
               ].map((s) => (
                 <div key={s.l} className="rounded-xl border border-white/6 bg-white/[0.02] p-4 text-center">

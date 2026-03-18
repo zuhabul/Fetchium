@@ -32,6 +32,12 @@ pub struct LoginRequest {
     pub totp_code: Option<String>,
 }
 
+enum LoginCheck {
+    Invalid,
+    WrongPassword,
+    User(AdminUser),
+}
+
 #[derive(Serialize)]
 pub struct LoginResponse {
     pub id: String,
@@ -183,28 +189,42 @@ pub async fn login(
     headers: HeaderMap,
     Json(req): Json<LoginRequest>,
 ) -> Result<Json<LoginResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let admin_db = state.admin_db.as_ref().ok_or_else(|| {
+    let admin_db = state.admin_db.clone().ok_or_else(|| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({"error": "admin db not initialized"})),
         )
     })?;
+    let lookup_db = admin_db.clone();
+    let email = req.email.clone();
+    let password = req.password.clone();
+    let login_check = tokio::task::spawn_blocking(move || -> anyhow::Result<LoginCheck> {
+        let Some(user) = lookup_db.find_user_by_email(&email)? else {
+            return Ok(LoginCheck::Invalid);
+        };
 
-    // Find user (same error for missing user and wrong password — no enumeration)
-    let user: AdminUser = admin_db
-        .find_user_by_email(&req.email)
-        .map_err(db_err)?
-        .ok_or_else(invalid_creds)?;
+        if !user.is_active {
+            return Ok(LoginCheck::Invalid);
+        }
 
-    if !user.is_active {
-        return Err(invalid_creds());
-    }
+        if !verify_password(&password, &user.password_hash) {
+            return Ok(LoginCheck::WrongPassword);
+        }
 
-    // Verify password
-    if !verify_password(&req.password, &user.password_hash) {
-        tracing::warn!(email = %req.email, ip = %extract_ip(&headers), "admin login: wrong password");
-        return Err(invalid_creds());
-    }
+        Ok(LoginCheck::User(user))
+    })
+    .await
+    .map_err(blocking_err)?
+    .map_err(db_err)?;
+
+    let user = match login_check {
+        LoginCheck::Invalid => return Err(invalid_creds()),
+        LoginCheck::WrongPassword => {
+            tracing::warn!(email = %req.email, ip = %extract_ip(&headers), "admin login: wrong password");
+            return Err(invalid_creds());
+        }
+        LoginCheck::User(user) => user,
+    };
 
     // TOTP gate
     if user.totp_enabled {
@@ -265,13 +285,21 @@ pub async fn login(
     let token = generate_session_token();
     let token_hash = hash_token(&token);
     let session_id = Uuid::new_v4().to_string();
+    let session_id_for_db = session_id.clone();
     let ip = extract_ip(&headers);
     let ua = extract_ua(&headers);
 
-    admin_db
-        .create_session(&session_id, &user.id, &token_hash, &ip, &ua)
-        .map_err(db_err)?;
-    admin_db.update_last_login(&user.id, &ip).map_err(db_err)?;
+    let admin_db = state.admin_db.clone().ok_or_else(db_not_init)?;
+    let user_id = user.id.clone();
+    let ip_for_db = ip.clone();
+    tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
+        admin_db.create_session(&session_id_for_db, &user_id, &token_hash, &ip_for_db, &ua)?;
+        admin_db.update_last_login(&user_id, &ip_for_db)?;
+        Ok(())
+    })
+    .await
+    .map_err(blocking_err)?
+    .map_err(db_err)?;
 
     tracing::info!(user_id = %user.id, email = %user.email, role = %user.role, ip = %ip, "admin login success");
 
@@ -423,14 +451,44 @@ pub async fn create_staff(
     Json(body): Json<serde_json::Value>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     let admin_db = state.admin_db.as_ref().ok_or_else(db_not_init)?;
-    let email = body.get("email").and_then(|v| v.as_str()).ok_or_else(|| (StatusCode::BAD_REQUEST, Json(serde_json::json!({"error": "email required"}))))?;
-    let password = body.get("password").and_then(|v| v.as_str()).ok_or_else(|| (StatusCode::BAD_REQUEST, Json(serde_json::json!({"error": "password required"}))))?;
+    let email = body.get("email").and_then(|v| v.as_str()).ok_or_else(|| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "email required"})),
+        )
+    })?;
+    let password = body
+        .get("password")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| {
+            (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "password required"})),
+            )
+        })?;
     let name = body.get("name").and_then(|v| v.as_str()).unwrap_or("Staff");
-    let role = body.get("role").and_then(|v| v.as_str()).unwrap_or("support");
-    let hash = hash_password(password).map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"error": "hash failed"}))))?;
+    let role = body
+        .get("role")
+        .and_then(|v| v.as_str())
+        .unwrap_or("support");
+    let hash = hash_password(password).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error": "hash failed"})),
+        )
+    })?;
     let id = Uuid::new_v4().to_string();
-    admin_db.create_user(&id, email, &hash, role, name).map_err(db_err)?;
-    let _ = admin_db.log_audit(Some(&auth.user.id), Some(&auth.user.role), "staff", Some(&id), "staff.create", None);
+    admin_db
+        .create_user(&id, email, &hash, role, name)
+        .map_err(db_err)?;
+    let _ = admin_db.log_audit(
+        Some(&auth.user.id),
+        Some(&auth.user.role),
+        "staff",
+        Some(&id),
+        "staff.create",
+        None,
+    );
     Ok(Json(serde_json::json!({"ok": true, "id": id})))
 }
 
@@ -448,7 +506,14 @@ pub async fn update_staff(
     if let Some(active) = body.get("is_active").and_then(|v| v.as_bool()) {
         admin_db.set_user_active(&id, active).map_err(db_err)?;
     }
-    let _ = admin_db.log_audit(Some(&auth.user.id), Some(&auth.user.role), "staff", Some(&id), "staff.update", None);
+    let _ = admin_db.log_audit(
+        Some(&auth.user.id),
+        Some(&auth.user.role),
+        "staff",
+        Some(&id),
+        "staff.update",
+        None,
+    );
     Ok(Json(serde_json::json!({"ok": true})))
 }
 
@@ -460,7 +525,14 @@ pub async fn remove_staff(
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     let admin_db = state.admin_db.as_ref().ok_or_else(db_not_init)?;
     admin_db.set_user_active(&id, false).map_err(db_err)?;
-    let _ = admin_db.log_audit(Some(&auth.user.id), Some(&auth.user.role), "staff", Some(&id), "staff.remove", None);
+    let _ = admin_db.log_audit(
+        Some(&auth.user.id),
+        Some(&auth.user.role),
+        "staff",
+        Some(&id),
+        "staff.remove",
+        None,
+    );
     Ok(Json(serde_json::json!({"ok": true})))
 }
 
@@ -483,7 +555,14 @@ pub async fn revoke_all_sessions(
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     let admin_db = state.admin_db.as_ref().ok_or_else(db_not_init)?;
     admin_db.revoke_all_sessions_for_user(&id).map_err(db_err)?;
-    let _ = admin_db.log_audit(Some(&auth.user.id), Some(&auth.user.role), "staff", Some(&id), "staff.revoke_sessions", None);
+    let _ = admin_db.log_audit(
+        Some(&auth.user.id),
+        Some(&auth.user.role),
+        "staff",
+        Some(&id),
+        "staff.revoke_sessions",
+        None,
+    );
     Ok(Json(serde_json::json!({"ok": true})))
 }
 
@@ -498,6 +577,14 @@ fn invalid_creds() -> (StatusCode, Json<serde_json::Value>) {
 
 fn db_err(e: anyhow::Error) -> (StatusCode, Json<serde_json::Value>) {
     tracing::error!("admin db error: {e}");
+    (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!({"error": "internal error"})),
+    )
+}
+
+fn blocking_err(e: tokio::task::JoinError) -> (StatusCode, Json<serde_json::Value>) {
+    tracing::error!("admin auth blocking task failed: {e}");
     (
         StatusCode::INTERNAL_SERVER_ERROR,
         Json(serde_json::json!({"error": "internal error"})),
@@ -519,8 +606,14 @@ mod tests {
     fn test_password_hash_and_verify() {
         let password = "SuperSecret123!";
         let hash = hash_password(password).expect("hash should succeed");
-        assert!(verify_password(password, &hash), "correct password should verify");
-        assert!(!verify_password("WrongPassword", &hash), "wrong password should fail");
+        assert!(
+            verify_password(password, &hash),
+            "correct password should verify"
+        );
+        assert!(
+            !verify_password("WrongPassword", &hash),
+            "wrong password should fail"
+        );
         assert!(!verify_password("", &hash), "empty password should fail");
     }
 

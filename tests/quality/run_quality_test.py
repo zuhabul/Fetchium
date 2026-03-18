@@ -10,8 +10,8 @@ import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-API_URL = "http://localhost:3050/v1/search"
-API_KEY = "fetchium_95255db17cadef51a2ff90dc19362042565de7ded675f6af07719edfff41132e"
+API_URL = "http://127.0.0.1:4567/v1/search"
+API_KEY = "fetchium_1f82fcf3425d0b9999daef4795e3104d032e20aba63a48923ef37d6f0bf22fed"
 MAX_SOURCES = 5
 TIMEOUT = 30  # seconds per query
 

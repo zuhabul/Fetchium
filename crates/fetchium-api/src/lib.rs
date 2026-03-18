@@ -21,6 +21,7 @@ pub mod handlers;
 pub mod handlers_auth;
 pub mod handlers_proxy;
 pub mod middleware;
+pub mod route_registry;
 pub mod routes;
 pub mod types;
 

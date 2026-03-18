@@ -61,7 +61,7 @@ export default function ProductSearchPage() {
               </span>
             </h1>
             <p className="text-base sm:text-lg text-slate-400 max-w-2xl leading-relaxed mb-7">
-              One query dispatched to 11+ backends in parallel. Results ranked by 8 independent
+              One query dispatched to 17 backends in parallel. Results ranked by 8 independent
               signals — BM25, semantic similarity, temporal freshness, source authority, and more.
               Returns structured JSON with citations for AI retrieval workflows.
             </p>
@@ -86,7 +86,7 @@ export default function ProductSearchPage() {
           {/* Key stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-14">
             {[
-              { v: "11+", l: "Search backends" },
+              { v: "17+", l: "Search backends" },
               { v: "8", l: "Ranking signals" },
               { v: "12", l: "MCP tools" },
               { v: "60/min", l: "Free tier rate" },
@@ -100,7 +100,7 @@ export default function ProductSearchPage() {
 
           {/* Backend grid */}
           <section className="mb-14">
-            <h2 className="text-xl sm:text-2xl font-bold mb-2">11+ Search Backends</h2>
+            <h2 className="text-xl sm:text-2xl font-bold mb-2">17+ Search Backends</h2>
             <p className="text-slate-500 mb-6 text-sm">
               All backends are queried in parallel. Circuit breakers handle failures transparently.
               Results arrive from the fastest responding backends first.

@@ -6,8 +6,8 @@ import { Zap, Shield, Cpu, Clock, FlaskConical, Lock } from "lucide-react";
 const items = [
   { icon: Zap,         label: "17 novel algorithms",    sub: "not available anywhere else" },
   { icon: Clock,       label: "12 MCP tools",           sub: "search, fetch, research, YouTube, and social workflows" },
-  { icon: FlaskConical,label: "11+ search backends",     sub: "federated in a single call" },
-  { icon: Shield,      label: "563+ unit tests",         sub: "production-grade reliability" },
+  { icon: FlaskConical,label: "17+ search backends",     sub: "federated in a single call" },
+  { icon: Shield,      label: "1,100+ unit tests",         sub: "production-grade reliability" },
   { icon: Cpu,         label: "Built in Rust",           sub: "zero GC pauses, safe concurrency" },
   { icon: Lock,        label: "Zero telemetry",          sub: "your queries stay private" },
 ];

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { ADMIN_PAGE_PADDING } from '@/lib/layout'
 import TopBar from '@/components/layout/TopBar'
 
 interface WebhookEvent {
@@ -74,7 +75,7 @@ export default function WebhooksPage() {
   return (
     <div className="flex flex-col min-h-full">
       <TopBar title="Webhook Events" />
-      <div className="p-6">
+      <div className={ADMIN_PAGE_PADDING}>
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm mb-6">
             Failed to load data

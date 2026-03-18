@@ -473,6 +473,40 @@ fn min_max_normalize(scores: Vec<RawScores>) -> Vec<RawScores> {
 /// Used when the caller doesn't specify intent explicitly.
 pub fn detect_intent(query: &str) -> QueryIntent {
     let q = query.to_lowercase();
+    let is_language_learning = (q.contains("learn")
+        || q.contains("learning")
+        || q.contains("apprendre")
+        || q.contains("aprender")
+        || q.contains("lernen")
+        || q.contains("study"))
+        && (q.contains("french")
+            || q.contains("français")
+            || q.contains("francais")
+            || q.contains("spanish")
+            || q.contains("español")
+            || q.contains("espanol")
+            || q.contains("german")
+            || q.contains("deutsch")
+            || q.contains("italian")
+            || q.contains("italiano"));
+    let has_health_signal = q.contains("diabetes")
+        || q.contains("hypertension")
+        || q.contains("blood pressure")
+        || q.contains("medication")
+        || q.contains("treatment")
+        || q.contains("therapy")
+        || q.contains("disease")
+        || q.contains("symptom")
+        || q.contains("diagnosis")
+        || q.contains("vaccine")
+        || q.contains("insulin")
+        || q.contains("sleep apnea");
+    let has_guideline_signal = q.contains("guideline")
+        || q.contains("guidelines")
+        || q.contains("recommendation")
+        || q.contains("recommendations")
+        || q.contains("standards of care")
+        || q.contains("clinical practice");
     let has_recent_year = q.contains("2025") || q.contains("2026");
     let has_news_signal = q.contains("today")
         || q.contains("latest")
@@ -506,6 +540,17 @@ pub fn detect_intent(query: &str) -> QueryIntent {
         || q.contains("pros and cons");
     let has_technical_signal = q.contains("protocol")
         || q.contains("architecture")
+        || q.contains("docker")
+        || q.contains("compose")
+        || q.contains("container")
+        || q.contains("containers")
+        || q.contains("kubernetes")
+        || q.contains("networking")
+        || q.contains("hostname")
+        || q.contains("dns")
+        || q.contains("service name")
+        || q.contains("http")
+        || q.contains("api")
         || q.contains("theorem")
         || q.contains("equation")
         || q.contains("compiler")
@@ -519,6 +564,18 @@ pub fn detect_intent(query: &str) -> QueryIntent {
         || q.contains("proof")
         || q.contains("axiom")
         || q.contains("cryptograph");
+    let has_debug_signal = q.contains("error")
+        || q.contains("fix")
+        || q.contains("troubleshooting")
+        || q.contains("troubleshoot")
+        || q.contains("out of memory")
+        || q.contains("heap")
+        || q.contains("segmentation fault")
+        || q.contains("exception")
+        || q.contains("cors")
+        || q.contains("access-control-allow-origin")
+        || q.contains("ssl certificate")
+        || q.contains("oom killed");
 
     // Code intent: explicit code/repo signals
     // Note: "tutorial" and "example" with programming languages → HowTo (not Code)
@@ -527,6 +584,8 @@ pub fn detect_intent(query: &str) -> QueryIntent {
         || q.contains("rust")
         || q.contains("javascript")
         || q.contains("typescript")
+        || q.contains("node.js")
+        || q.contains("nodejs")
         || q.contains("java ")
         || q.contains("golang")
         || q.contains("go ")
@@ -553,6 +612,28 @@ pub fn detect_intent(query: &str) -> QueryIntent {
         return QueryIntent::Code;
     }
 
+    if is_language_learning {
+        return QueryIntent::HowTo;
+    }
+
+    if has_debug_signal {
+        if is_programming_lang
+            || q.contains("node.js")
+            || q.contains("nodejs")
+            || q.contains("react")
+            || q.contains("typescript")
+        {
+            return QueryIntent::Code;
+        }
+        return QueryIntent::HowTo;
+    }
+
+    // Clinical guideline queries use "latest" language but behave like
+    // authoritative reference lookups, not news searches.
+    if has_health_signal && has_guideline_signal {
+        return QueryIntent::Verification;
+    }
+
     // CurrentEvents: temporal signals — checked early so "breakthroughs 2025" doesn't
     // fall through to Factual. Year patterns, recency keywords, and news signals.
     if has_news_signal
@@ -569,6 +650,16 @@ pub fn detect_intent(query: &str) -> QueryIntent {
         || q.contains("setup")
         || q.contains("install")
         || q.contains("configure")
+        || ((q.contains("docker")
+            || q.contains("compose")
+            || q.contains("container")
+            || q.contains("kubernetes")
+            || q.contains("networking")
+            || q.contains("hostname")
+            || q.contains("dns"))
+            && !q.contains(" vs ")
+            && !q.contains("compare")
+            && !q.contains("comparison"))
     {
         return QueryIntent::HowTo;
     }
@@ -629,7 +720,12 @@ pub fn detect_intent(query: &str) -> QueryIntent {
         return QueryIntent::Opinion;
     }
 
-    if q.contains("vs ") || q.contains(" vs") || q.contains("compare") || q.contains("difference") {
+    if q.contains("vs ")
+        || q.contains(" vs")
+        || q.contains("compare")
+        || q.contains("comparison")
+        || q.contains("difference")
+    {
         return QueryIntent::Comparison;
     }
     if q.contains("arxiv") || q.contains("paper") || q.contains("research") || q.contains("study") {
@@ -795,7 +891,15 @@ mod tests {
     fn detect_intent_works() {
         assert_eq!(detect_intent("how to install Rust"), QueryIntent::HowTo);
         assert_eq!(
+            detect_intent("docker compose networking between containers"),
+            QueryIntent::HowTo
+        );
+        assert_eq!(
             detect_intent("Rust vs Go performance"),
+            QueryIntent::Comparison
+        );
+        assert_eq!(
+            detect_intent("blood pressure medication side effects comparison"),
             QueryIntent::Comparison
         );
         assert_eq!(
@@ -838,6 +942,38 @@ mod tests {
         let intent =
             detect_intent("best rust async runtime for high-throughput web api in 2025 benchmark");
         assert_ne!(intent, QueryIntent::CurrentEvents);
+    }
+
+    #[test]
+    fn detect_intent_health_guidelines_prefer_verification_over_current_events() {
+        assert_eq!(
+            detect_intent("type 2 diabetes management latest guidelines"),
+            QueryIntent::Verification
+        );
+    }
+
+    #[test]
+    fn detect_intent_language_learning_prefers_howto() {
+        assert_eq!(
+            detect_intent("comment apprendre le français rapidement"),
+            QueryIntent::HowTo
+        );
+    }
+
+    #[test]
+    fn detect_intent_cors_fix_prefers_howto() {
+        assert_eq!(
+            detect_intent("CORS error Access-Control-Allow-Origin fix"),
+            QueryIntent::HowTo
+        );
+    }
+
+    #[test]
+    fn detect_intent_node_heap_prefers_code() {
+        assert_eq!(
+            detect_intent("JavaScript heap out of memory Node.js fix"),
+            QueryIntent::Code
+        );
     }
 
     #[test]

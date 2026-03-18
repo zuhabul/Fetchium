@@ -391,8 +391,8 @@ export default function Hero() {
             >
               {[
                 { value: "17",     label: "Novel algorithms" },
-                { value: "11+",    label: "Search backends"  },
-                { value: "563+",   label: "Tests passing"    },
+                { value: "17+",    label: "Search backends"  },
+                { value: "1,100+",   label: "Tests passing"    },
                 { value: "12",     label: "MCP tools"        },
               ].map((s, i) => (
                 <motion.div

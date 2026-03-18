@@ -47,7 +47,7 @@ const steps: Step[] = [
     title: "Multi-Backend Federation",
     subtitle: "ABS + Resilience Layer",
     description:
-      "The Adaptive Backend Selector fans your query across up to 11 sources in parallel — SearXNG, Brave, GitHub, Reddit, StackOverflow, YouTube, and more. Circuit breakers handle backend failures invisibly.",
+      "The Adaptive Backend Selector fans your query across up to 17 sources in parallel — SearXNG, Brave, GitHub, Reddit, StackOverflow, YouTube, and more. Circuit breakers handle backend failures invisibly.",
     detail: "Stage 2",
     color: "from-blue-500 to-blue-600",
     glow: "rgba(59,130,246,0.3)",

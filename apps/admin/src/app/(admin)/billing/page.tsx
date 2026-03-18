@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { ADMIN_PAGE_PADDING } from '@/lib/layout'
 import { getSession, adminFetch } from '@/lib/session'
 import TopBar from '@/components/layout/TopBar'
 
@@ -74,7 +75,7 @@ export default async function BillingPage({
   return (
     <div className="flex flex-col min-h-full">
       <TopBar title="Billing" />
-      <div className="p-6 space-y-6">
+      <div className={`${ADMIN_PAGE_PADDING} space-y-6`}>
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm">
             Failed to load data

@@ -30,16 +30,10 @@ struct DomainState {
     min_delay: Duration,
 }
 
-/// Domains that are blocked by datacenter IPs and require residential proxies.
+/// Domains that are blocked hard enough to justify the expensive residential path.
 /// API-based backends (Serper, Exa, Tavily, Gemini) are NOT in this list.
-/// Bing, Brave, Yahoo, Yandex, Startpage work fine without residential → excluded.
-const RESIDENTIAL_REQUIRED_DOMAINS: &[&str] = &[
-    "google.com",
-    "www.google.com",
-    "html.duckduckgo.com",
-    "lite.duckduckgo.com",
-    "duckduckgo.com",
-];
+/// Everything else should use the cheaper fixed proxy pool or direct traffic.
+const RESIDENTIAL_REQUIRED_DOMAINS: &[&str] = &["google.com", "www.google.com"];
 
 /// Shared HTTP client with connection pooling, retries, and rate limiting.
 #[derive(Clone)]
@@ -78,7 +72,7 @@ impl HttpClient {
             ))
             .gzip(true)
             .brotli(true)
-            .pool_max_idle_per_host(10)
+            .pool_max_idle_per_host(100)
             .pool_idle_timeout(Duration::from_secs(90))
             .build()
             .map_err(FetchiumError::Network)?;
@@ -150,19 +144,18 @@ impl HttpClient {
         &self.inner
     }
 
-    /// Get a reqwest client for a specific domain with locale-aware residential proxy routing.
+    /// Get a reqwest client for a specific domain.
     ///
     /// Priority order:
-    /// 1. DataImpulse residential proxy (country-targeted) — for domains blocked by datacenter IPs
-    /// 2. Webshare datacenter pool — legacy fallback for non-residential-required domains
-    /// 3. Direct connection — when no proxy is configured or available
+    /// 1. DataImpulse residential proxy (country-targeted) — Google only
+    /// 2. Direct connection — default path for everything else
     ///
-    /// GB efficiency: DataImpulse only activates for `RESIDENTIAL_REQUIRED_DOMAINS`.
-    /// API backends (Serper, Exa, Tavily) use direct connections.
+    /// Cheap path by default: non-Google traffic stays direct until a backend
+    /// explicitly asks for proxy escalation.
     pub fn client_for_domain_with_locale(&self, domain: &str, locale: Option<&str>) -> Client {
         let needs_residential = self.needs_residential_proxy(domain);
 
-        // 1. DataImpulse residential proxy for blocked domains
+        // Google uses residential immediately.
         if needs_residential {
             if let Some(ref di) = self.dataimpulse {
                 if di.is_configured() {
@@ -172,28 +165,7 @@ impl HttpClient {
             }
         }
 
-        // 2. Webshare datacenter pool (legacy, for non-residential-required domains)
-        if let Some(ref pool) = self.proxy_pool {
-            if self.should_proxy_domain(domain) {
-                if let Some(proxy) = pool.proxy_for_domain(domain) {
-                    match ProxyPool::build_client_with_proxy(
-                        &proxy,
-                        &self.config.fetch.user_agent,
-                        Duration::from_secs(self.config.fetch.timeout_secs),
-                    ) {
-                        Ok(client) => {
-                            debug!("Webshare proxy {}:{} for {domain}", proxy.host, proxy.port);
-                            return client;
-                        }
-                        Err(e) => {
-                            debug!("Failed to build proxied client for {domain}: {e}");
-                        }
-                    }
-                }
-            }
-        }
-
-        // 3. Direct connection
+        // Everyone else uses the cheapest path first.
         self.inner.clone()
     }
 
@@ -208,6 +180,41 @@ impl HttpClient {
     /// If the direct attempt fails, escalate to `client_for_domain_with_locale`.
     /// Saves DataImpulse GB when direct connections succeed (majority of requests).
     pub fn client_direct(&self) -> Client {
+        self.inner.clone()
+    }
+
+    /// Get a forced proxy client for a domain.
+    ///
+    /// Google uses residential. All other proxy-eligible domains use the fixed
+    /// proxy pool. Falls back to direct when no proxy is available.
+    pub fn proxy_client_for_domain_with_locale(
+        &self,
+        domain: &str,
+        locale: Option<&str>,
+    ) -> Client {
+        if self.needs_residential_proxy(domain) {
+            if let Some(ref di) = self.dataimpulse {
+                if di.is_configured() {
+                    return di.client(locale);
+                }
+            }
+            return self.inner.clone();
+        }
+
+        if let Some(ref pool) = self.proxy_pool {
+            if self.should_proxy_domain(domain) {
+                if let Some(proxy) = pool.proxy_for_domain(domain) {
+                    if let Ok(client) = ProxyPool::build_client_with_proxy(
+                        &proxy,
+                        &self.config.fetch.user_agent,
+                        Duration::from_secs(self.config.fetch.timeout_secs),
+                    ) {
+                        return client;
+                    }
+                }
+            }
+        }
+
         self.inner.clone()
     }
 
@@ -228,7 +235,22 @@ impl HttpClient {
                 }
             }
         }
-        // Non-residential: return normal client (direct or Webshare)
+        // Non-residential: force a new datacenter proxy assignment on retry if possible.
+        if let Some(ref pool) = self.proxy_pool {
+            if self.should_proxy_domain(domain) {
+                if let Some(proxy) = pool.fresh_proxy_for_domain(domain) {
+                    if let Ok(client) = ProxyPool::build_client_with_proxy(
+                        &proxy,
+                        &self.config.fetch.user_agent,
+                        Duration::from_secs(self.config.fetch.timeout_secs),
+                    ) {
+                        return client;
+                    }
+                }
+            }
+        }
+
+        // Fall back to the normal path (direct).
         self.client_for_domain_with_locale(domain, locale)
     }
 
@@ -752,5 +774,24 @@ mod tests {
         ));
         assert!(!HttpClient::is_retryable_status(StatusCode::NOT_FOUND));
         assert!(!HttpClient::is_retryable_status(StatusCode::FORBIDDEN));
+    }
+
+    #[test]
+    fn residential_proxy_is_google_only_by_default() {
+        let client = HttpClient::new(&FetchiumConfig::default()).unwrap();
+        assert!(client.needs_residential_proxy("google.com"));
+        assert!(client.needs_residential_proxy("www.google.com"));
+        assert!(!client.needs_residential_proxy("duckduckgo.com"));
+        assert!(!client.needs_residential_proxy("html.duckduckgo.com"));
+        assert!(!client.needs_residential_proxy("bing.com"));
+    }
+
+    #[test]
+    fn explicit_residential_domain_override_wins() {
+        let mut config = FetchiumConfig::default();
+        config.dataimpulse.proxy_domains = vec!["example.com".into()];
+        let client = HttpClient::new(&config).unwrap();
+        assert!(client.needs_residential_proxy("www.example.com"));
+        assert!(!client.needs_residential_proxy("google.com"));
     }
 }

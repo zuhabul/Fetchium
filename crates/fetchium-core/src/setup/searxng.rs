@@ -252,8 +252,7 @@ use_default_settings:
     keep_only:
       - google
       - bing
-      - duckduckgo
-      - brave
+      - yandex
       - wikipedia
       - stackoverflow
       - github
@@ -287,7 +286,7 @@ ui:
 search:
   safe_search: 0
   autocomplete: ""
-  default_lang: en
+  default_lang: "auto"
   ban_time_on_fail: 5
   max_ban_time_on_fail: 120
   suspended_times:
@@ -308,10 +307,7 @@ engines:
   - name: bing
     timeout: 4.0
 
-  - name: duckduckgo
-    timeout: 4.0
-
-  - name: brave
+  - name: yandex
     timeout: 4.0
 
   - name: wikipedia
@@ -365,5 +361,6 @@ mod tests {
         assert!(yml.contains("limiter: false"));
         assert!(yml.contains("keep_only:"));
         assert!(yml.contains("- google"));
+        assert!(yml.contains("default_lang: \"auto\""));
     }
 }

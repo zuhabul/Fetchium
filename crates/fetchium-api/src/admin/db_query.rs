@@ -1,10 +1,10 @@
 //! Read-only SQL query runner for admin DB inspection.
 
-use axum::{extract::State, Json};
-use axum::http::StatusCode;
-use serde::Deserialize;
 use crate::admin::rbac::AdminAuth;
 use crate::middleware::AppState;
+use axum::http::StatusCode;
+use axum::{extract::State, Json};
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct QueryRequest {
@@ -29,7 +29,15 @@ pub async fn run_query(
         ));
     }
     // Disallow dangerous keywords even in SELECT
-    for forbidden in &["insert", "update", "delete", "drop", "alter", "create", "pragma write"] {
+    for forbidden in &[
+        "insert",
+        "update",
+        "delete",
+        "drop",
+        "alter",
+        "create",
+        "pragma write",
+    ] {
         if sql.contains(forbidden) {
             return Err((
                 StatusCode::BAD_REQUEST,
@@ -38,16 +46,19 @@ pub async fn run_query(
         }
     }
 
-    let admin_db = state.admin_db.as_ref().ok_or_else(|| (
-        StatusCode::SERVICE_UNAVAILABLE,
-        Json(serde_json::json!({"error": "admin db not initialized"})),
-    ))?;
+    let admin_db = state.admin_db.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "admin db not initialized"})),
+        )
+    })?;
 
-    let result = admin_db.run_select_query(&req.sql, 1000)
-        .map_err(|e| (
+    let result = admin_db.run_select_query(&req.sql, 1000).map_err(|e| {
+        (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({"error": e})),
-        ))?;
+        )
+    })?;
 
     Ok(Json(serde_json::json!({
         "ok": true,

@@ -137,8 +137,14 @@ impl TavilyBackend {
                 Err(e) => {
                     // If it's a usage/limit error, rotate and try again
                     if let FetchiumError::Structured(ref se) = e {
-                        if se.message.contains("432") || se.message.contains("429") || se.message.contains("limit") {
-                            tracing::warn!("Tavily key exhausted or limited, rotating... Error: {}", se.message);
+                        if se.message.contains("432")
+                            || se.message.contains("429")
+                            || se.message.contains("limit")
+                        {
+                            tracing::warn!(
+                                "Tavily key exhausted or limited, rotating... Error: {}",
+                                se.message
+                            );
                             self.rotate_key();
                             last_err = Some(e);
                             continue;

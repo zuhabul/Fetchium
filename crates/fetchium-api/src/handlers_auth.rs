@@ -3,7 +3,7 @@
 //! Admin endpoints use `X-Admin-Secret` header for the MVP.
 
 use crate::middleware::AppState;
-use crate::types::{ResponseMeta, UsageResponse};
+use crate::types::{DashboardBillingResponse, DashboardOverviewResponse, ResponseMeta, UsageResponse};
 use axum::{
     extract::State,
     http::{HeaderMap, StatusCode},
@@ -351,6 +351,445 @@ pub async fn get_usage(
     }
 }
 
+/// `GET /v1/dashboard/overview` — overview telemetry for the authenticated key.
+pub async fn get_dashboard_overview(
+    crate::middleware::AuthenticatedKey(key): crate::middleware::AuthenticatedKey,
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    let start = Instant::now();
+    let db = state.auth_db.clone();
+    let key_id = key.id.clone();
+    let key_plan = key.plan.clone();
+    let overview = tokio::task::spawn_blocking(move || db.get_dashboard_overview(&key_id, &key_plan))
+        .await
+        .unwrap_or_else(|e| Err(anyhow::anyhow!("task join error: {e}")));
+
+    match overview {
+        Ok(overview) => {
+            let summary = match serde_json::to_value(&overview.summary) {
+                Ok(v) => v,
+                Err(e) => {
+                    tracing::error!(error = %e, "Failed to serialize overview summary");
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(serde_json::json!({
+                            "type": "https://docs.fetchium.com/errors/internal_error",
+                            "title": "Failed to serialize overview data",
+                            "status": 500,
+                        })),
+                    )
+                        .into_response();
+                }
+            };
+            let timeseries = match serde_json::to_value(&overview.timeseries) {
+                Ok(v) => v,
+                Err(e) => {
+                    tracing::error!(error = %e, "Failed to serialize overview timeseries");
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(serde_json::json!({
+                            "type": "https://docs.fetchium.com/errors/internal_error",
+                            "title": "Failed to serialize overview data",
+                            "status": 500,
+                        })),
+                    )
+                        .into_response();
+                }
+            };
+            let top_endpoints = match serde_json::to_value(&overview.top_endpoints) {
+                Ok(v) => v,
+                Err(e) => {
+                    tracing::error!(error = %e, "Failed to serialize overview endpoints");
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(serde_json::json!({
+                            "type": "https://docs.fetchium.com/errors/internal_error",
+                            "title": "Failed to serialize overview data",
+                            "status": 500,
+                        })),
+                    )
+                        .into_response();
+                }
+            };
+            let recent_requests = match serde_json::to_value(&overview.recent_requests) {
+                Ok(v) => v,
+                Err(e) => {
+                    tracing::error!(error = %e, "Failed to serialize overview recent requests");
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(serde_json::json!({
+                            "type": "https://docs.fetchium.com/errors/internal_error",
+                            "title": "Failed to serialize overview data",
+                            "status": 500,
+                        })),
+                    )
+                        .into_response();
+                }
+            };
+
+            (
+                StatusCode::OK,
+                Json(DashboardOverviewResponse {
+                    meta: response_meta(
+                        request_id_from_headers(&headers),
+                        "/v1/dashboard/overview",
+                        start.elapsed().as_millis() as u64,
+                    ),
+                    summary,
+                    timeseries,
+                    top_endpoints,
+                    recent_requests,
+                }),
+            )
+                .into_response()
+        }
+        Err(e) => {
+            tracing::error!(error = %e, key_id = %key.id, "Failed to fetch dashboard overview");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({
+                    "type": "https://docs.fetchium.com/errors/db_error",
+                    "title": "Failed to retrieve dashboard overview",
+                    "status": 500,
+                })),
+            )
+                .into_response()
+        }
+    }
+}
+
+/// `GET /v1/dashboard/quickstart` — quickstart onboarding status for the authenticated key.
+pub async fn get_dashboard_quickstart(
+    crate::middleware::AuthenticatedKey(key): crate::middleware::AuthenticatedKey,
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    let start = Instant::now();
+    let db = state.auth_db.clone();
+    let key_id = key.id.clone();
+    let key_plan = key.plan.clone();
+    let status = tokio::task::spawn_blocking(move || db.get_quickstart_status(&key_id, &key_plan))
+        .await
+        .unwrap_or_else(|e| Err(anyhow::anyhow!("task join error: {e}")));
+
+    match status {
+        Ok(qs) => match serde_json::to_value(&qs) {
+            Ok(v) => (
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "meta": {
+                        "request_id": request_id_from_headers(&headers),
+                        "status": "ok",
+                        "endpoint": "/v1/dashboard/quickstart",
+                        "duration_ms": start.elapsed().as_millis() as u64
+                    },
+                    "quickstart": v
+                })),
+            )
+                .into_response(),
+            Err(e) => {
+                tracing::error!(error = %e, "Failed to serialize quickstart status");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({
+                        "type": "https://docs.fetchium.com/errors/internal_error",
+                        "title": "Failed to serialize quickstart data",
+                        "status": 500,
+                    })),
+                )
+                    .into_response()
+            }
+        },
+        Err(e) => {
+            tracing::error!(error = %e, key_id = %key.id, "Failed to fetch quickstart status");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({
+                    "type": "https://docs.fetchium.com/errors/db_error",
+                    "title": "Failed to retrieve quickstart status",
+                    "status": 500,
+                })),
+            )
+                .into_response()
+        }
+    }
+}
+
+/// `GET /v1/dashboard/settings` — customer settings for the authenticated key.
+pub async fn get_dashboard_settings(
+    crate::middleware::AuthenticatedKey(key): crate::middleware::AuthenticatedKey,
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    let start = Instant::now();
+    let db = state.auth_db.clone();
+    let key_id = key.id.clone();
+    let key_plan = key.plan.clone();
+    let result = tokio::task::spawn_blocking(move || db.get_dashboard_settings(&key_id, &key_plan))
+        .await
+        .unwrap_or_else(|e| Err(anyhow::anyhow!("task join error: {e}")));
+
+    match result {
+        Ok(settings) => match serde_json::to_value(&settings) {
+            Ok(v) => (
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "meta": {
+                        "request_id": request_id_from_headers(&headers),
+                        "status": "ok",
+                        "endpoint": "/v1/dashboard/settings",
+                        "duration_ms": start.elapsed().as_millis() as u64
+                    },
+                    "settings": v
+                })),
+            )
+                .into_response(),
+            Err(e) => {
+                tracing::error!(error = %e, "Failed to serialize settings");
+                err(StatusCode::INTERNAL_SERVER_ERROR, "internal_error", "Failed to serialize settings").into_response()
+            }
+        },
+        Err(e) => {
+            tracing::error!(error = %e, key_id = %key.id, "Failed to fetch settings");
+            err(StatusCode::INTERNAL_SERVER_ERROR, "db_error", "Failed to retrieve settings").into_response()
+        }
+    }
+}
+
+/// `PATCH /v1/dashboard/settings` — update customer settings for the authenticated key.
+pub async fn update_dashboard_settings(
+    crate::middleware::AuthenticatedKey(key): crate::middleware::AuthenticatedKey,
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(body): Json<serde_json::Value>,
+) -> impl IntoResponse {
+    let start = Instant::now();
+    let db = state.auth_db.clone();
+    let key_id = key.id.clone();
+    let result = tokio::task::spawn_blocking(move || db.update_customer_settings(&key_id, &body))
+        .await
+        .unwrap_or_else(|e| Err(anyhow::anyhow!("task join error: {e}")));
+
+    match result {
+        Ok(settings) => match serde_json::to_value(&settings) {
+            Ok(v) => (
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "meta": {
+                        "request_id": request_id_from_headers(&headers),
+                        "status": "ok",
+                        "endpoint": "/v1/dashboard/settings",
+                        "duration_ms": start.elapsed().as_millis() as u64
+                    },
+                    "settings": v
+                })),
+            )
+                .into_response(),
+            Err(e) => {
+                tracing::error!(error = %e, "Failed to serialize updated settings");
+                err(StatusCode::INTERNAL_SERVER_ERROR, "internal_error", "Failed to serialize settings").into_response()
+            }
+        },
+        Err(e) => {
+            tracing::error!(error = %e, key_id = %key.id, "Failed to update settings");
+            err(StatusCode::INTERNAL_SERVER_ERROR, "db_error", "Failed to update settings").into_response()
+        }
+    }
+}
+
+/// `GET /v1/dashboard/usage` — rich usage analytics for the authenticated key.
+pub async fn get_dashboard_usage(
+    crate::middleware::AuthenticatedKey(key): crate::middleware::AuthenticatedKey,
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    let start = Instant::now();
+    let db = state.auth_db.clone();
+    let key_id = key.id.clone();
+    let key_plan = key.plan.clone();
+    let result = tokio::task::spawn_blocking(move || db.get_dashboard_usage(&key_id, &key_plan))
+        .await
+        .unwrap_or_else(|e| Err(anyhow::anyhow!("task join error: {e}")));
+
+    match result {
+        Ok(usage) => match serde_json::to_value(&usage) {
+            Ok(v) => (
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "meta": {
+                        "request_id": request_id_from_headers(&headers),
+                        "status": "ok",
+                        "endpoint": "/v1/dashboard/usage",
+                        "duration_ms": start.elapsed().as_millis() as u64
+                    },
+                    "usage": v
+                })),
+            )
+                .into_response(),
+            Err(e) => {
+                tracing::error!(error = %e, "Failed to serialize usage analytics");
+                err(StatusCode::INTERNAL_SERVER_ERROR, "internal_error", "Failed to serialize usage data").into_response()
+            }
+        },
+        Err(e) => {
+            tracing::error!(error = %e, key_id = %key.id, "Failed to fetch usage analytics");
+            err(StatusCode::INTERNAL_SERVER_ERROR, "db_error", "Failed to retrieve usage analytics").into_response()
+        }
+    }
+}
+
+/// `GET /v1/dashboard/billing` — billing snapshot for the authenticated key.
+pub async fn get_dashboard_billing(
+    crate::middleware::AuthenticatedKey(key): crate::middleware::AuthenticatedKey,
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    let start = Instant::now();
+
+    let usage_db = state.auth_db.clone();
+    let usage_key_id = key.id.clone();
+    let usage_key_plan = key.plan.clone();
+    let usage = tokio::task::spawn_blocking(move || usage_db.get_usage_stats(&usage_key_id, &usage_key_plan))
+        .await
+        .unwrap_or_else(|e| Err(anyhow::anyhow!("task join error: {e}")));
+
+    let usage = match usage {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::error!(error = %e, key_id = %key.id, "Failed to fetch dashboard billing usage");
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({
+                    "type": "https://docs.fetchium.com/errors/db_error",
+                    "title": "Failed to retrieve billing usage",
+                    "status": 500,
+                })),
+            )
+                .into_response();
+        }
+    };
+
+    let mut organization = serde_json::Value::Null;
+    let mut subscription = serde_json::json!({
+        "plan": usage.plan,
+        "status": "unlinked",
+        "current_period_start": null,
+        "current_period_end": null,
+        "self_serve_manageable": false,
+        "billing_profile_linked": false,
+    });
+    let payment_method = serde_json::Value::Null;
+    let mut credits = serde_json::json!({ "balance_cents": 0 });
+    let mut invoices = serde_json::json!([]);
+    let mut actions = serde_json::json!({
+        "can_upgrade": false,
+        "can_downgrade": false,
+        "can_open_portal": false,
+        "requires_sales_contact": true,
+        "message": "No linked self-serve billing profile is available for this key yet.",
+    });
+
+    if let Some(admin_db) = state.admin_db.clone() {
+        let key_prefix = key.key_prefix.clone();
+        let org_result = tokio::task::spawn_blocking(move || admin_db.find_org_by_api_key_prefix(&key_prefix))
+            .await
+            .unwrap_or_else(|e| Err(anyhow::anyhow!("task join error: {e}")));
+
+        if let Ok(Some(org)) = org_result {
+            let org_id = org
+                .get("id")
+                .and_then(|value| value.as_str())
+                .map(ToOwned::to_owned);
+
+            organization = org.clone();
+
+            if let Some(org_id) = org_id {
+                let admin_db = state.admin_db.clone().expect("admin db present");
+                let org_id_for_queries = org_id.clone();
+                let billing_result = tokio::task::spawn_blocking(move || {
+                    let subscription = admin_db.get_subscription_for_org(&org_id_for_queries)?;
+                    let invoices = admin_db.list_invoices_for_org(&org_id_for_queries)?;
+                    let credits = admin_db.list_credits_for_org(&org_id_for_queries)?;
+                    Ok::<_, anyhow::Error>((subscription, invoices, credits))
+                })
+                .await
+                .unwrap_or_else(|e| Err(anyhow::anyhow!("task join error: {e}")));
+
+                if let Ok((subscription_value, invoices_value, credits_value)) = billing_result {
+                    if let Some(subscription_record) = subscription_value {
+                        let plan = subscription_record
+                            .get("plan")
+                            .and_then(|value| value.as_str())
+                            .unwrap_or(&usage.plan);
+                        let status = subscription_record
+                            .get("status")
+                            .and_then(|value| value.as_str())
+                            .unwrap_or("active");
+
+                        subscription = serde_json::json!({
+                            "plan": plan,
+                            "status": status,
+                            "current_period_start": subscription_record.get("current_period_start").cloned().unwrap_or(serde_json::Value::Null),
+                            "current_period_end": subscription_record.get("current_period_end").cloned().unwrap_or(serde_json::Value::Null),
+                            "self_serve_manageable": false,
+                            "billing_profile_linked": true,
+                        });
+                    } else {
+                        subscription = serde_json::json!({
+                            "plan": org.get("plan").and_then(|value| value.as_str()).unwrap_or(&usage.plan),
+                            "status": "linked_no_subscription",
+                            "current_period_start": null,
+                            "current_period_end": null,
+                            "self_serve_manageable": false,
+                            "billing_profile_linked": true,
+                        });
+                    }
+
+                    let balance_cents = credits_value
+                        .iter()
+                        .filter_map(|entry| entry.get("amount").and_then(|value| value.as_i64()))
+                        .sum::<i64>();
+                    credits = serde_json::json!({ "balance_cents": balance_cents });
+                    invoices = serde_json::Value::Array(invoices_value);
+                    actions = serde_json::json!({
+                        "can_upgrade": false,
+                        "can_downgrade": false,
+                        "can_open_portal": false,
+                        "requires_sales_contact": true,
+                        "message": "Billing profile linked. Self-serve checkout and portal are not configured in this environment yet.",
+                    });
+                }
+            }
+        }
+    }
+
+    let usage_value = serde_json::json!({
+        "requests_this_month": usage.requests_this_month,
+        "monthly_limit": usage.monthly_limit,
+        "quota_remaining": usage.quota_remaining,
+    });
+
+    (
+        StatusCode::OK,
+        Json(DashboardBillingResponse {
+            meta: response_meta(
+                request_id_from_headers(&headers),
+                "/v1/dashboard/billing",
+                start.elapsed().as_millis() as u64,
+            ),
+            organization,
+            subscription,
+            payment_method,
+            usage: usage_value,
+            credits,
+            invoices,
+            actions,
+        }),
+    )
+        .into_response()
+}
+
 // ─── GET /health ──────────────────────────────────────────────────────────────
 
 /// `GET /health` — service liveness + dependency readiness.
@@ -408,6 +847,27 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
 }
 
 // ─── Usage recording helper ───────────────────────────────────────────────────
+
+/// `GET /v1/meta/routes` — customer-facing route metadata registry.
+pub async fn get_route_registry(
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    let start = Instant::now();
+    let routes = crate::route_registry::customer_route_registry();
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "meta": {
+                "request_id": request_id_from_headers(&headers),
+                "status": "ok",
+                "endpoint": "/v1/meta/routes",
+                "duration_ms": start.elapsed().as_millis() as u64
+            },
+            "routes": routes
+        })),
+    )
+        .into_response()
+}
 
 /// Record API usage after a request completes. Fire-and-forget with error logging.
 pub fn record_usage_async(

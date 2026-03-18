@@ -9,16 +9,9 @@ use crate::http::HttpClient;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
+use chrono::Datelike;
+use serde::Deserialize;
 use tracing::debug;
-
-#[derive(Debug, Serialize)]
-struct SerperRequest<'a> {
-    q: &'a str,
-    num: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    tbs: Option<&'a str>,
-}
 
 #[derive(Debug, Deserialize)]
 struct SerperSearchResponse {
@@ -111,16 +104,29 @@ impl SerperBackend {
         num: u32,
         tbs: Option<&str>,
     ) -> Vec<ResultItem> {
-        let mut last_err = None;
         let num_keys = self.api_keys.len().max(1);
 
         for _ in 0..num_keys {
             let api_key = self.get_key();
-            let request = SerperRequest { q: query, num, tbs };
-            let body = match serde_json::to_string(&request) {
-                Ok(b) => b,
-                Err(_) => return vec![],
-            };
+            let is_scholar = endpoint.contains("/scholar");
+            let _is_news = endpoint.contains("/news");
+
+            let mut body_json = serde_json::json!({
+                "q": query,
+                "num": num,
+            });
+
+            if let Some(tbs_val) = tbs {
+                if !is_scholar {
+                    body_json["tbs"] = serde_json::Value::String(tbs_val.to_string());
+                } else if tbs_val.starts_with("qdr:y") {
+                    // Scholar uses as_ylo for year filtering
+                    let current_year = chrono::Utc::now().year();
+                    body_json["as_ylo"] = serde_json::Value::String((current_year - 1).to_string());
+                }
+            }
+
+            let body = body_json.to_string();
 
             let response = self
                 .http
@@ -194,10 +200,15 @@ impl SerperBackend {
                 }
                 Err(e) => {
                     if let crate::error::FetchiumError::Structured(ref se) = e {
-                        if se.message.contains("400") || se.message.contains("credits") || se.message.contains("429") {
-                            tracing::warn!("Serper key exhausted or limited, rotating... Error: {}", se.message);
+                        if se.message.contains("400")
+                            || se.message.contains("credits")
+                            || se.message.contains("429")
+                        {
+                            tracing::warn!(
+                                "Serper key exhausted or limited, rotating... Error: {}",
+                                se.message
+                            );
                             self.rotate_key();
-                            last_err = Some(e);
                             continue;
                         }
                     }

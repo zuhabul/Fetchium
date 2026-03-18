@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { DEFAULT_API_BASE, resolve_api_base } from "@/lib/server-api";
+import { DEFAULT_API_BASE } from "@/lib/server-api";
+import { validate_api_key } from "@/lib/api-key-auth";
 
 export function auth_secret(): string {
   return (
@@ -11,17 +12,6 @@ export function auth_secret(): string {
     ""
   );
 }
-
-type UsageEnvelope = {
-  meta?: { request_id?: string };
-  usage?: {
-    key_id?: string;
-    plan?: string;
-    requests_this_month?: number;
-    requests_today?: number;
-    monthly_limit?: number | null;
-  };
-};
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
@@ -39,36 +29,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         apiKey: { label: "API Key", type: "password" },
       },
       async authorize(credentials) {
-        const apiKey = String(credentials.apiKey || "").trim();
-        if (!apiKey.startsWith("fetchium_") || apiKey.length < 16) {
-          return null;
-        }
-
-        const apiBase = resolve_api_base(DEFAULT_API_BASE);
-        const res = await fetch(`${apiBase}/v1/usage`, {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-          cache: "no-store",
+        const apiKey = String(credentials?.apiKey || "").trim();
+        const result = await validate_api_key({
+          ...(credentials || {}),
+          apiKey,
         });
 
-        if (!res.ok) {
+        if (!result.ok) {
           return null;
         }
 
-        const body = (await res.json()) as UsageEnvelope;
-        const usage = body.usage || {};
-        const keyId = usage.key_id || `key_${apiKey.slice(-8)}`;
-        const plan = usage.plan || "unknown";
-
         return {
-          id: keyId,
-          name: `${plan} key`,
-          email: `${keyId}@fetchium.local`,
+          id: result.keyId,
+          name: `${result.plan} key`,
+          email: `${result.keyId}@fetchium.local`,
           apiKey,
-          apiBase,
-          plan,
-          keyId,
+          apiBase: result.apiBase,
+          plan: result.plan,
+          keyId: result.keyId,
         };
       },
     }),

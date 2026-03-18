@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { ADMIN_PAGE_PADDING } from '@/lib/layout'
 import { getSession, adminFetch } from '@/lib/session'
 import TopBar from '@/components/layout/TopBar'
 
@@ -13,6 +14,46 @@ interface Ticket {
   assignee?: string
   sla_due_at?: string
   created_at: string
+}
+
+function asString(value: unknown, fallback = '') {
+  return typeof value === 'string' ? value : fallback
+}
+
+function normalizeTickets(payload: unknown): Ticket[] {
+  const body = typeof payload === 'object' && payload !== null
+    ? payload as Record<string, unknown>
+    : {}
+
+  const rows = Array.isArray(body.data)
+    ? body.data
+    : Array.isArray(payload)
+      ? payload
+      : []
+
+  return rows.map((row, index) => {
+    const item = typeof row === 'object' && row !== null
+      ? row as Record<string, unknown>
+      : {}
+
+    return {
+      id: asString(item.id, `ticket-${index}`),
+      subject: asString(item.subject, 'Untitled ticket'),
+      org_id: asString(item.org_id),
+      org_name: asString(item.org_name, 'Unknown organization'),
+      priority: (asString(item.priority, 'normal') as Ticket['priority']),
+      status: (asString(item.status, 'open') as Ticket['status']),
+      assignee: asString(item.assignee ?? item.assignee_id) || undefined,
+      sla_due_at: asString(item.sla_due_at) || undefined,
+      created_at: asString(item.created_at, new Date(0).toISOString()),
+    }
+  })
+}
+
+function formatTicketDate(value: string) {
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  })
 }
 
 function PriorityBadge({ priority }: { priority: string }) {
@@ -64,7 +105,7 @@ export default async function SupportPage({
 
   try {
     const res = await adminFetch('/internal/admin/support/tickets')
-    if (res.ok) tickets = await res.json()
+    if (res.ok) tickets = normalizeTickets(await res.json())
     else error = true
   } catch {
     error = true
@@ -82,7 +123,7 @@ export default async function SupportPage({
   return (
     <div className="flex flex-col min-h-full">
       <TopBar title="Support" />
-      <div className="p-6 space-y-6">
+      <div className={`${ADMIN_PAGE_PADDING} space-y-6`}>
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm">
             Failed to load data
@@ -90,13 +131,26 @@ export default async function SupportPage({
         )}
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl">
-          <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-            <div className="flex gap-1">
+          <div className="space-y-4 border-b border-zinc-800 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-100">Tickets</h2>
+                <p className="mt-1 text-xs text-zinc-500">{filtered.length} matching conversations</p>
+              </div>
+              <Link
+                href="/support/new"
+                className="inline-flex min-h-11 items-center justify-center rounded-md border border-blue-500/30 bg-blue-500/20 px-3 py-2 text-sm text-blue-300 transition-colors hover:bg-blue-500/30 sm:min-h-9 sm:self-start sm:py-1.5 lg:self-auto"
+              >
+                + New Ticket
+              </Link>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
               {TABS.map((tab) => (
                 <Link
                   key={tab}
                   href={`/support?tab=${tab}`}
-                  className={`text-xs px-3 py-1.5 rounded-md border capitalize transition-colors ${
+                  className={`inline-flex min-h-10 items-center rounded-md border px-3 py-2 text-xs capitalize transition-colors sm:min-h-8 sm:py-1 ${
                     activeTab === tab
                       ? 'bg-zinc-700 border-zinc-600 text-zinc-100'
                       : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'
@@ -106,54 +160,81 @@ export default async function SupportPage({
                 </Link>
               ))}
             </div>
-            <Link
-              href="/support/new"
-              className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm px-3 py-1.5 rounded-md transition-colors"
-            >
-              + New Ticket
-            </Link>
           </div>
 
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-zinc-800">
-                {['#ID', 'Subject', 'Org', 'Priority', 'Assignee', 'SLA', 'Created'].map((h) => (
-                  <th key={h} className="text-xs font-medium text-zinc-500 uppercase tracking-wider px-3 py-2 text-left">
-                    {h}
-                  </th>
+          {filtered.length === 0 ? (
+            <div className="px-4 py-12 text-center text-sm text-zinc-500">
+              No tickets found
+            </div>
+          ) : (
+            <>
+              <div className="divide-y divide-zinc-800/60 lg:hidden">
+                {filtered.map((t) => (
+                  <div key={t.id} className="space-y-4 px-4 py-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 space-y-1">
+                        <p className="font-mono text-[11px] uppercase tracking-wider text-zinc-600">
+                          #{t.id.slice(0, 8)}
+                        </p>
+                        <Link
+                          href={`/support/${t.id}`}
+                          className="block line-clamp-2 text-sm font-medium text-blue-400 hover:text-blue-300"
+                        >
+                          {t.subject}
+                        </Link>
+                        <p className="truncate text-xs text-zinc-500">{t.org_name}</p>
+                      </div>
+                      <PriorityBadge priority={t.priority} />
+                    </div>
+
+                    <dl className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-wider text-zinc-600">Assignee</dt>
+                        <dd className="mt-1 text-zinc-400">{t.assignee ?? 'Unassigned'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-wider text-zinc-600">Created</dt>
+                        <dd className="mt-1 text-zinc-400">{formatTicketDate(t.created_at)}</dd>
+                      </div>
+                      <div className="col-span-2">
+                        <dt className="text-[11px] uppercase tracking-wider text-zinc-600">SLA</dt>
+                        <dd className="mt-1"><SlaCountdown sla_due_at={t.sla_due_at} /></dd>
+                      </div>
+                    </dl>
+                  </div>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-zinc-500 text-sm">
-                    No tickets found
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((t) => (
-                  <tr key={t.id} className="hover:bg-zinc-800/40 border-b border-zinc-800/60">
-                    <td className="px-3 py-2.5 text-xs font-mono text-zinc-500">#{t.id.slice(0, 8)}</td>
-                    <td className="px-3 py-2.5">
-                      <Link href={`/support/${t.id}`} className="text-sm text-blue-400 hover:text-blue-300 line-clamp-1">
-                        {t.subject}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-2.5 text-sm text-zinc-400">{t.org_name}</td>
-                    <td className="px-3 py-2.5"><PriorityBadge priority={t.priority} /></td>
-                    <td className="px-3 py-2.5 text-sm text-zinc-400">{t.assignee ?? <span className="text-zinc-600">Unassigned</span>}</td>
-                    <td className="px-3 py-2.5"><SlaCountdown sla_due_at={t.sla_due_at} /></td>
-                    <td className="px-3 py-2.5 text-sm text-zinc-400">
-                      {new Date(t.created_at).toLocaleDateString('en-US', {
-                        month: 'short', day: 'numeric', year: 'numeric',
-                      })}
-                    </td>
+              </div>
+
+              <table className="hidden w-full lg:table">
+                <thead>
+                  <tr className="border-b border-zinc-800">
+                    {['#ID', 'Subject', 'Org', 'Priority', 'Assignee', 'SLA', 'Created'].map((h) => (
+                      <th key={h} className="text-xs font-medium text-zinc-500 uppercase tracking-wider px-3 py-2 text-left">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {filtered.map((t) => (
+                    <tr key={t.id} className="hover:bg-zinc-800/40 border-b border-zinc-800/60">
+                      <td className="px-3 py-2.5 text-xs font-mono text-zinc-500">#{t.id.slice(0, 8)}</td>
+                      <td className="px-3 py-2.5">
+                        <Link href={`/support/${t.id}`} className="text-sm text-blue-400 hover:text-blue-300 line-clamp-1">
+                          {t.subject}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-2.5 text-sm text-zinc-400">{t.org_name}</td>
+                      <td className="px-3 py-2.5"><PriorityBadge priority={t.priority} /></td>
+                      <td className="px-3 py-2.5 text-sm text-zinc-400">{t.assignee ?? <span className="text-zinc-600">Unassigned</span>}</td>
+                      <td className="px-3 py-2.5"><SlaCountdown sla_due_at={t.sla_due_at} /></td>
+                      <td className="px-3 py-2.5 text-sm text-zinc-400">{formatTicketDate(t.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { redirect, notFound } from 'next/navigation'
+import { ADMIN_PAGE_PADDING } from '@/lib/layout'
 import { getSession, adminFetch } from '@/lib/session'
 import TopBar from '@/components/layout/TopBar'
 import CrmAccountActions from './CrmAccountActions'
@@ -26,6 +27,76 @@ interface CrmAccountDetail {
   churn_risk_pct: number
   notes?: CrmNote[]
   health_signals?: HealthSignal[]
+}
+
+function asNumber(value: unknown, fallback = 0) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string') {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed)) return parsed
+  }
+  return fallback
+}
+
+function asString(value: unknown, fallback = '') {
+  return typeof value === 'string' ? value : fallback
+}
+
+function normalizeSignals(value: unknown): HealthSignal[] | undefined {
+  if (!Array.isArray(value)) return undefined
+  return value.map((signal, index) => {
+    const item = typeof signal === 'object' && signal !== null
+      ? signal as Record<string, unknown>
+      : {}
+
+    return {
+      label: asString(item.label, `Signal ${index + 1}`),
+      value: asNumber(item.value),
+      max: asNumber(item.max, 100) || 100,
+    }
+  })
+}
+
+function normalizeNotes(value: unknown): CrmNote[] | undefined {
+  if (!Array.isArray(value)) return undefined
+  return value.map((note, index) => {
+    const item = typeof note === 'object' && note !== null
+      ? note as Record<string, unknown>
+      : {}
+
+    return {
+      id: asString(item.id, `note-${index}`),
+      author: asString(item.author, 'Unknown'),
+      body: asString(item.body),
+      created_at: asString(item.created_at),
+    }
+  })
+}
+
+function normalizeAccount(payload: unknown): CrmAccountDetail | null {
+  const body = typeof payload === 'object' && payload !== null
+    ? payload as Record<string, unknown>
+    : {}
+
+  const rawAccount = typeof body.data === 'object' && body.data !== null
+    ? body.data as Record<string, unknown>
+    : typeof payload === 'object' && payload !== null
+      ? payload as Record<string, unknown>
+      : null
+
+  if (!rawAccount) return null
+
+  return {
+    org_id: asString(rawAccount.org_id),
+    org_name: asString(rawAccount.org_name, 'Account Detail'),
+    lifecycle_stage: asString(rawAccount.lifecycle_stage, 'prospect'),
+    health_score: asNumber(rawAccount.health_score),
+    arr_cents: asNumber(rawAccount.arr_cents),
+    csm: asString(rawAccount.csm) || undefined,
+    churn_risk_pct: asNumber(rawAccount.churn_risk_pct),
+    notes: normalizeNotes(body.notes ?? rawAccount.notes),
+    health_signals: normalizeSignals(rawAccount.health_signals),
+  }
 }
 
 const DEFAULT_SIGNALS: HealthSignal[] = [
@@ -80,7 +151,7 @@ export default async function CrmOrgPage({ params }: { params: Promise<{ orgId: 
   try {
     const res = await adminFetch(`/internal/admin/crm/accounts/${orgId}`)
     if (res.status === 404) notFound()
-    if (res.ok) account = await res.json()
+    if (res.ok) account = normalizeAccount(await res.json())
     else error = true
   } catch {
     error = true
@@ -92,7 +163,7 @@ export default async function CrmOrgPage({ params }: { params: Promise<{ orgId: 
   return (
     <div className="flex flex-col min-h-full">
       <TopBar title={account?.org_name ?? 'Account Detail'} />
-      <div className="p-6 space-y-6">
+      <div className={`${ADMIN_PAGE_PADDING} space-y-6`}>
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm">
             Failed to load data

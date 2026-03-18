@@ -12,27 +12,41 @@ pub async fn summary(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::AuditRead)?;
-    let db = state.admin_db.as_ref().ok_or_else(|| (
-        axum::http::StatusCode::SERVICE_UNAVAILABLE,
-        Json(serde_json::json!({"error": "admin db not initialized"})),
-    ))?;
+    let db = state.admin_db.as_ref().ok_or_else(|| {
+        (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "admin db not initialized"})),
+        )
+    })?;
 
     // Derive usage stats from audit_events
-    let total_requests = db.run_select_query(
-        "SELECT COUNT(*) FROM audit_events", 1,
-    ).ok().and_then(|r| r.rows.first()?.first()?.as_i64()).unwrap_or(0);
+    let total_requests = db
+        .run_select_query("SELECT COUNT(*) FROM audit_events", 1)
+        .ok()
+        .and_then(|r| r.rows.first()?.first()?.as_i64())
+        .unwrap_or(0);
 
-    let requests_today = db.run_select_query(
-        "SELECT COUNT(*) FROM audit_events WHERE created_at >= date('now')", 1,
-    ).ok().and_then(|r| r.rows.first()?.first()?.as_i64()).unwrap_or(0);
+    let requests_today = db
+        .run_select_query(
+            "SELECT COUNT(*) FROM audit_events WHERE created_at >= date('now')",
+            1,
+        )
+        .ok()
+        .and_then(|r| r.rows.first()?.first()?.as_i64())
+        .unwrap_or(0);
 
     let active_orgs = db.run_select_query(
         "SELECT COUNT(DISTINCT target_id) FROM audit_events WHERE target_type='org' AND created_at >= date('now','-30 days')", 1,
     ).ok().and_then(|r| r.rows.first()?.first()?.as_i64()).unwrap_or(0);
 
-    let error_count = db.run_select_query(
-        "SELECT COUNT(*) FROM audit_events WHERE action LIKE '%.error' OR action LIKE '%.fail'", 1,
-    ).ok().and_then(|r| r.rows.first()?.first()?.as_i64()).unwrap_or(0);
+    let error_count = db
+        .run_select_query(
+            "SELECT COUNT(*) FROM audit_events WHERE action LIKE '%.error' OR action LIKE '%.fail'",
+            1,
+        )
+        .ok()
+        .and_then(|r| r.rows.first()?.first()?.as_i64())
+        .unwrap_or(0);
 
     Ok(Json(serde_json::json!({
         "total_requests": total_requests,
@@ -48,13 +62,16 @@ pub async fn for_org(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::AuditRead)?;
-    let db = state.admin_db.as_ref().ok_or_else(|| (
-        axum::http::StatusCode::SERVICE_UNAVAILABLE,
-        Json(serde_json::json!({"error": "admin db not initialized"})),
-    ))?;
+    let db = state.admin_db.as_ref().ok_or_else(|| {
+        (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "admin db not initialized"})),
+        )
+    })?;
 
-    let recent = db.run_select_query(
-        &format!("SELECT action, created_at FROM audit_events WHERE target_type='org' AND target_id='{id}' ORDER BY created_at DESC LIMIT 50"),
+    let recent = db.run_select_query_params1(
+        "SELECT action, created_at FROM audit_events WHERE target_type='org' AND target_id=?1 ORDER BY created_at DESC LIMIT 50",
+        &id,
         50,
     ).map(|r| {
         r.rows.iter().map(|row| serde_json::json!({
@@ -62,9 +79,15 @@ pub async fn for_org(
         })).collect::<Vec<_>>()
     }).unwrap_or_default();
 
-    let total = db.run_select_query(
-        &format!("SELECT COUNT(*) FROM audit_events WHERE target_type='org' AND target_id='{id}'"), 1,
-    ).ok().and_then(|r| r.rows.first()?.first()?.as_i64()).unwrap_or(0);
+    let total = db
+        .run_select_query_params1(
+            "SELECT COUNT(*) FROM audit_events WHERE target_type='org' AND target_id=?1",
+            &id,
+            1,
+        )
+        .ok()
+        .and_then(|r| r.rows.first()?.first()?.as_i64())
+        .unwrap_or(0);
 
     Ok(Json(serde_json::json!({"recent": recent, "total": total})))
 }
@@ -75,13 +98,16 @@ pub async fn forensics(
     Path(request_id): Path<String>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::AuditRead)?;
-    let db = state.admin_db.as_ref().ok_or_else(|| (
-        axum::http::StatusCode::SERVICE_UNAVAILABLE,
-        Json(serde_json::json!({"error": "admin db not initialized"})),
-    ))?;
+    let db = state.admin_db.as_ref().ok_or_else(|| {
+        (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "admin db not initialized"})),
+        )
+    })?;
 
-    let data = db.run_select_query(
-        &format!("SELECT id, admin_user_id, role, target_type, target_id, action, ip, created_at FROM audit_events WHERE id='{request_id}'"),
+    let data = db.run_select_query_params1(
+        "SELECT id, admin_user_id, role, target_type, target_id, action, ip, created_at FROM audit_events WHERE id=?1",
+        &request_id,
         1,
     ).map(|r| {
         r.rows.first().map(|row| serde_json::json!({
@@ -99,22 +125,27 @@ pub async fn top_orgs(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::AuditRead)?;
-    let db = state.admin_db.as_ref().ok_or_else(|| (
-        axum::http::StatusCode::SERVICE_UNAVAILABLE,
-        Json(serde_json::json!({"error": "admin db not initialized"})),
-    ))?;
+    let db = state.admin_db.as_ref().ok_or_else(|| {
+        (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "admin db not initialized"})),
+        )
+    })?;
 
-    let data = db.run_select_query(
-        "SELECT o.id, o.name, o.plan, COUNT(a.id) as event_count
+    let data = db
+        .run_select_query(
+            "SELECT o.id, o.name, o.plan, COUNT(a.id) as event_count
          FROM organizations o
          LEFT JOIN audit_events a ON a.target_id = o.id AND a.target_type = 'org'
          GROUP BY o.id ORDER BY event_count DESC LIMIT 20",
-        20,
-    ).map(|r| {
-        r.rows.iter().map(|row| serde_json::json!({
+            20,
+        )
+        .map(|r| {
+            r.rows.iter().map(|row| serde_json::json!({
             "id": row.first(), "name": row.get(1), "plan": row.get(2), "event_count": row.get(3),
         })).collect::<Vec<_>>()
-    }).unwrap_or_default();
+        })
+        .unwrap_or_default();
 
     Ok(Json(serde_json::json!({"data": data})))
 }
@@ -124,21 +155,31 @@ pub async fn endpoint_heatmap(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::AuditRead)?;
-    let db = state.admin_db.as_ref().ok_or_else(|| (
-        axum::http::StatusCode::SERVICE_UNAVAILABLE,
-        Json(serde_json::json!({"error": "admin db not initialized"})),
-    ))?;
+    let db = state.admin_db.as_ref().ok_or_else(|| {
+        (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "admin db not initialized"})),
+        )
+    })?;
 
-    let data = db.run_select_query(
-        "SELECT action, COUNT(*) as count, MAX(created_at) as last_seen
+    let data = db
+        .run_select_query(
+            "SELECT action, COUNT(*) as count, MAX(created_at) as last_seen
          FROM audit_events
          GROUP BY action ORDER BY count DESC LIMIT 30",
-        30,
-    ).map(|r| {
-        r.rows.iter().map(|row| serde_json::json!({
-            "action": row.first(), "count": row.get(1), "last_seen": row.get(2),
-        })).collect::<Vec<_>>()
-    }).unwrap_or_default();
+            30,
+        )
+        .map(|r| {
+            r.rows
+                .iter()
+                .map(|row| {
+                    serde_json::json!({
+                        "action": row.first(), "count": row.get(1), "last_seen": row.get(2),
+                    })
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
 
     Ok(Json(serde_json::json!({"data": data})))
 }

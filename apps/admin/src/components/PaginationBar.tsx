@@ -26,21 +26,21 @@ export default function PaginationBar({ page, total, pageSize, shown }: Paginati
   const hasNext = shown >= pageSize
 
   return (
-    <div className="flex items-center justify-between text-sm text-zinc-500">
+    <div className="flex flex-col gap-3 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
       <span>Showing {shown} of {total}</span>
-      <div className="flex items-center gap-2">
+      <div className="flex w-full items-center gap-2 sm:w-auto">
         <button
           onClick={() => go(page - 1)}
           disabled={!hasPrev}
-          className="bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm px-3 py-1.5 rounded-md disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-700 transition-colors"
+          className="flex-1 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none sm:py-1.5"
         >
           Previous
         </button>
-        <span className="text-zinc-600 text-xs">Page {page}</span>
+        <span className="min-w-14 text-center text-xs text-zinc-600">Page {page}</span>
         <button
           onClick={() => go(page + 1)}
           disabled={!hasNext}
-          className="bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm px-3 py-1.5 rounded-md disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-700 transition-colors"
+          className="flex-1 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none sm:py-1.5"
         >
           Next
         </button>

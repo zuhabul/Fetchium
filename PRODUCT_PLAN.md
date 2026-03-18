@@ -2,7 +2,7 @@
 ## "The only API that searches, extracts, ranks, and reasons — all in one request"
 
 > **Positioning**: Fetchium is to Firecrawl what a Formula 1 car is to a bicycle.
-> Firecrawl scrapes one URL. Fetchium searches 11+ sources simultaneously, extracts
+> Firecrawl scrapes one URL. Fetchium searches 17+ sources simultaneously, extracts
 > with 5-layer CEP, ranks with 8-signal HyperFusion, learns across sessions, monitors
 > changes over time, and returns structured AI-native results with citations and evidence graphs.
 
@@ -25,7 +25,7 @@
 ### Fetchium Differentiators (what we have RIGHT NOW)
 | Feature | Fetchium | Firecrawl | Advantage |
 |---------|-------------|-----------|-----------|
-| **Multi-engine search** | 11+ backends federated | 0 (scrape-only) | **100x more data** |
+| **Multi-engine search** | 17 backends federated | 0 (scrape-only) | **100x more data** |
 | **5-layer CEP extraction** | CSS→readability→headless→PDF→OCR | 1 mode | **5x reliability** |
 | **HyperFusion ranking** | 8-signal (BM25+semantic+temporal+authority+evidence+diversity+depth+consensus) | None | **AI-native ranking** |
 | **QATBE token budget** | BM25-scored segment extraction | Raw markdown dump | **10x more efficient** |
@@ -608,7 +608,7 @@ services:
 - All 17 novel algorithms (HyperFusion, QATBE, CEP, SCS, SRP, RAR, EGP, AMRS, PDS, QADD, PIE, ToTR, CRP, EDF, SGT, CCE, ACS)
 - All 20 novel systems (circuit breaker, bulkhead, SPRE, QFD, ABS, RQE, TDR, RCE, QXE, SSE, STP, RDO, QCE, LP, EGB, ATB, CLQB, AXE, resilience, telemetry)
 - 26 CLI commands
-- Search across 11+ backends (SearXNG self-hosted is now primary)
+- Search across 17 backends (SearXNG self-hosted is now primary)
 - Extraction pipeline (5-layer CEP)
 - AI synthesis with 7 providers + fallback chains
 - YouTube intelligence + Social intelligence
@@ -651,7 +651,7 @@ services:
 
 | Metric | Fetchium | Firecrawl | Tavily | Exa |
 |--------|-------------|-----------|--------|-----|
-| Search backends | 11+ | 0 | 1 (proprietary) | 1 (semantic) |
+| Search backends | 17+ | 0 | 1 (proprietary) | 1 (semantic) |
 | Extraction layers | 5 (CEP) | 1 | 1 | 1 |
 | Ranking algorithm | HyperFusion (8 signals) | None | Built-in | Semantic only |
 | Cross-session learning | PIE (SQLite) | None | None | None |

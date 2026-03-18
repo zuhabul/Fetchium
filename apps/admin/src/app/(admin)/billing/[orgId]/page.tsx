@@ -1,4 +1,5 @@
 import { redirect, notFound } from 'next/navigation'
+import { ADMIN_PAGE_PADDING } from '@/lib/layout'
 import { getSession, adminFetch } from '@/lib/session'
 import TopBar from '@/components/layout/TopBar'
 import BillingActions from './BillingActions'
@@ -91,7 +92,7 @@ export default async function BillingOrgPage({ params }: { params: Promise<{ org
   return (
     <div className="flex flex-col min-h-full">
       <TopBar title={billing?.org_name ?? 'Billing Detail'} />
-      <div className="p-6 space-y-6">
+      <div className={`${ADMIN_PAGE_PADDING} space-y-6`}>
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm">
             Failed to load data

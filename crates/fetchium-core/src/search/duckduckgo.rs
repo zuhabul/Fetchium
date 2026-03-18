@@ -287,10 +287,10 @@ impl DuckDuckGoBackend {
                 self.client.client_direct()
             } else if attempt == 0 {
                 self.client
-                    .client_for_domain_with_locale("duckduckgo.com", locale)
+                    .proxy_client_for_domain_with_locale("duckduckgo.com", locale)
             } else {
                 info!(
-                    "DDG full: block — rotating residential IP (attempt {}/{})",
+                    "DDG full: block — rotating proxy/IP (attempt {}/{})",
                     attempt + 1,
                     MAX_IP_RETRIES
                 );
@@ -381,10 +381,10 @@ impl DuckDuckGoBackend {
                 self.client.client_direct()
             } else if attempt == 0 {
                 self.client
-                    .client_for_domain_with_locale("duckduckgo.com", locale)
+                    .proxy_client_for_domain_with_locale("duckduckgo.com", locale)
             } else {
                 info!(
-                    "DDG lite: block — rotating residential IP (attempt {}/{})",
+                    "DDG lite: block — rotating proxy/IP (attempt {}/{})",
                     attempt + 1,
                     MAX_IP_RETRIES
                 );

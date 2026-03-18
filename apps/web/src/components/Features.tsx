@@ -231,9 +231,9 @@ export default function Features() {
           transition={{ duration: 0.6, delay: 0.3 }}
         >
           {[
-            { value: "11+", label: "Search backends" },
+            { value: "17+", label: "Search backends" },
             { value: "17", label: "Novel algorithms" },
-            { value: "563+", label: "Unit tests" },
+            { value: "1,100+", label: "Unit tests" },
             { value: "12", label: "MCP tools" },
           ].map((stat) => (
             <div
