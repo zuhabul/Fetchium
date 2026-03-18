@@ -454,7 +454,7 @@ async with Fetchium(api_key="hsx_...") as fetchium:
 
 ### J4: Launch Day 🔴
 - [ ] Hacker News "Show HN" post (Tuesday-Thursday 9am ET for max visibility)
-  - Title: "Show HN: Fetchium – open-source Firecrawl alternative, 11 backends, 8-signal ranking"
+  - Title: "Show HN: Fetchium – open-source Firecrawl alternative, 17 backends, 8-signal ranking"
 - [ ] Product Hunt launch (same day, cross-post community)
 - [ ] Post to r/MachineLearning, r/LocalLLaMA, r/rust, r/programming
 - [ ] Tweet from @fetchium with demo video

@@ -9,7 +9,7 @@ use clap::Parser;
 use cli::{Cli, Commands};
 use std::time::Instant;
 
-#[tokio::main]
+#[tokio::main(worker_threads = 4)]
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 

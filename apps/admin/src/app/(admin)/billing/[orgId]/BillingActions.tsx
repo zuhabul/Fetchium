@@ -81,20 +81,29 @@ export default function BillingActions({
         type === 'refund'
           ? `/api/admin/billing/${orgId}/refund`
           : `/api/admin/billing/${orgId}/credit`
-      await fetch(endpoint, {
+      const res = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount_cents: Math.round(parseFloat(amount) * 100), reason }),
       })
-      setToast(`${type === 'refund' ? 'Refund' : 'Credit'} applied successfully`)
-      setModal(null)
+      if (res.ok) {
+        if (type === 'refund') {
+          const data = await res.json().catch(() => ({}))
+          const refundId = data?.refund_id ? ` (ID: ${String(data.refund_id).slice(0, 8)}…)` : ''
+          setToast(`Refund queued for manual review${refundId}`)
+        } else {
+          setToast('Credit applied successfully')
+        }
+        setModal(null)
+      } else {
+        const err = await res.json().catch(() => ({}))
+        setToast(err?.error ?? 'Failed to submit — please try again')
+      }
     } catch {
       setToast('Failed to submit — please try again')
     } finally {
       setLoading(false)
-      setTimeout(() => setToast(null), 3000)
+      setTimeout(() => setToast(null), 5000)
     }
   }
 

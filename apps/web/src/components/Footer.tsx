@@ -89,7 +89,7 @@ export default function Footer() {
             </Link>
 
             <p className="mt-4 max-w-[240px] text-[13px] sm:text-[14px] leading-relaxed text-slate-300">
-              The search API that thinks. 17 algorithms, 11+ federated
+              The search API that thinks. 17 algorithms, 17+ federated
               backends, and docs at docs.fetchium.com.
             </p>
 
@@ -166,7 +166,7 @@ export default function Footer() {
 
           {/* Tech badges */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            {["Rust", "563+ tests", "17 algos", "12 MCP tools"].map(
+            {["Rust", "1,100+ tests", "17 algos", "12 MCP tools"].map(
               (badge) => (
                 <span
                   key={badge}

@@ -180,8 +180,15 @@ impl ExaBackend {
                 }
                 Err(e) => {
                     if let FetchiumError::Structured(ref se) = e {
-                        if se.message.contains("401") || se.message.contains("403") || se.message.contains("429") || se.message.contains("limit") {
-                            tracing::warn!("Exa key exhausted or limited, rotating... Error: {}", se.message);
+                        if se.message.contains("401")
+                            || se.message.contains("403")
+                            || se.message.contains("429")
+                            || se.message.contains("limit")
+                        {
+                            tracing::warn!(
+                                "Exa key exhausted or limited, rotating... Error: {}",
+                                se.message
+                            );
                             self.rotate_key();
                             last_err = Some(e);
                             continue;

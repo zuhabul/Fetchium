@@ -29,6 +29,7 @@ pub enum Language {
     French,
     German,
     Portuguese,
+    Bengali,
     Japanese,
     Unknown,
 }
@@ -102,6 +103,7 @@ fn detect_language(query: &str) -> Language {
         (Language::Spanish, spanish_score(&words, &lower)),
         (Language::German, german_score(&words, &lower)),
         (Language::Portuguese, portuguese_score(&words, &lower)),
+        (Language::Bengali, bengali_score(query)),
         (Language::Japanese, japanese_score(&lower)),
     ];
 
@@ -144,6 +146,12 @@ fn french_score(words: &[&str], _query: &str) -> f64 {
         "sur",
         "par",
         "comme",
+        "comment",
+        "pourquoi",
+        "apprendre",
+        "rapidement",
+        "français",
+        "francais",
         "algorithme",
         "recherche",
         "tri",
@@ -168,7 +176,16 @@ fn spanish_score(words: &[&str], _query: &str) -> f64 {
         "con",
         "para",
         "por",
+        "cómo",
         "como",
+        "funciona",
+        "inteligencia",
+        "artificial",
+        "aprender",
+        "rapido",
+        "rápido",
+        "frances",
+        "francés",
         "algoritmo",
         "buscar",
         "ordenar",
@@ -191,6 +208,10 @@ fn german_score(words: &[&str], _query: &str) -> f64 {
         "und",
         "von",
         "fur",
+        "was",
+        "wie",
+        "lernen",
+        "schnell",
         "auf",
         "bei",
         "nach",
@@ -238,6 +259,18 @@ fn japanese_score(query: &str) -> f64 {
         .count();
     let total = query.chars().count().max(1);
     jp_chars as f64 / total as f64
+}
+
+fn bengali_score(query: &str) -> f64 {
+    let bn_chars = query
+        .chars()
+        .filter(|c| {
+            let cp = *c as u32;
+            (0x0980..=0x09FF).contains(&cp)
+        })
+        .count();
+    let total = query.chars().count().max(1);
+    bn_chars as f64 / total as f64
 }
 
 // ─── Translation ─────────────────────────────────────────────
@@ -298,6 +331,10 @@ fn translate_terms(query: &str) -> Vec<(String, String, Language, f64)> {
 fn get_phrase_dict(lang: Language) -> Vec<(&'static str, &'static str)> {
     match lang {
         Language::French => vec![
+            ("comment apprendre le français rapidement", "learn french fast"),
+            ("comment apprendre le francais rapidement", "learn french fast"),
+            ("apprendre le français", "learn french"),
+            ("apprendre le francais", "learn french"),
             ("algorithme de tri", "sorting algorithm"),
             ("recherche binaire", "binary search"),
             ("apprentissage automatique", "machine learning"),
@@ -307,6 +344,10 @@ fn get_phrase_dict(lang: Language) -> Vec<(&'static str, &'static str)> {
             ("structure de donnees", "data structure"),
         ],
         Language::Spanish => vec![
+            ("cómo funciona la inteligencia artificial", "how artificial intelligence works"),
+            ("como funciona la inteligencia artificial", "how artificial intelligence works"),
+            ("cómo aprender python desde cero", "learn python from scratch"),
+            ("como aprender python desde cero", "learn python from scratch"),
             ("algoritmo de ordenamiento", "sorting algorithm"),
             ("busqueda binaria", "binary search"),
             ("aprendizaje automatico", "machine learning"),
@@ -316,12 +357,87 @@ fn get_phrase_dict(lang: Language) -> Vec<(&'static str, &'static str)> {
             ("estructura de datos", "data structure"),
         ],
         Language::German => vec![
+            (
+                "was ist quantencomputing einfach erklärt",
+                "quantum computing explained simply",
+            ),
+            (
+                "was ist quantencomputing einfach erklaert",
+                "quantum computing explained simply",
+            ),
             ("sortieralgorithmus", "sorting algorithm"),
             ("binaere suche", "binary search"),
             ("maschinelles lernen", "machine learning"),
             ("kuenstliche intelligenz", "artificial intelligence"),
             ("neuronales netz", "neural network"),
             ("datenstruktur", "data structure"),
+        ],
+        Language::Bengali => vec![
+            ("মেশিন লার্নিং কি", "what is machine learning"),
+            ("মেশিন লার্নিং কী", "what is machine learning"),
+            (
+                "বাংলায় কুবেরনেটিস কী",
+                "what is kubernetes container orchestration",
+            ),
+            (
+                "বাংলায় কুবেরনেটিস কী",
+                "what is kubernetes container orchestration",
+            ),
+            ("কুবেরনেটিস কী", "what is kubernetes container orchestration"),
+            ("কুবেরনেটিস কি", "what is kubernetes container orchestration"),
+            (
+                "কন্টেইনার অর্কেস্ট্রেশন কী",
+                "what is container orchestration kubernetes",
+            ),
+            (
+                "কন্টেইনার অর্কেস্ট্রেশন কি",
+                "what is container orchestration kubernetes",
+            ),
+            (
+                "বাংলায় প্রোগ্রামিং কীভাবে শিখব",
+                "how to learn programming in bengali",
+            ),
+            (
+                "প্রোগ্রামিং কীভাবে শিখব",
+                "how to learn programming",
+            ),
+            ("পাইথন কী", "what is python programming language"),
+            ("পাইথন কি", "what is python programming language"),
+            (
+                "বাংলায় কৃত্রিম বুদ্ধিমত্তা কী",
+                "what is artificial intelligence beginner guide",
+            ),
+            (
+                "কৃত্রিম বুদ্ধিমত্তা কী",
+                "what is artificial intelligence beginner guide",
+            ),
+            (
+                "বাংলায় ডেটাবেস কী",
+                "what is database dbms database management system",
+            ),
+            ("ডেটাবেস কী", "what is database dbms database management system"),
+            (
+                "ডেটাবেস ম্যানেজমেন্ট সিস্টেম কী",
+                "what is database management system dbms",
+            ),
+            (
+                "বাংলায় নেটওয়ার্কিং কী",
+                "what is computer networking basics",
+            ),
+            ("নেটওয়ার্কিং কী", "what is computer networking basics"),
+            (
+                "রক্তচাপের ওষুধের পার্শ্বপ্রতিক্রিয়া তুলনা",
+                "blood pressure medication side effects comparison antihypertensive medication classes ace inhibitor arb beta blocker diuretic calcium channel blocker",
+            ),
+            (
+                "ডকার কম্পোজ নেটওয়ার্কিং কীভাবে কাজ করে",
+                "docker compose networking between containers service name default network docs",
+            ),
+            (
+                "ডকার কম্পোজ নেটওয়ার্কিং কিভাবে কাজ করে",
+                "docker compose networking between containers service name default network docs",
+            ),
+            ("কিভাবে বাংলা দ্রুত শিখব", "how to learn bengali fast"),
         ],
         _ => vec![],
     }
@@ -330,6 +446,11 @@ fn get_phrase_dict(lang: Language) -> Vec<(&'static str, &'static str)> {
 fn get_word_dict(lang: Language) -> HashMap<&'static str, &'static str> {
     match lang {
         Language::French => [
+            ("comment", "how"),
+            ("apprendre", "learn"),
+            ("français", "french"),
+            ("francais", "french"),
+            ("rapidement", "fast"),
             ("algorithme", "algorithm"),
             ("tri", "sorting"),
             ("recherche", "search"),
@@ -349,6 +470,14 @@ fn get_word_dict(lang: Language) -> HashMap<&'static str, &'static str> {
         .into_iter()
         .collect(),
         Language::Spanish => [
+            ("aprender", "learn"),
+            ("desde", "from"),
+            ("cero", "scratch"),
+            ("funciona", "works"),
+            ("rápido", "fast"),
+            ("rapido", "fast"),
+            ("francés", "french"),
+            ("frances", "french"),
             ("algoritmo", "algorithm"),
             ("ordenar", "sort"),
             ("buscar", "search"),
@@ -368,6 +497,15 @@ fn get_word_dict(lang: Language) -> HashMap<&'static str, &'static str> {
         .into_iter()
         .collect(),
         Language::German => [
+            ("was", "what"),
+            ("quantencomputing", "quantum computing"),
+            ("erklärt", "explained"),
+            ("erklaert", "explained"),
+            ("einfach", "simple"),
+            ("lernen", "learn"),
+            ("französisch", "french"),
+            ("franzoesisch", "french"),
+            ("schnell", "fast"),
             ("algorithmus", "algorithm"),
             ("sortierung", "sorting"),
             ("suche", "search"),
@@ -396,6 +534,43 @@ fn get_word_dict(lang: Language) -> HashMap<&'static str, &'static str> {
             ("rapido", "fast"),
             ("lento", "slow"),
             ("erro", "error"),
+        ]
+        .into_iter()
+        .collect(),
+        Language::Bengali => [
+            ("মেশিন", "machine"),
+            ("লার্নিং", "learning"),
+            ("কি", "what"),
+            ("কী", "what"),
+            ("কুবেরনেটিস", "kubernetes"),
+            ("কন্টেইনার", "container"),
+            ("অর্কেস্ট্রেশন", "orchestration"),
+            ("প্রোগ্রামিং", "programming"),
+            ("পাইথন", "python"),
+            ("কৃত্রিম", "artificial"),
+            ("বুদ্ধিমত্তা", "intelligence"),
+            ("ডেটাবেস", "database"),
+            ("ম্যানেজমেন্ট", "management"),
+            ("সিস্টেম", "system"),
+            ("ডিবিএমএস", "dbms"),
+            ("নেটওয়ার্কিং", "networking"),
+            ("শিখব", "learn"),
+            ("শিখতে", "learn"),
+            ("কিভাবে", "how"),
+            ("কীভাবে", "how"),
+            ("রক্তচাপ", "blood pressure"),
+            ("ওষুধ", "medication"),
+            ("পার্শ্বপ্রতিক্রিয়া", "side effects"),
+            ("তুলনা", "comparison"),
+            ("ডকার", "docker"),
+            ("কম্পোজ", "compose"),
+            ("নেটওয়ার্কিং", "networking"),
+            ("কীভাবে", "how"),
+            ("কিভাবে", "how"),
+            ("কাজ", "work"),
+            ("করে", "works"),
+            ("বাংলা", "bengali"),
+            ("দ্রুত", "fast"),
         ]
         .into_iter()
         .collect(),
@@ -459,6 +634,52 @@ mod tests {
     }
 
     #[test]
+    fn bengali_detected() {
+        let lang = detect_language("মেশিন লার্নিং কি");
+        assert_eq!(lang, Language::Bengali);
+    }
+
+    #[test]
+    fn bengali_kubernetes_phrase_expanded() {
+        let result = expand_crosslingual("বাংলায় কুবেরনেটিস কী");
+        assert_eq!(result.detected_language, Language::Bengali);
+        assert!(result
+            .expansions
+            .iter()
+            .any(|e| e.query.contains("kubernetes")));
+    }
+
+    #[test]
+    fn bengali_programming_phrase_expanded() {
+        let result = expand_crosslingual("প্রোগ্রামিং কীভাবে শিখব");
+        assert_eq!(result.detected_language, Language::Bengali);
+        assert!(result
+            .expansions
+            .iter()
+            .any(|e| e.query.contains("programming")));
+    }
+
+    #[test]
+    fn bengali_ai_phrase_expanded() {
+        let result = expand_crosslingual("কৃত্রিম বুদ্ধিমত্তা কী");
+        assert_eq!(result.detected_language, Language::Bengali);
+        assert!(result
+            .expansions
+            .iter()
+            .any(|e| e.query.contains("artificial intelligence")));
+    }
+
+    #[test]
+    fn bengali_database_phrase_expanded() {
+        let result = expand_crosslingual("ডেটাবেস কী");
+        assert_eq!(result.detected_language, Language::Bengali);
+        assert!(result
+            .expansions
+            .iter()
+            .any(|e| e.query.contains("database management system")));
+    }
+
+    #[test]
     fn mixed_language_term_translation() {
         // English query with a foreign technical term
         let translations = translate_terms("implement algorithme in python");
@@ -477,5 +698,25 @@ mod tests {
                 assert!(result.expansions[i].confidence >= result.expansions[i + 1].confidence);
             }
         }
+    }
+
+    #[test]
+    fn spanish_explainer_phrase_expanded() {
+        let result = expand_crosslingual("cómo funciona la inteligencia artificial");
+        assert_eq!(result.detected_language, Language::Spanish);
+        assert!(result
+            .expansions
+            .iter()
+            .any(|e| e.query.contains("artificial intelligence")));
+    }
+
+    #[test]
+    fn german_explainer_phrase_expanded() {
+        let result = expand_crosslingual("was ist quantencomputing einfach erklärt");
+        assert_eq!(result.detected_language, Language::German);
+        assert!(result
+            .expansions
+            .iter()
+            .any(|e| e.query.contains("quantum computing")));
     }
 }

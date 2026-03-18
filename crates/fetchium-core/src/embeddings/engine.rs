@@ -40,6 +40,19 @@ pub fn embed_batch(texts: &[&str]) -> Result<Vec<Vec<f32>>, FetchiumError> {
     if texts.is_empty() {
         return Ok(Vec::new());
     }
+    if tokio::runtime::Handle::try_current().is_ok() {
+        let owned_texts: Vec<String> = texts.iter().map(|text| (*text).to_string()).collect();
+        return std::thread::spawn(move || {
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(|e| FetchiumError::Internal(format!("Runtime build error: {e}")))?;
+            let text_refs: Vec<&str> = owned_texts.iter().map(String::as_str).collect();
+            rt.block_on(embed_batch_async(&text_refs))
+        })
+        .join()
+        .map_err(|_| FetchiumError::Internal("Embedding worker thread panicked".into()))?;
+    }
     debug!(
         "Embedding batch of {} texts via Ollama (blocking)",
         texts.len()

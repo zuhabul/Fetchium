@@ -54,13 +54,10 @@ impl AppState {
             admin_db,
             rate_limiter: Arc::new(PerKeyRateLimiter::new()),
             jobs: Arc::new(JobStore::new()),
-            // Serialize search operations: each search dispatches 7-10 backend
-            // requests in parallel through a shared proxy pool. Concurrent searches
-            // cause connection pool starvation since client_for_domain creates new
-            // reqwest clients per call. With serialization, each search completes in
-            // ~3-5s, so 5 queued searches = 15-25s — well within the 25s timeout.
-            // TODO: Cache proxied reqwest clients to enable true concurrency.
-            search_semaphore: Arc::new(tokio::sync::Semaphore::new(1)),
+            // Concurrent searches: each dispatches 7-10 backend requests in
+            // parallel. We allow 25 simultaneous searches to maximize throughput
+            // while staying within reasonable backend/proxy capacity.
+            search_semaphore: Arc::new(tokio::sync::Semaphore::new(25)),
         })
     }
 }

@@ -39,7 +39,7 @@ const plans: Plan[] = [
     perThousand: null,
     features: [
       "1,000 API requests per month",
-      "All 11 search backends",
+      "All 17 search backends",
       "5-layer CEP content extraction",
       "HyperFusion 8-signal ranking",
       "Token budget management",

@@ -64,6 +64,9 @@ pub struct SearchContext {
     /// ISO 3166-1 alpha-2 country code for residential proxy targeting.
     /// `None` = default/US routing. Set from query locale detection.
     pub locale: Option<String>,
+    /// Query language hint for backends that support language targeting.
+    /// Uses lightweight query-language detection, not geo inference.
+    pub language: Option<String>,
 }
 
 /// Trait implemented by every search backend.

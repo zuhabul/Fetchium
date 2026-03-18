@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { ADMIN_PAGE_PADDING } from '@/lib/layout'
 import TopBar from '@/components/layout/TopBar'
 
 interface AuditRow {
@@ -73,7 +74,7 @@ export default function RequestInspectorPage() {
   return (
     <>
       <TopBar title="Activity Inspector" subtitle="Live admin audit stream — refreshes every 5s" />
-      <div className="p-6 space-y-4 max-w-full">
+      <div className={`${ADMIN_PAGE_PADDING} max-w-full space-y-4`}>
 
         <div className="flex flex-wrap items-center gap-2">
           <input type="text" placeholder="Filter action…" value={actionFilter}

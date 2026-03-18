@@ -30,10 +30,12 @@ pub async fn list(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::IncidentsRead)?;
-    let db = state.admin_db.as_ref().ok_or_else(|| (
-        axum::http::StatusCode::SERVICE_UNAVAILABLE,
-        Json(serde_json::json!({"error": "admin db not initialized"})),
-    ))?;
+    let db = state.admin_db.as_ref().ok_or_else(|| {
+        (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "admin db not initialized"})),
+        )
+    })?;
     let data = db.list_incidents().unwrap_or_default();
     let total = data.len() as i64;
     Ok(Json(serde_json::json!({"data": data, "total": total})))
@@ -45,13 +47,17 @@ pub async fn get(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::IncidentsRead)?;
-    let db = state.admin_db.as_ref().ok_or_else(|| (
-        axum::http::StatusCode::SERVICE_UNAVAILABLE,
-        Json(serde_json::json!({"error": "admin db not initialized"})),
-    ))?;
+    let db = state.admin_db.as_ref().ok_or_else(|| {
+        (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "admin db not initialized"})),
+        )
+    })?;
     let data = db.get_incident(&id).unwrap_or(None);
     let timeline = db.get_incident_timeline(&id).unwrap_or_default();
-    Ok(Json(serde_json::json!({"data": data, "timeline": timeline})))
+    Ok(Json(
+        serde_json::json!({"data": data, "timeline": timeline}),
+    ))
 }
 
 pub async fn create(
@@ -60,13 +66,32 @@ pub async fn create(
     Json(body): Json<CreateIncident>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::IncidentsManage)?;
-    let db = state.admin_db.as_ref().ok_or_else(|| (
-        axum::http::StatusCode::SERVICE_UNAVAILABLE,
-        Json(serde_json::json!({"error": "admin db not initialized"})),
-    ))?;
-    let id = db.create_incident(&body.title, body.severity.as_deref().unwrap_or("low"), Some(&auth.user.id))
-        .map_err(|e| (axum::http::StatusCode::BAD_REQUEST, Json(serde_json::json!({"error": e.to_string()}))))?;
-    let _ = db.log_audit(Some(&auth.user.id), Some(&auth.user.role), "incident", Some(&id), "incident.create", None);
+    let db = state.admin_db.as_ref().ok_or_else(|| {
+        (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "admin db not initialized"})),
+        )
+    })?;
+    let id = db
+        .create_incident(
+            &body.title,
+            body.severity.as_deref().unwrap_or("low"),
+            Some(&auth.user.id),
+        )
+        .map_err(|e| {
+            (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": e.to_string()})),
+            )
+        })?;
+    let _ = db.log_audit(
+        Some(&auth.user.id),
+        Some(&auth.user.role),
+        "incident",
+        Some(&id),
+        "incident.create",
+        None,
+    );
     Ok(Json(serde_json::json!({"ok": true, "id": id})))
 }
 
@@ -77,13 +102,27 @@ pub async fn update(
     Json(body): Json<UpdateIncident>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::IncidentsManage)?;
-    let db = state.admin_db.as_ref().ok_or_else(|| (
-        axum::http::StatusCode::SERVICE_UNAVAILABLE,
-        Json(serde_json::json!({"error": "admin db not initialized"})),
-    ))?;
+    let db = state.admin_db.as_ref().ok_or_else(|| {
+        (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "admin db not initialized"})),
+        )
+    })?;
     db.update_incident(&id, body.status.as_deref(), body.severity.as_deref())
-        .map_err(|e| (axum::http::StatusCode::BAD_REQUEST, Json(serde_json::json!({"error": e.to_string()}))))?;
-    let _ = db.log_audit(Some(&auth.user.id), Some(&auth.user.role), "incident", Some(&id), "incident.update", None);
+        .map_err(|e| {
+            (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": e.to_string()})),
+            )
+        })?;
+    let _ = db.log_audit(
+        Some(&auth.user.id),
+        Some(&auth.user.role),
+        "incident",
+        Some(&id),
+        "incident.update",
+        None,
+    );
     Ok(Json(serde_json::json!({"ok": true})))
 }
 
@@ -94,12 +133,19 @@ pub async fn add_timeline(
     Json(body): Json<AddTimeline>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::IncidentsManage)?;
-    let db = state.admin_db.as_ref().ok_or_else(|| (
-        axum::http::StatusCode::SERVICE_UNAVAILABLE,
-        Json(serde_json::json!({"error": "admin db not initialized"})),
-    ))?;
+    let db = state.admin_db.as_ref().ok_or_else(|| {
+        (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "admin db not initialized"})),
+        )
+    })?;
     db.add_incident_timeline(&id, Some(&auth.user.id), &body.message)
-        .map_err(|e| (axum::http::StatusCode::BAD_REQUEST, Json(serde_json::json!({"error": e.to_string()}))))?;
+        .map_err(|e| {
+            (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": e.to_string()})),
+            )
+        })?;
     Ok(Json(serde_json::json!({"ok": true})))
 }
 
@@ -109,13 +155,26 @@ pub async fn resolve(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::IncidentsManage)?;
-    let db = state.admin_db.as_ref().ok_or_else(|| (
-        axum::http::StatusCode::SERVICE_UNAVAILABLE,
-        Json(serde_json::json!({"error": "admin db not initialized"})),
-    ))?;
-    db.resolve_incident(&id)
-        .map_err(|e| (axum::http::StatusCode::BAD_REQUEST, Json(serde_json::json!({"error": e.to_string()}))))?;
-    let _ = db.log_audit(Some(&auth.user.id), Some(&auth.user.role), "incident", Some(&id), "incident.resolve", None);
+    let db = state.admin_db.as_ref().ok_or_else(|| {
+        (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "admin db not initialized"})),
+        )
+    })?;
+    db.resolve_incident(&id).map_err(|e| {
+        (
+            axum::http::StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": e.to_string()})),
+        )
+    })?;
+    let _ = db.log_audit(
+        Some(&auth.user.id),
+        Some(&auth.user.role),
+        "incident",
+        Some(&id),
+        "incident.resolve",
+        None,
+    );
     Ok(Json(serde_json::json!({"ok": true})))
 }
 
@@ -125,27 +184,55 @@ pub async fn postmortem(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::IncidentsRead)?;
-    let db = state.admin_db.as_ref().ok_or_else(|| (
-        axum::http::StatusCode::SERVICE_UNAVAILABLE,
-        Json(serde_json::json!({"error": "admin db not initialized"})),
-    ))?;
-    let incident = db.get_incident(&id)
-        .unwrap_or(None)
-        .ok_or_else(|| (axum::http::StatusCode::NOT_FOUND, Json(serde_json::json!({"error": "incident not found"}))))?;
+    let db = state.admin_db.as_ref().ok_or_else(|| {
+        (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "admin db not initialized"})),
+        )
+    })?;
+    let incident = db.get_incident(&id).unwrap_or(None).ok_or_else(|| {
+        (
+            axum::http::StatusCode::NOT_FOUND,
+            Json(serde_json::json!({"error": "incident not found"})),
+        )
+    })?;
     let timeline = db.get_incident_timeline(&id).unwrap_or_default();
 
-    let title = incident.get("title").and_then(|v| v.as_str()).unwrap_or("Unknown");
-    let severity = incident.get("severity").and_then(|v| v.as_str()).unwrap_or("unknown");
-    let status = incident.get("status").and_then(|v| v.as_str()).unwrap_or("unknown");
-    let started = incident.get("started_at").and_then(|v| v.as_str()).unwrap_or("unknown");
-    let resolved = incident.get("resolved_at").and_then(|v| v.as_str()).unwrap_or("unresolved");
+    let title = incident
+        .get("title")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Unknown");
+    let severity = incident
+        .get("severity")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unknown");
+    let status = incident
+        .get("status")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unknown");
+    let started = incident
+        .get("started_at")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unknown");
+    let resolved = incident
+        .get("resolved_at")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unresolved");
 
-    let timeline_text: String = timeline.iter().enumerate().map(|(i, ev)| {
-        let t = ev.get("event_type").and_then(|v| v.as_str()).unwrap_or("update");
-        let msg = ev.get("message").and_then(|v| v.as_str()).unwrap_or("");
-        let ts = ev.get("created_at").and_then(|v| v.as_str()).unwrap_or("");
-        format!("  {}. [{}] {} — {}", i + 1, t.to_uppercase(), ts, msg)
-    }).collect::<Vec<_>>().join("\n");
+    let timeline_text: String = timeline
+        .iter()
+        .enumerate()
+        .map(|(i, ev)| {
+            let t = ev
+                .get("event_type")
+                .and_then(|v| v.as_str())
+                .unwrap_or("update");
+            let msg = ev.get("message").and_then(|v| v.as_str()).unwrap_or("");
+            let ts = ev.get("created_at").and_then(|v| v.as_str()).unwrap_or("");
+            format!("  {}. [{}] {} — {}", i + 1, t.to_uppercase(), ts, msg)
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
 
     let postmortem = format!(
         "INCIDENT POSTMORTEM\n\
@@ -171,7 +258,11 @@ pub async fn postmortem(
          • Review monitoring alerts for early detection\n\
          • Ensure runbooks are up to date for {severity} severity incidents\n\
          • Schedule a follow-up review within 5 business days\n",
-        timeline_or_none = if timeline_text.is_empty() { "  (no timeline events recorded)".to_string() } else { timeline_text },
+        timeline_or_none = if timeline_text.is_empty() {
+            "  (no timeline events recorded)".to_string()
+        } else {
+            timeline_text
+        },
         timeline_count = timeline.len(),
         resolution_note = if status == "resolved" {
             format!("Incident was resolved at {resolved}.")
@@ -180,6 +271,15 @@ pub async fn postmortem(
         },
     );
 
-    let _ = db.log_audit(Some(&auth.user.id), Some(&auth.user.role), "incident", Some(&id), "incident.postmortem", None);
-    Ok(Json(serde_json::json!({"ok": true, "postmortem": postmortem})))
+    let _ = db.log_audit(
+        Some(&auth.user.id),
+        Some(&auth.user.role),
+        "incident",
+        Some(&id),
+        "incident.postmortem",
+        None,
+    );
+    Ok(Json(
+        serde_json::json!({"ok": true, "postmortem": postmortem}),
+    ))
 }

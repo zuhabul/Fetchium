@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { ADMIN_PAGE_PADDING } from '@/lib/layout'
 import TopBar from '@/components/layout/TopBar'
 
 type LogLevel = 'ERROR' | 'WARN' | 'INFO' | 'DEBUG'
@@ -69,7 +70,7 @@ export default function LogsPage() {
   return (
     <>
       <TopBar title="Log Stream" subtitle="Live service logs via journald" />
-      <div className="p-6 space-y-4 max-w-6xl">
+      <div className={`${ADMIN_PAGE_PADDING} max-w-6xl space-y-4`}>
         <div className="flex gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1 w-fit">
           {(['fetchium-api', 'fetchium-admin'] as const).map(svc => (
             <button key={svc} onClick={() => setService(svc)}

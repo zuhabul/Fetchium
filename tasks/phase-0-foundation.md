@@ -2,7 +2,7 @@
 
 > **Phase:** 0 of 8 | **Priority:** P0 (Critical Path) | **Duration:** Week 1
 > **Depends on:** Nothing -- this is the root of the dependency graph
-> **PRD Reference:** `prd.md` v4.0.0 -- Sections 11 (CLI Interface), 12 (System Architecture), 13 (Resource Awareness), 43 (Data Model), 44 (Error Handling)
+> **PRD Reference:** `prd.md` v4.0.0 -- Sections 17 (CLI Interface), 12 (System Architecture), 13 (Resource Awareness), 43 (Data Model), 44 (Error Handling)
 > **Epics:** 3 | **Tasks:** 8
 
 ---

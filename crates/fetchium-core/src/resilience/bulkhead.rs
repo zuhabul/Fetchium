@@ -22,7 +22,7 @@ pub struct BulkheadConfig {
 impl Default for BulkheadConfig {
     fn default() -> Self {
         Self {
-            max_concurrent_per_backend: 5,
+            max_concurrent_per_backend: 25,
             acquire_timeout: Duration::from_secs(10),
         }
     }

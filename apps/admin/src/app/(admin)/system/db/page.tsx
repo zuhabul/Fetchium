@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ADMIN_PAGE_PADDING } from '@/lib/layout'
 import TopBar from '@/components/layout/TopBar'
 
 const TABLES = [
@@ -82,7 +83,7 @@ export default function DbInspectorPage() {
   return (
     <>
       <TopBar title="DB Inspector" subtitle="Browse tables and run read-only queries" />
-      <div className="p-6 space-y-4 max-w-6xl">
+      <div className={`${ADMIN_PAGE_PADDING} max-w-6xl space-y-4`}>
 
         {/* Caution banner */}
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-2.5 text-xs text-amber-400">

@@ -49,16 +49,31 @@ export default function TicketActions({
     }
   }
 
-  async function updateField(field: string, value: string) {
+  async function updateStatus(value: string) {
     try {
-      await fetch(`/api/admin/support/tickets/${ticketId}`, {
+      const res = await fetch(`/api/admin/support/tickets/${ticketId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [field]: value }),
+        body: JSON.stringify({ status: value }),
       })
-      showToast(`${field.charAt(0).toUpperCase() + field.slice(1)} updated`)
+      if (res.ok) showToast('Status updated')
+      else showToast('Failed to update status')
     } catch {
-      showToast(`Failed to update ${field}`)
+      showToast('Failed to update status')
+    }
+  }
+
+  async function updateAssignee(value: string) {
+    try {
+      const res = await fetch(`/api/admin/support/tickets/${ticketId}/assign`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assignee_id: value }),
+      })
+      if (res.ok) showToast('Assignee updated')
+      else showToast('Failed to assign ticket')
+    } catch {
+      showToast('Failed to assign ticket')
     }
   }
 
@@ -109,7 +124,7 @@ export default function TicketActions({
               className="flex-1 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
             />
             <button
-              onClick={() => updateField('assignee', assignee)}
+              onClick={() => updateAssignee(assignee)}
               className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm px-3 py-1.5 rounded-md transition-colors"
             >
               Assign
@@ -121,7 +136,7 @@ export default function TicketActions({
           <label className="text-xs text-zinc-500 uppercase tracking-wider font-medium block">Status</label>
           <select
             value={status}
-            onChange={(e) => { setStatus(e.target.value); updateField('status', e.target.value) }}
+            onChange={(e) => { setStatus(e.target.value); updateStatus(e.target.value) }}
             className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"
           >
             {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -132,7 +147,7 @@ export default function TicketActions({
           <label className="text-xs text-zinc-500 uppercase tracking-wider font-medium block">Priority</label>
           <select
             value={priority}
-            onChange={(e) => { setPriority(e.target.value); updateField('priority', e.target.value) }}
+            onChange={(e) => { setPriority(e.target.value) }}
             className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"
           >
             {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}

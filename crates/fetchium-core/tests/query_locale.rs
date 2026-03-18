@@ -1,4 +1,4 @@
-use fetchium_core::query::locale::detect_query_locale;
+use fetchium_core::query::locale::{detect_query_language, detect_query_locale};
 
 #[test]
 fn detects_japanese_kana() {
@@ -31,6 +31,10 @@ fn detects_spanish_recipe() {
 fn detects_german_explainer() {
     assert_eq!(
         detect_query_locale("was ist quantencomputing einfach erklaert"),
+        Some("de")
+    );
+    assert_eq!(
+        detect_query_language("was ist quantencomputing einfach erklaert"),
         Some("de")
     );
 }
@@ -76,6 +80,15 @@ fn detects_explicit_site_and_language_hints() {
     assert_eq!(
         detect_query_locale("lang:fr meilleures universites"),
         Some("fr")
+    );
+}
+
+#[test]
+fn language_detection_ignores_english_place_queries() {
+    assert_eq!(detect_query_language("best fish and chips in london"), None);
+    assert_eq!(
+        detect_query_locale("best fish and chips in london"),
+        Some("gb")
     );
 }
 

@@ -25,6 +25,23 @@ export default function LoginForm({ callbackUrl }: { callbackUrl: string }) {
     setSubmitting(true);
     setError(null);
 
+    const validation = await fetch("/api/auth/validate-key", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        apiKey: apiKey.trim(),
+      }),
+    });
+
+    const validationBody = (await validation.json()) as { message?: string };
+    if (!validation.ok) {
+      setSubmitting(false);
+      setError(validationBody.message || "Sign-in failed. The API key was rejected.");
+      return;
+    }
+
     const result = await signIn("credentials", {
       apiKey: apiKey.trim(),
       redirect: false,
@@ -34,7 +51,9 @@ export default function LoginForm({ callbackUrl }: { callbackUrl: string }) {
     setSubmitting(false);
 
     if (!result || result.error) {
-      setError("Sign-in failed. Use a valid Fetchium API key with dashboard access.");
+      setError(
+        "The API key was accepted by the API, but dashboard session creation failed. Retry once. If it persists, this is a dashboard auth bug rather than an invalid key.",
+      );
       return;
     }
 
@@ -43,23 +62,23 @@ export default function LoginForm({ callbackUrl }: { callbackUrl: string }) {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_35%),linear-gradient(180deg,#020617,#0f172a)] px-6 py-12">
-      <div className="mx-auto grid min-h-[calc(100vh-6rem)] max-w-6xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="max-w-2xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-sky-400/20 bg-sky-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_35%),linear-gradient(180deg,#020617,#0f172a)] px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl items-start gap-8 lg:min-h-[calc(100vh-6rem)] lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.92fr)] lg:items-center lg:gap-10">
+        <section className="max-w-2xl pt-2 sm:pt-4 lg:pt-0">
+          <div className="inline-flex items-center gap-2 rounded-full border border-sky-400/20 bg-sky-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-200 sm:text-xs">
             <ShieldCheck className="h-3.5 w-3.5" />
             Hosted Dashboard Access
           </div>
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          <h1 className="mt-5 text-3xl font-semibold tracking-tight text-white sm:mt-6 sm:text-4xl lg:text-5xl">
             Sign in with your Fetchium API key.
           </h1>
-          <p className="mt-5 max-w-xl text-sm leading-7 text-slate-300">
+          <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300 sm:mt-5">
             The hosted dashboard now uses secure session auth. Your API key is validated
             server-side against the production API, then kept behind an authenticated cookie-backed
             session instead of browser-local configuration.
           </p>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          <div className="mt-6 grid gap-3 sm:mt-8 sm:grid-cols-2 xl:grid-cols-3">
             <FeatureCard
               title="Real validation"
               body="Login succeeds only when the API key is accepted by the live Fetchium API."
@@ -75,7 +94,7 @@ export default function LoginForm({ callbackUrl }: { callbackUrl: string }) {
           </div>
         </section>
 
-        <section className="rounded-[28px] border border-white/10 bg-slate-950/75 p-8 shadow-[0_32px_120px_rgba(2,6,23,0.6)] backdrop-blur">
+        <section className="rounded-[28px] border border-white/10 bg-slate-950/75 p-5 shadow-[0_32px_120px_rgba(2,6,23,0.6)] backdrop-blur sm:p-6 lg:p-8">
           <div className="mb-6 flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-500/15 text-sky-300">
               <KeyRound className="h-5 w-5" />
@@ -127,10 +146,10 @@ export default function LoginForm({ callbackUrl }: { callbackUrl: string }) {
               If you do not have a Fetchium API key yet, contact the Fetchium team to enable hosted
               access for your workspace.
             </p>
-            <div className="mt-4 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link
                 href="mailto:founders@fetchium.com?subject=Fetchium%20dashboard%20access"
-                className="inline-flex items-center rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-white/80 transition hover:text-white"
+                className="inline-flex items-center justify-center rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-white/80 transition hover:text-white"
               >
                 Contact Access Team
               </Link>
@@ -138,7 +157,7 @@ export default function LoginForm({ callbackUrl }: { callbackUrl: string }) {
                 href="https://docs.fetchium.com/quickstart"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-white/60 transition hover:text-white"
+                className="inline-flex items-center justify-center rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-white/60 transition hover:text-white"
               >
                 Quickstart
               </Link>
@@ -152,7 +171,7 @@ export default function LoginForm({ callbackUrl }: { callbackUrl: string }) {
 
 function FeatureCard({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-3xl border border-white/8 bg-white/[0.04] p-4">
+    <div className="rounded-3xl border border-white/8 bg-white/[0.04] p-4 sm:p-5">
       <h2 className="text-sm font-semibold text-white">{title}</h2>
       <p className="mt-2 text-sm leading-6 text-slate-400">{body}</p>
     </div>

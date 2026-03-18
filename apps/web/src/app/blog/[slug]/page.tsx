@@ -57,7 +57,7 @@ print(result)` },
       { type: "p", content: "The retriever automatically handles multi-backend search, content extraction, token budgeting, and citation tracking. Your LLM receives clean, relevant content ready to use." },
       { type: "h2", content: "What Fetchium does behind the scenes" },
       { type: "ul", content: [
-        "Dispatches your query to 11+ backends in parallel (DuckDuckGo, Brave, GitHub, StackOverflow, and more)",
+        "Dispatches your query to 17 backends in parallel (DuckDuckGo, Brave, GitHub, StackOverflow, and more)",
         "Ranks results using HyperFusion — 8 signals including BM25, semantic similarity, and source authority",
         "Extracts clean content from each result URL using the 5-layer CEP pipeline",
         "Packs the most relevant content into your 4,096-token budget using QATBE",

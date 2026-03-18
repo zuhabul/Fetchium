@@ -44,7 +44,13 @@ pub fn build_router(state: AppState) -> Router {
             post(handlers::submit_youtube_analyze_job),
         )
         .route("/jobs/:id", get(handlers::get_job_status))
-        .route("/usage", get(handlers_auth::get_usage));
+        .route("/dashboard/billing", get(handlers_auth::get_dashboard_billing))
+        .route("/dashboard/overview", get(handlers_auth::get_dashboard_overview))
+        .route("/dashboard/quickstart", get(handlers_auth::get_dashboard_quickstart))
+        .route("/dashboard/settings", get(handlers_auth::get_dashboard_settings).patch(handlers_auth::update_dashboard_settings))
+        .route("/dashboard/usage", get(handlers_auth::get_dashboard_usage))
+        .route("/usage", get(handlers_auth::get_usage))
+        .route("/meta/routes", get(handlers_auth::get_route_registry));
 
     // Admin endpoints (require X-Admin-Secret header, for MVP)
     let v1_admin = Router::new()
@@ -113,6 +119,8 @@ pub fn build_router(state: AppState) -> Router {
             "/billing/webhooks/:id/replay",
             post(admin::billing::webhook_replay),
         )
+        .route("/billing/:org_id", get(admin::billing::for_org))
+        .route("/billing/:org_id/credits", get(admin::billing::credits))
         .route("/billing/:org_id/refund", post(admin::billing::refund))
         .route("/billing/:org_id/credit", post(admin::billing::credit))
         .route("/billing/:org_id/invoices", get(admin::billing::invoices))
@@ -124,7 +132,7 @@ pub fn build_router(state: AppState) -> Router {
         )
         .route("/crm/accounts/:org_id/notes", post(admin::crm::add_note))
         // Support
-        .route("/support/tickets", get(admin::support::list))
+        .route("/support/tickets", get(admin::support::list).post(admin::support::create))
         .route("/support/tickets/:id", get(admin::support::get))
         .route("/support/tickets/:id/notes", post(admin::support::add_note))
         .route("/support/tickets/:id/assign", patch(admin::support::assign))
@@ -150,7 +158,10 @@ pub fn build_router(state: AppState) -> Router {
             post(admin::incidents::add_timeline),
         )
         .route("/incidents/:id/resolve", post(admin::incidents::resolve))
-        .route("/incidents/:id/postmortem", post(admin::incidents::postmortem))
+        .route(
+            "/incidents/:id/postmortem",
+            post(admin::incidents::postmortem),
+        )
         // Campaigns — static paths before dynamic :id
         .route(
             "/campaigns",
@@ -179,6 +190,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/system/stats", get(admin::metrics::system_stats))
         .route("/system/logs", get(admin::metrics::system_logs))
         .route("/system/jobs", get(admin::metrics::system_jobs))
+        .route("/cache/clear", post(admin::metrics::cache_clear))
         .route("/db/query", post(admin::db_query::run_query))
         // Universal search
         .route("/search", get(admin::search::search))

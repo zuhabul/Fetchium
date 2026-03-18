@@ -3,9 +3,11 @@ use crate::config::FetchiumConfig;
 use crate::error::FetchiumError;
 use crate::extract::pipeline::extract as cep_extract;
 use crate::http::client::HttpClient;
-use crate::rank::fusion::{detect_intent, QueryIntent};
+use crate::rank::fusion::detect_intent;
+use crate::rank::{assess_quality, rerank, ConfidenceLevel};
 use crate::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
 use serde_json::{json, Value};
+use std::collections::HashSet;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
@@ -122,13 +124,13 @@ async fn semantic_rerank(
     query: &str,
     mut results: Vec<crate::types::ResultItem>,
 ) -> Vec<crate::types::ResultItem> {
-    if results.len() <= 1 {
+    if results.len() <= 1 || is_health_sensitive_query(query) {
         return results;
     }
 
     let ollama_url =
         std::env::var("OLLAMA_URL").unwrap_or_else(|_| "http://localhost:11434".to_string());
-    
+
     let client = match reqwest::Client::builder()
         .timeout(Duration::from_millis(500))
         .build()
@@ -138,7 +140,10 @@ async fn semantic_rerank(
     };
 
     // Fast check if Ollama is even there
-    if tokio::time::timeout(Duration::from_millis(100), client.get(&ollama_url).send()).await.is_err() {
+    if tokio::time::timeout(Duration::from_millis(100), client.get(&ollama_url).send())
+        .await
+        .is_err()
+    {
         return results;
     }
 
@@ -201,6 +206,36 @@ async fn semantic_rerank(
     });
     tracing::debug!("Semantic rerank: reranked {} results", results.len());
     results
+}
+
+fn is_health_sensitive_query(query: &str) -> bool {
+    let lower = query.to_lowercase();
+    [
+        "medication",
+        "medicine",
+        "drug",
+        "drugs",
+        "dose",
+        "dosage",
+        "side effect",
+        "side effects",
+        "symptom",
+        "symptoms",
+        "treatment",
+        "treatments",
+        "diagnosis",
+        "disease",
+        "blood pressure",
+        "hypertension",
+        "diabetes",
+        "vaccine",
+        "vaccination",
+        "therapy",
+        "pain",
+        "cancer",
+    ]
+    .iter()
+    .any(|pattern| lower.contains(pattern))
 }
 
 // ─── Semantic Fact Fusion ────────────────────────────────────────────────────
@@ -349,8 +384,10 @@ async fn extract_structured(content: &str, schema: &Value, http: &HttpClient) ->
     serde_json::from_str(&extract_json_from_text(&content_str)).ok()
 }
 
-use crate::intelligence::acs::{AdversarialContentShield, AcsAction};
-use crate::intelligence::crp::{CrpContradiction, Severity, resolve as crp_resolve, shared_word_ratio};
+use crate::intelligence::acs::AdversarialContentShield;
+use crate::intelligence::crp::{
+    resolve as crp_resolve, shared_word_ratio, CrpContradiction, Severity,
+};
 
 // ─── Search Pipeline ──────────────────────────────────────────────────────────
 
@@ -379,11 +416,67 @@ pub async fn search(
         token_budget,
         include_content,
     } = request;
-    let start = Instant::now();
 
-    let orch_config = OrchestratorConfig::from_fetchium_config(config, max_sources);
+    // Check cache first for high-throughput repeated queries
+    let cache_key = format!("search:{}:{}:{}:{}:{}", query, max_sources, tier, token_budget, include_content);
+    if let Some(c) = cache {
+        if let Some(cached) = c.get::<Value>(&cache_key).await {
+            tracing::debug!("Search cache hit: {}", query);
+            let mut response = cached;
+            if let Some(meta) = response.get_mut("meta") {
+                meta["from_cache"] = json!(true);
+            }
+            return Ok(response);
+        }
+    }
+
+    let start = Instant::now();
+    let retrieval_max_sources = if needs_deeper_recall_query(query) {
+        max_sources.max(10)
+    } else {
+        max_sources
+    };
+
+    let orch_config = OrchestratorConfig::from_fetchium_config(config, retrieval_max_sources);
     let orchestrator = SearchOrchestrator::new(http.clone(), orch_config);
-    let results = orchestrator.search(query, Some(max_sources)).await?;
+    let mut results = orchestrator
+        .search(query, Some(retrieval_max_sources))
+        .await?;
+
+    let unique_domains = count_unique_domains(&results);
+    let multilingual_query = query.chars().any(|c| c.is_alphabetic() && !c.is_ascii());
+    let strong_recall = results.len() >= max_sources as usize;
+    let adequate_recall_diversity = results.len() >= 6 && unique_domains >= 4;
+    let sparse_recall = results.len() < 3 || unique_domains < 2;
+    let quality = assess_quality(&results, query);
+    if matches!(
+        quality.confidence,
+        ConfidenceLevel::Low | ConfidenceLevel::VeryLow
+    ) && sparse_recall
+        && !is_expensive_comparison_query(query)
+        && !(strong_recall
+        || adequate_recall_diversity
+        || (multilingual_query && results.len() >= 8))
+    {
+        let mut seen_urls: HashSet<String> = results.iter().map(|r| r.url.clone()).collect();
+        for corrective_query in generate_corrective_queries(query).into_iter().take(1) {
+            let corrective_results = orchestrator
+                .search(&corrective_query, Some(retrieval_max_sources.min(6)))
+                .await
+                .unwrap_or_default();
+            for mut result in corrective_results {
+                if seen_urls.insert(result.url.clone()) {
+                    result.backend = crate::types::BackendId::Searxng;
+                    results.push(result);
+                }
+            }
+        }
+        results = rerank(results, query);
+        results.truncate(retrieval_max_sources as usize);
+        for (idx, result) in results.iter_mut().enumerate() {
+            result.rank = (idx + 1) as u32;
+        }
+    }
 
     let result_id = Uuid::new_v4().to_string();
     let needs_extraction = include_content || matches!(tier, "detailed" | "complete");
@@ -396,9 +489,8 @@ pub async fn search(
     // Parallelize reranking, fact fusion, and ACS analysis
     let results_for_rerank = results.clone();
     let query_for_rerank = query.to_string();
-    let rerank_handle = tokio::spawn(async move {
-        semantic_rerank(&query_for_rerank, results_for_rerank).await
-    });
+    let rerank_handle =
+        tokio::spawn(async move { semantic_rerank(&query_for_rerank, results_for_rerank).await });
 
     let top_snippets: Vec<(usize, String)> = results
         .iter()
@@ -416,7 +508,7 @@ pub async fn search(
     // Initialize ACS
     let acs = AdversarialContentShield::new();
 
-    let items: Vec<Value> = if needs_extraction {
+    let mut items: Vec<Value> = if needs_extraction {
         // Parallel URL fetching + CEP extraction (starts immediately, doesn't wait for rerank)
         let mut handles = std::collections::HashMap::with_capacity(results.len());
         for r in &results {
@@ -438,19 +530,19 @@ pub async fn search(
 
         // Wait for rerank result to know the final order
         let reranked_results = rerank_handle.await.unwrap_or_else(|_| results.clone());
-        
+
         let mut items = Vec::with_capacity(reranked_results.len());
         for (idx, r) in reranked_results.iter().enumerate() {
             // Take the handle for this URL
             let handle = handles.remove(&r.url);
-            
+
             // Wait for extraction if needed (but it was already running!)
             let (snippet, extracted) = if let Some(h) = handle {
                 h.await.unwrap_or_else(|_| (r.snippet.clone(), None))
             } else {
                 (r.snippet.clone(), None)
             };
-            
+
             let clean = clean_snippet(&snippet);
             let domain = HttpClient::extract_domain(&r.url);
             let acs_result = acs.analyze(extracted.as_deref().unwrap_or(&clean), &domain);
@@ -509,27 +601,41 @@ pub async fn search(
             .collect()
     };
 
+    if items.len() > max_sources as usize {
+        items.truncate(max_sources as usize);
+        for (idx, item) in items.iter_mut().enumerate() {
+            item["source_index"] = json!(idx + 1);
+        }
+    }
+
     // --- CRP: Contradiction Resolution ---
     // If we have at least 2 top results, check for simple contradictions
     let mut contradictions = Vec::new();
     if items.len() >= 2 {
         let claim_a = items[0]["snippet"].as_str().unwrap_or("");
         let claim_b = items[1]["snippet"].as_str().unwrap_or("");
-        
+
         // Simple heuristic: if they share keywords but have different numbers or negations
         let share_keywords = shared_word_ratio(claim_a, claim_b) > 0.3;
-        let contains_negation = (claim_a.contains(" not ") || claim_a.contains(" no ")) != (claim_b.contains(" not ") || claim_b.contains(" no "));
-        
+        let contains_negation = (claim_a.contains(" not ") || claim_a.contains(" no "))
+            != (claim_b.contains(" not ") || claim_b.contains(" no "));
+
         if share_keywords && contains_negation {
             let c = CrpContradiction {
                 claim_a: claim_a.to_string(),
                 source_a_domain: HttpClient::extract_domain(items[0]["url"].as_str().unwrap_or("")),
                 source_a_trust: items[0]["trust_score"].as_f64().unwrap_or(0.5),
-                source_a_date: items[0].get("published_date").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                source_a_date: items[0]
+                    .get("published_date")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string()),
                 claim_b: claim_b.to_string(),
                 source_b_domain: HttpClient::extract_domain(items[1]["url"].as_str().unwrap_or("")),
                 source_b_trust: items[1]["trust_score"].as_f64().unwrap_or(0.5),
-                source_b_date: items[1].get("published_date").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                source_b_date: items[1]
+                    .get("published_date")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string()),
                 severity: Severity::Medium,
             };
             if let Ok(res) = crp_resolve(&c, |_| 0.5) {
@@ -604,21 +710,79 @@ pub async fn search(
     });
 
     if let Some(c) = cache {
-        // Semantic TTL: cache duration based on query intent
-        let _cache_ttl = match intent {
-            QueryIntent::CurrentEvents => Duration::from_secs(60),
-            QueryIntent::Factual => Duration::from_secs(86400 * 7),
-            QueryIntent::HowTo => Duration::from_secs(86400 * 30),
-            QueryIntent::Academic => Duration::from_secs(86400 * 14),
-            QueryIntent::Code => Duration::from_secs(86400 * 7),
-            QueryIntent::Opinion => Duration::from_secs(3600 * 6),
-            QueryIntent::Casual => Duration::from_secs(3600 * 12),
-            _ => Duration::from_secs(3600 * 4),
-        };
         c.set(&format!("expand:{result_id}"), &response).await;
+        c.set(&cache_key, &response).await;
     }
 
     Ok(response)
+}
+
+fn needs_deeper_recall_query(query: &str) -> bool {
+    let lower = query.to_lowercase();
+    lower.contains(" vs ")
+        || lower.contains("compare")
+        || lower.contains("comparison")
+        || lower.contains("versus")
+        || lower.contains("status code")
+        || lower.contains("http ")
+        || lower.contains("rfc ")
+        || lower.contains("error code")
+        || lower.contains("medication")
+        || lower.contains("medicine")
+        || lower.contains("drug")
+        || lower.contains("treatment")
+        || lower.contains("diagnosis")
+        || lower.contains("symptoms")
+        || lower.contains("blood pressure")
+        || lower.contains("hypertension")
+        || lower.contains("vaccine")
+        || query.split_whitespace().count() >= 8
+}
+
+fn is_expensive_comparison_query(query: &str) -> bool {
+    let lower = query.to_lowercase();
+    lower.contains(" vs ")
+        || lower.contains("versus")
+        || lower.contains("comparison")
+        || lower.contains("compare")
+}
+
+fn generate_corrective_queries(query: &str) -> Vec<String> {
+    let q = query.trim();
+    let lower = q.to_lowercase();
+    let mut out = Vec::new();
+
+    if !lower.contains("overview") {
+        out.push(format!("{q} overview"));
+    }
+    if !lower.contains("explained") {
+        out.push(format!("{q} explained"));
+    }
+
+    let stripped = q
+        .split_whitespace()
+        .filter(|word| {
+            let lower = word.to_lowercase();
+            !matches!(
+                lower.as_str(),
+                "latest" | "recent" | "today" | "this" | "year" | "month" | "week"
+            ) && !lower.chars().all(|c| c.is_ascii_digit())
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+    if !stripped.is_empty() && stripped != q {
+        out.push(stripped);
+    }
+
+    out
+}
+
+fn count_unique_domains(items: &[crate::types::ResultItem]) -> usize {
+    items
+        .iter()
+        .filter_map(|item| item.url.split('/').nth(2))
+        .collect::<HashSet<_>>()
+        .len()
 }
 
 // ─── Fetch Pipeline ───────────────────────────────────────────────────────────

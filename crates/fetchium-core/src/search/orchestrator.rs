@@ -4,9 +4,11 @@
 //! Dispatches to all enabled backends in parallel via tokio::spawn,
 //! deduplicates via URL normalization + SimHash, then applies HyperFusion ranking.
 
+use crate::ai::ollama::OllamaClient;
+use crate::ai::types::{AiConfig, ChatMessage};
 use crate::error::FetchiumResult;
 use crate::http::HttpClient;
-use crate::query::locale::detect_query_locale;
+use crate::query::locale::{detect_query_language, detect_query_locale};
 use crate::rank;
 use crate::rank::fusion::{detect_intent, hyperfusion_rank};
 use crate::resilience::{Bulkhead, CircuitBreaker};
@@ -40,6 +42,12 @@ use tokio::sync::Mutex as AsyncMutex;
 use tokio::time::timeout;
 use tracing::{info, warn};
 
+#[derive(Debug, Clone, Default)]
+struct BengaliPlannerPlan {
+    retry_query: Option<String>,
+    source_pack_queries: Vec<String>,
+}
+
 /// Waiters blocked on an in-flight identical query (singleflight pattern).
 type InFlightWaiters = Vec<oneshot::Sender<Vec<ResultItem>>>;
 /// Shared in-flight dedup map: query_key → list of waiting oneshot senders.
@@ -62,6 +70,11 @@ pub struct OrchestratorConfig {
     pub freshness_need: f64,
     /// Use HyperFusion ranking (true) or legacy BM25 rerank (false).
     pub use_hyperfusion: bool,
+    /// Premium API keys for optional paid backends.
+    pub tavily_api_keys: Vec<String>,
+    pub serper_api_keys: Vec<String>,
+    pub exa_api_keys: Vec<String>,
+    pub firecrawl_api_keys: Vec<String>,
 }
 
 /// Reliable API-based backends that never require scraping or CAPTCHAs.
@@ -101,6 +114,10 @@ impl Default for OrchestratorConfig {
             simhash_threshold: 6,
             freshness_need: 0.5,
             use_hyperfusion: true,
+            tavily_api_keys: Vec::new(),
+            serper_api_keys: Vec::new(),
+            exa_api_keys: Vec::new(),
+            firecrawl_api_keys: Vec::new(),
         }
     }
 }
@@ -115,6 +132,7 @@ impl OrchestratorConfig {
         fetchium_config: &crate::config::FetchiumConfig,
         max_results: u32,
     ) -> Self {
+        let internal_headroom = max_results.max(10);
         let mut enabled_backends = fetchium_config
             .search
             .backends
@@ -134,15 +152,53 @@ impl OrchestratorConfig {
         }
 
         Self {
-            max_results_per_backend: max_results + 5,
+            max_results_per_backend: internal_headroom + 5,
             max_total_results: max_results,
             backend_timeout: Duration::from_secs(fetchium_config.search.timeout_secs),
             enabled_backends,
             simhash_threshold: fetchium_config.ranking.simhash_threshold,
             freshness_need: fetchium_config.ranking.freshness_need,
             use_hyperfusion: true,
+            tavily_api_keys: merge_api_keys(
+                &fetchium_config.search.tavily_api_key,
+                &fetchium_config.search.tavily_api_keys,
+                "TAVILY_API_KEY",
+            ),
+            serper_api_keys: merge_api_keys(
+                &fetchium_config.search.serper_api_key,
+                &fetchium_config.search.serper_api_keys,
+                "SERPER_API_KEY",
+            ),
+            exa_api_keys: merge_api_keys(
+                &fetchium_config.search.exa_api_key,
+                &fetchium_config.search.exa_api_keys,
+                "EXA_API_KEY",
+            ),
+            firecrawl_api_keys: merge_api_keys(
+                &fetchium_config.search.firecrawl_api_key,
+                &fetchium_config.search.firecrawl_api_keys,
+                "FIRECRAWL_API_KEY",
+            ),
         }
     }
+}
+
+fn merge_api_keys(config_primary: &Option<String>, config_keys: &[String], env_var: &str) -> Vec<String> {
+    let mut keys = Vec::new();
+    if let Some(key) = config_primary.as_ref().filter(|key| !key.trim().is_empty()) {
+        keys.push(key.clone());
+    }
+    for key in config_keys.iter().filter(|key| !key.trim().is_empty()) {
+        if !keys.contains(key) {
+            keys.push(key.clone());
+        }
+    }
+    if let Ok(env_key) = std::env::var(env_var) {
+        if !env_key.trim().is_empty() && !keys.contains(&env_key) {
+            keys.push(env_key);
+        }
+    }
+    keys
 }
 
 /// Manages multiple search backends, dispatches in parallel, fuses results.
@@ -257,31 +313,42 @@ impl SearchOrchestrator {
                     ))));
                 }
                 BackendId::Tavily => {
-                    if let Some(ref key) = config.tavily_api_key {
+                    if config.tavily_api_keys.is_empty() {
+                        warn!("Tavily backend enabled but no API key configured — skipping");
+                    } else {
                         backends.push(Arc::new(TavilyBackend::new(
                             http_client.clone(),
-                            key.clone(),
+                            config.tavily_api_keys.clone(),
                         )));
                     }
                 }
                 BackendId::Serper => {
-                    if let Some(ref key) = config.serper_api_key {
+                    if config.serper_api_keys.is_empty() {
+                        warn!("Serper backend enabled but no API key configured — skipping");
+                    } else {
                         backends.push(Arc::new(SerperBackend::new(
                             http_client.clone(),
-                            key.clone(),
+                            config.serper_api_keys.clone(),
                         )));
                     }
                 }
                 BackendId::Exa => {
-                    if let Some(ref key) = config.exa_api_key {
-                        backends.push(Arc::new(ExaBackend::new(http_client.clone(), key.clone())));
+                    if config.exa_api_keys.is_empty() {
+                        warn!("Exa backend enabled but no API key configured — skipping");
+                    } else {
+                        backends.push(Arc::new(ExaBackend::new(
+                            http_client.clone(),
+                            config.exa_api_keys.clone(),
+                        )));
                     }
                 }
                 BackendId::Firecrawl => {
-                    if let Some(ref key) = config.firecrawl_api_key {
+                    if config.firecrawl_api_keys.is_empty() {
+                        warn!("Firecrawl backend enabled but no API key configured — skipping");
+                    } else {
                         backends.push(Arc::new(FirecrawlBackend::new(
                             http_client.clone(),
-                            key.clone(),
+                            config.firecrawl_api_keys.clone(),
                         )));
                     }
                 }
@@ -372,8 +439,45 @@ impl SearchOrchestrator {
                          use SearchOrchestrator::with_pool(); skipping Bing"
                     );
                 }
-                BackendId::Tavily | BackendId::Serper | BackendId::Exa | BackendId::Firecrawl => {
-                    warn!("Premium API backend {:?} skipped — third-party APIs are disabled", id);
+                BackendId::Tavily => {
+                    if config.tavily_api_keys.is_empty() {
+                        warn!("Tavily backend enabled but no API key configured — skipping");
+                    } else {
+                        backends.push(Arc::new(TavilyBackend::new(
+                            http_client.clone(),
+                            config.tavily_api_keys.clone(),
+                        )));
+                    }
+                }
+                BackendId::Serper => {
+                    if config.serper_api_keys.is_empty() {
+                        warn!("Serper backend enabled but no API key configured — skipping");
+                    } else {
+                        backends.push(Arc::new(SerperBackend::new(
+                            http_client.clone(),
+                            config.serper_api_keys.clone(),
+                        )));
+                    }
+                }
+                BackendId::Exa => {
+                    if config.exa_api_keys.is_empty() {
+                        warn!("Exa backend enabled but no API key configured — skipping");
+                    } else {
+                        backends.push(Arc::new(ExaBackend::new(
+                            http_client.clone(),
+                            config.exa_api_keys.clone(),
+                        )));
+                    }
+                }
+                BackendId::Firecrawl => {
+                    if config.firecrawl_api_keys.is_empty() {
+                        warn!("Firecrawl backend enabled but no API key configured — skipping");
+                    } else {
+                        backends.push(Arc::new(FirecrawlBackend::new(
+                            http_client.clone(),
+                            config.firecrawl_api_keys.clone(),
+                        )));
+                    }
                 }
                 BackendId::GoogleScholar => {
                     warn!("GoogleScholar backend not yet implemented — skipping");
@@ -474,7 +578,11 @@ impl SearchOrchestrator {
     }
 
     /// Internal: run the full search pipeline without singleflight wrapping.
-    async fn execute_search(&self, query: &str, max: u32) -> FetchiumResult<Vec<ResultItem>> {
+    async fn execute_search(
+        &self,
+        query: &str,
+        requested_max: u32,
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let per_backend = self.config.max_results_per_backend;
         let timeout_dur = self.config.backend_timeout;
 
@@ -504,10 +612,12 @@ impl SearchOrchestrator {
             _ => None,
         };
         let locale = detect_query_locale(effective_query).map(|s| s.to_string());
+        let language = detect_query_language(effective_query).map(|s| s.to_string());
         let search_ctx = SearchContext {
             intent,
             time_range,
             locale,
+            language,
         };
 
         let available_ids: Vec<BackendId> = self.backends.iter().map(|b| b.id()).collect();
@@ -519,11 +629,84 @@ impl SearchOrchestrator {
         let selection = self
             .backend_selector
             .select(&intent, &available_ids, &unhealthy_ids);
+        let health_sensitive_query = is_health_sensitive_query(effective_query);
+        let strict_health_query = is_strict_health_query(effective_query);
+        let health_explainer_query = is_health_explainer_query(effective_query);
+        let language_learning_query = is_language_learning_query(effective_query);
+        let query_has_non_ascii = has_non_ascii_letters(query);
+        let original_query_language =
+            detect_query_language(query).or_else(|| detect_query_language(effective_query));
+        let effective_query_lower = effective_query.to_lowercase();
+        let comparison_like_query = effective_query_lower.contains(" vs ")
+            || effective_query_lower.contains("compare")
+            || effective_query_lower.contains("comparison")
+            || effective_query_lower.contains("versus");
+        let protocol_numeric_query = effective_query_lower.contains("status code")
+            || effective_query_lower.contains("http ")
+            || effective_query_lower.contains("rfc ")
+            || effective_query_lower.contains("error code");
+        let long_query = effective_query.split_whitespace().count() >= 8;
+        let deeper_recall_query =
+            health_sensitive_query || comparison_like_query || protocol_numeric_query || long_query;
+        let effective_query_scripts = detect_scripts(effective_query);
+        let effective_query_has_non_latin_script =
+            effective_query_scripts.iter().any(|s| *s != Script::Latin);
+        let retrieval_max = if deeper_recall_query {
+            requested_max.max(10)
+        } else {
+            requested_max
+        };
         let selected_set: std::collections::HashSet<String> = selection
             .backends
             .iter()
+            .filter(|b| !health_sensitive_query || health_sensitive_backend_allowed(b))
             .map(|b| format!("{b:?}"))
             .collect();
+        let mut selected_set = selected_set;
+        let searxng_available = available_ids.contains(&BackendId::Searxng);
+        let bengali_technical_explainer_query =
+            is_multilingual_technical_explainer_query(query, original_query_language)
+                && matches!(original_query_language, Some("bd" | "bn"));
+        let bengali_planner_plan = if bengali_technical_explainer_query {
+            plan_bengali_technical_query(query).await.unwrap_or_default()
+        } else {
+            BengaliPlannerPlan::default()
+        };
+        if (health_sensitive_query || query_has_non_ascii) && searxng_available {
+            selected_set.insert(format!("{:?}", BackendId::Searxng));
+        }
+        if searxng_available && effective_query_has_non_latin_script {
+            // Non-Latin-script queries fare better through SearXNG's federated
+            // engines than DDG's HTML scraper on this host.
+            selected_set.remove(&format!("{:?}", BackendId::DuckDuckGo));
+        }
+        if bengali_technical_explainer_query {
+            selected_set.remove(&format!("{:?}", BackendId::Searxng));
+            selected_set.remove(&format!("{:?}", BackendId::Wikipedia));
+            selected_set.remove(&format!("{:?}", BackendId::HackerNews));
+            selected_set.remove(&format!("{:?}", BackendId::Reddit));
+            selected_set.remove(&format!("{:?}", BackendId::Arxiv));
+            selected_set.remove(&format!("{:?}", BackendId::Github));
+            selected_set.remove(&format!("{:?}", BackendId::StackOverflow));
+            selected_set.remove(&format!("{:?}", BackendId::Bing));
+            selected_set.insert(format!("{:?}", BackendId::DuckDuckGo));
+            if available_ids.contains(&BackendId::Brave) {
+                selected_set.insert(format!("{:?}", BackendId::Brave));
+            }
+            if available_ids.contains(&BackendId::Google) {
+                selected_set.insert(format!("{:?}", BackendId::Google));
+            }
+        }
+        if health_explainer_query {
+            selected_set.remove(&format!("{:?}", BackendId::Google));
+            selected_set.remove(&format!("{:?}", BackendId::Bing));
+        }
+        if language_learning_query
+            || is_license_query(effective_query)
+            || is_philosophy_query(effective_query)
+        {
+            selected_set.remove(&format!("{:?}", BackendId::Bing));
+        }
 
         info!(
             "Orchestrator: {:?} intent={:?}, {} of {} backend(s) selected, max={}",
@@ -531,7 +714,7 @@ impl SearchOrchestrator {
             intent,
             selected_set.len(),
             self.backends.len(),
-            max
+            requested_max
         );
 
         self.metrics.inc_searches();
@@ -616,12 +799,21 @@ impl SearchOrchestrator {
         // Return as soon as we have enough results from quality backends OR a time budget expires.
         // Don't wait for any specific backend — return early when we have enough for ranking.
         let mut all: Vec<ResultItem> = Vec::new();
-        let target_results = (max as usize) * 2; // 2x headroom for dedup/ranking is usually enough
-        
+        let _target_results = if deeper_recall_query {
+            ((retrieval_max as usize) * 3).max(15)
+        } else {
+            (requested_max as usize) * 3 / 2 // Relaxed from 2x for faster response
+        };
+
         // Dynamic early-return deadline: 1.5s for fast response, 6.0s hard timeout
-        let early_deadline = tokio::time::Instant::now() + Duration::from_millis(1500);
+        let early_deadline = tokio::time::Instant::now()
+            + if deeper_recall_query {
+                Duration::from_millis(2800)
+            } else {
+                Duration::from_millis(1500)
+            };
         let hard_deadline = tokio::time::Instant::now() + timeout_dur;
-        
+
         let mut quality_backends_responded: u32 = 0;
         let mut premium_backends_responded: u32 = 0;
 
@@ -632,7 +824,10 @@ impl SearchOrchestrator {
             r = remaining.next() => r,
             _ = tokio::time::sleep_until(early_deadline) => {
                 // If we have enough results from at least 2 quality backends, return early at 1.5s
-                if all.len() >= max as usize && quality_backends_responded >= 2 {
+                if all.len() >= requested_max as usize
+                    && quality_backends_responded
+                        >= if deeper_recall_query { 3 } else { 2 }
+                {
                     info!("Orchestrator: early-return (fast) with {} results, {} backends still pending",
                           all.len(), remaining.len());
                     None
@@ -653,32 +848,44 @@ impl SearchOrchestrator {
                     let quality = (results.len() as f64 / 10.0).min(1.0);
                     self.backend_selector
                         .report_outcome(&backend_id, results.len(), quality);
-                    
+
                     if !results.is_empty() {
-                        if matches!(backend_id, BackendId::Tavily | BackendId::Serper | BackendId::Exa | BackendId::Firecrawl) {
+                        if matches!(
+                            backend_id,
+                            BackendId::Tavily
+                                | BackendId::Serper
+                                | BackendId::Exa
+                                | BackendId::Firecrawl
+                        ) {
                             premium_backends_responded += 1;
                             quality_backends_responded += 1;
                         } else if !matches!(backend_id, BackendId::Wikipedia | BackendId::Arxiv) {
                             quality_backends_responded += 1;
                         }
                     }
-                    
+
                     all.extend(results);
-                    
-                    // Super-early return: if we have 2+ premium backends and target results, return immediately
-                    if all.len() >= target_results && premium_backends_responded >= 2 {
+
+                    // Super-early return: if we have 1+ premium backend and enough results, return immediately.
+                    // This dramatically improves tail latency when using high-quality paid APIs.
+                    if !deeper_recall_query
+                        && all.len() >= (requested_max as usize)
+                        && premium_backends_responded >= 1
+                    {
                         info!(
-                            "Orchestrator: super-early return with {} results ({} premium)",
-                            all.len(),
-                            premium_backends_responded
+                            "Orchestrator: super-early return (premium) with {} results",
+                            all.len()
                         );
                         break;
                     }
-                    
-                    // Standard early return: enough results from enough quality sources
-                    if all.len() >= target_results && quality_backends_responded >= 4 {
+
+                    // Standard early return: enough results from enough quality sources.
+                    // Relaxed from 2x headroom to 1.5x for faster response.
+                    if all.len() >= ((requested_max as usize) * 3 / 2)
+                        && quality_backends_responded >= if deeper_recall_query { 4 } else { 3 }
+                    {
                         info!(
-                            "Orchestrator: early-return with {} results, {} backends still pending",
+                            "Orchestrator: early-return (quality) with {} results, {} backends still pending",
                             all.len(),
                             remaining.len()
                         );
@@ -692,7 +899,7 @@ impl SearchOrchestrator {
             }
         }
 
-        let rescue_threshold = ((max as usize) / 2).max(3);
+        let rescue_threshold = ((retrieval_max as usize) / 2).max(3);
         if all.len() <= rescue_threshold {
             info!(
                 "Orchestrator: low recall from selected backends for {:?} ({} results) — running fallback sweep",
@@ -703,6 +910,17 @@ impl SearchOrchestrator {
             for backend in &self.backends {
                 let id_str = format!("{:?}", backend.id());
                 if selected_set.contains(&id_str) {
+                    continue;
+                }
+                if bengali_technical_explainer_query
+                    && !matches!(
+                        backend.id(),
+                        BackendId::DuckDuckGo | BackendId::Brave | BackendId::Google
+                    )
+                {
+                    continue;
+                }
+                if health_sensitive_query && !health_sensitive_backend_allowed(&backend.id()) {
                     continue;
                 }
                 // Respect circuit breaker on fallback too.
@@ -730,12 +948,206 @@ impl SearchOrchestrator {
                     all.extend(results);
                 }
             }
-            if all.is_empty() {
+            if all.is_empty() && !bengali_technical_explainer_query {
                 info!(
                     "Orchestrator: no results from any backend for {:?}",
                     effective_query
                 );
                 return Ok(Vec::new());
+            }
+        }
+
+        if health_sensitive_query
+            && !all
+                .iter()
+                .any(|r| strong_health_candidate(r, effective_query))
+        {
+            info!(
+                "Orchestrator: no strong health candidates for {:?} — retrying DuckDuckGo with extended timeout",
+                effective_query
+            );
+            if let Some(backend) = self
+                .backends
+                .iter()
+                .find(|backend| backend.id() == BackendId::DuckDuckGo)
+                .cloned()
+            {
+                if let Ok(Ok(results)) = timeout(
+                    Duration::from_secs(7),
+                    backend.search_with_context(effective_query, per_backend, &search_ctx),
+                )
+                .await
+                {
+                    if !results.is_empty() {
+                        info!(
+                            "Orchestrator: DuckDuckGo health retry produced {} results",
+                            results.len()
+                        );
+                        all.extend(results);
+                    }
+                }
+            }
+        }
+
+        if intent == rank::fusion::QueryIntent::Comparison
+            && !all.iter().any(|r| {
+                let haystack = format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
+                comparison_entity_match_count(effective_query, &haystack)
+                    >= comparison_entity_threshold(effective_query)
+            })
+        {
+            info!(
+                "Orchestrator: no strong comparison candidates for {:?} — retrying DuckDuckGo with extended timeout",
+                effective_query
+            );
+            if let Some(backend) = self
+                .backends
+                .iter()
+                .find(|backend| backend.id() == BackendId::DuckDuckGo)
+                .cloned()
+            {
+                if let Ok(Ok(results)) = timeout(
+                    Duration::from_secs(7),
+                    backend.search_with_context(effective_query, per_backend, &search_ctx),
+                )
+                .await
+                {
+                    if !results.is_empty() {
+                        info!(
+                            "Orchestrator: DuckDuckGo comparison retry produced {} results",
+                            results.len()
+                        );
+                        all.extend(results);
+                    }
+                }
+            }
+        }
+
+        if matches!(
+            intent,
+            rank::fusion::QueryIntent::HowTo | rank::fusion::QueryIntent::Code
+        ) && !all.iter().any(|r| strong_technical_candidate(r, intent))
+        {
+            let retry_query = docs_focused_query(effective_query);
+            info!(
+                "Orchestrator: no strong technical candidates for {:?} — retrying DuckDuckGo with {:?}",
+                effective_query,
+                retry_query
+            );
+            if let Some(backend) = self
+                .backends
+                .iter()
+                .find(|backend| backend.id() == BackendId::DuckDuckGo)
+                .cloned()
+            {
+                if let Ok(Ok(results)) = timeout(
+                    Duration::from_secs(7),
+                    backend.search_with_context(&retry_query, per_backend, &search_ctx),
+                )
+                .await
+                {
+                    if !results.is_empty() {
+                        info!(
+                            "Orchestrator: DuckDuckGo technical retry produced {} results",
+                            results.len()
+                        );
+                        all.extend(results);
+                    }
+                }
+            }
+        }
+
+        if bengali_technical_explainer_query
+            && !all.iter().any(|r| {
+                let haystack = format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
+                multilingual_technical_explainer_match_count(query, &haystack, &r.url) >= 2
+            })
+        {
+            let retry_query = bengali_planner_plan
+                .retry_query
+                .clone()
+                .unwrap_or_else(|| bengali_technical_retry_query(query, effective_query));
+            info!(
+                "Orchestrator: no strong Bengali technical explainer candidates for {:?} — retrying web backends with {:?}",
+                effective_query,
+                retry_query
+            );
+            for (backend_id, retry_timeout) in [
+                (BackendId::Google, Duration::from_secs(10)),
+                (BackendId::Bing, Duration::from_secs(10)),
+                (BackendId::Brave, Duration::from_secs(8)),
+                (BackendId::DuckDuckGo, Duration::from_secs(8)),
+            ] {
+                if let Some(backend) = self.backends.iter().find(|b| b.id() == backend_id).cloned()
+                {
+                    if let Ok(Ok(results)) = timeout(
+                        retry_timeout,
+                        backend.search_with_context(&retry_query, per_backend, &search_ctx),
+                    )
+                    .await
+                    {
+                        if !results.is_empty() {
+                            all.extend(results.into_iter().filter(|r| {
+                                let haystack = format!(
+                                    "{} {}",
+                                    r.title.to_lowercase(),
+                                    r.snippet.to_lowercase()
+                                );
+                                multilingual_technical_trusted_source(&r.url)
+                                    || multilingual_technical_explainer_match_count(
+                                        effective_query,
+                                        &haystack,
+                                        &r.url,
+                                    ) >= 2
+                            }));
+                        }
+                    }
+                }
+            }
+        }
+
+        if bengali_technical_explainer_query
+            && !all.iter().any(|r| {
+                let haystack = format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
+                multilingual_technical_trusted_source(&r.url)
+                    || multilingual_technical_explainer_match_count(query, &haystack, &r.url) >= 2
+            })
+        {
+            let source_pack_queries = if bengali_planner_plan.source_pack_queries.is_empty() {
+                bengali_source_pack_queries(query, effective_query)
+            } else {
+                bengali_planner_plan.source_pack_queries.clone()
+            };
+            if !source_pack_queries.is_empty() {
+                info!(
+                    "Orchestrator: Bengali source-pack fallback for {:?} with {} targeted queries",
+                    effective_query,
+                    source_pack_queries.len()
+                );
+            }
+            for source_query in source_pack_queries {
+                for (backend_id, retry_timeout) in [
+                    (BackendId::Google, Duration::from_secs(10)),
+                    (BackendId::Bing, Duration::from_secs(10)),
+                    (BackendId::Brave, Duration::from_secs(8)),
+                ] {
+                    if let Some(backend) = self.backends.iter().find(|b| b.id() == backend_id).cloned()
+                    {
+                        if let Ok(Ok(results)) = timeout(
+                            retry_timeout,
+                            backend.search_with_context(&source_query, per_backend.min(6), &search_ctx),
+                        )
+                        .await
+                        {
+                            if !results.is_empty() {
+                                all.extend(results.into_iter().filter(|r| {
+                                    multilingual_technical_trusted_source(&r.url)
+                                        || bengali_ai_direct_source(&r.url)
+                                }));
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -802,19 +1214,54 @@ impl SearchOrchestrator {
         // results where query terms barely appear. This catches pollution from high-authority
         // domains that scored well on authority/consensus but have low actual relevance.
         {
-            let boost_words = extract_content_words(effective_query);
+            let boost_query_language =
+                detect_query_language(effective_query).or_else(|| detect_query_language(query));
+            let boost_words = extract_content_words(effective_query, boost_query_language);
+            let query_phrases = extract_query_phrases(query, detect_query_language(query));
             if boost_words.len() >= 2 {
                 for r in &mut ranked {
                     let haystack =
                         format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
-                    let matches = boost_words
-                        .iter()
-                        .filter(|w| haystack.contains(w.as_str()))
-                        .count();
+                    let matches = count_term_matches(&haystack, &boost_words);
                     let coverage = matches as f64 / boost_words.len() as f64;
                     // Scale: 100% coverage → 1.0x (no change), 0% → 0.3x penalty
                     // Steeper penalty catches off-topic results from high-authority domains
-                    let boost = 0.3 + (coverage * 0.7);
+                    let mut boost = 0.3 + (coverage * 0.7);
+                    let phrase_matches = count_phrase_matches(&haystack, &query_phrases);
+                    if phrase_matches > 0 {
+                        boost *= 1.0 + (phrase_matches.min(2) as f64 * 0.12);
+                    }
+                    if health_sensitive_query {
+                        boost *= health_authority_multiplier(&r.url);
+                    }
+                    if strict_health_query {
+                        boost *= medical_attribute_multiplier(effective_query, &haystack);
+                    } else if health_explainer_query {
+                        boost *= health_explainer_multiplier(effective_query, &haystack, &r.url);
+                    } else if language_learning_query {
+                        boost *= language_learning_multiplier(effective_query, &haystack, &r.url);
+                    } else if is_license_query(effective_query) {
+                        boost *= license_query_multiplier(effective_query, &haystack, &r.url);
+                    } else if is_philosophy_query(effective_query) {
+                        boost *= philosophy_query_multiplier(effective_query, &haystack, &r.url);
+                    } else if is_multilingual_technical_explainer_query(
+                        effective_query,
+                        boost_query_language,
+                    ) {
+                        boost *= multilingual_technical_explainer_multiplier(
+                            effective_query,
+                            &haystack,
+                            &r.url,
+                        );
+                    } else if intent == rank::fusion::QueryIntent::Comparison {
+                        boost *= comparison_multiplier(effective_query, &haystack, &r.url);
+                    } else if intent == rank::fusion::QueryIntent::HowTo
+                        || intent == rank::fusion::QueryIntent::Code
+                    {
+                        boost *= technical_howto_multiplier(effective_query, &haystack, &r.url);
+                    } else if health_sensitive_query {
+                        boost *= broad_health_multiplier(effective_query, &haystack, &r.url);
+                    }
                     if let Some(score) = r.score.as_mut() {
                         *score *= boost;
                     }
@@ -837,57 +1284,142 @@ impl SearchOrchestrator {
         //     that backends sometimes return when the actual article URL is unavailable.
         // (d) Spam domain blocklist: known junk forum/spam sites
         // (e) Image-only URL filter: Reddit/HN image posts with no textual content
-        let query_content_words = extract_content_words(effective_query);
+        let query_language =
+            detect_query_language(effective_query).or_else(|| detect_query_language(query));
+        let query_content_words = extract_content_words(effective_query, query_language);
+        let specificity_words = extract_specificity_words(&query_content_words);
+        let query_phrases = extract_query_phrases(query, detect_query_language(query));
+        let medical_query_relaxed = strict_health_query;
         let ranked_before_filter = ranked.clone();
         let pre_filter_count = ranked.len();
-        let multilingual_query = has_non_ascii_letters(query);
+        let multilingual_query = has_non_ascii_letters(query) || query_language.is_some();
+        let multilingual_foreign_query = multilingual_query;
 
         // Step 4b: Language-aware filtering (Exa-style).
         // For multilingual queries, boost results in the same script/language
         // and demote results that are clearly in a different language.
         if multilingual_query {
-            let query_scripts = detect_scripts(query);
+            let query_has_non_latin = effective_query_has_non_latin_script;
             ranked.retain(|r| {
                 let result_text = format!("{} {}", r.title, r.snippet);
                 let result_scripts = detect_scripts(&result_text);
                 // Keep result if it shares at least one non-Latin script with the query,
                 // OR if it's from a known authoritative domain (Wikipedia handles multilingual well)
-                let shares_script = query_scripts.iter().any(|s| result_scripts.contains(s));
+                let shares_script = effective_query_scripts
+                    .iter()
+                    .any(|s| result_scripts.contains(s));
                 let is_authoritative = r.url.contains("wikipedia.org");
-                shares_script || is_authoritative || result_scripts.contains(&Script::Latin)
+                shares_script
+                    || is_authoritative
+                    || (!query_has_non_latin && result_scripts.contains(&Script::Latin))
             });
             // If language filtering removed too many, fall back to unfiltered
             if ranked.len() < 3 {
                 ranked = ranked_before_filter.clone();
             }
         }
-        // Proportional term matching: for long queries require ~40% of content words
-        let strict_min_term_matches = if multilingual_query {
+        // Proportional term matching: for long queries require ~30% of content words (down from 40%).
+        // This avoids over-filtering high-quality results that don't repeat the entire query.
+        let strict_min_term_matches = if language_learning_query
+            || is_license_query(effective_query)
+            || is_philosophy_query(effective_query)
+        {
+            1
+        } else if multilingual_query {
             // For multilingual, still require 1 match if we have content words
             if query_content_words.len() >= 2 {
                 1
             } else {
                 0
             }
+        } else if medical_query_relaxed {
+            2
         } else if query_content_words.len() >= 7 {
-            (query_content_words.len() * 2 / 5).max(3) // ~40% for very long queries
-        } else if query_content_words.len() >= 5 {
-            3
-        } else if query_content_words.len() >= 3 {
+            (query_content_words.len() * 3 / 10).max(2) // ~30% for very long queries
+        } else if query_content_words.len() >= 4 {
             2
         } else {
             1
         };
         // Relaxed threshold: for comparison/code queries with many entities,
         // still require more than 1 term to avoid single-entity Wikipedia pages.
-        let relaxed_min_term_matches = if query_content_words.len() >= 4 {
-            2 // For multi-entity queries, require 2 even in relaxed mode
+        let relaxed_min_term_matches = if language_learning_query
+            || is_license_query(effective_query)
+            || is_philosophy_query(effective_query)
+        {
+            1
+        } else if query_content_words.len() >= 4 {
+            if medical_query_relaxed {
+                1
+            } else {
+                2
+            } // For multi-entity queries, require 2 even in relaxed mode
         } else {
             strict_min_term_matches.min(1)
         };
         ranked.retain(|r| {
+            let haystack = format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
+            if is_multilingual_technical_explainer_query(query, query_language)
+                && multilingual_technical_explainer_blocked_domain(&r.url)
+            {
+                return false;
+            }
+            let comparison_matches = comparison_entity_match_count(effective_query, &haystack);
+            let strong_technical_coverage =
+                strong_technical_coverage(effective_query, &haystack, &r.url);
+            let language_learning_matches =
+                language_learning_match_count(effective_query, &haystack, &r.url);
+            let medical_attribute_matches =
+                medical_attribute_match_count(effective_query, &haystack);
+            let license_candidate = is_license_query(effective_query)
+                && license_query_match_count(effective_query, &haystack, &r.url) >= 2;
+            let philosophy_candidate = is_philosophy_query(effective_query)
+                && philosophy_query_match_count(effective_query, &haystack, &r.url) >= 2;
+            let multilingual_technical_matches = multilingual_technical_explainer_match_count(
+                effective_query,
+                &haystack,
+                &r.url,
+            );
+            let trusted_bengali_technical_candidate =
+                matches!(query_language, Some("bn" | "bd"))
+                    && is_multilingual_technical_explainer_query(effective_query, query_language)
+                    && multilingual_technical_trusted_source(&r.url)
+                    && multilingual_technical_matches >= 1;
+            let score_floor = if (intent == rank::fusion::QueryIntent::Comparison
+                && comparison_matches >= comparison_entity_threshold(effective_query))
+                || (language_learning_query && language_learning_matches >= 2)
+            {
+                0.02
+            } else if (strict_health_query && medical_attribute_matches > 0)
+                || license_candidate
+                || philosophy_candidate
+                || trusted_bengali_technical_candidate
+                || (is_multilingual_technical_explainer_query(effective_query, query_language)
+                    && multilingual_technical_matches >= 2)
+                || (matches!(
+                    intent,
+                    rank::fusion::QueryIntent::HowTo | rank::fusion::QueryIntent::Code
+                ) && strong_technical_coverage)
+            {
+                0.03
+            } else {
+                0.05 // Lower default floor from 0.10 for better recall
+            };
+
             // (a) score threshold
-            if r.score.unwrap_or(0.0) < 0.10 {
+            if r.score.unwrap_or(0.0) < score_floor {
+                return false;
+            }
+            if strict_health_query && r.url.contains("wikipedia.org") {
+                return false;
+            }
+            if community_fallback_blocked(
+                intent,
+                health_sensitive_query,
+                language_learning_query,
+                multilingual_foreign_query,
+                r,
+            ) {
                 return false;
             }
             // (d) Spam domain blocklist
@@ -905,13 +1437,27 @@ impl SearchOrchestrator {
                 tracing::debug!("Filtered homepage: {:?} ({})", r.title, r.url);
                 return false;
             }
+            if strict_health_query && generic_disease_overview(effective_query, &haystack, &r.url) {
+                tracing::debug!(
+                    "Filtered generic disease overview for strict medical comparison: {:?}",
+                    r.title
+                );
+                return false;
+            }
             // (b) title-term check — only apply when we have meaningful query words
             if strict_min_term_matches > 0 && !query_content_words.is_empty() {
-                let haystack = format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
-                let matches = query_content_words
-                    .iter()
-                    .filter(|w| haystack.contains(w.as_str()))
-                    .count();
+                let matches = count_term_matches(&haystack, &query_content_words);
+                let specificity_matches = count_term_matches(&haystack, &specificity_words);
+                let phrase_matches = count_phrase_matches(&haystack, &query_phrases);
+                let health_explainer_matches =
+                    health_explainer_match_count(effective_query, &haystack, &r.url);
+                let broad_health_matches =
+                    broad_health_match_count(effective_query, &haystack, &r.url);
+                let multilingual_technical_matches = multilingual_technical_explainer_match_count(
+                    effective_query,
+                    &haystack,
+                    &r.url,
+                );
                 if matches < strict_min_term_matches {
                     tracing::debug!(
                         "Filtered title-mismatch: {:?} (matches={}, need {}, words={:?})",
@@ -920,6 +1466,83 @@ impl SearchOrchestrator {
                         strict_min_term_matches,
                         &query_content_words[..query_content_words.len().min(3)]
                     );
+                    return false;
+                }
+                if !(medical_query_relaxed
+                    || specificity_words.is_empty()
+                    || specificity_matches != 0
+                    || phrase_matches != 0
+                    || (language_learning_query && language_learning_matches >= 2)
+                    || trusted_bengali_technical_candidate
+                    || (is_license_query(effective_query)
+                        && license_query_match_count(effective_query, &haystack, &r.url) >= 2)
+                    || (is_philosophy_query(effective_query)
+                        && philosophy_query_match_count(effective_query, &haystack, &r.url) >= 2))
+                {
+                    tracing::debug!(
+                        "Filtered low-specificity match: {:?} (specificity_words={:?})",
+                        r.title,
+                        specificity_words
+                    );
+                    return false;
+                }
+                if matches!(
+                    intent,
+                    rank::fusion::QueryIntent::HowTo | rank::fusion::QueryIntent::Code
+                ) && specificity_words.len() >= 3
+                    && specificity_matches < 2
+                    && phrase_matches == 0
+                    && !strong_technical_coverage
+                {
+                    tracing::debug!(
+                        "Filtered low-specificity technical howto/code match: {:?}",
+                        r.title
+                    );
+                    return false;
+                }
+                if strict_health_query && medical_attribute_matches == 0 {
+                    tracing::debug!("Filtered strict-health low-attribute match: {:?}", r.title);
+                    return false;
+                }
+                if health_explainer_query && health_explainer_matches < 2 {
+                    tracing::debug!(
+                        "Filtered health-explainer low-coverage match: {:?}",
+                        r.title
+                    );
+                    return false;
+                }
+                if language_learning_query && language_learning_matches < 2 {
+                    tracing::debug!(
+                        "Filtered language-learning low-coverage match: {:?}",
+                        r.title
+                    );
+                    return false;
+                }
+                if is_multilingual_technical_explainer_query(effective_query, query_language)
+                    && multilingual_technical_matches < 2
+                    && !trusted_bengali_technical_candidate
+                {
+                    tracing::debug!(
+                        "Filtered multilingual technical explainer low-coverage match: {:?}",
+                        r.title
+                    );
+                    return false;
+                }
+                if intent == rank::fusion::QueryIntent::Comparison
+                    && comparison_matches < comparison_entity_threshold(effective_query)
+                {
+                    tracing::debug!(
+                        "Filtered comparison low-entity-coverage match: {:?}",
+                        r.title
+                    );
+                    return false;
+                }
+                if health_sensitive_query
+                    && !strict_health_query
+                    && !health_explainer_query
+                    && broad_health_matches < 2
+                {
+                    tracing::debug!("Filtered broad-health low-coverage match: {:?}", r.title);
                     return false;
                 }
             }
@@ -931,7 +1554,29 @@ impl SearchOrchestrator {
                 pre_filter_count - ranked.len()
             );
         }
-        if ranked.len() < 5 && pre_filter_count >= 5 {
+        let preserve_precision = !specificity_words.is_empty()
+            && !medical_query_relaxed
+            && intent != rank::fusion::QueryIntent::Comparison
+            && !language_learning_query
+            && !is_multilingual_technical_explainer_query(effective_query, query_language);
+        let has_strong_health_candidates = health_sensitive_query
+            && ranked
+                .iter()
+                .any(|r| strong_health_candidate(r, effective_query));
+        let has_strong_technical_candidates =
+            matches!(
+                intent,
+                rank::fusion::QueryIntent::HowTo | rank::fusion::QueryIntent::Code
+            ) && ranked.iter().any(|r| strong_technical_candidate(r, intent));
+
+        if has_strong_health_candidates {
+            ranked.retain(|r| strong_health_candidate(r, effective_query));
+        }
+        if has_strong_technical_candidates {
+            ranked.retain(|r| strong_technical_candidate(r, intent));
+        }
+
+        if ranked.len() < 5 && pre_filter_count >= 5 && !preserve_precision {
             tracing::debug!(
                 "Relevance filter was too strict ({} -> {}) — relaxing thresholds",
                 pre_filter_count,
@@ -946,18 +1591,59 @@ impl SearchOrchestrator {
                 if is_spam_domain(&r.url) || is_image_url(&r.url) || is_homepage_url(&r.url) {
                     return false;
                 }
+                if community_fallback_blocked(
+                    intent,
+                    health_sensitive_query,
+                    language_learning_query,
+                    multilingual_foreign_query,
+                    r,
+                ) {
+                    return false;
+                }
+                if has_strong_health_candidates && !strong_health_candidate(r, effective_query) {
+                    return false;
+                }
+                if has_strong_technical_candidates && !strong_technical_candidate(r, intent) {
+                    return false;
+                }
+                let haystack = format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
+                if strict_health_query
+                    && generic_disease_overview(effective_query, &haystack, &r.url)
+                {
+                    return false;
+                }
                 if relaxed_min_term_matches == 0 || query_content_words.is_empty() {
                     return true;
                 }
-                let haystack = format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
-                query_content_words
-                    .iter()
-                    .filter(|w| haystack.contains(w.as_str()))
-                    .count()
-                    >= relaxed_min_term_matches
+                let matches = count_term_matches(&haystack, &query_content_words);
+                let specificity_matches = count_term_matches(&haystack, &specificity_words);
+                let phrase_matches = count_phrase_matches(&haystack, &query_phrases);
+                let medical_attribute_matches =
+                    medical_attribute_match_count(effective_query, &haystack);
+                let health_explainer_matches =
+                    health_explainer_match_count(effective_query, &haystack, &r.url);
+                let language_learning_matches =
+                    language_learning_match_count(effective_query, &haystack, &r.url);
+                let broad_health_matches =
+                    broad_health_match_count(effective_query, &haystack, &r.url);
+                let trusted_license_keepalive = is_license_query(effective_query)
+                    && trusted_license_candidate(effective_query, &haystack, &r.url);
+                matches >= relaxed_min_term_matches
+                    && (!strict_health_query || medical_attribute_matches > 0)
+                    && (!health_explainer_query || health_explainer_matches >= 2)
+                    && (!language_learning_query || language_learning_matches >= 2)
+                    && (!health_sensitive_query
+                        || strict_health_query
+                        || health_explainer_query
+                        || broad_health_matches >= 2)
+                    && (trusted_license_keepalive
+                        || medical_query_relaxed
+                        || specificity_words.is_empty()
+                        || specificity_matches > 0
+                        || phrase_matches > 0)
             });
         }
-        if ranked.len() < 3 && pre_filter_count >= 3 {
+        if ranked.len() < 3 && pre_filter_count >= 3 && !preserve_precision {
             tracing::debug!(
                 "Relevance filtering left too few results ({}). Backfilling from pre-filter set.",
                 ranked.len()
@@ -975,9 +1661,29 @@ impl SearchOrchestrator {
                     if !query_content_words.is_empty() {
                         let haystack =
                             format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
-                        query_content_words
-                            .iter()
-                            .any(|w| haystack.contains(w.as_str()))
+                        let matches_any = count_term_matches(&haystack, &query_content_words) > 0;
+                        let specificity_matches = count_term_matches(&haystack, &specificity_words);
+                        let phrase_matches = count_phrase_matches(&haystack, &query_phrases);
+                        let medical_attribute_matches =
+                            medical_attribute_match_count(effective_query, &haystack);
+                        let health_explainer_matches =
+                            health_explainer_match_count(effective_query, &haystack, &r.url);
+                        let language_learning_matches =
+                            language_learning_match_count(effective_query, &haystack, &r.url);
+                        let broad_health_matches =
+                            broad_health_match_count(effective_query, &haystack, &r.url);
+                        matches_any
+                            && (!strict_health_query || medical_attribute_matches > 0)
+                            && (!health_explainer_query || health_explainer_matches >= 2)
+                            && (!language_learning_query || language_learning_matches >= 2)
+                            && (!health_sensitive_query
+                                || strict_health_query
+                                || health_explainer_query
+                                || broad_health_matches >= 2)
+                            && (medical_query_relaxed
+                                || specificity_words.is_empty()
+                                || specificity_matches > 0
+                                || phrase_matches > 0)
                     } else {
                         true
                     }
@@ -1002,7 +1708,14 @@ impl SearchOrchestrator {
             let is_code = intent == rank::fusion::QueryIntent::Code;
             let is_comparison = intent == rank::fusion::QueryIntent::Comparison;
             // HowTo/Code/Casual: Wikipedia articles rarely useful; Comparison allows 1
-            let wiki_cap: u32 = if is_temporal || is_practical || is_casual || is_howto || is_code {
+            let wiki_cap: u32 = if strict_health_query
+                || is_multilingual_technical_explainer_query(effective_query, query_language)
+                || is_temporal
+                || is_practical
+                || is_casual
+                || is_howto
+                || is_code
+            {
                 0
             } else if is_comparison {
                 1
@@ -1079,10 +1792,16 @@ impl SearchOrchestrator {
                 let domain = extract_domain(&r.url);
                 let cap = if domain == "wikipedia.org" || domain == "arxiv.org" {
                     2
-                } else if domain == "reddit.com" {
+                } else if domain == "reddit.com" || domain == "ycombinator.com" {
                     // Comparison benefits from community discussion threads (3 allowed).
                     // Opinion: cap at 2 — Reddit posts hurt authority scores for opinion queries.
-                    if matches!(intent, rank::fusion::QueryIntent::Comparison) {
+                    if matches!(
+                        intent,
+                        rank::fusion::QueryIntent::HowTo | rank::fusion::QueryIntent::Code
+                    ) || health_sensitive_query
+                    {
+                        0
+                    } else if matches!(intent, rank::fusion::QueryIntent::Comparison) {
                         3
                     } else {
                         2
@@ -1099,10 +1818,10 @@ impl SearchOrchestrator {
         // Step 5e: If filtering/caps left fewer than requested results, backfill from
         // the pre-filter ranked pool without extra network calls.
         // Apply the same safety filters to backfill candidates.
-        if ranked.len() < max as usize {
+        if ranked.len() < requested_max as usize && !preserve_precision {
             let mut seen: HashSet<String> = ranked.iter().map(|r| r.url.clone()).collect();
             for candidate in &ranked_before_filter {
-                if ranked.len() >= max as usize {
+                if ranked.len() >= requested_max as usize {
                     break;
                 }
                 if candidate.score.unwrap_or(0.0) < 0.02 {
@@ -1115,6 +1834,105 @@ impl SearchOrchestrator {
                 {
                     continue;
                 }
+                if community_fallback_blocked(
+                    intent,
+                    health_sensitive_query,
+                    language_learning_query,
+                    multilingual_foreign_query,
+                    candidate,
+                ) {
+                    continue;
+                }
+                if has_strong_health_candidates
+                    && !strong_health_candidate(candidate, effective_query)
+                {
+                    continue;
+                }
+                if has_strong_technical_candidates && !strong_technical_candidate(candidate, intent)
+                {
+                    continue;
+                }
+                let candidate_haystack = format!(
+                    "{} {}",
+                    candidate.title.to_lowercase(),
+                    candidate.snippet.to_lowercase()
+                );
+                let candidate_term_matches =
+                    count_term_matches(&candidate_haystack, &query_content_words);
+                let candidate_phrase_matches =
+                    count_phrase_matches(&candidate_haystack, &query_phrases);
+                let candidate_medical_matches =
+                    medical_attribute_match_count(effective_query, &candidate_haystack);
+                let candidate_health_explainer_matches = health_explainer_match_count(
+                    effective_query,
+                    &candidate_haystack,
+                    &candidate.url,
+                );
+                let candidate_language_learning_matches = language_learning_match_count(
+                    effective_query,
+                    &candidate_haystack,
+                    &candidate.url,
+                );
+                let candidate_multilingual_technical_matches =
+                    multilingual_technical_explainer_match_count(
+                        effective_query,
+                        &candidate_haystack,
+                        &candidate.url,
+                    );
+                let candidate_comparison_matches =
+                    comparison_entity_match_count(effective_query, &candidate_haystack);
+                let candidate_license_keepalive = is_license_query(effective_query)
+                    && trusted_license_candidate(
+                        effective_query,
+                        &candidate_haystack,
+                        &candidate.url,
+                    );
+                let candidate_broad_health_matches =
+                    broad_health_match_count(effective_query, &candidate_haystack, &candidate.url);
+                if strict_health_query
+                    && generic_disease_overview(
+                        effective_query,
+                        &candidate_haystack,
+                        &candidate.url,
+                    )
+                {
+                    continue;
+                }
+                if !query_content_words.is_empty()
+                    && candidate_term_matches < relaxed_min_term_matches
+                    && candidate_phrase_matches == 0
+                    && !candidate_license_keepalive
+                {
+                    continue;
+                }
+                if strict_health_query
+                    && (!health_backfill_allowed(&candidate.url) || candidate_medical_matches == 0)
+                {
+                    continue;
+                }
+                if health_explainer_query && candidate_health_explainer_matches < 2 {
+                    continue;
+                }
+                if language_learning_query && candidate_language_learning_matches < 2 {
+                    continue;
+                }
+                if is_multilingual_technical_explainer_query(effective_query, query_language)
+                    && candidate_multilingual_technical_matches < 2
+                {
+                    continue;
+                }
+                if intent == rank::fusion::QueryIntent::Comparison
+                    && candidate_comparison_matches == 0
+                {
+                    continue;
+                }
+                if health_sensitive_query
+                    && !strict_health_query
+                    && !health_explainer_query
+                    && candidate_broad_health_matches < 2
+                {
+                    continue;
+                }
                 if seen.insert(candidate.url.clone()) {
                     ranked.push(candidate.clone());
                 }
@@ -1123,17 +1941,85 @@ impl SearchOrchestrator {
 
         // Step 5f: hard safety net — if filters produced zero but we had candidates,
         // return the top pre-filter items to avoid empty responses.
-        if ranked.is_empty() && !ranked_before_filter.is_empty() {
+        if ranked.is_empty() && !ranked_before_filter.is_empty() && !preserve_precision {
             ranked = ranked_before_filter
                 .iter()
-                .filter(|r| !is_spam_domain(&r.url) && !is_image_url(&r.url))
-                .take(max as usize)
+                .filter(|r| {
+                    let haystack =
+                        format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
+                    let medical_attribute_matches =
+                        medical_attribute_match_count(effective_query, &haystack);
+                    let health_explainer_matches =
+                        health_explainer_match_count(effective_query, &haystack, &r.url);
+                    let language_learning_matches =
+                        language_learning_match_count(effective_query, &haystack, &r.url);
+                    let multilingual_technical_matches =
+                        multilingual_technical_explainer_match_count(
+                            effective_query,
+                            &haystack,
+                            &r.url,
+                        );
+                    let comparison_matches =
+                        comparison_entity_match_count(effective_query, &haystack);
+                    let license_keepalive = is_license_query(effective_query)
+                        && trusted_license_candidate(effective_query, &haystack, &r.url);
+                    let broad_health_matches =
+                        broad_health_match_count(effective_query, &haystack, &r.url);
+                    if strict_health_query
+                        && generic_disease_overview(effective_query, &haystack, &r.url)
+                    {
+                        return false;
+                    }
+                    let term_matches = count_term_matches(&haystack, &query_content_words);
+                    let phrase_matches = count_phrase_matches(&haystack, &query_phrases);
+                    !is_spam_domain(&r.url)
+                        && !is_image_url(&r.url)
+                        && !community_fallback_blocked(
+                            intent,
+                            health_sensitive_query,
+                            language_learning_query,
+                            multilingual_foreign_query,
+                            r,
+                        )
+                        && (!has_strong_health_candidates
+                            || strong_health_candidate(r, effective_query))
+                        && (!has_strong_technical_candidates
+                            || strong_technical_candidate(r, intent))
+                        && (query_content_words.is_empty()
+                            || term_matches >= relaxed_min_term_matches
+                            || phrase_matches > 0
+                            || license_keepalive)
+                        && (!health_explainer_query || health_explainer_matches >= 2)
+                        && (!language_learning_query || language_learning_matches >= 2)
+                        && (!is_multilingual_technical_explainer_query(
+                            effective_query,
+                            query_language
+                        ) || multilingual_technical_matches >= 2)
+                        && (intent != rank::fusion::QueryIntent::Comparison
+                            || comparison_matches > 0)
+                        && (!health_sensitive_query
+                            || strict_health_query
+                            || health_explainer_query
+                            || broad_health_matches >= 2)
+                        && (!strict_health_query
+                            || (health_backfill_allowed(&r.url) && medical_attribute_matches > 0))
+                })
+                .take(requested_max as usize)
                 .cloned()
                 .collect();
         }
 
         // Step 6: Diversify domains in top-N, then take top N.
-        ranked = diversify_by_domain(ranked, max as usize);
+        ranked = diversify_by_domain(ranked, requested_max as usize);
+
+        if strict_health_query {
+            ranked.retain(|r| {
+                let haystack = format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
+                !generic_disease_overview(effective_query, &haystack, &r.url)
+                    && health_backfill_allowed(&r.url)
+                    && medical_attribute_match_count(effective_query, &haystack) > 0
+            });
+        }
 
         // Step 7: Semantic reranker (Exa-style second pass).
         // After all filtering, use embedding cosine similarity to fine-tune ordering.
@@ -1200,7 +2086,7 @@ impl SearchOrchestrator {
             }
         }
 
-        ranked.truncate(max as usize);
+        ranked.truncate(requested_max as usize);
 
         info!(
             "Orchestrator: returning {} results for {:?}",
@@ -1260,8 +2146,52 @@ fn extract_query_year(query: &str) -> Option<u32> {
 ///
 /// Used by the title-term relevance filter to ensure results contain at least
 /// one substantive query term. Returns lowercase words with length >= 3.
-fn extract_content_words(query: &str) -> Vec<String> {
-    const STOPWORDS: &[&str] = &[
+fn extract_content_words(query: &str, language: Option<&str>) -> Vec<String> {
+    let stopwords = stopwords_for_language(language);
+
+    let mut words = query
+        .split_whitespace()
+        .map(|w| {
+            w.trim_matches(|c: char| !c.is_alphanumeric())
+                .to_lowercase()
+        })
+        .filter(|w| w.len() >= 2 && !stopwords.contains(&w.as_str()))
+        // Keep short numeric tokens (error codes like 429, 404, 500; versions like v8)
+        // but filter out years (4-digit numbers) and plain long numbers
+        .filter(|w| {
+            if w.chars().all(|c| c.is_ascii_digit()) {
+                w.len() == 3 // keep 3-digit codes (404, 429, 500, 754)
+            } else {
+                true
+            }
+        })
+        .fold(Vec::new(), |mut acc, word| {
+            if !acc.contains(&word) {
+                acc.push(word);
+            }
+            acc
+        });
+
+    if words.len() > 8 {
+        let tail_start = words.len().saturating_sub(4);
+        let mut reduced = Vec::with_capacity(8);
+        for word in words
+            .iter()
+            .take(3)
+            .chain(words.iter().skip(tail_start.saturating_sub(1)))
+        {
+            if !reduced.contains(word) {
+                reduced.push(word.clone());
+            }
+        }
+        words = reduced;
+    }
+
+    words
+}
+
+fn stopwords_for_language(language: Option<&str>) -> &'static [&'static str] {
+    const ENGLISH_STOPWORDS: &[&str] = &[
         "a",
         "an",
         "the",
@@ -1327,7 +2257,6 @@ fn extract_content_words(query: &str) -> Vec<String> {
         "get",
         "use",
         "used",
-        // Generic verbs/nouns that match too broadly when used as sole filter
         "new",
         "latest",
         "overview",
@@ -1340,7 +2269,6 @@ fn extract_content_words(query: &str) -> Vec<String> {
         "using",
         "step",
         "set",
-        // Short words that cause false positive matches across many topics
         "go",
         "up",
         "no",
@@ -1353,23 +2281,160 @@ fn extract_content_words(query: &str) -> Vec<String> {
         "he",
         "us",
     ];
-    query
+    const GERMAN_STOPWORDS: &[&str] = &[
+        "der", "die", "das", "und", "oder", "aber", "in", "im", "am", "an", "zu", "zum", "zur",
+        "für", "von", "mit", "ist", "sind", "war", "waren", "sein", "wird", "werden", "hat",
+        "haben", "was", "wie", "wo", "wann", "warum", "welche", "welcher", "welches", "ein",
+        "eine", "einer", "einem", "einen", "nicht", "mehr", "weniger", "auch", "über", "unter",
+        "nach", "vor", "bei", "als", "denn", "einfach",
+    ];
+    const SPANISH_STOPWORDS: &[&str] = &[
+        "el", "la", "los", "las", "un", "una", "unos", "unas", "y", "o", "pero", "de", "del", "en",
+        "por", "para", "con", "sin", "es", "son", "fue", "fueron", "ser", "estar", "como", "qué",
+        "que", "dónde", "donde", "cuándo", "cuando", "cuál", "cual", "porque", "mejor", "más",
+        "mas", "muy", "también", "tambien",
+    ];
+    const FRENCH_STOPWORDS: &[&str] = &[
+        "le", "la", "les", "un", "une", "des", "du", "de", "et", "ou", "mais", "dans", "sur",
+        "pour", "avec", "sans", "est", "sont", "était", "etait", "étaient", "etaient", "être",
+        "etre", "avoir", "comment", "quoi", "qui", "que", "quel", "quelle", "quelles", "pourquoi",
+        "où", "ou", "quand", "plus", "moins", "très", "tres", "aussi",
+    ];
+
+    match language {
+        Some("de") => GERMAN_STOPWORDS,
+        Some("es") => SPANISH_STOPWORDS,
+        Some("fr") => FRENCH_STOPWORDS,
+        _ => ENGLISH_STOPWORDS,
+    }
+}
+
+fn extract_specificity_words(query_content_words: &[String]) -> Vec<String> {
+    if query_content_words.len() < 6 {
+        return Vec::new();
+    }
+
+    query_content_words
+        .iter()
+        .rev()
+        .filter(|word| word.len() >= 3 && !is_generic_specificity_word(word))
+        .take(3)
+        .cloned()
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect()
+}
+
+fn is_generic_specificity_word(word: &str) -> bool {
+    matches!(
+        word,
+        "comparison"
+            | "compare"
+            | "versus"
+            | "guide"
+            | "tutorial"
+            | "overview"
+            | "review"
+            | "reviews"
+            | "explained"
+            | "introduction"
+            | "latest"
+            | "best"
+            | "top"
+            | "medication"
+            | "medicine"
+            | "drug"
+            | "drugs"
+            | "treatment"
+            | "treatments"
+            | "symptom"
+            | "symptoms"
+            | "side"
+            | "effect"
+            | "effects"
+            | "blood"
+            | "pressure"
+            | "hypertension"
+            | "antihypertensive"
+    )
+}
+
+fn extract_query_phrases(query: &str, language: Option<&str>) -> Vec<String> {
+    const ALWAYS_KEEP_PHRASES: &[&str] = &["blood pressure", "side effects", "machine learning"];
+    let stopwords = stopwords_for_language(language);
+    let tokens = query
         .split_whitespace()
-        .map(|w| {
-            w.trim_matches(|c: char| !c.is_alphanumeric())
+        .map(|word| {
+            word.trim_matches(|c: char| !c.is_alphanumeric())
                 .to_lowercase()
         })
-        .filter(|w| w.len() >= 2 && !STOPWORDS.contains(&w.as_str()))
-        // Keep short numeric tokens (error codes like 429, 404, 500; versions like v8)
-        // but filter out years (4-digit numbers) and plain long numbers
-        .filter(|w| {
-            if w.chars().all(|c| c.is_ascii_digit()) {
-                w.len() == 3 // keep 3-digit codes (404, 429, 500, 754)
+        .filter(|word| word.len() >= 2 && !stopwords.contains(&word.as_str()))
+        .collect::<Vec<_>>();
+
+    if tokens.len() < 2 {
+        return Vec::new();
+    }
+
+    let mut phrases = Vec::new();
+    for window in tokens.windows(2) {
+        let left = &window[0];
+        let right = &window[1];
+        let phrase = format!("{left} {right}");
+        if !ALWAYS_KEEP_PHRASES.contains(&phrase.as_str()) {
+            if is_generic_specificity_word(left) && is_generic_specificity_word(right) {
+                continue;
+            }
+            if left.len() < 3 && right.len() < 3 {
+                continue;
+            }
+        }
+        if !phrases.contains(&phrase) {
+            phrases.push(phrase);
+        }
+    }
+
+    if phrases.len() > 5 {
+        let tail_start = phrases.len().saturating_sub(3);
+        let mut reduced = Vec::with_capacity(5);
+        for phrase in phrases
+            .iter()
+            .take(2)
+            .chain(phrases.iter().skip(tail_start))
+        {
+            if !reduced.contains(phrase) {
+                reduced.push(phrase.clone());
+            }
+        }
+        phrases = reduced;
+    }
+
+    phrases
+}
+
+fn count_term_matches(haystack: &str, terms: &[String]) -> usize {
+    let tokens: Vec<&str> = haystack
+        .split(|c: char| !c.is_alphanumeric())
+        .filter(|token| !token.is_empty())
+        .collect();
+
+    terms
+        .iter()
+        .filter(|term| {
+            if term.len() <= 3 {
+                tokens.iter().any(|token| token.eq_ignore_ascii_case(term))
             } else {
-                true
+                haystack.contains(term.as_str())
             }
         })
-        .collect()
+        .count()
+}
+
+fn count_phrase_matches(haystack: &str, phrases: &[String]) -> usize {
+    phrases
+        .iter()
+        .filter(|phrase| haystack.contains(phrase.as_str()))
+        .count()
 }
 
 /// True when query contains non-ASCII alphabetic characters (e.g. CJK, accented scripts).
@@ -1415,6 +2480,1315 @@ fn is_practical_query(query: &str) -> bool {
         "is it safe ",
     ];
     PRACTICAL_PATTERNS.iter().any(|p| lower.contains(p))
+}
+
+fn is_health_sensitive_query(query: &str) -> bool {
+    let lower = query.to_lowercase();
+    [
+        "medication",
+        "medicine",
+        "drug",
+        "drugs",
+        "dose",
+        "dosage",
+        "side effect",
+        "side effects",
+        "symptom",
+        "symptoms",
+        "treatment",
+        "treatments",
+        "diagnosis",
+        "disease",
+        "blood pressure",
+        "hypertension",
+        "diabetes",
+        "vaccine",
+        "vaccination",
+        "therapy",
+        "pain",
+        "cancer",
+        "insulin",
+        "sleep apnea",
+        "apnea",
+    ]
+    .iter()
+    .any(|pattern| lower.contains(pattern))
+}
+
+fn is_strict_health_query(query: &str) -> bool {
+    let lower = query.to_lowercase();
+    let has_medication_word = [
+        "medication",
+        "medicine",
+        "drug",
+        "drugs",
+        "dose",
+        "dosage",
+        "side effect",
+        "side effects",
+    ]
+    .iter()
+    .any(|pattern| lower.contains(pattern));
+
+    let is_health_comparison = has_medication_word && (
+        lower.contains("compare") || lower.contains("comparison") || lower.contains("versus") || lower.contains(" vs ")
+    );
+
+    let has_medication_signal = has_medication_word || is_health_comparison;
+
+    let has_targeted_treatment_signal =
+        (lower.contains("treatment") || lower.contains("treatments") || lower.contains("therapy"))
+            && (lower.contains("medication")
+                || lower.contains("medicine")
+                || lower.contains("drug")
+                || lower.contains("side effect")
+                || lower.contains("comparison")
+                || lower.contains("versus")
+                || lower.contains(" vs "));
+    let has_explainer_signal = [
+        "how it works",
+        "how does it work",
+        "explained",
+        "explain",
+        "what is",
+        "mechanism",
+        "technology",
+    ]
+    .iter()
+    .any(|pattern| lower.contains(pattern));
+
+    (has_medication_signal || has_targeted_treatment_signal) && !has_explainer_signal
+}
+
+fn is_health_explainer_query(query: &str) -> bool {
+    let lower = query.to_lowercase();
+    is_health_sensitive_query(query)
+        && [
+            "how it works",
+            "how does it work",
+            "explained",
+            "explain",
+            "what is",
+            "mechanism",
+            "technology",
+            "works by",
+        ]
+        .iter()
+        .any(|pattern| lower.contains(pattern))
+}
+
+fn is_language_learning_query(query: &str) -> bool {
+    let lower = query.to_lowercase();
+    let has_learning_verb = [
+        "learn",
+        "learning",
+        "apprendre",
+        "aprender",
+        "lernen",
+        "study",
+        "studying",
+    ]
+    .iter()
+    .any(|pattern| lower.contains(pattern));
+    let has_language_target = [
+        "french",
+        "français",
+        "francais",
+        "spanish",
+        "español",
+        "espanol",
+        "german",
+        "deutsch",
+        "italian",
+        "italiano",
+    ]
+    .iter()
+    .any(|pattern| lower.contains(pattern));
+    has_learning_verb && has_language_target
+}
+
+fn health_sensitive_backend_allowed(backend: &BackendId) -> bool {
+    matches!(
+        backend,
+        BackendId::Searxng
+            | BackendId::DuckDuckGo
+            | BackendId::Google
+            | BackendId::Bing
+            | BackendId::Brave
+            | BackendId::Tavily
+            | BackendId::Serper
+            | BackendId::Exa
+            | BackendId::Firecrawl
+    )
+}
+
+fn docs_focused_query(query: &str) -> String {
+    let lower = query.to_lowercase();
+    if ["docs", "documentation", "manual", "reference"]
+        .iter()
+        .any(|pattern| lower.contains(pattern))
+    {
+        query.to_string()
+    } else {
+        let normalized = lower
+            .replace("step by step", " ")
+            .replace("guide to", " ")
+            .replace("guide for", " ")
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
+        format!("{normalized} docs")
+    }
+}
+
+fn health_authority_multiplier(url: &str) -> f64 {
+    let domain = extract_domain(url);
+    match domain.as_str() {
+        "nih.gov"
+        | "medlineplus.gov"
+        | "cdc.gov"
+        | "nhs.uk"
+        | "mayoclinic.org"
+        | "clevelandclinic.org"
+        | "heart.org"
+        | "drugs.com" => 1.45,
+        "webmd.com" | "healthline.com" | "medicalnewstoday.com" | "emedicinehealth.com" => 1.25,
+        "wikipedia.org" => 0.25,
+        "reddit.com" | "github.com" | "stackoverflow.com" => 0.60,
+        _ => 1.0,
+    }
+}
+
+fn health_backfill_allowed(url: &str) -> bool {
+    let domain = extract_domain(url);
+    matches!(
+        domain.as_str(),
+        "nih.gov"
+            | "medlineplus.gov"
+            | "cdc.gov"
+            | "nhs.uk"
+            | "mayoclinic.org"
+            | "clevelandclinic.org"
+            | "heart.org"
+            | "drugs.com"
+            | "rxlist.com"
+            | "webmd.com"
+            | "healthline.com"
+            | "medicalnewstoday.com"
+            | "emedicinehealth.com"
+            | "aafp.org"
+    )
+}
+
+fn medical_attribute_multiplier(query: &str, haystack: &str) -> f64 {
+    let query_lower = query.to_lowercase();
+    let haystack = haystack.to_lowercase();
+    let mut multiplier = 1.0;
+
+    let wants_side_effects =
+        query_lower.contains("side effect") || query_lower.contains("adverse effect");
+    let wants_comparison = query_lower.contains("comparison")
+        || query_lower.contains("compare")
+        || query_lower.contains("versus")
+        || query_lower.contains(" vs ");
+
+    if wants_side_effects {
+        if haystack.contains("side effect")
+            || haystack.contains("side effects")
+            || haystack.contains("adverse effect")
+            || haystack.contains("adverse effects")
+            || haystack.contains("risk")
+            || haystack.contains("risks")
+            || haystack.contains("tolerability")
+        {
+            multiplier *= 1.35;
+        } else {
+            multiplier *= 0.70;
+        }
+    }
+
+    if wants_comparison {
+        if haystack.contains("compare")
+            || haystack.contains("comparison")
+            || haystack.contains("versus")
+            || haystack.contains("vs")
+            || haystack.contains("differ")
+            || haystack.contains("difference")
+            || haystack.contains("class")
+            || haystack.contains("classes")
+        {
+            multiplier *= 1.20;
+        } else {
+            multiplier *= 0.82;
+        }
+    }
+
+    if haystack.contains("without medication")
+        || haystack.contains("lifestyle")
+        || haystack.contains("exercise")
+    {
+        multiplier *= 0.55;
+    }
+
+    multiplier
+}
+
+fn medical_attribute_match_count(query: &str, haystack: &str) -> usize {
+    let query_lower = query.to_lowercase();
+    let haystack = haystack.to_lowercase();
+    let mut count = 0;
+
+    if (query_lower.contains("side effect") || query_lower.contains("adverse effect"))
+        && (haystack.contains("side effect")
+            || haystack.contains("side effects")
+            || haystack.contains("adverse effect")
+            || haystack.contains("adverse effects")
+            || haystack.contains("risk")
+            || haystack.contains("risks")
+            || haystack.contains("tolerability"))
+    {
+        count += 1;
+    }
+
+    if (query_lower.contains("comparison")
+        || query_lower.contains("compare")
+        || query_lower.contains("versus")
+        || query_lower.contains(" vs "))
+        && (haystack.contains("compare")
+            || haystack.contains("comparison")
+            || haystack.contains("comparative")
+            || haystack.contains("effectiveness")
+            || haystack.contains("versus")
+            || haystack.contains("difference")
+            || haystack.contains("differ"))
+    {
+        count += 1;
+    }
+
+    if (query_lower.contains("medication")
+        || query_lower.contains("drug")
+        || query_lower.contains("treatment"))
+        && (haystack.contains("antihypertensive")
+            || haystack.contains("antihypertensive medication")
+            || haystack.contains("antihypertensive medications")
+            || haystack.contains("ace inhibitor")
+            || haystack.contains("angiotensin-converting enzyme")
+            || haystack.contains("arb")
+            || haystack.contains("angiotensin receptor blocker")
+            || haystack.contains("beta blocker")
+            || haystack.contains("beta-blocker")
+            || haystack.contains("diuretic")
+            || haystack.contains("thiazide")
+            || haystack.contains("calcium channel blocker")
+            || haystack.contains("ccb"))
+    {
+        count += 1;
+    }
+
+    count
+}
+
+fn generic_disease_overview(query: &str, haystack: &str, url: &str) -> bool {
+    let query_lower = query.to_lowercase();
+    let domain = extract_domain(url);
+    let asks_side_effect_comparison = (query_lower.contains("side effect")
+        || query_lower.contains("adverse effect"))
+        && (query_lower.contains("comparison")
+            || query_lower.contains("compare")
+            || query_lower.contains("versus")
+            || query_lower.contains(" vs "));
+    if !asks_side_effect_comparison {
+        return false;
+    }
+    let has_condition_overview = haystack.contains("hypertension")
+        && (haystack.contains("fact sheet")
+            || haystack.contains("overview")
+            || haystack.contains("risk factors")
+            || haystack.contains("symptoms")
+            || haystack.contains("prevention"));
+    let has_explicit_side_effect_specifics = haystack.contains("side effect")
+        || haystack.contains("side effects")
+        || haystack.contains("adverse effect")
+        || haystack.contains("adverse effects")
+        || haystack.contains("tolerability")
+        || haystack.contains("compare")
+        || haystack.contains("comparison")
+        || haystack.contains("comparative")
+        || haystack.contains("versus")
+        || haystack.contains("difference");
+    let lacks_class_specifics = !has_explicit_side_effect_specifics
+        && !haystack.contains("ace inhibitor")
+        && !haystack.contains("arb")
+        && !haystack.contains("beta blocker")
+        && !haystack.contains("diuretic")
+        && !haystack.contains("calcium channel blocker");
+    has_condition_overview
+        && lacks_class_specifics
+        && matches!(
+            domain.as_str(),
+            "who.int" | "www.who.int" | "wikipedia.org" | "webmd.com" | "www.webmd.com"
+        )
+}
+
+fn health_explainer_multiplier(query: &str, haystack: &str, url: &str) -> f64 {
+    let query_lower = query.to_lowercase();
+    let haystack = haystack.to_lowercase();
+    let mut multiplier = 1.0;
+    let domain = extract_domain(url);
+
+    if haystack.contains("how it works")
+        || haystack.contains("mechanism")
+        || haystack.contains("explained")
+        || haystack.contains("works by")
+        || haystack.contains("messenger rna")
+        || haystack.contains("technology")
+    {
+        multiplier *= 1.25;
+    }
+
+    if query_lower.contains("mrna vaccine") {
+        if haystack.contains("moderna")
+            || haystack.contains("pfizer")
+            || haystack.contains("comirnaty")
+            || haystack.contains("covid-19 vaccine")
+        {
+            multiplier *= 0.75;
+        }
+        if domain == "wikipedia.org" {
+            multiplier *= 0.35;
+        }
+        if matches!(
+            domain.as_str(),
+            "nih.gov" | "medlineplus.gov" | "cdc.gov" | "mayoclinic.org" | "clevelandclinic.org"
+        ) {
+            multiplier *= 1.20;
+        }
+    }
+
+    multiplier
+}
+
+fn health_explainer_match_count(query: &str, haystack: &str, url: &str) -> usize {
+    let query_lower = query.to_lowercase();
+    let haystack = haystack.to_lowercase();
+    let mut count = 0;
+    let domain = extract_domain(url);
+
+    if query_lower.contains("vaccine")
+        && (haystack.contains("vaccine")
+            || haystack.contains("vaccines")
+            || matches!(
+                domain.as_str(),
+                "nih.gov"
+                    | "medlineplus.gov"
+                    | "cdc.gov"
+                    | "mayoclinic.org"
+                    | "clevelandclinic.org"
+                    | "hopkinsmedicine.org"
+                    | "osu.edu"
+            ))
+    {
+        count += 1;
+    }
+
+    if query_lower.contains("mrna")
+        && (haystack.contains("mrna") || haystack.contains("messenger rna"))
+    {
+        count += 1;
+    }
+
+    if (query_lower.contains("how it works")
+        || query_lower.contains("mechanism")
+        || query_lower.contains("technology")
+        || query_lower.contains("explained"))
+        && (haystack.contains("how it works")
+            || haystack.contains("mechanism")
+            || haystack.contains("technology")
+            || haystack.contains("works by")
+            || haystack.contains("explained"))
+    {
+        count += 1;
+    }
+
+    count
+}
+
+fn language_learning_multiplier(query: &str, haystack: &str, url: &str) -> f64 {
+    let matches = language_learning_match_count(query, haystack, url);
+    let mut multiplier = match matches {
+        3.. => 1.35,
+        2 => 1.15,
+        1 => 0.75,
+        _ => 0.45,
+    };
+    let domain = extract_domain(url);
+    if domain == "reddit.com" {
+        multiplier *= 0.75;
+    }
+    if haystack.contains("politic")
+        || haystack.contains("débat")
+        || haystack.contains("debate")
+        || haystack.contains("ambassador")
+        || haystack.contains("foreign legion")
+    {
+        multiplier *= 0.40;
+    }
+    multiplier
+}
+
+fn language_learning_match_count(query: &str, haystack: &str, url: &str) -> usize {
+    let query_lower = query.to_lowercase();
+    let mut count = 0;
+    let domain = extract_domain(url);
+
+    if (query_lower.contains("french")
+        || query_lower.contains("français")
+        || query_lower.contains("francais"))
+        && (haystack.contains("french")
+            || haystack.contains("français")
+            || haystack.contains("francais"))
+    {
+        count += 1;
+    }
+
+    if haystack.contains("learn")
+        || haystack.contains("learning")
+        || haystack.contains("apprendre")
+        || haystack.contains("course")
+        || haystack.contains("cours")
+        || haystack.contains("grammar")
+        || haystack.contains("grammaire")
+        || haystack.contains("vocabulary")
+        || haystack.contains("vocabulaire")
+        || haystack.contains("pronunciation")
+        || haystack.contains("prononciation")
+        || haystack.contains("lesson")
+        || haystack.contains("lessons")
+        || haystack.contains("méthode")
+        || haystack.contains("methode")
+    {
+        count += 1;
+    }
+
+    if haystack.contains("language")
+        || haystack.contains("langue")
+        || haystack.contains("fluency")
+        || haystack.contains("practice")
+        || haystack.contains("pratiquer")
+        || matches!(
+            domain.as_str(),
+            "duolingo.com"
+                | "wikihow.com"
+                | "talkpal.ai"
+                | "lawlessfrench.com"
+                | "frenchpod101.com"
+                | "lingq.com"
+                | "tv5monde.com"
+                | "rfi.fr"
+                | "francaisfacile.com"
+                | "francaisavecpierre.com"
+                | "ef.fr"
+                | "preply.com"
+        )
+    {
+        count += 1;
+    }
+
+    count
+}
+
+fn is_multilingual_technical_explainer_query(query: &str, language: Option<&str>) -> bool {
+    if !matches!(language, Some("bn" | "bd" | "es" | "de" | "fr")) {
+        return false;
+    }
+    let lower = query.to_lowercase();
+    [
+        "kubernetes",
+        "container",
+        "orchestration",
+        "database",
+        "dbms",
+        "networking",
+        "python",
+        "programming",
+        "artificial intelligence",
+        "machine learning",
+        "কুবেরনেটিস",
+        "কন্টেইনার",
+        "অর্কেস্ট্রেশন",
+        "ডেটাবেস",
+        "নেটওয়ার্কিং",
+        "পাইথন",
+        "প্রোগ্রামিং",
+        "কৃত্রিম বুদ্ধিমত্তা",
+    ]
+    .iter()
+    .any(|pattern| lower.contains(pattern))
+}
+
+fn multilingual_technical_explainer_multiplier(query: &str, haystack: &str, url: &str) -> f64 {
+    let mut multiplier = 1.0;
+    let domain = extract_domain(url);
+    if matches!(
+        domain.as_str(),
+        "cloud.google.com"
+            | "docs.cloud.google.com"
+            | "kubernetes.io"
+            | "docs.python.org"
+            | "python.org"
+            | "ibm.com"
+            | "coursera.org"
+            | "networklessons.com"
+            | "computernetworkingnotes.com"
+            | "oracle.com"
+            | "mongodb.com"
+            | "postgresql.org"
+            | "aws.amazon.com"
+            | "developer.mozilla.org"
+    ) {
+        multiplier *= 1.30;
+    }
+    if domain == "wikipedia.org" {
+        multiplier *= 0.30;
+    }
+    if matches!(
+        domain.as_str(),
+        "reddit.com" | "redd.it" | "ycombinator.com" | "youtube.com" | "youtu.be"
+    ) {
+        multiplier *= 0.20;
+    }
+
+    let query_lower = query.to_lowercase();
+    if (query_lower.contains("database") || query_lower.contains("ডেটাবেস"))
+        && (haystack.contains("database")
+            || haystack.contains("dbms")
+            || haystack.contains("database management system"))
+    {
+        multiplier *= 1.15;
+    }
+    if (query_lower.contains("networking") || query_lower.contains("নেটওয়ার্কিং"))
+        && (haystack.contains("networking")
+            || haystack.contains("network")
+            || haystack.contains("computer network"))
+    {
+        multiplier *= 1.15;
+    }
+    if (query_lower.contains("artificial intelligence") || query_lower.contains("কৃত্রিম বুদ্ধিমত্তা"))
+        && (haystack.contains("artificial intelligence") || haystack.contains("ai")) {
+        multiplier *= 1.15;
+    }
+    if (query_lower.contains("kubernetes") || query_lower.contains("কুবেরনেটিস"))
+        && haystack.contains("kubernetes")
+    {
+        multiplier *= 1.15;
+    }
+    multiplier
+}
+
+fn multilingual_technical_explainer_match_count(
+    query: &str,
+    haystack: &str,
+    url: &str,
+) -> usize {
+    let query_lower = query.to_lowercase();
+    let domain = extract_domain(url);
+    let mut count = 0;
+
+    if (query_lower.contains("database") || query_lower.contains("ডেটাবেস"))
+        && (haystack.contains("database")
+            || haystack.contains("dbms")
+            || haystack.contains("database management system"))
+    {
+        count += 1;
+    }
+    if (query_lower.contains("networking") || query_lower.contains("নেটওয়ার্কিং"))
+        && (haystack.contains("networking")
+            || haystack.contains("network")
+            || haystack.contains("computer network"))
+    {
+        count += 1;
+    }
+    if (query_lower.contains("artificial intelligence") || query_lower.contains("কৃত্রিম বুদ্ধিমত্তা"))
+        && (haystack.contains("artificial intelligence") || haystack.contains("ai")) {
+        count += 1;
+    }
+    if (query_lower.contains("kubernetes") || query_lower.contains("কুবেরনেটিস"))
+        && haystack.contains("kubernetes")
+    {
+        count += 1;
+    }
+    if (query_lower.contains("python") || query_lower.contains("পাইথন"))
+        && (haystack.contains("python") || haystack.contains("programming language"))
+    {
+        count += 1;
+    }
+    if (query_lower.contains("programming") || query_lower.contains("প্রোগ্রামিং"))
+        && (haystack.contains("programming")
+            || haystack.contains("coding")
+            || haystack.contains("learn to code"))
+    {
+        count += 1;
+    }
+    if matches!(
+        domain.as_str(),
+        "cloud.google.com"
+            | "docs.cloud.google.com"
+            | "kubernetes.io"
+            | "docs.python.org"
+            | "python.org"
+            | "ibm.com"
+            | "coursera.org"
+            | "networklessons.com"
+            | "computernetworkingnotes.com"
+            | "oracle.com"
+            | "mongodb.com"
+            | "postgresql.org"
+            | "techtarget.com"
+            | "aws.amazon.com"
+            | "developer.mozilla.org"
+    ) {
+        count += 1;
+    }
+    count
+}
+
+fn multilingual_technical_explainer_blocked_domain(url: &str) -> bool {
+    matches!(
+        extract_domain(url).as_str(),
+        "arxiv.org" | "github.com" | "zhihu.com" | "reddit.com" | "redd.it" | "ycombinator.com"
+    )
+}
+
+async fn plan_bengali_technical_query(query: &str) -> Option<BengaliPlannerPlan> {
+    let ai_config = AiConfig {
+        default_model: Some("qwen3.5:8b".to_string()),
+        timeout_secs: 20,
+        temperature: 0.1,
+        ..AiConfig::default()
+    };
+    let ollama = OllamaClient::new(&ai_config);
+    if !ollama.is_available().await {
+        return None;
+    }
+    let system = ChatMessage {
+        role: "system".to_string(),
+        content: "You are a Bengali technical search planner. Return ONLY compact JSON with keys retry_query (string) and source_pack_queries (array of up to 5 strings). The goal is to find beginner-friendly Bengali or English explainer pages for the user's Bengali query. Prefer trusted domains and concrete retrieval queries. Do not include markdown.".to_string(),
+    };
+    let user = ChatMessage {
+        role: "user".to_string(),
+        content: format!(
+            "User query: {query}\nReturn JSON only. Example: {{\"retry_query\":\"what is kubernetes docs\",\"source_pack_queries\":[\"site:kubernetes.io kubernetes overview\"]}}"
+        ),
+    };
+    let response = ollama
+        .chat("qwen3.5:8b", &[system, user], 0.1)
+        .await
+        .ok()?;
+    parse_bengali_planner_response(&response)
+}
+
+fn parse_bengali_planner_response(text: &str) -> Option<BengaliPlannerPlan> {
+    let start = text.find('{')?;
+    let end = text.rfind('}')?;
+    let json_text = &text[start..=end];
+    let value: serde_json::Value = serde_json::from_str(json_text).ok()?;
+    let retry_query = value
+        .get("retry_query")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+    let mut source_pack_queries = value
+        .get("source_pack_queries")
+        .and_then(|v| v.as_array())
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|v| v.as_str())
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(|s| s.to_string())
+                .take(5)
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    source_pack_queries.retain(|q| !q.is_empty());
+    if retry_query.is_none() && source_pack_queries.is_empty() {
+        return None;
+    }
+    Some(BengaliPlannerPlan {
+        retry_query,
+        source_pack_queries,
+    })
+}
+
+fn bengali_technical_retry_query(original_query: &str, effective_query: &str) -> String {
+    let original_lower = original_query.to_lowercase();
+    if original_lower.contains("কৃত্রিম বুদ্ধিমত্তা") {
+        return "what is artificial intelligence ai basics beginner guide ibm microsoft google"
+            .to_string();
+    }
+    if original_lower.contains("ডেটাবেস") || effective_query.contains("database") {
+        return "what is database management system dbms basics oracle mongodb postgresql"
+            .to_string();
+    }
+    if original_lower.contains("নেটওয়ার্কিং") {
+        return "what is computer networking basics guide cisco cloudflare".to_string();
+    }
+    if original_lower.contains("কুবেরনেটিস") {
+        return "what is kubernetes container orchestration basics docs".to_string();
+    }
+    if original_lower.contains("পাইথন") {
+        return "what is python programming language basics docs".to_string();
+    }
+    if original_lower.contains("প্রোগ্রামিং") {
+        return "how to learn programming basics beginner guide".to_string();
+    }
+    docs_focused_query(effective_query)
+}
+
+fn bengali_source_pack_queries(original_query: &str, effective_query: &str) -> Vec<String> {
+    let original_lower = original_query.to_lowercase();
+    let effective_lower = effective_query.to_lowercase();
+    if original_lower.contains("কৃত্রিম বুদ্ধিমত্তা")
+        || effective_lower.contains("artificial intelligence")
+    {
+        return vec![
+            "site:ibm.com artificial intelligence basics".to_string(),
+            "site:cloud.google.com artificial intelligence overview".to_string(),
+            "site:microsoft.com artificial intelligence beginner guide".to_string(),
+            "site:teachers.gov.bd কৃত্রিম বুদ্ধিমত্তা".to_string(),
+            "site:prothomalo.com কৃত্রিম বুদ্ধিমত্তা".to_string(),
+        ];
+    }
+    if original_lower.contains("ডেটাবেস") || effective_lower.contains("database") {
+        return vec![
+            "site:oracle.com database management system basics".to_string(),
+            "site:mongodb.com what is a database".to_string(),
+            "site:postgresql.org docs introduction database".to_string(),
+        ];
+    }
+    if original_lower.contains("নেটওয়ার্কিং") || effective_lower.contains("networking") {
+        return vec![
+            "site:cloudflare.com what is computer networking".to_string(),
+            "site:cisco.com networking basics".to_string(),
+            "site:networklessons.com networking basics".to_string(),
+        ];
+    }
+    if original_lower.contains("কুবেরনেটিস") || effective_lower.contains("kubernetes") {
+        return vec![
+            "site:kubernetes.io kubernetes overview".to_string(),
+            "site:cloud.google.com kubernetes overview".to_string(),
+            "site:aws.amazon.com kubernetes basics".to_string(),
+        ];
+    }
+    Vec::new()
+}
+
+fn multilingual_technical_trusted_source(url: &str) -> bool {
+    matches!(
+        extract_domain(url).as_str(),
+        "kubernetes.io"
+            | "cloud.google.com"
+            | "docs.cloud.google.com"
+            | "aws.amazon.com"
+            | "azure.microsoft.com"
+            | "redhat.com"
+            | "ibm.com"
+            | "oracle.com"
+            | "postgresql.org"
+            | "mongodb.com"
+            | "microsoft.com"
+            | "cloudflare.com"
+            | "cisco.com"
+            | "docs.python.org"
+            | "python.org"
+            | "developer.mozilla.org"
+            | "computernetworkingnotes.com"
+            | "networklessons.com"
+            | "digitalocean.com"
+            | "geeksforgeeks.org"
+            | "techtarget.com"
+    )
+}
+
+fn bengali_ai_direct_source(url: &str) -> bool {
+    matches!(
+        extract_domain(url).as_str(),
+        "teachers.gov.bd" | "prothomalo.com"
+    )
+}
+
+fn is_license_query(query: &str) -> bool {
+    let lower = query.to_lowercase();
+    (lower.contains("license") || lower.contains("licence"))
+        && (lower.contains("mit") || lower.contains("apache") || lower.contains("gpl"))
+}
+
+fn license_query_multiplier(query: &str, haystack: &str, url: &str) -> f64 {
+    let domain = extract_domain(url);
+    let mut multiplier = comparison_multiplier(query, haystack, url);
+    if matches!(
+        domain.as_str(),
+        "choosealicense.com" | "opensource.org" | "gnu.org" | "apache.org" | "soos.io"
+    ) {
+        multiplier *= 1.35;
+    }
+    if domain == "wikipedia.org" {
+        multiplier *= 0.85;
+    }
+    if matches!(domain.as_str(), "reddit.com" | "medium.com" | "dev.to") {
+        multiplier *= 0.45;
+    }
+    multiplier
+}
+
+fn is_philosophy_query(query: &str) -> bool {
+    let lower = query.to_lowercase();
+    lower.contains("utilitarianism")
+        || lower.contains("deontology")
+        || lower.contains("deontological")
+        || lower.contains("ethics")
+        || lower.contains("moral philosophy")
+}
+
+fn philosophy_query_multiplier(query: &str, haystack: &str, url: &str) -> f64 {
+    let domain = extract_domain(url);
+    let mut multiplier = comparison_multiplier(query, haystack, url);
+    if matches!(
+        domain.as_str(),
+        "stanford.edu" | "utm.edu" | "britannica.com" | "plato.stanford.edu"
+    ) {
+        multiplier *= 1.35;
+    }
+    if matches!(domain.as_str(), "reddit.com" | "medium.com") {
+        multiplier *= 0.45;
+    }
+    multiplier
+}
+
+fn license_query_match_count(query: &str, haystack: &str, url: &str) -> usize {
+    let mut count = 0;
+    let query_lower = query.to_lowercase();
+    let domain = extract_domain(url);
+    for token in ["mit", "apache", "gpl"] {
+        if query_lower.contains(token) && haystack.contains(token) {
+            count += 1;
+        }
+    }
+    if haystack.contains("license") || haystack.contains("licenses") {
+        count += 1;
+    }
+    if matches!(
+        domain.as_str(),
+        "choosealicense.com" | "opensource.org" | "gnu.org" | "apache.org"
+    ) {
+        count += 1;
+    }
+    count
+}
+
+fn trusted_license_candidate(query: &str, haystack: &str, url: &str) -> bool {
+    if license_query_match_count(query, haystack, url) < 2 {
+        return false;
+    }
+    let domain = extract_domain(url);
+    matches!(
+        domain.as_str(),
+        "choosealicense.com"
+            | "opensource.org"
+            | "gnu.org"
+            | "apache.org"
+            | "wikipedia.org"
+            | "stackoverflow.com"
+            | "stackexchange.com"
+            | "soos.io"
+    )
+}
+
+fn philosophy_query_match_count(query: &str, haystack: &str, url: &str) -> usize {
+    let mut count = 0;
+    let query_lower = query.to_lowercase();
+    let domain = extract_domain(url);
+    for token in ["utilitarianism", "deontology", "deontological", "ethics"] {
+        if query_lower.contains(token) && haystack.contains(token) {
+            count += 1;
+        }
+    }
+    if matches!(
+        domain.as_str(),
+        "stanford.edu" | "utm.edu" | "britannica.com"
+    ) {
+        count += 1;
+    }
+    count
+}
+
+fn broad_health_multiplier(query: &str, haystack: &str, url: &str) -> f64 {
+    let matches = broad_health_match_count(query, haystack, url);
+    let mut multiplier = match matches {
+        3.. => 1.30,
+        2 => 1.12,
+        1 => 0.80,
+        _ => 0.45,
+    };
+    let domain = extract_domain(url);
+    if matches!(domain.as_str(), "reddit.com" | "youtube.com" | "youtu.be") {
+        multiplier *= 0.35;
+    }
+    multiplier
+}
+
+fn broad_health_match_count(query: &str, haystack: &str, url: &str) -> usize {
+    let query_lower = query.to_lowercase();
+    let mut count = 0;
+    let domain = extract_domain(url);
+
+    // 1. Generic disease/condition matcher:
+    // If the query contains any long, specific words that appear in the haystack, count it.
+    let content_words = extract_content_words(&query_lower, None);
+    let mut specific_health_matches = 0;
+    for word in &content_words {
+        if word.len() > 4
+            && haystack.contains(word.as_str())
+            && !["symptom", "cause", "treatment", "diagnosis", "disease"].contains(&word.as_str())
+        {
+            specific_health_matches += 1;
+        }
+    }
+    // Cap at 1 for the condition itself to require a facet match below
+    if specific_health_matches > 0 {
+        count += 1;
+    }
+    // For phrases like "long covid"
+    if query_lower.contains("long covid") && haystack.contains("long covid") {
+        count += 1; // Extra boost if exact phrase matches
+    }
+
+    // 2. Intent facet matchers (causes, symptoms, treatments)
+    if (query_lower.contains("cause")
+        || query_lower.contains("diagnosis")
+        || query_lower.contains("symptom")
+        || query_lower.contains("treatment")
+        || query_lower.contains("option"))
+        && (haystack.contains("cause")
+            || haystack.contains("diagnos")
+            || haystack.contains("symptom")
+            || haystack.contains("treatment")
+            || haystack.contains("therapy")
+            || haystack.contains("option"))
+    {
+        count += 1;
+    }
+
+    // 3. Keep hardcoded common ones as fallback for synonyms
+    if query_lower.contains("sleep apnea")
+        && (haystack.contains("obstructive sleep apnea") || haystack.contains("osa"))
+    {
+        count += 1;
+    }
+    if query_lower.contains("diabetes")
+        && (haystack.contains("type 2 diabetes")
+            || haystack.contains("t2d"))
+    {
+        count += 1;
+    }
+    if (query_lower.contains("guideline")
+        || query_lower.contains("guidelines")
+        || query_lower.contains("recommendation")
+        || query_lower.contains("standards of care"))
+        && (haystack.contains("guideline")
+            || haystack.contains("recommendation")
+            || haystack.contains("standards of care")
+            || haystack.contains("consensus"))
+    {
+        count += 1;
+    }
+    if query_lower.contains("management")
+        && (haystack.contains("management")
+            || haystack.contains("care")
+            || haystack.contains("therapy"))
+    {
+        count += 1;
+    }
+    if (query_lower.contains("creatine")
+        || query_lower.contains("supplement")
+        || query_lower.contains("supplementation"))
+        && (haystack.contains("creatine")
+            || haystack.contains("supplement")
+            || haystack.contains("supplementation"))
+    {
+        count += 1;
+    }
+    if (query_lower.contains("benefit") || query_lower.contains("risk"))
+        && (haystack.contains("benefit")
+            || haystack.contains("benefits")
+            || haystack.contains("risk")
+            || haystack.contains("risks")
+            || haystack.contains("safety")
+            || haystack.contains("side effect")
+            || haystack.contains("side effects"))
+    {
+        count += 1;
+    }
+    if matches!(
+        domain.as_str(),
+        "nih.gov"
+            | "medlineplus.gov"
+            | "cdc.gov"
+            | "nhs.uk"
+            | "mayoclinic.org"
+            | "clevelandclinic.org"
+            | "webmd.com"
+            | "healthline.com"
+            | "medicalnewstoday.com"
+            | "emedicinehealth.com"
+            | "lung.org"
+            | "diabetes.org"
+            | "aace.com"
+            | "acponline.org"
+            | "va.gov"
+            | "medscape.com"
+    ) {
+        count += 1;
+    }
+
+    count
+}
+
+fn comparison_multiplier(query: &str, haystack: &str, url: &str) -> f64 {
+    let entity_matches = comparison_entity_match_count(query, haystack);
+    let mut multiplier = match entity_matches {
+        3.. => 1.35,
+        2 => 1.18,
+        1 => 0.72,
+        _ => 0.40,
+    };
+    let domain = extract_domain(url);
+    if matches!(
+        domain.as_str(),
+        "reddit.com" | "youtube.com" | "youtu.be" | "arxiv.org"
+    ) {
+        multiplier *= 0.35;
+    }
+    if haystack.contains("comparison")
+        || haystack.contains("compare")
+        || haystack.contains("versus")
+        || haystack.contains("difference")
+        || haystack.contains("which to choose")
+        || haystack.contains("pros and cons")
+    {
+        multiplier *= 1.15;
+    }
+    multiplier
+}
+
+fn comparison_entity_match_count(query: &str, haystack: &str) -> usize {
+    extract_comparison_entities(query)
+        .into_iter()
+        .filter(|entity| {
+            if entity.len() <= 3 {
+                haystack
+                    .split(|c: char| !c.is_alphanumeric() && c != '#')
+                    .any(|token| token == entity)
+            } else if entity.contains(' ') {
+                // If the entity is multiple words, require all of them to be present
+                entity.split_whitespace().all(|word| haystack.contains(word))
+            } else {
+                haystack.contains(entity)
+            }
+        })
+        .count()
+}
+
+fn comparison_entity_threshold(query: &str) -> usize {
+    let entity_count = extract_comparison_entities(query).len();
+    if entity_count >= 2 {
+        2
+    } else {
+        1
+    }
+}
+
+fn extract_comparison_entities(query: &str) -> Vec<String> {
+    let lower = query.to_lowercase();
+    let mut normalized = lower
+        .replace(" compared to ", " vs ")
+        .replace(" versus ", " vs ")
+        .replace(" vs. ", " vs ");
+    if !normalized.contains(" vs ") {
+        return Vec::new();
+    }
+    normalized = normalized.replace("comparison", " ");
+    normalized
+        .split(" vs ")
+        .filter_map(|segment| {
+            let tokens = segment
+                .split_whitespace()
+                .filter(|token| !is_generic_comparison_token(token))
+                .collect::<Vec<_>>();
+            if tokens.is_empty() {
+                None
+            } else {
+                Some(tokens.join(" "))
+            }
+        })
+        .collect()
+}
+
+fn is_generic_comparison_token(token: &str) -> bool {
+    matches!(
+        token,
+        "open"
+            | "source"
+            | "license"
+            | "licenses"
+            | "which"
+            | "database"
+            | "databases"
+            | "framework"
+            | "frameworks"
+            | "comparison"
+            | "compare"
+            | "choose"
+            | "to"
+            | "the"
+            | "a"
+            | "an"
+            | "for"
+            | "best"
+            | "latest"
+            | "guide"
+            | "performance"
+            | "benchmark"
+            | "benchmarks"
+            | "speed"
+            | "test"
+            | "tests"
+            | "2024"
+            | "2025"
+            | "2026"
+    )
+}
+
+fn technical_howto_multiplier(query: &str, haystack: &str, url: &str) -> f64 {
+    let domain = extract_domain(url);
+    let mut multiplier = match domain.as_str() {
+        "reddit.com" => 0.30,
+        "stackoverflow.com" | "superuser.com" | "serverfault.com" => 1.20,
+        "docs.docker.com" | "developer.mozilla.org" | "kubernetes.io" | "docs.python.org" => 1.30,
+        _ => 1.0,
+    };
+    if strong_technical_coverage(query, haystack, url) {
+        multiplier *= 1.20;
+    }
+    multiplier
+}
+
+fn strong_technical_coverage(query: &str, haystack: &str, url: &str) -> bool {
+    let query_lower = query.to_lowercase();
+    let technical_terms = [
+        "docker",
+        "kubernetes",
+        "ci",
+        "cd",
+        "pipeline",
+        "pipelines",
+        "deploy",
+        "deployment",
+        "production",
+        "machine learning",
+        "model",
+    ];
+    let matched = technical_terms
+        .iter()
+        .filter(|term| query_lower.contains(**term) && haystack.contains(**term))
+        .count();
+    matched >= 3 || (matched >= 2 && strong_technical_candidate_url(url))
+}
+
+fn strong_technical_candidate_url(url: &str) -> bool {
+    let domain = extract_domain(url);
+    url.contains("docs.docker.com")
+        || matches!(
+            domain.as_str(),
+            "docker.com"
+                | "kubernetes.io"
+                | "mozilla.org"
+                | "python.org"
+                | "stackoverflow.com"
+                | "superuser.com"
+                | "serverfault.com"
+        )
+}
+
+fn community_fallback_blocked(
+    intent: rank::fusion::QueryIntent,
+    health_sensitive_query: bool,
+    language_learning_query: bool,
+    multilingual_foreign_query: bool,
+    result: &ResultItem,
+) -> bool {
+    if !(health_sensitive_query
+        || language_learning_query
+        || multilingual_foreign_query
+        || matches!(
+            intent,
+            rank::fusion::QueryIntent::HowTo | rank::fusion::QueryIntent::Code
+        ))
+    {
+        return false;
+    }
+
+    if matches!(result.backend, BackendId::Reddit | BackendId::HackerNews) {
+        return true;
+    }
+
+    matches!(
+        extract_domain(&result.url).as_str(),
+        "reddit.com" | "redd.it" | "ycombinator.com" | "youtube.com" | "youtu.be"
+    )
+}
+
+fn strong_health_candidate(result: &ResultItem, query: &str) -> bool {
+    let haystack = format!(
+        "{} {}",
+        result.title.to_lowercase(),
+        result.snippet.to_lowercase()
+    );
+    let domain = extract_domain(&result.url);
+    if !matches!(
+        domain.as_str(),
+        "nih.gov"
+            | "medlineplus.gov"
+            | "cdc.gov"
+            | "nhs.uk"
+            | "mayoclinic.org"
+            | "clevelandclinic.org"
+            | "webmd.com"
+            | "healthline.com"
+            | "medicalnewstoday.com"
+            | "emedicinehealth.com"
+            | "heart.org"
+            | "lung.org"
+            | "ncbi.nlm.nih.gov"
+            | "pubmed.ncbi.nlm.nih.gov"
+            | "pmc.ncbi.nlm.nih.gov"
+            | "rxlist.com"
+            | "uptodate.com"
+            | "aafp.org"
+    ) {
+        return false;
+    }
+    broad_health_match_count(query, &haystack, &result.url) >= 2
+        || medical_attribute_match_count(query, &haystack) > 0
+        || health_explainer_match_count(query, &haystack, &result.url) >= 2
+}
+
+fn strong_technical_candidate(result: &ResultItem, intent: rank::fusion::QueryIntent) -> bool {
+    strong_technical_candidate_url(&result.url)
+        || (intent == rank::fusion::QueryIntent::Code
+            && extract_domain(&result.url) == "github.com")
 }
 
 /// Script categories for language-aware filtering.
@@ -1619,8 +3993,9 @@ fn backend_timeout_for(id: &BackendId, default_timeout: Duration) -> Duration {
         BackendId::Tavily | BackendId::Serper | BackendId::Exa | BackendId::Firecrawl => {
             Duration::from_secs(4)
         }
-        // Scrapers are unreliable, cap aggressively
-        BackendId::DuckDuckGo => Duration::from_secs(4),
+        // DDG HTML scraping is flaky under load; keep it bounded and let SearXNG
+        // handle deeper general-web recall for fragile queries.
+        BackendId::DuckDuckGo => Duration::from_secs(5),
         BackendId::Google | BackendId::Bing => Duration::from_secs(3),
         _ => default_timeout,
     };
@@ -1633,7 +4008,7 @@ mod tests {
 
     #[test]
     fn extract_content_words_strips_stopwords() {
-        let words = extract_content_words("best Rust async runtimes 2025");
+        let words = extract_content_words("best Rust async runtimes 2025", None);
         assert!(words.contains(&"rust".to_string()));
         assert!(words.contains(&"async".to_string()));
         assert!(words.contains(&"runtimes".to_string()));
@@ -1643,9 +4018,228 @@ mod tests {
 
     #[test]
     fn extract_content_words_short_words_removed() {
-        let words = extract_content_words("is it a good idea");
+        let words = extract_content_words("is it a good idea", None);
         // "is", "it", "a", "good" are stopwords or <3 chars
         assert!(words.is_empty() || !words.contains(&"is".to_string()));
+    }
+
+    #[test]
+    fn extract_content_words_uses_german_stopwords() {
+        let words = extract_content_words("was ist quantencomputing einfach erklaert", Some("de"));
+        assert!(!words.contains(&"was".to_string()));
+        assert!(!words.contains(&"ist".to_string()));
+        assert!(words.contains(&"quantencomputing".to_string()));
+        assert!(words.contains(&"erklaert".to_string()));
+    }
+
+    #[test]
+    fn extract_content_words_trims_long_queries_to_anchor_terms() {
+        let words = extract_content_words(
+            "how do i configure rust tokio websocket reconnect backoff heartbeat timeout handling in production",
+            None,
+        );
+        assert!(words.len() <= 8);
+        assert!(words.contains(&"rust".to_string()));
+        assert!(words.contains(&"production".to_string()));
+    }
+
+    #[test]
+    fn extract_content_words_keeps_tail_specificity_for_long_queries() {
+        let words = extract_content_words(
+            "step by step guide to deploying a machine learning model to production using Docker Kubernetes and CI CD pipelines",
+            None,
+        );
+        assert!(words.contains(&"docker".to_string()));
+        assert!(words.contains(&"kubernetes".to_string()));
+        assert!(words.contains(&"pipelines".to_string()));
+    }
+
+    #[test]
+    fn extract_specificity_words_prefers_long_query_tail_terms() {
+        let specificity = extract_specificity_words(&[
+            "deploying".to_string(),
+            "machine".to_string(),
+            "learning".to_string(),
+            "production".to_string(),
+            "docker".to_string(),
+            "kubernetes".to_string(),
+            "pipelines".to_string(),
+        ]);
+        assert_eq!(
+            specificity,
+            vec![
+                "docker".to_string(),
+                "kubernetes".to_string(),
+                "pipelines".to_string()
+            ]
+        );
+    }
+
+    #[test]
+    fn extract_specificity_words_skips_generic_comparison_terms() {
+        let specificity = extract_specificity_words(&[
+            "blood".to_string(),
+            "pressure".to_string(),
+            "medication".to_string(),
+            "side".to_string(),
+            "effects".to_string(),
+            "comparison".to_string(),
+        ]);
+        assert!(specificity.is_empty());
+    }
+
+    #[test]
+    fn parse_bengali_planner_response_extracts_retry_and_sources() {
+        let plan = parse_bengali_planner_response(
+            r#"{"retry_query":"what is artificial intelligence basics","source_pack_queries":["site:ibm.com artificial intelligence basics","site:teachers.gov.bd কৃত্রিম বুদ্ধিমত্তা"]}"#,
+        )
+        .expect("plan");
+        assert_eq!(
+            plan.retry_query.as_deref(),
+            Some("what is artificial intelligence basics")
+        );
+        assert_eq!(plan.source_pack_queries.len(), 2);
+        assert!(plan.source_pack_queries[0].contains("ibm.com"));
+    }
+
+    #[test]
+    fn bengali_technical_retry_query_is_topic_specific() {
+        assert!(bengali_technical_retry_query("কৃত্রিম বুদ্ধিমত্তা কী", "x").contains("ibm"));
+        assert!(bengali_technical_retry_query("ডেটাবেস কী", "x").contains("oracle"));
+    }
+
+    #[test]
+    fn extract_query_phrases_keeps_salient_medical_bigrams() {
+        let phrases =
+            extract_query_phrases("blood pressure medication side effects comparison", None);
+        assert!(phrases.contains(&"blood pressure".to_string()));
+        assert!(phrases.contains(&"side effects".to_string()));
+        assert!(!phrases.contains(&"effects comparison".to_string()));
+    }
+
+    #[test]
+    fn health_authority_multiplier_prefers_clinical_domains() {
+        assert!(
+            health_authority_multiplier("https://medlineplus.gov/highbloodpressure.html") > 1.0
+        );
+        assert!(
+            health_authority_multiplier("https://en.wikipedia.org/wiki/Antihypertensive") < 1.0
+        );
+        assert_eq!(
+            health_authority_multiplier("https://example.com/article"),
+            1.0
+        );
+    }
+
+    #[test]
+    fn health_backfill_allows_clinical_domains_only() {
+        assert!(health_backfill_allowed(
+            "https://www.webmd.com/hypertension-high-blood-pressure/side-effects-high-blood-pressure-medications"
+        ));
+        assert!(health_backfill_allowed(
+            "https://www.mayoclinic.org/diseases-conditions/high-blood-pressure/in-depth/high-blood-pressure-medication/art-20046280"
+        ));
+        assert!(!health_backfill_allowed(
+            "https://en.wikipedia.org/wiki/Antihypertensive"
+        ));
+        assert!(!health_backfill_allowed("https://example.com/article"));
+    }
+
+    #[test]
+    fn medical_attribute_multiplier_prefers_side_effect_comparisons() {
+        let query = "hypertension antihypertensive drug classes comparison adverse effects ace inhibitor arb beta blocker diuretic calcium channel blocker";
+        let strong = medical_attribute_multiplier(
+            query,
+            "compare adverse effects and side effects across antihypertensive classes",
+        );
+        let weak = medical_attribute_multiplier(
+            query,
+            "how to control high blood pressure without medication and exercise",
+        );
+        assert!(strong > 1.0);
+        assert!(weak < 1.0);
+        assert!(strong > weak);
+    }
+
+    #[test]
+    fn medical_attribute_match_count_requires_comparison_or_side_effect_signals() {
+        let query = "hypertension antihypertensive drug classes comparison adverse effects ace inhibitor arb beta blocker diuretic calcium channel blocker";
+        let strong = medical_attribute_match_count(
+            query,
+            "comparative effectiveness and adverse effects across antihypertensive drug classes",
+        );
+        let weak = medical_attribute_match_count(
+            query,
+            "hypertension overview and causes from world health organization",
+        );
+        assert!(strong >= 2);
+        assert_eq!(weak, 0);
+    }
+
+    #[test]
+    fn medical_attribute_match_count_rejects_generic_medication_mentions() {
+        let query = "blood pressure medication side effects comparison";
+        let generic = medical_attribute_match_count(
+            query,
+            "high blood pressure is diagnosed if the reading is equal to or greater than 130/80 and medications may be used for treatment",
+        );
+        let specific = medical_attribute_match_count(
+            query,
+            "compare side effects of ace inhibitors versus beta blockers and diuretics",
+        );
+        assert_eq!(generic, 0);
+        assert!(specific >= 2);
+    }
+
+    #[test]
+    fn health_explainer_multiplier_prefers_generic_mechanism_pages() {
+        let query = "mRNA vaccine technology how it works";
+        let explainer = health_explainer_multiplier(
+            query,
+            "mRNA vaccine technology explained and how it works by delivering messenger RNA",
+            "https://medlineplus.gov/vaccines.html",
+        );
+        let brand_page = health_explainer_multiplier(
+            query,
+            "Moderna COVID-19 vaccine information and safety data",
+            "https://en.wikipedia.org/wiki/Moderna_COVID-19_vaccine",
+        );
+        assert!(explainer > 1.0);
+        assert!(brand_page < explainer);
+    }
+
+    #[test]
+    fn health_explainer_match_count_requires_vaccine_and_mechanism_signals() {
+        let query = "mRNA vaccine technology how it works";
+        let strong = health_explainer_match_count(
+            query,
+            "mRNA vaccine technology explained and how it works by delivering messenger RNA",
+            "https://medlineplus.gov/vaccines.html",
+        );
+        let weak = health_explainer_match_count(
+            query,
+            "iphone force shutdown methods and excel tips",
+            "https://jingyan.baidu.com/article/example.html",
+        );
+        assert!(strong >= 3);
+        assert_eq!(weak, 0);
+    }
+
+    #[test]
+    fn health_sensitive_backend_policy_excludes_wikipedia() {
+        assert!(health_sensitive_backend_allowed(&BackendId::DuckDuckGo));
+        assert!(!health_sensitive_backend_allowed(&BackendId::Wikipedia));
+    }
+
+    #[test]
+    fn count_term_matches_requires_exact_match_for_short_terms() {
+        let haystack = "stock ticker cd projekt and ci systems";
+        let terms = vec!["cd".to_string(), "ci".to_string(), "proj".to_string()];
+        assert_eq!(count_term_matches(haystack, &terms), 3);
+
+        let noisy_haystack = "academic production medicine";
+        let short_terms = vec!["ci".to_string(), "cd".to_string()];
+        assert_eq!(count_term_matches(noisy_haystack, &short_terms), 0);
     }
 
     #[test]
@@ -1655,6 +4249,220 @@ mod tests {
             "quelles sont les avancees en ia générative"
         ));
         assert!(!has_non_ascii_letters("latest ai news 2026"));
+    }
+
+    #[test]
+    fn health_sensitive_query_detection() {
+        assert!(is_health_sensitive_query(
+            "blood pressure medication side effects comparison"
+        ));
+        assert!(is_health_sensitive_query("diabetes treatment options"));
+        assert!(is_health_sensitive_query(
+            "sleep apnea causes diagnosis treatment options"
+        ));
+        assert!(!is_health_sensitive_query("vector database comparison"));
+    }
+
+    #[test]
+    fn broad_health_match_count_captures_diabetes_guidelines() {
+        let query = "type 2 diabetes management latest guidelines";
+        let count = broad_health_match_count(
+            query,
+            "standards of care and guideline recommendations for type 2 diabetes management",
+            "https://professional.diabetes.org/standards-of-care",
+        );
+        assert!(count >= 3);
+    }
+
+    #[test]
+    fn comparison_entity_match_count_requires_multiple_entities() {
+        let query = "React vs Vue vs Angular framework comparison 2024";
+        let strong = comparison_entity_match_count(
+            query,
+            "react vs vue vs angular comparison and framework tradeoffs",
+        );
+        let weak = comparison_entity_match_count(query, "2024 framework trends and benchmarks");
+        assert!(strong >= 2);
+        assert_eq!(weak, 0);
+    }
+
+    #[test]
+    fn comparison_entities_strip_generic_tokens() {
+        assert_eq!(
+            extract_comparison_entities("open source license comparison MIT vs Apache vs GPL"),
+            vec!["mit".to_string(), "apache".to_string(), "gpl".to_string()]
+        );
+        assert_eq!(
+            extract_comparison_entities("PostgreSQL vs MySQL which database to choose"),
+            vec!["postgresql".to_string(), "mysql".to_string()]
+        );
+    }
+
+    #[test]
+    fn strong_technical_coverage_accepts_multi_anchor_howto_articles() {
+        assert!(strong_technical_coverage(
+            "how to deploying machine learning model production docker kubernetes ci cd pipelines",
+            "deploying machine learning models in production with kubernetes and docker",
+            "https://www.buildpiper.io/blogs/deploying-machine-learning-models-in-production-with-kubernetes/",
+        ));
+    }
+
+    #[test]
+    fn language_learning_match_count_accepts_tv5monde() {
+        let query = "comment apprendre le français rapidement";
+        let matches = language_learning_match_count(
+            query,
+            "apprendre le français avec des cours et exercices pour débutants",
+            "https://apprendre.tv5monde.com/fr",
+        );
+        assert!(matches >= 2);
+    }
+
+    #[test]
+    fn multilingual_technical_explainer_detection_catches_bengali_database() {
+        assert!(is_multilingual_technical_explainer_query(
+            "ডেটাবেস কী",
+            Some("bn")
+        ));
+    }
+
+    #[test]
+    fn multilingual_technical_explainer_multiplier_prefers_docs_over_wikipedia() {
+        let query = "ডেটাবেস কী";
+        let docs = multilingual_technical_explainer_multiplier(
+            query,
+            "what is database management system dbms fundamentals",
+            "https://www.oracle.com/database/what-is-database/",
+        );
+        let wiki = multilingual_technical_explainer_multiplier(
+            query,
+            "database encyclopedia overview",
+            "https://en.wikipedia.org/wiki/Database",
+        );
+        assert!(docs > wiki);
+    }
+
+    #[test]
+    fn multilingual_technical_explainer_match_count_prefers_relevant_docs() {
+        let query = "বাংলায় কুবেরনেটিস কী";
+        let strong = multilingual_technical_explainer_match_count(
+            query,
+            "what is kubernetes container orchestration basics",
+            "https://kubernetes.io/docs/home/",
+        );
+        let weak = multilingual_technical_explainer_match_count(
+            query,
+            "random unrelated baidu page",
+            "https://zhidao.baidu.com/question/example.html",
+        );
+        assert!(strong >= 2);
+        assert_eq!(weak, 0);
+    }
+
+    #[test]
+    fn strong_health_candidate_accepts_rxlist_side_effect_page() {
+        let result = ResultItem {
+            title: "Blood Pressure Medications: Types, Side Effects".into(),
+            url: "https://www.rxlist.com/high_blood_pressure_hypertension_medications/drugs-condition.htm".into(),
+            snippet: "ACE inhibitors, beta blockers, diuretics and calcium channel blockers with side effects and uses.".into(),
+            rank: 1,
+            backend: BackendId::Searxng,
+            score: Some(0.5),
+            published_date: None,
+        };
+        assert!(strong_health_candidate(
+            &result,
+            "blood pressure medication side effects comparison"
+        ));
+    }
+
+    #[test]
+    fn trusted_license_candidate_accepts_choosealicense() {
+        assert!(trusted_license_candidate(
+            "open source license comparison MIT vs Apache vs GPL",
+            "compare mit apache gpl open source licenses and obligations",
+            "https://choosealicense.com/licenses/"
+        ));
+    }
+
+    #[test]
+    fn generic_disease_overview_rejected_for_side_effect_comparison() {
+        assert!(generic_disease_overview(
+            "blood pressure medication side effects comparison",
+            "hypertension fact sheet overview symptoms prevention treatment and risk factors",
+            "https://www.who.int/news-room/fact-sheets/detail/hypertension"
+        ));
+        assert!(!generic_disease_overview(
+            "blood pressure medication side effects comparison",
+            "compare side effects of ace inhibitors beta blockers and diuretics",
+            "https://www.rxlist.com/high_blood_pressure_hypertension_medications/drugs-condition.htm"
+        ));
+    }
+
+    #[test]
+    fn docs_focused_query_adds_docs_anchor_once() {
+        assert_eq!(
+            docs_focused_query("docker compose networking between containers"),
+            "docker compose networking between containers docs"
+        );
+        assert_eq!(
+            docs_focused_query("docker compose networking docs"),
+            "docker compose networking docs"
+        );
+        assert_eq!(
+            docs_focused_query(
+                "step by step guide to deploying a machine learning model to production using Docker Kubernetes and CI CD pipelines"
+            ),
+            "deploying a machine learning model to production using docker kubernetes and ci cd pipelines docs"
+        );
+    }
+
+    #[test]
+    fn strict_health_query_detection() {
+        assert!(is_strict_health_query(
+            "blood pressure medication side effects comparison"
+        ));
+        assert!(!is_strict_health_query(
+            "sleep apnea causes diagnosis treatment options"
+        ));
+        assert!(!is_strict_health_query(
+            "COVID long haulers symptoms treatment"
+        ));
+        assert!(!is_strict_health_query(
+            "mRNA vaccine technology how it works"
+        ));
+        assert!(!is_strict_health_query("what is quantum computing"));
+    }
+
+    #[test]
+    fn health_explainer_query_detection() {
+        assert!(is_health_explainer_query(
+            "mRNA vaccine technology how it works"
+        ));
+        assert!(is_health_explainer_query("what is insulin resistance"));
+        assert!(!is_health_explainer_query(
+            "blood pressure medication side effects comparison"
+        ));
+    }
+
+    #[test]
+    fn community_fallback_blocked_for_multilingual_queries() {
+        let result = ResultItem {
+            title: "What is Kubernetes?".into(),
+            url: "https://stegosaurusdormant.com/kubernetes-ingresses/".into(),
+            snippet: "HN story by example".into(),
+            rank: 1,
+            backend: BackendId::HackerNews,
+            score: Some(0.4),
+            published_date: None,
+        };
+        assert!(community_fallback_blocked(
+            rank::fusion::QueryIntent::Informational,
+            false,
+            false,
+            true,
+            &result,
+        ));
     }
 
     #[test]
@@ -1732,7 +4540,7 @@ mod tests {
         let default = Duration::from_secs(30);
         assert_eq!(
             backend_timeout_for(&BackendId::DuckDuckGo, default),
-            Duration::from_secs(4)
+            Duration::from_secs(5)
         );
         assert_eq!(
             backend_timeout_for(&BackendId::Reddit, default),

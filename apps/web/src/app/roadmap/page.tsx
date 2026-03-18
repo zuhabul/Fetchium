@@ -15,7 +15,7 @@ const phases = [
     status: "done",
     items: [
       "17 novel algorithms (CEP, QATBE, SCS, PDS, HyperFusion, AMRS, PIE, RAR + 9 more)",
-      "11+ search backends with parallel dispatch and circuit breakers",
+      "17+ search backends with parallel dispatch and circuit breakers",
       "5-layer content extraction pipeline (CEP)",
       "HyperFusion 8-signal ranking",
       "QATBE token-budgeted extraction",
@@ -25,7 +25,7 @@ const phases = [
       "MCP server with 12 tools",
       "CLI with 26 commands",
       "TypeScript and Python SDK docs",
-      "563+ tests, zero warnings",
+      "1,100+ tests, zero warnings",
     ],
   },
   {

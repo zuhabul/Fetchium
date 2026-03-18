@@ -1,9 +1,12 @@
 //! Universal entity search across orgs, users, keys, tickets, incidents.
 
-use axum::{extract::{Query, State}, Json};
-use serde::Deserialize;
 use crate::admin::rbac::AdminAuth;
 use crate::middleware::AppState;
+use axum::{
+    extract::{Query, State},
+    Json,
+};
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct SearchParams {
@@ -45,10 +48,21 @@ pub async fn search(
         for org in orgs {
             results.push(SearchResult {
                 entity_type: "org".to_string(),
-                id: org.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                display_name: org.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                id: org
+                    .get("id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
+                display_name: org
+                    .get("name")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
                 subtitle: org.get("plan").and_then(|v| v.as_str()).map(String::from),
-                href: format!("/orgs/{}", org.get("id").and_then(|v| v.as_str()).unwrap_or("")),
+                href: format!(
+                    "/orgs/{}",
+                    org.get("id").and_then(|v| v.as_str()).unwrap_or("")
+                ),
             });
         }
     }
@@ -58,10 +72,24 @@ pub async fn search(
         for inc in incidents {
             results.push(SearchResult {
                 entity_type: "incident".to_string(),
-                id: inc.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                display_name: inc.get("title").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                subtitle: inc.get("severity").and_then(|v| v.as_str()).map(String::from),
-                href: format!("/incidents/{}", inc.get("id").and_then(|v| v.as_str()).unwrap_or("")),
+                id: inc
+                    .get("id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
+                display_name: inc
+                    .get("title")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
+                subtitle: inc
+                    .get("severity")
+                    .and_then(|v| v.as_str())
+                    .map(String::from),
+                href: format!(
+                    "/incidents/{}",
+                    inc.get("id").and_then(|v| v.as_str()).unwrap_or("")
+                ),
             });
         }
     }

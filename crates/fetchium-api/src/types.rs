@@ -270,6 +270,27 @@ pub struct UsageResponse {
     pub usage: serde_json::Value,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DashboardOverviewResponse {
+    pub meta: ResponseMeta,
+    pub summary: serde_json::Value,
+    pub timeseries: serde_json::Value,
+    pub top_endpoints: serde_json::Value,
+    pub recent_requests: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DashboardBillingResponse {
+    pub meta: ResponseMeta,
+    pub organization: serde_json::Value,
+    pub subscription: serde_json::Value,
+    pub payment_method: serde_json::Value,
+    pub usage: serde_json::Value,
+    pub credits: serde_json::Value,
+    pub invoices: serde_json::Value,
+    pub actions: serde_json::Value,
+}
+
 // ─── YouTube ─────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Deserialize)]

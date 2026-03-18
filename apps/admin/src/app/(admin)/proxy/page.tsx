@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { ADMIN_PAGE_PADDING } from '@/lib/layout'
 import { getSession, adminFetch } from '@/lib/session'
 import TopBar from '@/components/layout/TopBar'
 import ProxyActions from './ProxyActions'
@@ -39,7 +40,7 @@ export default async function ProxyPage() {
   return (
     <div className="flex flex-col min-h-full">
       <TopBar title="Proxy Operations" />
-      <div className="p-6 space-y-6">
+      <div className={`${ADMIN_PAGE_PADDING} space-y-6`}>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

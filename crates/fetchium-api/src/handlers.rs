@@ -20,12 +20,12 @@ use tokio::time::{timeout, Duration};
 type ApiResult<T> = Result<Json<T>, (StatusCode, Json<ApiError>)>;
 type ApiResponse = Result<axum::response::Response, (StatusCode, Json<ApiError>)>;
 
-const SEARCH_TIMEOUT_SECS: u64 = 25;
-const FETCH_TIMEOUT_SECS: u64 = 12;
-const ESTIMATE_TIMEOUT_SECS: u64 = 5;
-const RESEARCH_TIMEOUT_SECS: u64 = 30;
-const YOUTUBE_TIMEOUT_SECS: u64 = 15;
-const SOCIAL_TIMEOUT_SECS: u64 = 15;
+const SEARCH_TIMEOUT_SECS: u64 = 60;
+const FETCH_TIMEOUT_SECS: u64 = 30;
+const ESTIMATE_TIMEOUT_SECS: u64 = 10;
+const RESEARCH_TIMEOUT_SECS: u64 = 90;
+const YOUTUBE_TIMEOUT_SECS: u64 = 45;
+const SOCIAL_TIMEOUT_SECS: u64 = 45;
 
 fn request_id_from_headers(headers: &HeaderMap) -> String {
     headers

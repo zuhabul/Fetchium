@@ -23,7 +23,7 @@ export const metadata: Metadata = {
  */
 
 const rows = [
-  { feature: "Multi-source search federation", f: "yes", t: "partial", note: "Tavily aggregates up to 20 sources; Fetchium federates 11+ backends" },
+  { feature: "Multi-source search federation", f: "yes", t: "partial", note: "Tavily aggregates up to 20 sources; Fetchium federates 17 backends" },
   { feature: "Full content extraction (CEP)", f: "yes", t: "no", note: "Tavily returns snippets; Fetchium returns full extracted content" },
   { feature: "Token budget management (QATBE)", f: "yes", t: "no", note: "Fetchium packs highest-relevance content into your token budget" },
   { feature: "Evidence graphs + citations", f: "yes", t: "partial", note: "Tavily includes citations; Fetchium adds structured evidence graphs" },

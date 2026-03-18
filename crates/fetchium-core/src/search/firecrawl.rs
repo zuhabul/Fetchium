@@ -146,8 +146,16 @@ impl SearchBackend for FirecrawlBackend {
                 }
                 Err(e) => {
                     if let FetchiumError::Structured(ref se) = e {
-                        if se.message.contains("401") || se.message.contains("402") || se.message.contains("429") || se.message.contains("limit") || se.message.contains("credits") {
-                            tracing::warn!("Firecrawl key exhausted or limited, rotating... Error: {}", se.message);
+                        if se.message.contains("401")
+                            || se.message.contains("402")
+                            || se.message.contains("429")
+                            || se.message.contains("limit")
+                            || se.message.contains("credits")
+                        {
+                            tracing::warn!(
+                                "Firecrawl key exhausted or limited, rotating... Error: {}",
+                                se.message
+                            );
                             self.rotate_key();
                             last_err = Some(e);
                             continue;
@@ -158,7 +166,9 @@ impl SearchBackend for FirecrawlBackend {
             }
         }
 
-        Err(last_err.unwrap_or(FetchiumError::Search("Firecrawl: All keys exhausted".into())))
+        Err(last_err.unwrap_or(FetchiumError::Search(
+            "Firecrawl: All keys exhausted".into(),
+        )))
     }
 }
 

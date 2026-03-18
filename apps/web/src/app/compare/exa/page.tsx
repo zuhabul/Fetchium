@@ -7,7 +7,7 @@ import { Check, X, Minus } from "lucide-react";
 export const metadata: Metadata = {
   title: "Fetchium vs Exa — Multi-Backend vs Single Semantic Index (2026)",
   description:
-    "Fetchium federates 11+ backends at $0.90/1K. Exa's neural search uses a single proprietary index at $5.00/1K. Full feature comparison with verified pricing.",
+    "Fetchium federates 17 backends at $0.90/1K. Exa's neural search uses a single proprietary index at $5.00/1K. Full feature comparison with verified pricing.",
 };
 
 /**
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
  */
 
 const rows = [
-  { feature: "Multi-source federation", f: "yes", e: "no", note: "Exa uses a single proprietary crawled index; Fetchium queries 11+ live backends" },
+  { feature: "Multi-source federation", f: "yes", e: "no", note: "Exa uses a single proprietary crawled index; Fetchium queries 17+ live backends" },
   { feature: "Live web results", f: "yes", e: "partial", note: "Exa indexes the web but results may lag; Fetchium queries backends in real-time" },
   { feature: "Full content extraction (CEP)", f: "yes", e: "yes", note: "Exa Contents API returns parsed content; Fetchium adds 5 extraction layers" },
   { feature: "Token budget management (QATBE)", f: "yes", e: "no", note: "Fetchium uses BM25 + knapsack to pack relevant content into your budget" },
@@ -68,7 +68,7 @@ export default function CompareExaPage() {
             <p className="text-base sm:text-lg text-slate-400 max-w-2xl leading-relaxed">
               Exa (formerly Metaphor) built a proprietary neural search index optimized for AI — a genuinely
               impressive technical achievement ($700M valuation, Series B 2025). Fetchium takes a different approach:
-              federated live search across 11+ backends with full content extraction, at 5.5× lower cost.
+              federated live search across 17 backends with full content extraction, at 5.5× lower cost.
             </p>
           </div>
 
@@ -84,7 +84,7 @@ export default function CompareExaPage() {
               <div className="text-[12px] text-slate-500 mt-1">~500ms vs ~1.2s avg</div>
             </div>
             <div className="rounded-2xl border border-violet-500/20 bg-violet-500/8 p-5 text-center">
-              <div className="text-3xl font-bold text-violet-300">11+</div>
+              <div className="text-3xl font-bold text-violet-300">17+</div>
               <div className="text-sm text-slate-300 mt-1">live backends</div>
               <div className="text-[12px] text-slate-500 mt-1">vs Exa's 1 index</div>
             </div>

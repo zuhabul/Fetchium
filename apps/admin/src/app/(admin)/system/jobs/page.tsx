@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { ADMIN_PAGE_PADDING } from '@/lib/layout'
 import { getSession, adminFetch } from '@/lib/session'
 import TopBar from '@/components/layout/TopBar'
 
@@ -39,7 +40,7 @@ export default async function JobsPage() {
   return (
     <>
       <TopBar title="Activity Monitor" subtitle="Real-time admin activity" />
-      <div className="p-6 space-y-6 max-w-5xl">
+      <div className={`${ADMIN_PAGE_PADDING} max-w-5xl space-y-6`}>
         <div className="grid grid-cols-3 gap-4">
           {[['Total Orgs', summary.total_orgs], ['Open Incidents', summary.open_incidents], ['Open Tickets', summary.open_tickets]].map(([label, val]) => (
             <div key={label as string} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">

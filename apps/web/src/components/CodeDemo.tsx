@@ -81,7 +81,7 @@ page = fetchium.extract(
   curl: {
     label: "cURL",
     ext: ".sh",
-    code: `# Federated search across 11 backends
+    code: `# Federated search across 17 backends
 curl -X POST ***REMOVED***/v1/search \\
   -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
   -H "Content-Type: application/json" \\

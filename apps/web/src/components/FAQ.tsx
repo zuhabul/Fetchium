@@ -17,11 +17,11 @@ import Link from "next/link";
 const faqs = [
   {
     q: "What is Fetchium?",
-    a: "Fetchium is a search API built for AI applications. Unlike traditional SERP scrapers, Fetchium delivers a complete pipeline in one API call: multi-backend search (11+ sources), 5-layer content extraction (CEP), neural ranking (HyperFusion), token-budgeted output (QATBE), and structured citations with evidence graphs. It's designed to feed RAG pipelines, AI agents, and research workflows.",
+    a: "Fetchium is a search API built for AI applications. Unlike traditional SERP scrapers, Fetchium delivers a complete pipeline in one API call: multi-backend search (17+ sources), 5-layer content extraction (CEP), neural ranking (HyperFusion), token-budgeted output (QATBE), and structured citations with evidence graphs. It's designed to feed RAG pipelines, AI agents, and research workflows.",
   },
   {
     q: "How does Fetchium differ from Firecrawl?",
-    a: "Firecrawl is an extraction tool — you give it a URL and it returns cleaned markdown. Fetchium is a search + extraction + ranking + citation pipeline. You give it a query and it returns ranked, extracted, token-budgeted results from 11+ backends with evidence graphs. Fetchium includes Firecrawl's core extraction use case plus search federation, neural ranking, and cross-source validation.",
+    a: "Firecrawl is an extraction tool — you give it a URL and it returns cleaned markdown. Fetchium is a search + extraction + ranking + citation pipeline. You give it a query and it returns ranked, extracted, token-budgeted results from 17 backends with evidence graphs. Fetchium includes Firecrawl's core extraction use case plus search federation, neural ranking, and cross-source validation.",
   },
   {
     q: "How does Fetchium compare to Tavily and Exa?",

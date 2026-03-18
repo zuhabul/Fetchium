@@ -1,4 +1,5 @@
 import { getSession, adminFetch } from '@/lib/session'
+import { ADMIN_PAGE_PADDING } from '@/lib/layout'
 import TopBar from '@/components/layout/TopBar'
 import { notFound } from 'next/navigation'
 import PostmortemClient from './PostmortemClient'
@@ -68,7 +69,7 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
     return (
       <>
         <TopBar title="Incident" />
-        <div className="p-6 text-zinc-400 text-sm">Failed to load incident.</div>
+        <div className={`${ADMIN_PAGE_PADDING} text-sm text-zinc-400`}>Failed to load incident.</div>
       </>
     )
   }
@@ -76,7 +77,7 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
   return (
     <>
       <TopBar title={`INC-${id.slice(0, 8).toUpperCase()}`} subtitle={incident.title} />
-      <div className="p-6 space-y-5 max-w-4xl">
+      <div className={`${ADMIN_PAGE_PADDING} max-w-4xl space-y-5`}>
         {/* Header */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-wrap items-center gap-3">
           <h2 className="text-base font-semibold text-zinc-100 flex-1">{incident.title}</h2>

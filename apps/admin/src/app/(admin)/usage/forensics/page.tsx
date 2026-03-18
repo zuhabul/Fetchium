@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
+import { ADMIN_PAGE_PADDING } from '@/lib/layout'
 import TopBar from '@/components/layout/TopBar'
 import Link from 'next/link'
-import { ArrowLeft, Copy, Check, Search } from 'lucide-react'
+import { ArrowLeft, Copy, Check, Search, Fingerprint } from 'lucide-react'
 
 interface ForensicsResult {
   request_id: string
@@ -17,9 +18,15 @@ interface ForensicsResult {
 }
 
 function statusColor(code: number): string {
-  if (code < 300) return 'bg-emerald-500/20 text-emerald-400'
-  if (code < 500) return 'bg-amber-500/20 text-amber-400'
-  return 'bg-red-500/20 text-red-400'
+  if (code < 300) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+  if (code < 500) return 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+  return 'bg-red-500/20 text-red-400 border-red-500/30'
+}
+
+function durationColor(ms: number): string {
+  if (ms < 300) return 'text-emerald-400'
+  if (ms < 1000) return 'text-amber-400'
+  return 'text-red-400'
 }
 
 export default function ForensicsPage() {
@@ -37,16 +44,11 @@ export default function ForensicsPage() {
     setResult(null)
     setNotFound(false)
     setError(null)
-
     try {
       const res = await fetch(`/api/admin/usage/forensics/${encodeURIComponent(requestId.trim())}`)
-      if (res.status === 404) {
-        setNotFound(true)
-      } else if (res.ok) {
-        setResult(await res.json())
-      } else {
-        setError(`API error: ${res.status}`)
-      }
+      if (res.status === 404) setNotFound(true)
+      else if (res.ok) setResult(await res.json())
+      else setError(`API error: ${res.status}`)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Request failed')
     } finally {
@@ -65,83 +67,130 @@ export default function ForensicsPage() {
   return (
     <>
       <TopBar title="Request Forensics" subtitle="Look up individual request details by ID" />
-      <div className="p-6 space-y-5">
-        <Link href="/usage" className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+      <div className={`${ADMIN_PAGE_PADDING} space-y-5`}>
+
+        <Link
+          href="/usage"
+          className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+        >
           <ArrowLeft className="w-3 h-3" /> Back to Usage
         </Link>
 
-        {/* Search form */}
-        <form onSubmit={handleSubmit} className="flex items-center gap-3">
-          <input
-            type="text"
-            value={requestId}
-            onChange={e => setRequestId(e.target.value)}
-            placeholder="Enter request ID..."
-            className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 w-96"
-          />
+        {/* Search form — full width, wraps on mobile */}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+            <input
+              type="text"
+              value={requestId}
+              onChange={e => setRequestId(e.target.value)}
+              placeholder="Enter request ID (e.g. req_abc123…)"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg pl-9 pr-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+            />
+          </div>
           <button
             type="submit"
             disabled={loading || !requestId.trim()}
-            className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm px-3 py-1.5 rounded-md transition-colors disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0 min-h-[42px]"
           >
             <Search className="w-3.5 h-3.5" />
-            {loading ? 'Searching...' : 'Look up'}
+            {loading ? 'Searching…' : 'Look up'}
           </button>
         </form>
 
+        {/* Error */}
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-400">
             {error}
           </div>
         )}
 
+        {/* Not found */}
         {notFound && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-8 text-center">
-            <p className="text-sm text-zinc-400">No request found with that ID.</p>
-            <p className="text-xs text-zinc-600 mt-1">Check the ID and try again.</p>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-10 text-center space-y-1">
+            <Fingerprint className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
+            <p className="text-sm font-medium text-zinc-400">No request found with that ID</p>
+            <p className="text-xs text-zinc-600">Double-check the ID format and try again</p>
           </div>
         )}
 
+        {/* Result card */}
         {result && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
-            {/* Header row */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs text-zinc-400">{result.request_id}</span>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+
+            {/* Card header */}
+            <div className="flex flex-col gap-3 border-b border-zinc-800 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <Fingerprint className="w-4 h-4 text-zinc-500 shrink-0" />
+                <span className="font-mono text-xs text-zinc-300 truncate min-w-0">
+                  {result.request_id}
+                </span>
                 <button
                   onClick={handleCopy}
-                  className="p-1 rounded hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300 transition-colors"
+                  className="p-1.5 rounded-md hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300 transition-colors shrink-0"
                   title="Copy request ID"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied
+                    ? <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
-              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusColor(result.status_code)}`}>
-                {result.status_code}
-              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-xs font-semibold ${statusColor(result.status_code)}`}>
+                  {result.status_code}
+                </span>
+                {result.duration_ms != null && (
+                  <span className={`text-xs font-medium tabular-nums ${durationColor(result.duration_ms)}`}>
+                    {result.duration_ms}ms
+                  </span>
+                )}
+              </div>
             </div>
 
-            <hr className="border-zinc-800" />
-
-            {/* Detail grid */}
-            <dl className="grid grid-cols-2 gap-4">
+            {/* Detail grid — 1 col on mobile, 2 on sm, 3 on lg */}
+            <dl className="grid grid-cols-1 gap-0 divide-y divide-zinc-800/60 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-3">
               {[
-                ['Timestamp', result.timestamp ? new Date(result.timestamp).toLocaleString() : '—'],
-                ['Endpoint', result.endpoint ?? '—'],
-                ['Organization', result.org_name ?? result.org_id ?? '—'],
-                ['Key Prefix', result.key_prefix ?? '—'],
-                ['Status Code', String(result.status_code ?? '—')],
-                ['Duration', result.duration_ms != null ? `${result.duration_ms}ms` : '—'],
-              ].map(([label, val]) => (
-                <div key={label}>
-                  <dt className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">{label}</dt>
-                  <dd className="text-sm text-zinc-200">
-                    {label === 'Organization' && result.org_id ? (
-                      <Link href={`/orgs/${result.org_id}`} className="text-blue-400 hover:underline">
-                        {val}
+                {
+                  label: 'Timestamp',
+                  value: result.timestamp ? new Date(result.timestamp).toLocaleString() : '—',
+                },
+                {
+                  label: 'Endpoint',
+                  value: result.endpoint ?? '—',
+                  mono: true,
+                },
+                {
+                  label: 'Organization',
+                  value: result.org_name ?? result.org_id ?? '—',
+                  link: result.org_id ? `/orgs/${result.org_id}` : undefined,
+                },
+                {
+                  label: 'Key Prefix',
+                  value: result.key_prefix ?? '—',
+                  mono: true,
+                },
+                {
+                  label: 'Status Code',
+                  value: String(result.status_code ?? '—'),
+                },
+                {
+                  label: 'Duration',
+                  value: result.duration_ms != null ? `${result.duration_ms}ms` : '—',
+                },
+              ].map(({ label, value, mono, link }) => (
+                <div key={label} className="px-4 py-3.5 space-y-1">
+                  <dt className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
+                    {label}
+                  </dt>
+                  <dd className="text-sm text-zinc-200 break-all">
+                    {link ? (
+                      <Link href={link} className="text-blue-400 hover:text-blue-300 transition-colors">
+                        {value}
                       </Link>
                     ) : (
-                      <span className={label === 'Endpoint' ? 'font-mono' : ''}>{val}</span>
+                      <span className={mono ? 'font-mono text-xs text-zinc-300' : ''}>
+                        {value}
+                      </span>
                     )}
                   </dd>
                 </div>
@@ -149,6 +198,18 @@ export default function ForensicsPage() {
             </dl>
           </div>
         )}
+
+        {/* Empty state — no search yet */}
+        {!result && !notFound && !error && !loading && (
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-12 text-center space-y-2">
+            <Search className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
+            <p className="text-sm font-medium text-zinc-400">Enter a request ID above to look it up</p>
+            <p className="text-xs text-zinc-600">
+              Request IDs are returned in the <span className="font-mono text-zinc-500">X-Request-Id</span> response header
+            </p>
+          </div>
+        )}
+
       </div>
     </>
   )

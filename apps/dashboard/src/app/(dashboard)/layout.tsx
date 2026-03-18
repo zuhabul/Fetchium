@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
-import DashHeader from "@/components/DashHeader";
+import DashboardShell from "@/components/DashboardShell";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
@@ -16,12 +15,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-surface">
-      <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <DashHeader />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
-      </div>
-    </div>
+    <DashboardShell>{children}</DashboardShell>
   );
 }

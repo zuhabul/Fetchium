@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { ADMIN_PAGE_PADDING } from '@/lib/layout'
 import TopBar from '@/components/layout/TopBar'
 import Link from 'next/link'
 import { ArrowLeft, Building2 } from 'lucide-react'
@@ -67,6 +68,11 @@ export default function OrgProfilePage() {
   const [auditRows, setAuditRows] = useState<AuditRow[]>([])
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
   const [tabLoading, setTabLoading] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editEmail, setEditEmail] = useState('')
+  const [editNotes, setEditNotes] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     fetch(`/api/admin/orgs/${id}`)
@@ -110,6 +116,45 @@ export default function OrgProfilePage() {
     setTimeout(() => setActionMsg(null), 3000)
   }
 
+  function startEdit() {
+    if (!org) return
+    setEditName(org.name ?? '')
+    setEditEmail(org.owner_email ?? '')
+    setEditNotes('')
+    setEditing(true)
+  }
+
+  async function handleSave() {
+    if (!org) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/admin/orgs/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editName || undefined,
+          owner_email: editEmail || undefined,
+          notes: editNotes || undefined,
+        }),
+      })
+      if (res.ok) {
+        const body = await res.json().catch(() => ({}))
+        if (body?.data) setOrg(body.data)
+        else setOrg(prev => prev ? { ...prev, name: editName || prev.name, owner_email: editEmail || prev.owner_email } : prev)
+        setEditing(false)
+        setActionMsg('Org updated successfully')
+      } else {
+        const err = await res.json().catch(() => ({}))
+        setActionMsg(err?.error ?? 'Failed to save changes')
+      }
+    } catch {
+      setActionMsg('Request failed')
+    } finally {
+      setSaving(false)
+      setTimeout(() => setActionMsg(null), 3000)
+    }
+  }
+
   const TABS: { key: Tab; label: string }[] = [
     { key: 'overview', label: 'Overview' },
     { key: 'members', label: 'Members' },
@@ -121,7 +166,7 @@ export default function OrgProfilePage() {
     return (
       <>
         <TopBar title="Organization" />
-        <div className="p-6 flex items-center justify-center h-48">
+        <div className={`${ADMIN_PAGE_PADDING} flex h-48 items-center justify-center`}>
           <div className="text-zinc-500 text-sm animate-pulse">Loading...</div>
         </div>
       </>
@@ -132,7 +177,7 @@ export default function OrgProfilePage() {
     return (
       <>
         <TopBar title="Organization" />
-        <div className="p-6 space-y-4">
+        <div className={`${ADMIN_PAGE_PADDING} space-y-4`}>
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-400">
             {error ?? 'Org not found'}
           </div>
@@ -150,7 +195,7 @@ export default function OrgProfilePage() {
   return (
     <>
       <TopBar title={org.name} subtitle={`/${org.slug}`} />
-      <div className="p-6 space-y-5">
+      <div className={`${ADMIN_PAGE_PADDING} space-y-5`}>
         {/* Back */}
         <Link href="/orgs" className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
           <ArrowLeft className="w-3 h-3" /> All Orgs
@@ -204,23 +249,79 @@ export default function OrgProfilePage() {
             {/* Tab content */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
               {tab === 'overview' && (
-                <dl className="grid grid-cols-2 gap-4">
-                  {[
-                    ['Created', org.created_at ? new Date(org.created_at).toLocaleDateString() : '—'],
-                    ['Owner Email', org.owner_email ?? '—'],
-                    ['Slug', org.slug ?? '—'],
-                    ['Plan', org.plan ?? '—'],
-                    ['Status', org.status ?? '—'],
-                    ['Members', String(org.member_count ?? '—')],
-                    ['API Keys', String(org.key_count ?? '—')],
-                    ['MRR', org.mrr_cents ? `$${(org.mrr_cents / 100).toFixed(2)}` : '—'],
-                  ].map(([label, val]) => (
-                    <div key={label}>
-                      <dt className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">{label}</dt>
-                      <dd className="text-sm text-zinc-200">{val}</dd>
+                editing ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider block mb-1">Name</label>
+                        <input
+                          value={editName}
+                          onChange={e => setEditName(e.target.value)}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider block mb-1">Owner Email</label>
+                        <input
+                          value={editEmail}
+                          onChange={e => setEditEmail(e.target.value)}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider block mb-1">Notes</label>
+                        <textarea
+                          value={editNotes}
+                          onChange={e => setEditNotes(e.target.value)}
+                          rows={3}
+                          placeholder="Internal notes about this org..."
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 resize-none"
+                        />
+                      </div>
                     </div>
-                  ))}
-                </dl>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm px-4 py-1.5 rounded-md transition-colors"
+                      >
+                        {saving ? 'Saving…' : 'Save Changes'}
+                      </button>
+                      <button
+                        onClick={() => setEditing(false)}
+                        className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm px-3 py-1.5 rounded-md transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <dl className="grid grid-cols-2 gap-4">
+                      {[
+                        ['Created', org.created_at ? new Date(org.created_at).toLocaleDateString() : '—'],
+                        ['Owner Email', org.owner_email ?? '—'],
+                        ['Slug', org.slug ?? '—'],
+                        ['Plan', org.plan ?? '—'],
+                        ['Status', org.status ?? '—'],
+                        ['Members', String(org.member_count ?? '—')],
+                        ['API Keys', String(org.key_count ?? '—')],
+                        ['MRR', org.mrr_cents ? `$${(org.mrr_cents / 100).toFixed(2)}` : '—'],
+                      ].map(([label, val]) => (
+                        <div key={label}>
+                          <dt className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">{label}</dt>
+                          <dd className="text-sm text-zinc-200">{val}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    <button
+                      onClick={startEdit}
+                      className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm px-3 py-1.5 rounded-md transition-colors"
+                    >
+                      Edit Org
+                    </button>
+                  </div>
+                )
               )}
               {tab === 'members' && (
                 tabLoading ? <div className="text-sm text-zinc-500 animate-pulse">Loading...</div> :

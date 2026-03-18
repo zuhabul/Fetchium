@@ -12,7 +12,7 @@ interface Feature {
 }
 
 const features: Feature[] = [
-  { label: "Multi-source federation", description: "11+ simultaneous backends" },
+  { label: "Multi-source federation", description: "17+ simultaneous backends" },
   { label: "Token budget control (QATBE)" },
   { label: "5-layer content extraction (CEP)" },
   { label: "8-signal neural ranking" },
@@ -290,7 +290,7 @@ export default function Comparison() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-8">
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-10">
               <div className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-emerald-400">11+</div>
+                <div className="text-3xl sm:text-4xl font-bold text-emerald-400">17+</div>
                 <div className="text-[14px] sm:text-[15px] text-slate-300 mt-1 font-medium">federated backends</div>
                 <div className="text-[12px] sm:text-[13px] text-slate-400">single-query fanout</div>
               </div>

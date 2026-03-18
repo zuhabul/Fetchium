@@ -1,4 +1,5 @@
 import { getSession, adminFetch } from '@/lib/session'
+import { ADMIN_PAGE_PADDING } from '@/lib/layout'
 import TopBar from '@/components/layout/TopBar'
 import Link from 'next/link'
 import { Users } from 'lucide-react'
@@ -72,7 +73,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <TopBar title="Users" subtitle={`${total} users total`} />
-      <div className="p-6 space-y-4">
+      <div className={`${ADMIN_PAGE_PADDING} space-y-4`}>
         <FilterBar
           filters={[
             { key: 'search', type: 'search', placeholder: 'Search users...' },
@@ -94,38 +95,85 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
               <p className="text-sm">No users found</p>
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-zinc-800">
-                  {['Email', 'Org', 'Role', 'Status', 'Last Active', 'Created', 'Actions'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800/50">
+            <>
+              <div className="divide-y divide-zinc-800/50 lg:hidden">
                 {users.map(user => (
-                  <tr key={user.id} className="bg-zinc-900 hover:bg-zinc-800/60 transition-colors">
-                    <td className="px-4 py-3 text-zinc-100 font-medium">{user.email}</td>
-                    <td className="px-4 py-3">
-                      {user.org_id ? (
-                        <Link href={`/orgs/${user.org_id}`} className="text-blue-400 hover:underline text-sm">
-                          {user.org_name ?? user.org_id}
-                        </Link>
-                      ) : '—'}
-                    </td>
-                    <td className="px-4 py-3"><Badge value={user.role ?? 'member'} map={ROLE_BADGE} /></td>
-                    <td className="px-4 py-3"><Badge value={user.is_active ? 'active' : 'suspended'} map={STATUS_BADGE} /></td>
-                    <td className="px-4 py-3 text-zinc-400">{user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : '—'}</td>
-                    <td className="px-4 py-3 text-zinc-400">{user.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}</td>
-                    <td className="px-4 py-3">
-                      <Link href={`/users/${user.id}`} className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm px-3 py-1.5 rounded-md transition-colors inline-block">
+                  <div key={user.id} className="space-y-4 px-4 py-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 space-y-1">
+                        <p className="break-all text-sm font-medium text-zinc-100">{user.email}</p>
+                        <p className="text-xs text-zinc-500">
+                          {user.org_id ? (
+                            <Link href={`/orgs/${user.org_id}`} className="text-blue-400 hover:underline">
+                              {user.org_name ?? user.org_id}
+                            </Link>
+                          ) : 'No organization'}
+                        </p>
+                      </div>
+                      <Link
+                        href={`/users/${user.id}`}
+                        className="inline-flex min-h-11 shrink-0 items-center rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
+                      >
                         View
                       </Link>
-                    </td>
-                  </tr>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Badge value={user.role ?? 'member'} map={ROLE_BADGE} />
+                      <Badge value={user.is_active ? 'active' : 'suspended'} map={STATUS_BADGE} />
+                    </div>
+
+                    <dl className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-wider text-zinc-600">Last Active</dt>
+                        <dd className="mt-1 text-zinc-400">
+                          {user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : '—'}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-wider text-zinc-600">Created</dt>
+                        <dd className="mt-1 text-zinc-400">
+                          {user.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              <table className="hidden w-full text-sm lg:table">
+                <thead>
+                  <tr className="border-b border-zinc-800">
+                    {['Email', 'Org', 'Role', 'Status', 'Last Active', 'Created', 'Actions'].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/50">
+                  {users.map(user => (
+                    <tr key={user.id} className="bg-zinc-900 hover:bg-zinc-800/60 transition-colors">
+                      <td className="px-4 py-3 text-zinc-100 font-medium">{user.email}</td>
+                      <td className="px-4 py-3">
+                        {user.org_id ? (
+                          <Link href={`/orgs/${user.org_id}`} className="text-blue-400 hover:underline text-sm">
+                            {user.org_name ?? user.org_id}
+                          </Link>
+                        ) : '—'}
+                      </td>
+                      <td className="px-4 py-3"><Badge value={user.role ?? 'member'} map={ROLE_BADGE} /></td>
+                      <td className="px-4 py-3"><Badge value={user.is_active ? 'active' : 'suspended'} map={STATUS_BADGE} /></td>
+                      <td className="px-4 py-3 text-zinc-400">{user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : '—'}</td>
+                      <td className="px-4 py-3 text-zinc-400">{user.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}</td>
+                      <td className="px-4 py-3">
+                        <Link href={`/users/${user.id}`} className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm px-3 py-1.5 rounded-md transition-colors inline-block">
+                          View
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
 

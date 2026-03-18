@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getSession, adminFetch } from '@/lib/session'
+import { ADMIN_PAGE_PADDING } from '@/lib/layout'
 import TopBar from '@/components/layout/TopBar'
 import Link from 'next/link'
 import { Key } from 'lucide-react'
@@ -33,6 +34,10 @@ function Badge({ value, map }: { value: string; map: Record<string, string> }) {
       {value}
     </span>
   )
+}
+
+function formatDate(value: string | null) {
+  return value ? new Date(value).toLocaleDateString() : '—'
 }
 
 const PAGE_SIZE = 50
@@ -69,7 +74,7 @@ export default async function KeysPage({ searchParams }: { searchParams: Promise
   return (
     <>
       <TopBar title="API Keys" subtitle={`${total} keys total`} />
-      <div className="p-6 space-y-4">
+      <div className={`${ADMIN_PAGE_PADDING} space-y-4`}>
         <FilterBar
           filters={[
             { key: 'status', type: 'select', options: [{ value: '', label: 'All statuses' }, { value: 'active', label: 'Active' }, { value: 'revoked', label: 'Revoked' }] },
@@ -91,47 +96,111 @@ export default async function KeysPage({ searchParams }: { searchParams: Promise
               <p className="text-sm">No API keys found</p>
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-zinc-800">
-                  {['Key Prefix', 'Org', 'Plan', 'Status', 'Created', 'Last Used', 'Actions'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800/50">
+            <>
+              <div className="divide-y divide-zinc-800/50 lg:hidden">
                 {keys.map(k => (
-                  <tr key={k.id} className="bg-zinc-900 hover:bg-zinc-800/60 transition-colors">
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-xs text-zinc-300">{k.key_prefix}…</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {k.org_id ? (
-                        <Link href={`/orgs/${k.org_id}`} className="text-blue-400 hover:underline text-sm">
-                          {k.org_name ?? k.org_id}
-                        </Link>
-                      ) : '—'}
-                    </td>
-                    <td className="px-4 py-3"><Badge value={k.plan ?? 'free'} map={PLAN_BADGE} /></td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${k.active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                        {k.active ? 'active' : 'revoked'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-zinc-400">{k.created_at ? new Date(k.created_at).toLocaleDateString() : '—'}</td>
-                    <td className="px-4 py-3 text-zinc-400">{k.last_used_at ? new Date(k.last_used_at).toLocaleDateString() : '—'}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        {k.active && <RevokeButton keyId={k.id} />}
-                        <Link href={`/orgs/${k.org_id}`} className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-xs px-2.5 py-1.5 rounded-md transition-colors">
-                          Org
-                        </Link>
+                  <div key={k.id} className="space-y-4 px-4 py-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 space-y-1">
+                        <p className="font-mono text-sm font-medium text-zinc-100">{k.key_prefix}…</p>
+                        <p className="truncate text-xs text-zinc-500">
+                          {k.org_id ? (
+                            <Link href={`/orgs/${k.org_id}`} className="text-blue-400 hover:underline">
+                              {k.org_name ?? k.org_id}
+                            </Link>
+                          ) : 'No organization'}
+                        </p>
                       </div>
-                    </td>
-                  </tr>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <Badge value={k.plan ?? 'free'} map={PLAN_BADGE} />
+                        <Badge
+                          value={k.active ? 'active' : 'revoked'}
+                          map={{
+                            active: 'bg-emerald-500/20 text-emerald-400',
+                            revoked: 'bg-red-500/20 text-red-400',
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <dl className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-wider text-zinc-600">Created</dt>
+                        <dd className="mt-1 text-zinc-300">{formatDate(k.created_at)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-wider text-zinc-600">Last Used</dt>
+                        <dd className="mt-1 text-zinc-300">{formatDate(k.last_used_at)}</dd>
+                      </div>
+                      <div className="col-span-2">
+                        <dt className="text-[11px] uppercase tracking-wider text-zinc-600">Requests This Month</dt>
+                        <dd className="mt-1 text-zinc-300">{k.requests_this_month.toLocaleString()}</dd>
+                      </div>
+                    </dl>
+
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      {k.active && (
+                        <div className="flex min-h-11 items-center">
+                          <RevokeButton keyId={k.id} />
+                        </div>
+                      )}
+                      {k.org_id && (
+                        <Link
+                          href={`/orgs/${k.org_id}`}
+                          className="inline-flex min-h-11 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
+                        >
+                          View organization
+                        </Link>
+                      )}
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              <table className="hidden w-full text-sm lg:table">
+                <thead>
+                  <tr className="border-b border-zinc-800">
+                    {['Key Prefix', 'Org', 'Plan', 'Status', 'Created', 'Last Used', 'Actions'].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/50">
+                  {keys.map(k => (
+                    <tr key={k.id} className="bg-zinc-900 hover:bg-zinc-800/60 transition-colors">
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-xs text-zinc-300">{k.key_prefix}…</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {k.org_id ? (
+                          <Link href={`/orgs/${k.org_id}`} className="text-blue-400 hover:underline text-sm">
+                            {k.org_name ?? k.org_id}
+                          </Link>
+                        ) : '—'}
+                      </td>
+                      <td className="px-4 py-3"><Badge value={k.plan ?? 'free'} map={PLAN_BADGE} /></td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${k.active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                          {k.active ? 'active' : 'revoked'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-zinc-400">{formatDate(k.created_at)}</td>
+                      <td className="px-4 py-3 text-zinc-400">{formatDate(k.last_used_at)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          {k.active && <RevokeButton keyId={k.id} />}
+                          {k.org_id && (
+                            <Link href={`/orgs/${k.org_id}`} className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-xs px-2.5 py-1.5 rounded-md transition-colors">
+                              Org
+                            </Link>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
 

@@ -9,12 +9,32 @@ pub async fn stats(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::ProxyRead)?;
-    let data = state
+
+    // Live pool summary from the in-process ProxyPool
+    let pool_summary = state.http.proxy_pool().map(|p| p.pool_summary());
+    let pool_entries: Vec<serde_json::Value> = state
+        .http
+        .proxy_pool()
+        .map(|p| {
+            p.stats()
+                .into_iter()
+                .map(|s| serde_json::to_value(s).unwrap_or_default())
+                .collect()
+        })
+        .unwrap_or_default();
+
+    // Historical audit data (reset/purge counts)
+    let history = state
         .admin_db
         .as_ref()
         .map(|db| db.get_proxy_stats())
-        .unwrap_or_else(|| serde_json::json!({"status": "unknown"}));
-    Ok(Json(data))
+        .unwrap_or_else(|| serde_json::json!({}));
+
+    Ok(Json(serde_json::json!({
+        "summary": pool_summary,
+        "proxies": pool_entries,
+        "history": history,
+    })))
 }
 
 pub async fn reset(
@@ -22,6 +42,13 @@ pub async fn reset(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::ProxyReset)?;
+
+    // Reset every proxy to Active and clear domain assignments
+    let proxies_reset = state.http.proxy_pool().map(|p| {
+        p.reset_all();
+        p.len()
+    });
+
     if let Some(db) = state.admin_db.as_ref() {
         let _ = db.log_audit(
             Some(&auth.user.id),
@@ -32,7 +59,11 @@ pub async fn reset(
             None,
         );
     }
-    Ok(Json(serde_json::json!({"ok": true, "message": "Proxy pool reset queued"})))
+    Ok(Json(serde_json::json!({
+        "ok": true,
+        "proxies_reset": proxies_reset.unwrap_or(0),
+        "message": "All proxies reset to active status"
+    })))
 }
 
 pub async fn purge(
@@ -40,6 +71,10 @@ pub async fn purge(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     require(&auth.user, Permission::ProxyReset)?;
+
+    // Remove dead proxies from the pool
+    let removed = state.http.proxy_pool().map(|p| p.purge_dead()).unwrap_or(0);
+
     if let Some(db) = state.admin_db.as_ref() {
         let _ = db.log_audit(
             Some(&auth.user.id),
@@ -50,7 +85,11 @@ pub async fn purge(
             None,
         );
     }
-    Ok(Json(serde_json::json!({"ok": true, "message": "Proxy cache purged"})))
+    Ok(Json(serde_json::json!({
+        "ok": true,
+        "proxies_removed": removed,
+        "message": format!("Purged {removed} dead proxies from pool")
+    })))
 }
 
 pub async fn geo_distribution(
