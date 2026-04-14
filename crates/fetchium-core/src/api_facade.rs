@@ -418,7 +418,10 @@ pub async fn search(
     } = request;
 
     // Check cache first for high-throughput repeated queries
-    let cache_key = format!("search:{}:{}:{}:{}:{}", query, max_sources, tier, token_budget, include_content);
+    let cache_key = format!(
+        "search:{}:{}:{}:{}:{}",
+        query, max_sources, tier, token_budget, include_content
+    );
     if let Some(c) = cache {
         if let Some(cached) = c.get::<Value>(&cache_key).await {
             tracing::debug!("Search cache hit: {}", query);
@@ -455,8 +458,8 @@ pub async fn search(
     ) && sparse_recall
         && !is_expensive_comparison_query(query)
         && !(strong_recall
-        || adequate_recall_diversity
-        || (multilingual_query && results.len() >= 8))
+            || adequate_recall_diversity
+            || (multilingual_query && results.len() >= 8))
     {
         let mut seen_urls: HashSet<String> = results.iter().map(|r| r.url.clone()).collect();
         for corrective_query in generate_corrective_queries(query).into_iter().take(1) {

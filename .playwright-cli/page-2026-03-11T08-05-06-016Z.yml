@@ -1,0 +1,200 @@
+- generic [ref=e1]:
+  - alert [ref=e27]
+  - generic [ref=e28]:
+    - complementary [ref=e29]:
+      - generic [ref=e31]:
+        - img [ref=e33]
+        - generic [ref=e35]:
+          - paragraph [ref=e36]: Fetchium
+          - paragraph [ref=e281]: Operations console
+        - generic [ref=e37]: ADMIN
+        - button "Close navigation" [ref=e290] [cursor=pointer]:
+          - img [ref=e283]
+      - navigation [ref=e38]:
+        - link "Overview" [ref=e291] [cursor=pointer]:
+          - /url: /overview
+          - img [ref=e41]
+          - generic [ref=e46]: Overview
+          - img [ref=e47]
+        - link "Orgs" [ref=e292] [cursor=pointer]:
+          - /url: /orgs
+          - img [ref=e51]
+          - generic [ref=e55]: Orgs
+        - link "Users" [ref=e293] [cursor=pointer]:
+          - /url: /users
+          - img [ref=e58]
+          - generic [ref=e63]: Users
+        - link "API Keys" [ref=e294] [cursor=pointer]:
+          - /url: /keys
+          - img [ref=e66]
+          - generic [ref=e70]: API Keys
+        - link "Usage" [ref=e295] [cursor=pointer]:
+          - /url: /usage
+          - img [ref=e73]
+          - generic [ref=e75]: Usage
+        - link "CRM" [ref=e296] [cursor=pointer]:
+          - /url: /crm
+          - img [ref=e78]
+          - generic [ref=e83]: CRM
+        - link "Support" [ref=e297] [cursor=pointer]:
+          - /url: /support
+          - img [ref=e86]
+          - generic [ref=e88]: Support
+        - link "Campaigns" [ref=e298] [cursor=pointer]:
+          - /url: /campaigns
+          - img [ref=e91]
+          - generic [ref=e94]: Campaigns
+        - link "Incidents" [ref=e299] [cursor=pointer]:
+          - /url: /incidents
+          - img [ref=e97]
+          - generic [ref=e99]: Incidents
+        - link "Audit" [ref=e300] [cursor=pointer]:
+          - /url: /audit
+          - img [ref=e102]
+          - generic [ref=e104]: Audit
+        - link "Flags" [ref=e301] [cursor=pointer]:
+          - /url: /flags
+          - img [ref=e107]
+          - generic [ref=e109]: Flags
+        - link "Settings" [ref=e302] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e112]
+          - generic [ref=e115]: Settings
+      - generic [ref=e116]:
+        - generic [ref=e117]:
+          - generic [ref=e118]: T
+          - generic [ref=e119]:
+            - paragraph [ref=e120]: Test Admin
+            - paragraph [ref=e121]: test-admin@fetchium.local
+        - generic [ref=e122]:
+          - generic [ref=e123]: Read-only
+          - button "Sign out" [ref=e303] [cursor=pointer]:
+            - img [ref=e125]
+            - text: Sign out
+    - main [ref=e128]:
+      - generic [ref=e130]:
+        - button "Open navigation" [active] [ref=e286] [cursor=pointer]:
+          - img [ref=e287]
+        - generic [ref=e131]:
+          - heading "Overview" [level=1] [ref=e133]
+          - paragraph [ref=e135]: Fetchium operations command center
+        - generic [ref=e136]:
+          - button [ref=e288] [cursor=pointer]:
+            - img [ref=e138]
+          - button "Notifications" [ref=e144] [cursor=pointer]:
+            - img [ref=e145]
+      - generic [ref=e149]:
+        - generic [ref=e151]:
+          - generic [ref=e152]:
+            - paragraph [ref=e153]: Welcome back, Test Admin
+            - heading "Production control surface" [level=2] [ref=e154]
+            - paragraph [ref=e155]: Monitor the current system state, jump into operational workflows, and keep critical services in view without losing context on smaller screens.
+          - generic [ref=e156]:
+            - generic [ref=e157]: Systems operational
+            - paragraph [ref=e159]: "Role: readonly · Fetchium production"
+        - generic [ref=e160]:
+          - generic [ref=e161]:
+            - generic [ref=e162]:
+              - generic [ref=e163]:
+                - generic [ref=e164]:
+                  - generic [ref=e165]: Total Orgs
+                  - img [ref=e167]
+                - paragraph [ref=e171]: "0"
+              - generic [ref=e172]:
+                - generic [ref=e173]:
+                  - generic [ref=e174]: Open Incidents
+                  - img [ref=e176]
+                - paragraph [ref=e178]: "0"
+              - generic [ref=e179]:
+                - generic [ref=e180]:
+                  - generic [ref=e181]: Open Tickets
+                  - img [ref=e183]
+                - paragraph [ref=e185]: "0"
+              - generic [ref=e186]:
+                - generic [ref=e187]:
+                  - generic [ref=e188]: API Version
+                  - img [ref=e190]
+                - paragraph [ref=e192]: 1.0.0
+            - generic [ref=e193]:
+              - generic [ref=e195]:
+                - heading "Provider health" [level=2] [ref=e196]
+                - paragraph [ref=e197]: Realtime readiness snapshot across configured backends.
+              - generic [ref=e198]:
+                - generic [ref=e199]:
+                  - generic [ref=e200]:
+                    - paragraph [ref=e201]: Google
+                    - paragraph [ref=e202]: unconfigured
+                  - generic "unconfigured" [ref=e203]
+                - generic [ref=e204]:
+                  - generic [ref=e205]:
+                    - paragraph [ref=e206]: DuckDuckGo
+                    - paragraph [ref=e207]: ok
+                  - generic "ok" [ref=e208]
+                - generic [ref=e209]:
+                  - generic [ref=e210]:
+                    - paragraph [ref=e211]: Bing
+                    - paragraph [ref=e212]: ok
+                  - generic "ok" [ref=e213]
+                - generic [ref=e214]:
+                  - generic [ref=e215]:
+                    - paragraph [ref=e216]: Brave
+                    - paragraph [ref=e217]: ok
+                  - generic "ok" [ref=e218]
+                - generic [ref=e219]:
+                  - generic [ref=e220]:
+                    - paragraph [ref=e221]: SearXNG
+                    - paragraph [ref=e222]: ok
+                  - generic "ok" [ref=e223]
+                - generic [ref=e224]:
+                  - generic [ref=e225]:
+                    - paragraph [ref=e226]: OpenAI
+                    - paragraph [ref=e227]: unconfigured
+                  - generic "unconfigured" [ref=e228]
+                - generic [ref=e229]:
+                  - generic [ref=e230]:
+                    - paragraph [ref=e231]: Anthropic
+                    - paragraph [ref=e232]: unconfigured
+                  - generic "unconfigured" [ref=e233]
+                - generic [ref=e234]:
+                  - generic [ref=e235]:
+                    - paragraph [ref=e236]: Gemini
+                    - paragraph [ref=e237]: unconfigured
+                  - generic "unconfigured" [ref=e238]
+          - complementary [ref=e239]:
+            - generic [ref=e240]:
+              - heading "Quick actions" [level=2] [ref=e241]
+              - paragraph [ref=e242]: Jump directly into the operational areas that tend to require the fastest response.
+              - generic [ref=e243]:
+                - link "Manage orgs Review account state and plan changes." [ref=e244] [cursor=pointer]:
+                  - /url: /orgs
+                  - generic [ref=e245]:
+                    - generic [ref=e246]:
+                      - paragraph [ref=e247]: Manage orgs
+                      - paragraph [ref=e248]: Review account state and plan changes.
+                    - img [ref=e249]
+                - link "Incidents Track ongoing disruptions and response status." [ref=e252] [cursor=pointer]:
+                  - /url: /incidents
+                  - generic [ref=e253]:
+                    - generic [ref=e254]:
+                      - paragraph [ref=e255]: Incidents
+                      - paragraph [ref=e256]: Track ongoing disruptions and response status.
+                    - img [ref=e257]
+                - link "Audit log Inspect recent staff actions and system events." [ref=e260] [cursor=pointer]:
+                  - /url: /audit
+                  - generic [ref=e261]:
+                    - generic [ref=e262]:
+                      - paragraph [ref=e263]: Audit log
+                      - paragraph [ref=e264]: Inspect recent staff actions and system events.
+                    - img [ref=e265]
+                - link "System panel Check service health, jobs, and internal tools." [ref=e268] [cursor=pointer]:
+                  - /url: /system
+                  - generic [ref=e269]:
+                    - generic [ref=e270]:
+                      - paragraph [ref=e271]: System panel
+                      - paragraph [ref=e272]: Check service health, jobs, and internal tools.
+                    - img [ref=e273]
+            - generic [ref=e276]:
+              - heading "Operating notes" [level=2] [ref=e277]
+              - generic [ref=e278]:
+                - generic [ref=e279]: Keep the left rail hidden on small screens until needed so the overview metrics stay visible first.
+                - generic [ref=e280]: Use the command palette for direct navigation when you already know the target destination.

@@ -18,6 +18,14 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 
+fn search_concurrency_limit() -> usize {
+    std::env::var("FETCHIUM_SEARCH_CONCURRENCY")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+        .filter(|v| *v > 0)
+        .unwrap_or(2)
+}
+
 /// Shared application state injected into all axum handlers.
 /// AppState is Clone (cheap — all inner fields are Arc-wrapped).
 #[derive(Clone)]
@@ -54,10 +62,10 @@ impl AppState {
             admin_db,
             rate_limiter: Arc::new(PerKeyRateLimiter::new()),
             jobs: Arc::new(JobStore::new()),
-            // Concurrent searches: each dispatches 7-10 backend requests in
-            // parallel. We allow 25 simultaneous searches to maximize throughput
-            // while staying within reasonable backend/proxy capacity.
-            search_semaphore: Arc::new(tokio::sync::Semaphore::new(25)),
+            // Concurrent searches: each dispatches multiple backend requests in
+            // parallel. Keep the default very conservative to avoid saturating
+            // the runtime and wedging the API under bursty local traffic.
+            search_semaphore: Arc::new(tokio::sync::Semaphore::new(search_concurrency_limit())),
         })
     }
 }

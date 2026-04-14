@@ -2118,7 +2118,10 @@ impl AdminDb {
         Ok(rows)
     }
 
-    pub fn find_org_by_api_key_prefix(&self, key_prefix: &str) -> Result<Option<serde_json::Value>> {
+    pub fn find_org_by_api_key_prefix(
+        &self,
+        key_prefix: &str,
+    ) -> Result<Option<serde_json::Value>> {
         self.ensure_api_keys_table()?;
         let conn = self.conn.lock();
         conn.query_row(

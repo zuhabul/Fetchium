@@ -1,0 +1,94 @@
+{
+  "meta": {
+    "query": "best rust async runtime for high-throughput web api in 2025 benchmark",
+    "mode": "search",
+    "tier": "summary",
+    "tokens_used": 0,
+    "tokens_budget": 4000,
+    "sources_fetched": 9,
+    "sources_validated": 9,
+    "validation_pass_rate": 1.0,
+    "duration_ms": 3207,
+    "resource_tier": "standard",
+    "timestamp": "2026-03-10T13:31:05.403927239+00:00",
+    "result_id": "f8d99e96-af99-4bbb-9ce9-4f00f263e41e",
+    "content_hashes": {}
+  },
+  "items": [
+    {
+      "title": "i-benchmarked-seven-backend-frameworks-and-it-changed-my-tech-stack-decisions",
+      "url": "https://dev.to/member_25c2e834/i-benchmarked-seven-backend-frameworks-and-it-changed-my-tech-stack-decisions-4abo",
+      "snippet": " lightweight, high-performance, cross-platform Rust HTTP server framework built on Tokio async  ...    **Performance**: 324,323 QPS (Keep-Alive on), 51,031 QPS (Keep-Alive off) \\| **Unified API**: HTTP, WebSocket, SSE share same interface \\| **Flexible Routing**: Static, dynamic, regex routes \\| **Powerful Middleware**: Request/response middleware, panic hooks \\| **Real-time**: Native WebSocket and SSE support \\| **Cross-platform**:  ...    First, I needed to decide which frameworks to benchmark. After extensive research online, I settled on seven representative options. First was Tokio, the core async runtime in the Rust ecosystem. Many frameworks are built on top of it. I chose it mainly to see what performance level a pure async runtime could achieve. Second was the Hyperlane framework, a Tokio-based web framework I found on GitHub. It didn't have massive star counts, but the documentation was crystal clear, and it claimed excellent performance. I was a bit skeptical at first, thinking  ...    Third was Rocket, pretty well-known in the Rust community. Many people recommend it for beginners. I wanted to see how  ...    Tokio hit 340,130 QPS. That number shocked me. I knew Rust was fast, but not this fast. Then came the Hyperlane framework, with 324,323 QPS. Honestly, this result made me see it in a completely new light. While slightly lower than pure Tokio, considering it provides complete web framework functionality, this performance  ...    Rocket framework came in at 298,945 QPS, also impressive. Rust standard library hit 291,218. This surprised me a bit. I  ...    The Hyperlane framework took first place this time, with 51,031 QPS. Tokio itself hit 49,555, Rocket framework 49,345.  ...    With Keep-Alive enabled, Tokio hit 308,596 QPS, the Hyperlane framework 307,568, nearly identical. Rocket framework  ...    With Keep-Alive disabled, Tokio and the Hyperlane framework still led, at 51,825 and 51,554 QPS respectively. Rocket  ...    reflect different design philosophies across languages and frameworks. Rust's performance advantage mainly comes from zero-cost abstractions and memory safety mechanisms. It performs extensive optimization at compile time with virtually no runtime overhead. Rust's ownership system ensures efficient memory usage without garbage collection, a huge advantage in high-concurrency scenarios. Go's performance is also solid. Its goroutine model makes concurrent programming simple. But Go has garbage collection,  ...    Node.js's issues stem mainly from its single-threaded model. While it has event loops and async I/O, it struggles with  ...    But what impressed me most was the Hyperlane framework. It maintains high performance while providing very friendly  ...    For instance, its middleware mechanism is cleverly designed, ensuring flexibility without significant performance overhead. Its routing system supports static routes, dynamic routes, and regex routes, but lookup efficiency remains  ...    I thought for a moment and said, \"The Hyperlane framework. Its performance numbers are impressive, over three hundred twenty-four thousand QPS with Keep-Alive enabled, and over fifty-one thousand with it disabled. More importantly, its  ...    I also tried some other Rust web frameworks, like Actix-web, Warp, etc. Each framework has its own characteristics and  ...    Performance data is important, but it's just one factor in decision-making. We also need to consider development  ...    There's no absolute right or wrong in technology selection, only suitable or unsuitable. For our project, the Hyperlane  ...    Most importantly, maintain a mindset of learning and exploration. Technology constantly evolves. Today's best practices  ...    If you're also making technology selections, I hope my experience can provide some reference. Remember, data doesn't lie, but don't be constrained by data either. Combine actual circumstances to make the choice that suits you best. During testing, the Hyperlane framework",
+      "rank": 2,
+      "backend": "exa",
+      "score": 1.0,
+      "published_date": "2025-10-25T00:00:00.000Z"
+    },
+    {
+      "title": "Optimizing Rust Performance for High-Throughput Web Applications",
+      "url": "https://blog.poespas.me/posts/2025/02/27/optimizing-rust-performance-for-high-throughput-web-applications/",
+      "snippet": "Using tokio for High-Throughput Web Applications. tokio is a popular Rust library that provides a high-level API for building concurrent systems. To optimize performance with tokio, follow these best practices: 1. Enable Tokio’s async runtime.",
+      "rank": 3,
+      "backend": "searxng",
+      "score": 0.8374600536696345
+    },
+    {
+      "title": "Top 5 Rust Frameworks (2025) - Mastering Backend - Blog",
+      "url": "https://blog.masteringbackend.com/top-5-rust-frameworks",
+      "snippet": ")\n\nSOSolomon Eseme\n\nShare Rust has become a top-tier language for system programming, web development, and embedded applications. Due to its  ...    ## Top 5 Rust Frameworks I will list the top 5 best Rust frameworks to learn this year by evaluating them based on popularity, GitHub stars, and real-world usage. Combining those criteria plus personal preference as of the time of writing, we have the following list of the best typescript frameworks. Actix Web\n\nAxum\n\nRocket\n\nWarp\n\nTide\n\n## Actix Web Actix Web is one of the most popular Rust web frameworks. It is known for its speed, scalability, and efficiency. Inspired by the actor model, it provides asynchronous request handling and high-performance web applications. ### Features:\n\nAsynchronous and concurrent processing with the Tokio runtime Built-in support for WebSockets and HTTP/2\n\nMiddleware support for logging, authentication, and session management Type-safe routing\n\nHigh-performance benchmarks\n\n### Popularity:\n\nGitHub Stars: 22.7k+ Crates.io All Time Downloads: 11.1M+\n\nUsage: 67.9k+ Actix Web is widely used in production applications, including backend services and real-time applications. ### Learning Resources:\n\nActix Web: The Ultimate Guide\n\nOfficial Actix Web Documentation  ...    Axum, developed by the creators of Tokio, is a framework that leverages Rust’s async capabilities to build efficient web applications. It provides a developer-friendly API and integrates seamlessly with the Tokio  ...    WebSockets and SSE support\n\n### Popularity:\n\nGitHub Stars: 21.1k+\n\nCrates.io All Time Downloads: 112.7M+  ...    ### Features:\n\nComposable routing system\n\nWebSockets and filters\n\nFully asynchronous and lightweight  ...    Tide is a minimalist and easy-to-use asynchronous web framework built on the async-std library. Its straightforward design makes it accessible for developers new to Rust or asynchronous programming. Tide is well-suited for small to  ...    ### Key Features:\n\nMinimalistic API for ease of use\n\nBuilt-in middleware support\n\nAsynchronous from the ground up Active development and community support\n\n### Popularity:\n\nGitHub Stars: 5.1k+  ...    ### Features:\n\nAsync-first design powered by Tokio\n\nSupport for WebSockets, gRPC, and RESTful APIs  ...    Selecting the appropriate Rust web framework depends on your project's specific requirements. Here’s a quick summary: Performance-Critical Applications: Actix Web and Warp are excellent choices due to their high-performance capabilities. Rapid Development and Ease of Use: Rocket offers a developer-friendly experience with minimal boilerplate. Flexibility and Modularity: Axum provides seamless integration with middleware, allowing for extensive customization. Simplicity and Accessibility: Tide is ideal for developers seeking a straightforward and easy-to-learn framework. Salvo – A rising framework with a clean API and modular design. Each of these frameworks has its strengths, and investing time in learning them can give you a competitive edge in Rust  ...    This article covered the top 5 Rust frameworks to learn this year, evaluating them based",
+      "rank": 5,
+      "backend": "exa",
+      "score": 0.7443048441069083
+    },
+    {
+      "title": "vibheksoni/axiomtrade-rs: Rust SDK for Axiom Trade account API and...",
+      "url": "https://github.com/vibheksoni/axiomtrade-rs",
+      "snippet": "Integration tests. Performance Benchmarks. Operation. Latency. Throughput. REST API call.Good. Requirements. Rust 1.70 or higher. Tokio runtime. OpenSSL (for TLS). Installation Guide.",
+      "rank": 8,
+      "backend": "searxng",
+      "score": 0.15141475491551218
+    },
+    {
+      "title": "Actix vs Axum: I Benchmarked Rust’s Top Frameworks, and One Dominated",
+      "url": "https://medium.com/@Krishnajlathi/actix-vs-axum-i-benchmarked-rusts-top-frameworks-and-one-dominated-888f9b95e6d8",
+      "snippet": " Actix vs Axum: I Benchmarked Rust’s Top Frameworks, and One Dominated | by The CS Engineer | Medium\n\nSitemap Open in app\n\nSign up\n\nSign in\n\nMedium Logo\n\nGet app\n\nWrite Search\n\nSign up\n\nSign in\n\nMember-only story # Actix vs Axum: I Benchmarked Rust’s Top Frameworks, and One Dominated ## One framework served 50 percent more requests per second at p95 latency that was consistently lower. The CS Engineer\n\n5 min read\n\nSep 30, 2025\n\n--\n\n1\n\nShare That difference is small when measured in microseconds and huge when measured in production dollars. Read on if performance matters to you, if latency keeps you awake, or if you plan to run hundreds of services in  ...    ## The Intro This is not an opinion piece. This is the benchmark, the code, and the honest tradeoffs. One framework dominated raw throughput. The other won on simplicity and memory efficiency. Which one to pick depends on what problem you must solve for your team and for your users. ## TL;DR (read this now, then dive in) - Result: Actix delivered the highest raw throughput and lower p95 latency under heavy concurrency. Axum used less memory and felt simpler to compose with Tower middleware. These results match what… - Testbed: release builds, native CPU optimizations, single binary per framework, identical middleware (logging disabled), run on the same machine. - Test target: simple JSON endpoint returning`\"ok\"`, built with Actix-web and with Axum. ## Written by The CS Engineer\n\n1.8K followers\n\n1.4K following IT Guy | Web Developer | AI | Tech - Trends | Life | Market Analyst\n\n## Responses (1)\n\nSee all responses Help\n\nStatus\n\nAbout\n\nCareers\n\nPress\n\nBlog Privacy\n\nRules\n\nTerms\n\nText to speech",
+      "rank": 6,
+      "backend": "exa",
+      "score": 0.06611661241369259,
+      "published_date": "2025-09-30T00:00:00.000Z"
+    },
+    {
+      "title": "Axum vs. Actix Web: The 2025 Rust Web Framework War",
+      "url": "https://medium.com/@indrajit7448/axum-vs-actix-web-the-2025-rust-web-framework-war-performance-vs-dx-17d0ccadd75e",
+      "snippet": " Axum vs. Actix Web: The 2025 Rust Web Framework War — Performance vs. DX ⚡ | by Indrajit | Medium\n\nSitemap Open in app\n\nSign up\n\nSign in\n\nMedium Logo\n\nGet app\n\nWrite Search\n\nSign up\n\nSign in\n\nMember-only story # Axum vs. Actix Web: The 2025 Rust Web Framework War — Performance vs. DX ⚡\n\nIndrajit\n\n7 min read Dec 22, 2025\n\n--\n\n1\n\nShare\n\nPress enter or click to view image in full size\n\nAXUM VS ACTIX WEB Do you remember that moment when you first decided to build a web service in Rust? Man, it’s honestly one of the most exciting things you can do in programming! You know you’re about to use C-level speed but, like, with memory safety the compiler actually checks for you. It feels like you’ve ditched your old, slow station wagon for a futuristic maglev train. Seriously. 🚄 But then, you hit the wall. The first big question: Which darn web framework should I even choose? For years- and I mean years- the answer was almost automatic: Actix Web. It was, and honestly still kind of is, the uncontested gold-medal winner for pure speed. If you were chasing the absolute highest numbers on a benchmark chart, Actix was the only game in town. You just picked it. Period. But here’s the thing. The whole Rust world has really grown up. The conversation in December 2025 isn’t just about max speed anymore; it’s about Developer Experience (DX), how well it plays with other libraries, and frankly, whether it makes your life easier. That’s where Axum, the younger, much-loved framework built on Tokio (we’re talking version 0.8.x now), walked in and just… changed everything. I mean, look at the recent developer surveys. The data clearly  ...    ## Written by Indrajit\n\n45 followers\n\n1 following Passionate coder skilled in Python, JavaScript & Java. Builds clean, scalable software. Loves solving problems &  ...    ## Responses (1)\n\nSee all responses\n\nHelp\n\nStatus\n\nAbout\n\nCareers Press\n\nBlog\n\nPrivacy\n\n",
+      "rank": 16,
+      "backend": "exa",
+      "score": 0.021736094838301506
+    },
+    {
+      "title": "The Ultimate Guide to Rust Frameworks in 2025",
+      "url": "https://medium.com/@premchandak_11/the-ultimate-guide-to-rust-frameworks-in-2025-from-web-to-ai-4bba5647a1a7",
+      "snippet": ">\n\nWrite\n\nSearch Sign up\n\nSign in\n\nMember-only story\n\n# The Ultimate Guide to Rust Frameworks in 2025: From Web to AI ## Discover the most powerful Rust frameworks shaping 2025 — from lightning-fast web backends to cutting-edge AI and data-driven applications. Prem Chandak\n\n4 min read\n\nOct 30, 2025\n\n--\n\n4\n\nShare\n\nPress enter or click to view image in full size ## Rust’s Rise from Niche to Necessary A few years ago, Rust was seen as that “cool language” developers admired but rarely used in production. Fast-forward to 2025 — it’s everywhere. From web servers powering global APIs to AI engines crunching terabytes of data, Rust has quietly become the go-to for developers who value speed, safety, and control. Why? Because it gives you C-level performance with memory safety guarantees — and the ecosystem has finally caught up. ## 1. Web Development: The Battle of the Titans When it comes to building APIs or full-stack apps, Rust’s web ecosystem has matured beautifully. ## Axum — The Developer Favorite Built on top of Tokio, Axum offers an ergonomic and modular approach to building async web servers. It feels elegant and modern, almost like Flask met TypeScript. ```\nuse axum::{Router, routing::get};async fn…\n```\n\n## Written by Prem Chandak\n\n1K followers 679 following\n\nTech|SDE Developer. Writer. Learner.\n\n## Responses (4)\n\nSee all responses\n\nHelp Status\n\nAbout\n\nCareers\n\nPress\n\nBlog\n\nPrivacy Rules\n\nTerms\n\nText to speech",
+      "rank": 15,
+      "backend": "exa",
+      "score": 0.014892118851678751
+    },
+    {
+      "title": "Rust Web Frameworks in 2025: Axum vs Actix vs Rocket Performance Benchmark | Markaicode",
+      "url": "https://markaicode.com/rust-web-frameworks-performance-benchmark-2025/",
+      "snippet": " https://markaicode.com/vs/rust-web-frameworks-in-2025-axum-vs-actix-vs-rocket-performance-benchmark/ https://markaicode.com/vs/rust-web-frameworks-in-2025-axum-vs-actix-vs-rocket-performance-benchmark/",
+      "rank": 21,
+      "backend": "exa",
+      "score": 0.010200802103740438,
+      "published_date": "2025-05-17T00:00:00.000Z"
+    },
+    {
+      "title": "Concurrency — list of Rust libraries/crates // Lib.rs",
+      "url": "https://lib.rs/concurrency",
+      "snippet": "A high-performance async cron scheduler for Rust, supporting both async and blocking tasks with fine-grained scheduling policies. v0.1.8 #async-task #cron #tokio-task. resilient-rabbitmq-client.A protoype implementation of the ReactiveX API in Rust using a message passing approach.",
+      "rank": 9,
+      "backend": "searxng",
+      "score": 0.0
+    }
+  ]
+}

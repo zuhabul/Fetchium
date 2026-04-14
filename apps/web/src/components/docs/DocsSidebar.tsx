@@ -67,10 +67,11 @@ const NAV: NavItem[] = [
 
 function SectionGroup({ item, onLinkClick }: { item: NavItem; onLinkClick?: () => void }) {
   const pathname = usePathname();
+  const currentPath = pathname ?? "";
   const [open, setOpen] = useState(
     item.items?.some((i) => {
       const path = hrefPath(i.href);
-      return pathname === path || pathname.startsWith(path + "/");
+      return currentPath === path || currentPath.startsWith(path + "/");
     }) ?? true,
   );
 
@@ -103,7 +104,7 @@ function SectionGroup({ item, onLinkClick }: { item: NavItem; onLinkClick?: () =
           >
             {item.items?.map((link) => {
               const path = hrefPath(link.href);
-              const active = pathname === path;
+              const active = currentPath === path;
               return (
                 <Link
                   key={link.href}

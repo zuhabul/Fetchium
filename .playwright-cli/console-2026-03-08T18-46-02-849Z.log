@@ -1,0 +1,10 @@
+[     853ms] [ERROR] THREE.WebGLRenderer: A WebGL context could not be created. Reason:  WebGL creation failed: 
+* AllowWebgl2:false restricts context creation on this system. () @ http://127.0.0.1:3111/_next/static/chunks/1487-fec3a60c7411bf7c.js:0
+[     854ms] [ERROR] THREE.WebGLRenderer: A WebGL context could not be created. Reason:  WebGL creation failed: 
+* AllowWebgl2:false restricts context creation on this system. () @ http://127.0.0.1:3111/_next/static/chunks/1487-fec3a60c7411bf7c.js:0
+[     854ms] [ERROR] THREE.WebGLRenderer: Error creating WebGL context. @ http://127.0.0.1:3111/_next/static/chunks/1487-fec3a60c7411bf7c.js:0
+[     889ms] [ERROR] Error @ http://127.0.0.1:3111/_next/static/chunks/1487-fec3a60c7411bf7c.js:0
+[     889ms] [WARNING] [JavaScript Warning: "Failed to create WebGL context: WebGL creation failed: 
+* AllowWebgl2:false restricts context creation on this system. ()" {file: "http://127.0.0.1:3111/_next/static/chunks/29b7732f.baa0b6eb1ddfbf98.js" line: 382}] @ http://127.0.0.1:3111/_next/static/chunks/29b7732f.baa0b6eb1ddfbf98.js:382
+[     890ms] [WARNING] [JavaScript Warning: "Failed to create WebGL context: WebGL creation failed: 
+* AllowWebgl2:false restricts context creation on this system. ()" {file: "http://127.0.0.1:3111/_next/static/chunks/29b7732f.baa0b6eb1ddfbf98.js" line: 382}] @ http://127.0.0.1:3111/_next/static/chunks/29b7732f.baa0b6eb1ddfbf98.js:382

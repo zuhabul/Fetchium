@@ -1,0 +1,21 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]: Fetchium
+        - generic [ref=e10]: ADMIN
+      - paragraph [ref=e11]: Internal operations console
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e15]: Email address
+        - textbox "you@fetchium.com" [active] [ref=e16]
+      - generic [ref=e17]:
+        - generic [ref=e18]: Password
+        - generic [ref=e19]:
+          - textbox "••••••••" [ref=e20]
+          - button [ref=e21] [cursor=pointer]:
+            - img [ref=e22]
+      - button "Sign in" [ref=e25] [cursor=pointer]
+    - paragraph [ref=e26]: Staff accounts only — no self-registration
+  - alert [ref=e27]

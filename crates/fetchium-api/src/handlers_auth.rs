@@ -3,7 +3,9 @@
 //! Admin endpoints use `X-Admin-Secret` header for the MVP.
 
 use crate::middleware::AppState;
-use crate::types::{DashboardBillingResponse, DashboardOverviewResponse, ResponseMeta, UsageResponse};
+use crate::types::{
+    DashboardBillingResponse, DashboardOverviewResponse, ResponseMeta, UsageResponse,
+};
 use axum::{
     extract::State,
     http::{HeaderMap, StatusCode},
@@ -361,9 +363,10 @@ pub async fn get_dashboard_overview(
     let db = state.auth_db.clone();
     let key_id = key.id.clone();
     let key_plan = key.plan.clone();
-    let overview = tokio::task::spawn_blocking(move || db.get_dashboard_overview(&key_id, &key_plan))
-        .await
-        .unwrap_or_else(|e| Err(anyhow::anyhow!("task join error: {e}")));
+    let overview =
+        tokio::task::spawn_blocking(move || db.get_dashboard_overview(&key_id, &key_plan))
+            .await
+            .unwrap_or_else(|e| Err(anyhow::anyhow!("task join error: {e}")));
 
     match overview {
         Ok(overview) => {
@@ -547,12 +550,22 @@ pub async fn get_dashboard_settings(
                 .into_response(),
             Err(e) => {
                 tracing::error!(error = %e, "Failed to serialize settings");
-                err(StatusCode::INTERNAL_SERVER_ERROR, "internal_error", "Failed to serialize settings").into_response()
+                err(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal_error",
+                    "Failed to serialize settings",
+                )
+                .into_response()
             }
         },
         Err(e) => {
             tracing::error!(error = %e, key_id = %key.id, "Failed to fetch settings");
-            err(StatusCode::INTERNAL_SERVER_ERROR, "db_error", "Failed to retrieve settings").into_response()
+            err(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "db_error",
+                "Failed to retrieve settings",
+            )
+            .into_response()
         }
     }
 }
@@ -588,12 +601,22 @@ pub async fn update_dashboard_settings(
                 .into_response(),
             Err(e) => {
                 tracing::error!(error = %e, "Failed to serialize updated settings");
-                err(StatusCode::INTERNAL_SERVER_ERROR, "internal_error", "Failed to serialize settings").into_response()
+                err(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal_error",
+                    "Failed to serialize settings",
+                )
+                .into_response()
             }
         },
         Err(e) => {
             tracing::error!(error = %e, key_id = %key.id, "Failed to update settings");
-            err(StatusCode::INTERNAL_SERVER_ERROR, "db_error", "Failed to update settings").into_response()
+            err(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "db_error",
+                "Failed to update settings",
+            )
+            .into_response()
         }
     }
 }
@@ -629,12 +652,22 @@ pub async fn get_dashboard_usage(
                 .into_response(),
             Err(e) => {
                 tracing::error!(error = %e, "Failed to serialize usage analytics");
-                err(StatusCode::INTERNAL_SERVER_ERROR, "internal_error", "Failed to serialize usage data").into_response()
+                err(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal_error",
+                    "Failed to serialize usage data",
+                )
+                .into_response()
             }
         },
         Err(e) => {
             tracing::error!(error = %e, key_id = %key.id, "Failed to fetch usage analytics");
-            err(StatusCode::INTERNAL_SERVER_ERROR, "db_error", "Failed to retrieve usage analytics").into_response()
+            err(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "db_error",
+                "Failed to retrieve usage analytics",
+            )
+            .into_response()
         }
     }
 }
@@ -650,9 +683,11 @@ pub async fn get_dashboard_billing(
     let usage_db = state.auth_db.clone();
     let usage_key_id = key.id.clone();
     let usage_key_plan = key.plan.clone();
-    let usage = tokio::task::spawn_blocking(move || usage_db.get_usage_stats(&usage_key_id, &usage_key_plan))
-        .await
-        .unwrap_or_else(|e| Err(anyhow::anyhow!("task join error: {e}")));
+    let usage = tokio::task::spawn_blocking(move || {
+        usage_db.get_usage_stats(&usage_key_id, &usage_key_plan)
+    })
+    .await
+    .unwrap_or_else(|e| Err(anyhow::anyhow!("task join error: {e}")));
 
     let usage = match usage {
         Ok(v) => v,
@@ -692,9 +727,10 @@ pub async fn get_dashboard_billing(
 
     if let Some(admin_db) = state.admin_db.clone() {
         let key_prefix = key.key_prefix.clone();
-        let org_result = tokio::task::spawn_blocking(move || admin_db.find_org_by_api_key_prefix(&key_prefix))
-            .await
-            .unwrap_or_else(|e| Err(anyhow::anyhow!("task join error: {e}")));
+        let org_result =
+            tokio::task::spawn_blocking(move || admin_db.find_org_by_api_key_prefix(&key_prefix))
+                .await
+                .unwrap_or_else(|e| Err(anyhow::anyhow!("task join error: {e}")));
 
         if let Ok(Some(org)) = org_result {
             let org_id = org
@@ -849,9 +885,7 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
 // ─── Usage recording helper ───────────────────────────────────────────────────
 
 /// `GET /v1/meta/routes` — customer-facing route metadata registry.
-pub async fn get_route_registry(
-    headers: HeaderMap,
-) -> impl IntoResponse {
+pub async fn get_route_registry(headers: HeaderMap) -> impl IntoResponse {
     let start = Instant::now();
     let routes = crate::route_registry::customer_route_registry();
     (

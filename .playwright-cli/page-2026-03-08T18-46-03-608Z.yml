@@ -1,0 +1,1218 @@
+- main [ref=e2]:
+  - navigation [ref=e3]:
+    - generic [ref=e5]:
+      - link "Fetchium" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - img [ref=e8]
+        - generic [ref=e10]: Fetchium
+      - generic [ref=e11]:
+        - button "Product" [ref=e13] [cursor=pointer]:
+          - text: Product
+          - img [ref=e14]
+        - link "Pricing" [ref=e16] [cursor=pointer]:
+          - /url: /pricing
+        - link "Docs" [ref=e17] [cursor=pointer]:
+          - /url: https://docs.fetchium.com
+        - button "Compare" [ref=e19] [cursor=pointer]:
+          - text: Compare
+          - img [ref=e20]
+        - link "Blog" [ref=e22] [cursor=pointer]:
+          - /url: /blog
+        - link "Security" [ref=e23] [cursor=pointer]:
+          - /url: /security
+          - img [ref=e24]
+          - text: Security
+      - link "Get API Key" [ref=e28] [cursor=pointer]:
+        - /url: https://app.fetchium.com
+        - generic [ref=e30]: Get API Key
+        - img [ref=e31]
+  - generic [ref=e38]:
+    - generic [ref=e39]:
+      - generic [ref=e42]: Open Beta · 17 algorithms · 12 MCP tools · 1,000 free requests/month
+      - heading "The search API that thinks." [level=1] [ref=e43]:
+        - text: The search API
+        - text: that
+        - generic [ref=e45]: thinks.
+      - paragraph [ref=e46]: One API call returns search + extracted content + citations — drop it into your RAG pipeline or AI agent. No scrapers, no plumbing.
+      - generic [ref=e47]:
+        - link "Get API Key — Free" [ref=e48] [cursor=pointer]:
+          - /url: https://app.fetchium.com/register
+          - text: Get API Key — Free
+          - img [ref=e49]
+        - link "View Docs" [ref=e51] [cursor=pointer]:
+          - /url: https://docs.fetchium.com
+          - img [ref=e52]
+          - text: View Docs
+      - generic [ref=e54]:
+        - generic [ref=e55]:
+          - generic [ref=e56]: "17"
+          - generic [ref=e57]: Novel algorithms
+        - generic [ref=e58]:
+          - generic [ref=e59]: 11+
+          - generic [ref=e60]: Search backends
+        - generic [ref=e61]:
+          - generic [ref=e62]: 563+
+          - generic [ref=e63]: Tests passing
+        - generic [ref=e64]:
+          - generic [ref=e65]: "12"
+          - generic [ref=e66]: MCP tools
+    - img [ref=e69]:
+      - text: FFETCHIUM
+      - generic [ref=e106]: DuckDuckGo
+      - generic [ref=e108]: Brave Search
+      - generic [ref=e110]: Bing
+      - generic [ref=e112]: Kagi
+      - generic [ref=e114]: YouTube
+      - generic [ref=e116]: Arxiv
+      - generic [ref=e118]: +5 more…
+      - generic [ref=e120]: Ranked Results
+      - generic [ref=e122]: Extracted Content
+      - generic [ref=e124]: Auto Citations
+      - generic [ref=e126]: Evidence Graph
+      - text: 17 algorithms · 12 MCP tools
+  - generic [ref=e132]:
+    - paragraph [ref=e133]: Why developers choose Fetchium
+    - generic [ref=e134]:
+      - generic [ref=e135]:
+        - img [ref=e137]
+        - generic [ref=e139]:
+          - generic [ref=e140]: 17 novel algorithms
+          - generic [ref=e141]: not available anywhere else
+      - generic [ref=e142]:
+        - img [ref=e144]
+        - generic [ref=e147]:
+          - generic [ref=e148]: 12 MCP tools
+          - generic [ref=e149]: search, fetch, research, YouTube, and social workflows
+      - generic [ref=e150]:
+        - img [ref=e152]
+        - generic [ref=e156]:
+          - generic [ref=e157]: 11+ search backends
+          - generic [ref=e158]: federated in a single call
+      - generic [ref=e159]:
+        - img [ref=e161]
+        - generic [ref=e163]:
+          - generic [ref=e164]: 563+ unit tests
+          - generic [ref=e165]: production-grade reliability
+      - generic [ref=e166]:
+        - img [ref=e168]
+        - generic [ref=e179]:
+          - generic [ref=e180]: Built in Rust
+          - generic [ref=e181]: zero GC pauses, safe concurrency
+      - generic [ref=e182]:
+        - img [ref=e184]
+        - generic [ref=e187]:
+          - generic [ref=e188]: Zero telemetry
+          - generic [ref=e189]: your queries stay private
+    - generic [ref=e190]:
+      - paragraph [ref=e191]: A search API with federated backends, neural ranking, and cross-session learning built into a single retrieval pipeline.
+      - link "See comparison" [ref=e192] [cursor=pointer]:
+        - /url: "#compare"
+        - text: See comparison
+        - img [ref=e193]
+  - generic [ref=e196]:
+    - generic [ref=e197]:
+      - generic [ref=e198]:
+        - heading "Built for every AI workflow" [level=2] [ref=e199]
+        - paragraph [ref=e200]: From real-time search to complex research agents, Fetchium provides the foundation for reliable AI output.
+      - link "Explore use cases" [ref=e201] [cursor=pointer]:
+        - /url: /product/search
+        - text: Explore use cases
+        - img [ref=e202]
+    - generic [ref=e205]:
+      - link "RAG Pipelines Feed your vector DB with up-to-the-minute web data." [ref=e207] [cursor=pointer]:
+        - /url: /product/search
+        - img [ref=e209]
+        - generic [ref=e242]:
+          - heading "RAG Pipelines" [level=3] [ref=e243]
+          - paragraph [ref=e244]: Feed your vector DB with up-to-the-minute web data.
+      - link "Deep Research Multi-step autonomous browsing for complex queries." [ref=e246] [cursor=pointer]:
+        - /url: /product/research
+        - img [ref=e248]
+        - generic [ref=e268]:
+          - heading "Deep Research" [level=3] [ref=e269]
+          - paragraph [ref=e270]: Multi-step autonomous browsing for complex queries.
+      - link "Social Monitoring Track trends and discussion across Reddit and Hacker News." [ref=e272] [cursor=pointer]:
+        - /url: https://docs.fetchium.com/api/social
+        - img [ref=e274]: trending
+        - generic [ref=e303]:
+          - heading "Social Monitoring" [level=3] [ref=e304]
+          - paragraph [ref=e305]: Track trends and discussion across Reddit and Hacker News.
+      - link "Video Intel Search and analyze YouTube videos and transcripts." [ref=e307] [cursor=pointer]:
+        - /url: https://docs.fetchium.com/api/youtube
+        - img [ref=e309]
+        - generic [ref=e320]:
+          - heading "Video Intel" [level=3] [ref=e321]
+          - paragraph [ref=e322]: Search and analyze YouTube videos and transcripts.
+  - generic [ref=e324]:
+    - generic [ref=e325]:
+      - generic [ref=e326]: 17 Novel Algorithms
+      - heading "Capabilities no other search API has" [level=2] [ref=e328]
+      - paragraph [ref=e329]: Fetchium combines federation, ranking, extraction, and research primitives into one API surface for AI search workloads.
+    - generic [ref=e330]:
+      - generic [ref=e332]:
+        - generic [ref=e334]:
+          - img [ref=e336]
+          - generic [ref=e340]: Unique
+        - heading "11-Backend Search Federation" [level=3] [ref=e341]
+        - paragraph [ref=e342]: Fan out a single query across SearXNG, Brave, GitHub, Reddit, HackerNews, StackOverflow, YouTube, Wikipedia, ArXiv, Bing, and DuckDuckGo in parallel. Adaptive Backend Selector picks the right mix per query intent.
+      - generic [ref=e345]:
+        - generic [ref=e347]:
+          - img [ref=e349]
+          - generic [ref=e359]: Novel
+        - heading "HyperFusion Neural Ranking" [level=3] [ref=e360]
+        - paragraph [ref=e361]: "8-signal ranking engine: BM25 lexical match, semantic similarity, temporal decay, domain authority, evidence density, source diversity, content depth, and cross-source consensus."
+      - generic [ref=e364]:
+        - generic [ref=e366]:
+          - img [ref=e368]
+          - generic [ref=e372]: Novel
+        - heading "5-Layer CEP Content Extraction" [level=3] [ref=e373]
+        - paragraph [ref=e374]: "Content Extraction Protocol: CSS selectors, Readability, headless JS rendering, PDF parsing, and screenshot OCR. Designed to recover structured text from a wide range of pages, including SPAs and PDFs."
+      - generic [ref=e377]:
+        - generic [ref=e379]:
+          - img [ref=e381]
+          - generic [ref=e386]: Novel
+        - heading "QATBE Token Budget Control" [level=3] [ref=e387]
+        - paragraph [ref=e388]: Query-Aware Token-Budgeted Extraction scores every content segment with BM25 then solves a greedy knapsack to pack maximum relevance into your exact LLM context window. You always get the most useful content — not just the first N characters.
+      - generic [ref=e391]:
+        - generic [ref=e393]:
+          - img [ref=e395]
+          - generic [ref=e399]: Novel
+        - heading "Deep Research Pipeline" [level=3] [ref=e400]
+        - paragraph [ref=e401]: "AMRS multi-agent research swarm: 4 specialist agent types communicate over async channels, synthesize findings, and generate evidence graphs with claims traced to sources. Citation export supports APA, IEEE, BibTeX, and Chicago."
+      - generic [ref=e404]:
+        - generic [ref=e406]:
+          - img [ref=e408]
+          - generic [ref=e411]: Production
+        - heading "Production Resilience" [level=3] [ref=e412]
+        - paragraph [ref=e413]: Circuit breakers, bulkhead isolation, adaptive rate limiting, and backend-aware timeouts. Automatic failover and retry-and-refine validation help stabilize retrieval across heterogeneous sources.
+      - generic [ref=e416]:
+        - generic [ref=e418]:
+          - img [ref=e420]
+          - generic [ref=e423]: Novel
+        - heading "YouTube & Social Intelligence" [level=3] [ref=e424]
+        - paragraph [ref=e425]: VideoFusion ranking for YouTube with transcript extraction and channel/video analysis. Native Reddit, HackerNews, and StackOverflow backends add community-signal retrieval alongside web search.
+      - generic [ref=e428]:
+        - generic [ref=e430]:
+          - img [ref=e432]
+          - generic [ref=e437]: Novel
+        - heading "PIE Cross-Session Learning" [level=3] [ref=e438]
+        - paragraph [ref=e439]: Persistent Intelligence Engine tracks source trust, failure patterns, and query predictions across sessions via SQLite for deployments that enable persistence.
+      - generic [ref=e442]:
+        - generic [ref=e444]:
+          - img [ref=e446]
+          - generic [ref=e457]: Unique
+        - heading "MCP Protocol Native" [level=3] [ref=e458]
+        - paragraph [ref=e459]: First-class Model Context Protocol support. Fetchium exposes 12 MCP tools spanning search, fetch, estimate, research, YouTube, and social workflows.
+    - generic [ref=e461]:
+      - generic [ref=e462]:
+        - generic [ref=e463]: 11+
+        - generic [ref=e464]: Search backends
+      - generic [ref=e465]:
+        - generic [ref=e466]: "17"
+        - generic [ref=e467]: Novel algorithms
+      - generic [ref=e468]:
+        - generic [ref=e469]: 563+
+        - generic [ref=e470]: Unit tests
+      - generic [ref=e471]:
+        - generic [ref=e472]: "12"
+        - generic [ref=e473]: MCP tools
+  - generic [ref=e475]:
+    - generic [ref=e476]:
+      - generic [ref=e477]: Built for real workloads
+      - heading "What developers build with Fetchium" [level=2] [ref=e478]
+      - paragraph [ref=e479]: From quick RAG prototypes to production research pipelines — one API handles every retrieval workload.
+    - generic [ref=e480]:
+      - generic [ref=e481]:
+        - img [ref=e483]
+        - heading "RAG Pipelines & AI Agents" [level=3] [ref=e490]
+        - paragraph [ref=e491]: Drop Fetchium into custom RAG stacks and AI agents over HTTP or MCP. One call returns search results, extracted content, and citations ready for downstream retrieval or prompting.
+        - generic [ref=e492]:
+          - generic [ref=e493]: HTTP API
+          - generic [ref=e494]: MCP
+          - generic [ref=e495]: RAG
+          - generic [ref=e496]: Agents
+        - link "Learn more" [ref=e497] [cursor=pointer]:
+          - /url: /product/search
+          - text: Learn more
+          - img [ref=e498]
+      - generic [ref=e501]:
+        - img [ref=e503]
+        - heading "Deep Research Reports" [level=3] [ref=e508]
+        - paragraph [ref=e509]: The AMRS pipeline spawns 4 agent types in parallel, searches different angles, cross-validates findings, and assembles an evidence graph.
+        - generic [ref=e510]:
+          - generic [ref=e511]: AMRS
+          - generic [ref=e512]: Evidence graphs
+          - generic [ref=e513]: Multi-agent
+          - generic [ref=e514]: Citations
+        - link "Learn more" [ref=e515] [cursor=pointer]:
+          - /url: /product/research
+          - text: Learn more
+          - img [ref=e516]
+      - generic [ref=e519]:
+        - img [ref=e521]
+        - heading "Content Monitoring & Diffs" [level=3] [ref=e524]
+        - paragraph [ref=e525]: Track pages, domains, or topics over time and compare fetched content across runs for change detection workflows.
+        - generic [ref=e526]:
+          - generic [ref=e527]: Diffs
+          - generic [ref=e528]: Monitoring
+          - generic [ref=e529]: Extraction
+          - generic [ref=e530]: Analysis
+        - link "Learn more" [ref=e531] [cursor=pointer]:
+          - /url: /product/extract
+          - text: Learn more
+          - img [ref=e532]
+      - generic [ref=e535]:
+        - img [ref=e537]
+        - heading "YouTube Intelligence" [level=3] [ref=e540]
+        - paragraph [ref=e541]: Search, extract, and analyze YouTube content at scale. Get transcripts, metadata, engagement signals, and semantic summaries — all through the same unified API.
+        - generic [ref=e542]:
+          - generic [ref=e543]: Transcripts
+          - generic [ref=e544]: Metadata
+          - generic [ref=e545]: Channels
+          - generic [ref=e546]: Sentiment
+        - link "Learn more" [ref=e547] [cursor=pointer]:
+          - /url: https://docs.fetchium.com/api/youtube
+          - text: Learn more
+          - img [ref=e548]
+      - generic [ref=e551]:
+        - img [ref=e553]
+        - heading "Social Intelligence" [level=3] [ref=e555]
+        - paragraph [ref=e556]: Pull structured data from Reddit and Hacker News alongside broader web retrieval to understand community signals around a topic.
+        - generic [ref=e557]:
+          - generic [ref=e558]: Reddit
+          - generic [ref=e559]: HackerNews
+          - generic [ref=e560]: Community
+          - generic [ref=e561]: Trends
+        - link "Learn more" [ref=e562] [cursor=pointer]:
+          - /url: https://docs.fetchium.com/api/social
+          - text: Learn more
+          - img [ref=e563]
+  - generic [ref=e567]:
+    - generic [ref=e568]:
+      - generic [ref=e569]:
+        - img [ref=e570]
+        - text: Pipeline Architecture
+      - heading "How it works" [level=2] [ref=e576]
+      - paragraph [ref=e577]: Six stages. Search, extraction, ranking, and evidence tracing in one pipeline with an evidence graph.
+    - generic [ref=e579]:
+      - generic [ref=e580]:
+        - generic [ref=e583]: Query
+        - generic:
+          - img
+      - generic [ref=e584]:
+        - generic [ref=e587]: Federation
+        - generic:
+          - img
+      - generic [ref=e588]:
+        - generic [ref=e591]: Ranking
+        - generic:
+          - img
+      - generic [ref=e592]:
+        - generic [ref=e595]: Extraction
+        - generic:
+          - img
+      - generic [ref=e596]:
+        - generic [ref=e599]: Token Budget
+        - generic:
+          - img
+      - generic [ref=e603]: Response
+    - generic [ref=e604]:
+      - generic [ref=e609]:
+        - generic [ref=e610]:
+          - generic [ref=e611]: "01"
+          - img [ref=e613]
+        - generic [ref=e616]:
+          - generic [ref=e617]:
+            - heading "Query Analysis" [level=3] [ref=e618]
+            - generic [ref=e619]: Stage 1
+          - generic [ref=e620]: QFD + QCE + QXE
+          - paragraph [ref=e621]: Your query is fingerprinted, classified by intent, scored for complexity, and expanded with semantic variants. The system chooses the optimal backend mix before a single network call is made.
+      - generic [ref=e626]:
+        - generic [ref=e627]:
+          - generic [ref=e628]: "02"
+          - img [ref=e630]
+        - generic [ref=e634]:
+          - generic [ref=e635]:
+            - heading "Multi-Backend Federation" [level=3] [ref=e636]
+            - generic [ref=e637]: Stage 2
+          - generic [ref=e638]: ABS + Resilience Layer
+          - paragraph [ref=e639]: The Adaptive Backend Selector fans your query across up to 11 sources in parallel — SearXNG, Brave, GitHub, Reddit, StackOverflow, YouTube, and more. Circuit breakers handle backend failures invisibly.
+      - generic [ref=e644]:
+        - generic [ref=e645]:
+          - generic [ref=e646]: "03"
+          - img [ref=e648]
+        - generic [ref=e658]:
+          - generic [ref=e659]:
+            - heading "HyperFusion Ranking" [level=3] [ref=e660]
+            - generic [ref=e661]: Stage 3
+          - generic [ref=e662]: 8-Signal Neural Ranking
+          - paragraph [ref=e663]: "Results are scored on 8 signals: BM25 lexical match, semantic similarity, temporal freshness, domain authority, evidence density, source diversity, content depth, and cross-source consensus."
+      - generic [ref=e668]:
+        - generic [ref=e669]:
+          - generic [ref=e670]: "04"
+          - img [ref=e672]
+        - generic [ref=e676]:
+          - generic [ref=e677]:
+            - heading "CEP Content Extraction" [level=3] [ref=e678]
+            - generic [ref=e679]: Stage 4
+          - generic [ref=e680]: 5-Layer Cascade
+          - paragraph [ref=e681]: "Top-ranked URLs are deep-extracted via the Content Extraction Protocol: CSS selectors, Readability, headless JS rendering, PDF parsing, and screenshot OCR."
+      - generic [ref=e686]:
+        - generic [ref=e687]:
+          - generic [ref=e688]: "05"
+          - img [ref=e690]
+        - generic [ref=e695]:
+          - generic [ref=e696]:
+            - heading "Token Budget Control" [level=3] [ref=e697]
+            - generic [ref=e698]: Stage 5
+          - generic [ref=e699]: QATBE Algorithm
+          - paragraph [ref=e700]: Extracted content is segmented, BM25-scored for query relevance, then packed into your token budget via greedy knapsack. You always get the most relevant content that fits your LLM context window.
+      - generic [ref=e704]:
+        - generic [ref=e705]:
+          - generic [ref=e706]: "06"
+          - img [ref=e708]
+        - generic [ref=e714]:
+          - generic [ref=e715]:
+            - heading "AI-Ready Response" [level=3] [ref=e716]
+            - generic [ref=e717]: Stage 6
+          - generic [ref=e718]: Evidence Graph + Citations
+          - paragraph [ref=e719]: The final response includes ranked results, extracted content within your budget, an evidence graph tracing every claim to a source, and auto-generated citations in APA, IEEE, BibTeX, or Chicago format.
+    - generic [ref=e721]:
+      - generic [ref=e722]:
+        - generic [ref=e723]: Start building in 2 minutes
+        - generic [ref=e724]: Get an API key, make your first search call, get back ranked results with extracted content and evidence graphs. Free plan — no credit card required.
+      - link "Get API Key Free" [ref=e725] [cursor=pointer]:
+        - /url: https://app.fetchium.com
+        - text: Get API Key Free
+        - img [ref=e726]
+  - generic [ref=e730]:
+    - generic [ref=e731]:
+      - generic [ref=e732]:
+        - img [ref=e733]
+        - text: Simple API
+      - heading "First result in 60 seconds" [level=2] [ref=e737]
+      - paragraph [ref=e738]: Install the SDK, paste your key, ship. Real multi-source search with zero boilerplate.
+    - generic [ref=e739]:
+      - generic [ref=e740]:
+        - generic [ref=e741]:
+          - generic [ref=e742]:
+            - button "TypeScript" [ref=e743] [cursor=pointer]: TypeScript
+            - button "Python" [ref=e745] [cursor=pointer]
+            - button "cURL" [ref=e746] [cursor=pointer]
+          - button "Copy" [ref=e748] [cursor=pointer]:
+            - generic [ref=e749]:
+              - img [ref=e750]
+              - generic [ref=e753]: Copy
+        - generic [ref=e755]:
+          - generic [ref=e756]:
+            - generic [ref=e757]: "1"
+            - generic [ref=e758]: "import { Fetchium } from \"@fetchium/sdk\";"
+          - generic [ref=e760]: "2"
+          - generic [ref=e762]:
+            - generic [ref=e763]: "3"
+            - generic [ref=e764]: "const fetchium = new Fetchium({"
+          - generic [ref=e765]:
+            - generic [ref=e766]: "4"
+            - generic [ref=e767]: "apiKey: process.env.FETCHIUM_API_KEY!,"
+          - generic [ref=e768]:
+            - generic [ref=e769]: "5"
+            - generic [ref=e770]: "baseUrl: \"https://api.fetchium.com\","
+          - generic [ref=e771]:
+            - generic [ref=e772]: "6"
+            - generic [ref=e773]: "});"
+          - generic [ref=e775]: "7"
+          - generic [ref=e777]:
+            - generic [ref=e778]: "8"
+            - generic [ref=e779]: // Multi-source federated search
+          - generic [ref=e780]:
+            - generic [ref=e781]: "9"
+            - generic [ref=e782]: "const results = await fetchium.search(\"rust async programming\", {"
+          - generic [ref=e783]:
+            - generic [ref=e784]: "10"
+            - generic [ref=e785]: "backends: [\"searxng\", \"brave\", \"github\", \"stackoverflow\"],"
+          - generic [ref=e786]:
+            - generic [ref=e787]: "11"
+            - generic [ref=e788]: "maxResults: 10,"
+          - generic [ref=e789]:
+            - generic [ref=e790]: "12"
+            - generic [ref=e791]: "tier: \"summary\", // key_facts | summary | detailed | complete"
+          - generic [ref=e792]:
+            - generic [ref=e793]: "13"
+            - generic [ref=e794]: "tokenBudget: 2000, // QATBE greedy-knapsack packing"
+          - generic [ref=e795]:
+            - generic [ref=e796]: "14"
+            - generic [ref=e797]: "ranking: \"hyperfusion\" // 8-signal neural ranking"
+          - generic [ref=e798]:
+            - generic [ref=e799]: "15"
+            - generic [ref=e800]: "});"
+          - generic [ref=e802]: "16"
+          - generic [ref=e804]:
+            - generic [ref=e805]: "17"
+            - generic [ref=e806]: console.log(results.items[0].title);
+          - generic [ref=e807]:
+            - generic [ref=e808]: "18"
+            - generic [ref=e809]: console.log(results.meta.tokensUsed); // always within budget
+          - generic [ref=e810]:
+            - generic [ref=e811]: "19"
+            - generic [ref=e812]: console.log(results.evidenceGraph); // citations + trust scores
+          - generic [ref=e814]: "20"
+          - generic [ref=e816]:
+            - generic [ref=e817]: "21"
+            - generic [ref=e818]: // Deep-extract any URL
+          - generic [ref=e819]:
+            - generic [ref=e820]: "22"
+            - generic [ref=e821]: "const page = await fetchium.extract(\"https://docs.rs/tokio\", {"
+          - generic [ref=e822]:
+            - generic [ref=e823]: "23"
+            - generic [ref=e824]: "format: \"markdown\","
+          - generic [ref=e825]:
+            - generic [ref=e826]: "24"
+            - generic [ref=e827]: "tokenBudget: 4096,"
+          - generic [ref=e828]:
+            - generic [ref=e829]: "25"
+            - generic [ref=e830]: "layer: \"readability\", // css | readability | headless | pdf | ocr"
+          - generic [ref=e831]:
+            - generic [ref=e832]: "26"
+            - generic [ref=e833]: "});"
+        - generic [ref=e835]:
+          - img [ref=e836]
+          - generic [ref=e839]: $
+          - generic [ref=e840]: npm install @fetchium/sdk
+      - generic [ref=e841]:
+        - generic [ref=e842]:
+          - generic [ref=e845]: API Response
+          - generic [ref=e846]:
+            - generic [ref=e847]: 200 OK
+            - generic [ref=e848]: 187ms
+        - generic [ref=e849]:
+          - generic [ref=e850]:
+            - generic [ref=e851]:
+              - generic [ref=e852]: Tokens
+              - generic [ref=e853]: 1984/2000
+            - generic [ref=e854]:
+              - generic [ref=e855]: Backends
+              - generic [ref=e856]: "4"
+            - generic [ref=e857]:
+              - generic [ref=e858]: Ranked
+              - generic [ref=e859]: "10"
+          - generic [ref=e861]:
+            - generic [ref=e862]: Token budget usage
+            - generic [ref=e863]: 99%
+          - generic [ref=e865]:
+            - generic [ref=e866]:
+              - generic [ref=e867]:
+                - generic [ref=e868]:
+                  - generic [ref=e869]: "1"
+                  - generic [ref=e870]: Asynchronous Programming in Rust
+                - generic [ref=e871]: brave
+              - paragraph [ref=e872]: The async book covers futures, async/await syntax, Tokio runtime, and concurrent task management...
+              - generic [ref=e873]:
+                - generic [ref=e874]:
+                  - generic [ref=e875]: score
+                  - generic [ref=e878]: "0.97"
+                - generic [ref=e879]:
+                  - generic [ref=e880]: trust
+                  - generic [ref=e881]: "0.94"
+            - generic [ref=e882]:
+              - generic [ref=e883]:
+                - generic [ref=e884]:
+                  - generic [ref=e885]: "2"
+                  - generic [ref=e886]: tokio-rs/tokio — GitHub
+                - generic [ref=e887]: github
+              - paragraph [ref=e888]: "A runtime for writing reliable, asynchronous, and slim applications. Stars: 28k..."
+              - generic [ref=e889]:
+                - generic [ref=e890]:
+                  - generic [ref=e891]: score
+                  - generic [ref=e894]: "0.93"
+                - generic [ref=e895]:
+                  - generic [ref=e896]: trust
+                  - generic [ref=e897]: "0.98"
+            - generic [ref=e898]:
+              - generic [ref=e899]:
+                - generic [ref=e900]:
+                  - generic [ref=e901]: "3"
+                  - generic [ref=e902]: How does async/await work in Rust?
+                - generic [ref=e903]: stackoverflow
+              - paragraph [ref=e904]: "Accepted answer (1.2k votes): Rust's async/await desugars into state machines at compile time..."
+              - generic [ref=e905]:
+                - generic [ref=e906]:
+                  - generic [ref=e907]: score
+                  - generic [ref=e910]: "0.88"
+                - generic [ref=e911]:
+                  - generic [ref=e912]: trust
+                  - generic [ref=e913]: "0.91"
+          - generic [ref=e914]:
+            - generic [ref=e915]: Evidence Graph
+            - generic [ref=e916]:
+              - generic [ref=e917]: 10 nodes
+              - generic [ref=e918]: 23 edges
+              - generic [ref=e919]: consensus 0.89
+  - generic [ref=e921]:
+    - generic [ref=e922]:
+      - generic [ref=e923]:
+        - img [ref=e924]
+        - text: Capability Comparison
+      - heading "Fetchium capability shape at a glance." [level=2] [ref=e926]
+      - paragraph [ref=e927]: This view focuses on first-party Fetchium capabilities and broad product-shape differences. It intentionally avoids hard benchmark and pricing claims for third-party services that can change independently of this repo.
+    - table [ref=e930]:
+      - rowgroup [ref=e931]:
+        - row "Feature Best Value Fetchium Full pipeline Tavily AI agent search vs Fetchium Exa Neural search vs Fetchium SerpAPI SERP scraper vs Fetchium Firecrawl Web extraction vs Fetchium" [ref=e932]:
+          - columnheader "Feature" [ref=e933]
+          - columnheader "Best Value Fetchium Full pipeline" [ref=e934]:
+            - generic [ref=e936]:
+              - img [ref=e937]
+              - text: Best Value
+            - generic [ref=e939]: Fetchium
+            - generic [ref=e940]: Full pipeline
+          - columnheader "Tavily AI agent search vs Fetchium" [ref=e941]:
+            - generic [ref=e942]: Tavily
+            - generic [ref=e943]: AI agent search
+            - link "vs Fetchium" [ref=e944] [cursor=pointer]:
+              - /url: /compare/tavily
+              - text: vs Fetchium
+              - img [ref=e945]
+          - columnheader "Exa Neural search vs Fetchium" [ref=e948]:
+            - generic [ref=e949]: Exa
+            - generic [ref=e950]: Neural search
+            - link "vs Fetchium" [ref=e951] [cursor=pointer]:
+              - /url: /compare/exa
+              - text: vs Fetchium
+              - img [ref=e952]
+          - columnheader "SerpAPI SERP scraper vs Fetchium" [ref=e955]:
+            - generic [ref=e956]: SerpAPI
+            - generic [ref=e957]: SERP scraper
+            - link "vs Fetchium" [ref=e958] [cursor=pointer]:
+              - /url: /compare/serpapi
+              - text: vs Fetchium
+              - img [ref=e959]
+          - columnheader "Firecrawl Web extraction vs Fetchium" [ref=e962]:
+            - generic [ref=e963]: Firecrawl
+            - generic [ref=e964]: Web extraction
+            - link "vs Fetchium" [ref=e965] [cursor=pointer]:
+              - /url: /compare/firecrawl
+              - text: vs Fetchium
+              - img [ref=e966]
+      - rowgroup [ref=e969]:
+        - row "Multi-source federation 11+ simultaneous backends" [ref=e970]:
+          - cell "Multi-source federation 11+ simultaneous backends" [ref=e971]:
+            - generic [ref=e972]: Multi-source federation
+            - generic [ref=e973]: 11+ simultaneous backends
+          - cell [ref=e974]:
+            - img [ref=e977]
+          - cell [ref=e979]:
+            - img [ref=e981]
+          - cell [ref=e983]:
+            - img [ref=e985]
+          - cell [ref=e988]:
+            - img [ref=e990]
+          - cell [ref=e993]:
+            - img [ref=e995]
+        - row "Token budget control (QATBE)" [ref=e998]:
+          - cell "Token budget control (QATBE)" [ref=e999]:
+            - generic [ref=e1000]: Token budget control (QATBE)
+          - cell [ref=e1001]:
+            - img [ref=e1004]
+          - cell [ref=e1006]:
+            - img [ref=e1008]
+          - cell [ref=e1011]:
+            - img [ref=e1013]
+          - cell [ref=e1016]:
+            - img [ref=e1018]
+          - cell [ref=e1021]:
+            - img [ref=e1023]
+        - row "5-layer content extraction (CEP)" [ref=e1026]:
+          - cell "5-layer content extraction (CEP)" [ref=e1027]:
+            - generic [ref=e1028]: 5-layer content extraction (CEP)
+          - cell [ref=e1029]:
+            - img [ref=e1032]
+          - cell [ref=e1034]:
+            - img [ref=e1036]
+          - cell [ref=e1039]:
+            - img [ref=e1041]
+          - cell [ref=e1044]:
+            - img [ref=e1046]
+          - cell [ref=e1049]:
+            - img [ref=e1051]
+        - row "8-signal neural ranking" [ref=e1053]:
+          - cell "8-signal neural ranking" [ref=e1054]:
+            - generic [ref=e1055]: 8-signal neural ranking
+          - cell [ref=e1056]:
+            - img [ref=e1059]
+          - cell [ref=e1061]:
+            - img [ref=e1063]
+          - cell [ref=e1065]:
+            - img [ref=e1067]
+          - cell [ref=e1069]:
+            - img [ref=e1071]
+          - cell [ref=e1074]:
+            - img [ref=e1076]
+        - row "Evidence graphs + citations" [ref=e1079]:
+          - cell "Evidence graphs + citations" [ref=e1080]:
+            - generic [ref=e1081]: Evidence graphs + citations
+          - cell [ref=e1082]:
+            - img [ref=e1085]
+          - cell [ref=e1087]:
+            - img [ref=e1089]
+          - cell [ref=e1091]:
+            - img [ref=e1093]
+          - cell [ref=e1096]:
+            - img [ref=e1098]
+          - cell [ref=e1101]:
+            - img [ref=e1103]
+        - row "Cross-session learning (PIE)" [ref=e1106]:
+          - cell "Cross-session learning (PIE)" [ref=e1107]:
+            - generic [ref=e1108]: Cross-session learning (PIE)
+          - cell [ref=e1109]:
+            - img [ref=e1112]
+          - cell [ref=e1114]:
+            - img [ref=e1116]
+          - cell [ref=e1119]:
+            - img [ref=e1121]
+          - cell [ref=e1124]:
+            - img [ref=e1126]
+          - cell [ref=e1129]:
+            - img [ref=e1131]
+        - row "Deep research pipeline (AMRS)" [ref=e1134]:
+          - cell "Deep research pipeline (AMRS)" [ref=e1135]:
+            - generic [ref=e1136]: Deep research pipeline (AMRS)
+          - cell [ref=e1137]:
+            - img [ref=e1140]
+          - cell [ref=e1142]:
+            - img [ref=e1144]
+          - cell [ref=e1146]:
+            - img [ref=e1148]
+          - cell [ref=e1151]:
+            - img [ref=e1153]
+          - cell [ref=e1156]:
+            - img [ref=e1158]
+        - row "YouTube & social search" [ref=e1161]:
+          - cell "YouTube & social search" [ref=e1162]:
+            - generic [ref=e1163]: YouTube & social search
+          - cell [ref=e1164]:
+            - img [ref=e1167]
+          - cell [ref=e1169]:
+            - img [ref=e1171]
+          - cell [ref=e1174]:
+            - img [ref=e1176]
+          - cell [ref=e1179]:
+            - img [ref=e1181]
+          - cell [ref=e1184]:
+            - img [ref=e1186]
+        - row "Real-time monitoring + diffs" [ref=e1189]:
+          - cell "Real-time monitoring + diffs" [ref=e1190]:
+            - generic [ref=e1191]: Real-time monitoring + diffs
+          - cell [ref=e1192]:
+            - img [ref=e1195]
+          - cell [ref=e1197]:
+            - img [ref=e1199]
+          - cell [ref=e1202]:
+            - img [ref=e1204]
+          - cell [ref=e1207]:
+            - img [ref=e1209]
+          - cell [ref=e1212]:
+            - img [ref=e1214]
+        - row "MCP protocol support" [ref=e1216]:
+          - cell "MCP protocol support" [ref=e1217]:
+            - generic [ref=e1218]: MCP protocol support
+          - cell [ref=e1219]:
+            - img [ref=e1222]
+          - cell [ref=e1224]:
+            - img [ref=e1226]
+          - cell [ref=e1229]:
+            - img [ref=e1231]
+          - cell [ref=e1233]:
+            - img [ref=e1235]
+          - cell [ref=e1238]:
+            - img [ref=e1240]
+        - row "Self-hostable" [ref=e1243]:
+          - cell "Self-hostable" [ref=e1244]:
+            - generic [ref=e1245]: Self-hostable
+          - cell [ref=e1246]:
+            - img [ref=e1249]
+          - cell [ref=e1251]:
+            - img [ref=e1253]
+          - cell [ref=e1256]:
+            - img [ref=e1258]
+          - cell [ref=e1261]:
+            - img [ref=e1263]
+          - cell [ref=e1266]:
+            - img [ref=e1269]
+        - row "Free tier (renewing)" [ref=e1271]:
+          - cell "Free tier (renewing)" [ref=e1272]:
+            - generic [ref=e1273]: Free tier (renewing)
+          - cell [ref=e1274]:
+            - img [ref=e1277]
+          - cell [ref=e1279]:
+            - img [ref=e1282]
+          - cell [ref=e1284]:
+            - img [ref=e1287]
+          - cell [ref=e1289]:
+            - img [ref=e1292]
+          - cell [ref=e1294]:
+            - img [ref=e1297]
+        - row "Plan-based rate limits From current API auth configuration 60-2000/min varies varies varies varies" [ref=e1299]:
+          - cell "Plan-based rate limits From current API auth configuration" [ref=e1300]:
+            - generic [ref=e1301]: Plan-based rate limits
+            - generic [ref=e1302]: From current API auth configuration
+          - cell "60-2000/min" [ref=e1303]:
+            - generic [ref=e1305]: 60-2000/min
+          - cell "varies" [ref=e1306]:
+            - generic [ref=e1308]: varies
+          - cell "varies" [ref=e1309]:
+            - generic [ref=e1311]: varies
+          - cell "varies" [ref=e1312]:
+            - generic [ref=e1314]: varies
+          - cell "varies" [ref=e1315]:
+            - generic [ref=e1317]: varies
+        - row "Free tier available 1,000 requests/month in current API auth configuration" [ref=e1318]:
+          - cell "Free tier available 1,000 requests/month in current API auth configuration" [ref=e1319]:
+            - generic [ref=e1320]: Free tier available
+            - generic [ref=e1321]: 1,000 requests/month in current API auth configuration
+          - cell [ref=e1322]:
+            - img [ref=e1325]
+          - cell [ref=e1327]:
+            - img [ref=e1330]
+          - cell [ref=e1332]:
+            - img [ref=e1335]
+          - cell [ref=e1337]:
+            - img [ref=e1340]
+          - cell [ref=e1342]:
+            - img [ref=e1345]
+    - generic [ref=e1347]:
+      - generic [ref=e1348]:
+        - generic [ref=e1349]:
+          - img [ref=e1351]
+          - text: Full support
+        - generic [ref=e1353]:
+          - img [ref=e1354]
+          - text: Partial support
+        - generic [ref=e1356]:
+          - img [ref=e1357]
+          - text: Not available
+      - paragraph [ref=e1360]: Fetchium values in this table are tied to the current codebase and auth configuration. Non-Fetchium entries are shown as broad capability comparisons only.
+    - generic [ref=e1362]:
+      - generic [ref=e1363]:
+        - generic [ref=e1364]:
+          - generic [ref=e1365]: 11+
+          - generic [ref=e1366]: federated backends
+          - generic [ref=e1367]: single-query fanout
+        - generic [ref=e1369]:
+          - generic [ref=e1370]: "17"
+          - generic [ref=e1371]: algorithms
+          - generic [ref=e1372]: ranking, extraction, validation
+        - paragraph [ref=e1374]: Full pipeline means search, extraction, ranking, citations, and research workflows in one product surface.
+      - generic [ref=e1375]:
+        - link "vs Tavily" [ref=e1376] [cursor=pointer]:
+          - /url: /compare/tavily
+          - text: vs Tavily
+          - img [ref=e1377]
+        - link "vs Exa" [ref=e1380] [cursor=pointer]:
+          - /url: /compare/exa
+          - text: vs Exa
+          - img [ref=e1381]
+        - link "vs SerpAPI" [ref=e1384] [cursor=pointer]:
+          - /url: /compare/serpapi
+          - text: vs SerpAPI
+          - img [ref=e1385]
+  - generic [ref=e1389]:
+    - generic [ref=e1390]:
+      - generic [ref=e1391]:
+        - img [ref=e1392]
+        - text: Current API Tiers
+      - heading "Plans synced to the current auth configuration" [level=2] [ref=e1394]
+      - paragraph [ref=e1395]: Free tier limits are sourced from the API auth layer. Paid plan names and request ceilings below reflect the current codebase; contact sales for commercial pricing details.
+    - generic [ref=e1396]:
+      - generic [ref=e1399]:
+        - generic [ref=e1400]:
+          - generic [ref=e1401]:
+            - img [ref=e1403]
+            - generic [ref=e1405]: Free
+          - generic [ref=e1407]: Free
+          - paragraph [ref=e1408]: Explore the API, build a prototype, or run personal projects.
+          - generic [ref=e1409]:
+            - generic [ref=e1410]: 1,000 req / month
+            - generic [ref=e1412]: 60 req / min
+        - list [ref=e1413]:
+          - listitem [ref=e1414]:
+            - img [ref=e1416]
+            - generic [ref=e1418]: 1,000 API requests per month
+          - listitem [ref=e1419]:
+            - img [ref=e1421]
+            - generic [ref=e1423]: All 11 search backends
+          - listitem [ref=e1424]:
+            - img [ref=e1426]
+            - generic [ref=e1428]: 5-layer CEP content extraction
+          - listitem [ref=e1429]:
+            - img [ref=e1431]
+            - generic [ref=e1433]: HyperFusion 8-signal ranking
+          - listitem [ref=e1434]:
+            - img [ref=e1436]
+            - generic [ref=e1438]: Token budget management
+          - listitem [ref=e1439]:
+            - img [ref=e1441]
+            - generic [ref=e1443]: Evidence graphs + citations
+          - listitem [ref=e1444]:
+            - img [ref=e1446]
+            - generic [ref=e1448]: MCP protocol tools
+          - listitem [ref=e1449]:
+            - img [ref=e1451]
+            - generic [ref=e1453]: Community support (Discord)
+        - link "Start for Free" [ref=e1454] [cursor=pointer]:
+          - /url: https://app.fetchium.com/register
+          - text: Start for Free
+          - img [ref=e1455]
+      - generic [ref=e1460]:
+        - generic [ref=e1461]:
+          - generic [ref=e1462]:
+            - img [ref=e1464]
+            - generic [ref=e1469]: Starter
+          - generic [ref=e1471]: Contact
+          - paragraph [ref=e1472]: First paid tier in the current API configuration.
+          - generic [ref=e1473]:
+            - generic [ref=e1474]: 25,000 req / month
+            - generic [ref=e1476]: 200 req / min
+        - list [ref=e1477]:
+          - listitem [ref=e1478]:
+            - img [ref=e1480]
+            - generic [ref=e1482]: 25,000 API requests per month
+          - listitem [ref=e1483]:
+            - img [ref=e1485]
+            - generic [ref=e1487]: Everything in Free
+          - listitem [ref=e1488]:
+            - img [ref=e1490]
+            - generic [ref=e1492]: YouTube intelligence API
+          - listitem [ref=e1493]:
+            - img [ref=e1495]
+            - generic [ref=e1497]: Social media research
+          - listitem [ref=e1498]:
+            - img [ref=e1500]
+            - generic [ref=e1502]: Async jobs + usage tracking
+          - listitem [ref=e1503]:
+            - img [ref=e1505]
+            - generic [ref=e1507]: Admin key management
+          - listitem [ref=e1508]:
+            - img [ref=e1510]
+            - generic [ref=e1512]: Usage dashboard
+        - paragraph [ref=e1514]: "source: Current auth limits: 200 req/min and 25,000 req/month"
+        - link "Contact Sales" [ref=e1515] [cursor=pointer]:
+          - /url: /contact
+          - text: Contact Sales
+          - img [ref=e1516]
+      - generic [ref=e1519]:
+        - generic [ref=e1521]:
+          - img [ref=e1522]
+          - text: Most Popular
+        - generic [ref=e1524]:
+          - generic [ref=e1525]:
+            - generic [ref=e1526]:
+              - img [ref=e1528]
+              - generic [ref=e1531]: Pro
+            - generic [ref=e1533]: Contact
+            - paragraph [ref=e1534]: Higher-volume production usage in the current API configuration.
+            - generic [ref=e1535]:
+              - generic [ref=e1536]: 250,000 req / month
+              - generic [ref=e1538]: 500 req / min
+          - list [ref=e1539]:
+            - listitem [ref=e1540]:
+              - img [ref=e1542]
+              - generic [ref=e1544]: 250,000 API requests per month
+            - listitem [ref=e1545]:
+              - img [ref=e1547]
+              - generic [ref=e1549]: Everything in Starter
+            - listitem [ref=e1550]:
+              - img [ref=e1552]
+              - generic [ref=e1554]: Deep research pipeline (AMRS)
+            - listitem [ref=e1555]:
+              - img [ref=e1557]
+              - generic [ref=e1559]: Cross-session learning (PIE)
+            - listitem [ref=e1560]:
+              - img [ref=e1562]
+              - generic [ref=e1564]: Adversarial content shield
+            - listitem [ref=e1565]:
+              - img [ref=e1567]
+              - generic [ref=e1569]: Higher monthly quota
+            - listitem [ref=e1570]:
+              - img [ref=e1572]
+              - generic [ref=e1574]: Higher per-minute limits
+            - listitem [ref=e1575]:
+              - img [ref=e1577]
+              - generic [ref=e1579]: Best fit for production workloads
+          - paragraph [ref=e1581]: "source: Current auth limits: 500 req/min and 250,000 req/month"
+          - link "Contact Sales" [ref=e1582] [cursor=pointer]:
+            - /url: /contact
+            - text: Contact Sales
+            - img [ref=e1583]
+      - generic [ref=e1588]:
+        - generic [ref=e1589]:
+          - generic [ref=e1590]:
+            - img [ref=e1592]
+            - generic [ref=e1594]: Enterprise
+          - generic [ref=e1596]: Custom
+          - paragraph [ref=e1597]: Custom volume and support for teams that need enterprise handling.
+          - generic [ref=e1598]:
+            - generic [ref=e1599]: Unlimited / custom
+            - generic [ref=e1601]: 2,000 req / min
+        - list [ref=e1602]:
+          - listitem [ref=e1603]:
+            - img [ref=e1605]
+            - generic [ref=e1607]: Unlimited API requests
+          - listitem [ref=e1608]:
+            - img [ref=e1610]
+            - generic [ref=e1612]: Everything in Pro
+          - listitem [ref=e1613]:
+            - img [ref=e1615]
+            - generic [ref=e1617]: Custom commercial terms
+          - listitem [ref=e1618]:
+            - img [ref=e1620]
+            - generic [ref=e1622]: Priority onboarding
+          - listitem [ref=e1623]:
+            - img [ref=e1625]
+            - generic [ref=e1627]: Dedicated support channel
+          - listitem [ref=e1628]:
+            - img [ref=e1630]
+            - generic [ref=e1632]: Deployment guidance
+          - listitem [ref=e1633]:
+            - img [ref=e1635]
+            - generic [ref=e1637]: Security review on request
+        - link "Contact Sales" [ref=e1638] [cursor=pointer]:
+          - /url: /contact
+          - text: Contact Sales
+          - img [ref=e1639]
+    - generic [ref=e1643]:
+      - generic [ref=e1644]:
+        - generic [ref=e1645]:
+          - heading "What is verified here" [level=3] [ref=e1646]
+          - paragraph [ref=e1647]: This section is intentionally conservative. Request quotas, rate limits, and free-tier availability are taken from the current API auth code. If you need a signed commercial quote, use the contact flow.
+        - link "Contact sales" [ref=e1648] [cursor=pointer]:
+          - /url: /contact
+          - text: Contact sales
+          - img [ref=e1649]
+      - generic [ref=e1652]:
+        - generic [ref=e1653]:
+          - generic [ref=e1654]: 1,000/mo
+          - generic [ref=e1655]: Free
+          - generic [ref=e1656]: 60 req/min
+        - generic [ref=e1657]:
+          - generic [ref=e1658]: 25,000/mo
+          - generic [ref=e1659]: Starter
+          - generic [ref=e1660]: 200 req/min
+        - generic [ref=e1661]:
+          - generic [ref=e1662]: 250,000/mo
+          - generic [ref=e1663]: Pro
+          - generic [ref=e1664]: 500 req/min
+        - generic [ref=e1665]:
+          - generic [ref=e1666]: Unlimited
+          - generic [ref=e1667]: Enterprise
+          - generic [ref=e1668]: 2,000 req/min
+      - paragraph [ref=e1669]: "Source: current API auth configuration in the Fetchium codebase."
+    - paragraph [ref=e1671]:
+      - text: Questions about pricing?
+      - link "Talk to us" [ref=e1672] [cursor=pointer]:
+        - /url: /contact
+      - text: or see the
+      - link "full pricing FAQ" [ref=e1673] [cursor=pointer]:
+        - /url: /pricing
+      - text: . All plans include all 17 algorithms, all backends, and evidence graphs — only scale differs.
+  - generic [ref=e1675]:
+    - generic [ref=e1676]:
+      - generic [ref=e1677]:
+        - img [ref=e1678]
+        - text: Common Questions
+      - heading "Frequently asked questions" [level=2] [ref=e1680]
+      - paragraph [ref=e1681]: Everything you need to decide if Fetchium is right for your project.
+    - generic [ref=e1682]:
+      - button "What is Fetchium?" [ref=e1684] [cursor=pointer]:
+        - generic [ref=e1685]: What is Fetchium?
+        - img [ref=e1686]
+      - button "How does Fetchium differ from Firecrawl?" [ref=e1689] [cursor=pointer]:
+        - generic [ref=e1690]: How does Fetchium differ from Firecrawl?
+        - img [ref=e1691]
+      - button "How does Fetchium compare to Tavily and Exa?" [ref=e1694] [cursor=pointer]:
+        - generic [ref=e1695]: How does Fetchium compare to Tavily and Exa?
+        - img [ref=e1696]
+      - button "What is token-budgeted extraction (QATBE)?" [ref=e1699] [cursor=pointer]:
+        - generic [ref=e1700]: What is token-budgeted extraction (QATBE)?
+        - img [ref=e1701]
+      - button "Does Fetchium work with LangChain, LlamaIndex, and other RAG frameworks?" [ref=e1704] [cursor=pointer]:
+        - generic [ref=e1705]: Does Fetchium work with LangChain, LlamaIndex, and other RAG frameworks?
+        - img [ref=e1706]
+      - button "What is the Model Context Protocol (MCP) and how does Fetchium support it?" [ref=e1709] [cursor=pointer]:
+        - generic [ref=e1710]: What is the Model Context Protocol (MCP) and how does Fetchium support it?
+        - img [ref=e1711]
+      - button "How fast is the Fetchium API?" [ref=e1714] [cursor=pointer]:
+        - generic [ref=e1715]: How fast is the Fetchium API?
+        - img [ref=e1716]
+      - button "Does Fetchium store my search queries?" [ref=e1719] [cursor=pointer]:
+        - generic [ref=e1720]: Does Fetchium store my search queries?
+        - img [ref=e1721]
+      - button "What programming languages does Fetchium support?" [ref=e1724] [cursor=pointer]:
+        - generic [ref=e1725]: What programming languages does Fetchium support?
+        - img [ref=e1726]
+      - button "How does Fetchium handle citations and evidence graphs?" [ref=e1729] [cursor=pointer]:
+        - generic [ref=e1730]: How does Fetchium handle citations and evidence graphs?
+        - img [ref=e1731]
+      - button "What does the Free tier include?" [ref=e1734] [cursor=pointer]:
+        - generic [ref=e1735]: What does the Free tier include?
+        - img [ref=e1736]
+    - paragraph [ref=e1739]:
+      - text: Still have questions?
+      - link "Contact us" [ref=e1740] [cursor=pointer]:
+        - /url: /contact
+      - text: or join our
+      - link "Discord community" [ref=e1741] [cursor=pointer]:
+        - /url: https://discord.gg/fetchium
+      - text: .
+  - generic [ref=e1744]:
+    - generic [ref=e1745]: Free forever · No credit card required
+    - heading "Start building with Fetchium today" [level=2] [ref=e1747]
+    - paragraph [ref=e1748]: Join the open beta. 1,000 free API requests per month, all features included. Upgrade when you need more with higher-volume Starter, Pro, and Enterprise tiers.
+    - generic [ref=e1749]:
+      - link "Get API Key — Free" [ref=e1750] [cursor=pointer]:
+        - /url: https://app.fetchium.com/register
+        - text: Get API Key — Free
+        - img [ref=e1751]
+      - link "Read the Quickstart" [ref=e1755] [cursor=pointer]:
+        - /url: https://docs.fetchium.com/quickstart
+        - text: Read the Quickstart
+        - img [ref=e1756]
+      - link "Talk to Sales →" [ref=e1759] [cursor=pointer]:
+        - /url: /contact
+    - generic [ref=e1760]:
+      - generic [ref=e1761]:
+        - generic [ref=e1762]: 1,000
+        - generic [ref=e1763]: free req/mo
+        - generic [ref=e1764]: no expiry
+      - generic [ref=e1765]:
+        - generic [ref=e1766]: 25K
+        - generic [ref=e1767]: Starter quota
+        - generic [ref=e1768]: req / month
+      - generic [ref=e1769]:
+        - generic [ref=e1770]: "17"
+        - generic [ref=e1771]: algorithms
+        - generic [ref=e1772]: all included
+      - generic [ref=e1773]:
+        - generic [ref=e1774]: "12"
+        - generic [ref=e1775]: MCP tools
+        - generic [ref=e1776]: included
+  - generic [ref=e1778]:
+    - generic [ref=e1779]:
+      - generic [ref=e1780]:
+        - link "Fetchium" [ref=e1781] [cursor=pointer]:
+          - /url: /
+          - img [ref=e1783]
+          - generic [ref=e1785]: Fetchium
+        - paragraph [ref=e1786]: The search API that thinks. 17 algorithms, 11+ federated backends, and docs at docs.fetchium.com.
+        - generic [ref=e1787]:
+          - img [ref=e1788]
+          - text: Documentation on docs.fetchium.com
+        - generic [ref=e1790]:
+          - link "GitHub" [ref=e1791] [cursor=pointer]:
+            - /url: https://github.com/zuhabul/Fetchium
+            - img [ref=e1792]
+          - link "Twitter / X" [ref=e1795] [cursor=pointer]:
+            - /url: https://twitter.com/fetchium
+            - img [ref=e1796]
+      - generic [ref=e1798]:
+        - heading "Product" [level=4] [ref=e1799]
+        - list [ref=e1800]:
+          - listitem [ref=e1801]:
+            - link "Search API" [ref=e1802] [cursor=pointer]:
+              - /url: /product/search
+          - listitem [ref=e1803]:
+            - link "Extract API" [ref=e1804] [cursor=pointer]:
+              - /url: /product/extract
+          - listitem [ref=e1805]:
+            - link "Research API" [ref=e1806] [cursor=pointer]:
+              - /url: /product/research
+          - listitem [ref=e1807]:
+            - link "MCP Tools" [ref=e1808] [cursor=pointer]:
+              - /url: /product/mcp
+          - listitem [ref=e1809]:
+            - link "Pricing" [ref=e1810] [cursor=pointer]:
+              - /url: /pricing
+          - listitem [ref=e1811]:
+            - link "Changelog" [ref=e1812] [cursor=pointer]:
+              - /url: /changelog
+          - listitem [ref=e1813]:
+            - link "Roadmap" [ref=e1814] [cursor=pointer]:
+              - /url: /roadmap
+          - listitem [ref=e1815]:
+            - link "Status" [ref=e1816] [cursor=pointer]:
+              - /url: /status
+      - generic [ref=e1817]:
+        - heading "Developers" [level=4] [ref=e1818]
+        - list [ref=e1819]:
+          - listitem [ref=e1820]:
+            - link "Documentation" [ref=e1821] [cursor=pointer]:
+              - /url: https://docs.fetchium.com
+          - listitem [ref=e1822]:
+            - link "API Reference" [ref=e1823] [cursor=pointer]:
+              - /url: https://docs.fetchium.com/api/search
+          - listitem [ref=e1824]:
+            - link "Quickstart" [ref=e1825] [cursor=pointer]:
+              - /url: https://docs.fetchium.com/quickstart
+          - listitem [ref=e1826]:
+            - link "TypeScript SDK" [ref=e1827] [cursor=pointer]:
+              - /url: https://docs.fetchium.com/sdk/typescript
+          - listitem [ref=e1828]:
+            - link "Python SDK" [ref=e1829] [cursor=pointer]:
+              - /url: https://docs.fetchium.com/sdk/python
+          - listitem [ref=e1830]:
+            - link "Algorithm Docs" [ref=e1831] [cursor=pointer]:
+              - /url: https://docs.fetchium.com/algorithms
+      - generic [ref=e1832]:
+        - heading "Compare" [level=4] [ref=e1833]
+        - list [ref=e1834]:
+          - listitem [ref=e1835]:
+            - link "vs Tavily" [ref=e1836] [cursor=pointer]:
+              - /url: /compare/tavily
+          - listitem [ref=e1837]:
+            - link "vs Exa" [ref=e1838] [cursor=pointer]:
+              - /url: /compare/exa
+          - listitem [ref=e1839]:
+            - link "vs SerpAPI" [ref=e1840] [cursor=pointer]:
+              - /url: /compare/serpapi
+          - listitem [ref=e1841]:
+            - link "vs Firecrawl" [ref=e1842] [cursor=pointer]:
+              - /url: /compare/firecrawl
+          - listitem [ref=e1843]:
+            - link "vs Perplexity" [ref=e1844] [cursor=pointer]:
+              - /url: /compare/perplexity
+      - generic [ref=e1845]:
+        - heading "Company" [level=4] [ref=e1846]
+        - list [ref=e1847]:
+          - listitem [ref=e1848]:
+            - link "About" [ref=e1849] [cursor=pointer]:
+              - /url: /about
+          - listitem [ref=e1850]:
+            - link "Blog" [ref=e1851] [cursor=pointer]:
+              - /url: /blog
+          - listitem [ref=e1852]:
+            - link "Security" [ref=e1853] [cursor=pointer]:
+              - /url: /security
+          - listitem [ref=e1854]:
+            - link "Contact" [ref=e1855] [cursor=pointer]:
+              - /url: /contact
+          - listitem [ref=e1856]:
+            - link "GitHub" [ref=e1857] [cursor=pointer]:
+              - /url: https://github.com/zuhabul/Fetchium
+      - generic [ref=e1858]:
+        - heading "Legal" [level=4] [ref=e1859]
+        - list [ref=e1860]:
+          - listitem [ref=e1861]:
+            - link "Privacy Policy" [ref=e1862] [cursor=pointer]:
+              - /url: /privacy
+          - listitem [ref=e1863]:
+            - link "Terms of Service" [ref=e1864] [cursor=pointer]:
+              - /url: /terms
+          - listitem [ref=e1865]:
+            - link "Cookie Policy" [ref=e1866] [cursor=pointer]:
+              - /url: /cookies
+    - generic [ref=e1867]:
+      - paragraph [ref=e1868]: © 2026 Fetchium. All rights reserved.
+      - generic [ref=e1869]:
+        - generic [ref=e1870]: Rust
+        - generic [ref=e1871]: 563+ tests
+        - generic [ref=e1872]: 17 algos
+        - generic [ref=e1873]: 12 MCP tools
+      - paragraph [ref=e1874]: Built with Rust + Next.js

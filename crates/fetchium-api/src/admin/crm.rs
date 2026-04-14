@@ -44,7 +44,9 @@ pub async fn list(
     let all = db.list_crm_accounts(10_000, 0).unwrap_or_default();
     let total = all.len() as i64;
     let data = db.list_crm_accounts(limit, offset).unwrap_or_default();
-    Ok(Json(serde_json::json!({"data": data, "total": total, "limit": limit, "offset": offset})))
+    Ok(Json(
+        serde_json::json!({"data": data, "total": total, "limit": limit, "offset": offset}),
+    ))
 }
 
 pub async fn get(
