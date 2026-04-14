@@ -39,6 +39,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::oneshot;
 use tokio::sync::Mutex as AsyncMutex;
+use tokio::task::JoinSet;
 use tokio::time::timeout;
 use tracing::{info, warn};
 
@@ -133,6 +134,14 @@ impl OrchestratorConfig {
         max_results: u32,
     ) -> Self {
         let internal_headroom = max_results.max(10);
+        let append_reliable_fallbacks = std::env::var(
+            "FETCHIUM_SEARCH_APPEND_RELIABLE_FALLBACKS",
+        )
+        .map(|value| {
+            let normalized = value.trim().to_ascii_lowercase();
+            !matches!(normalized.as_str(), "0" | "false" | "no" | "off")
+        })
+        .unwrap_or(true);
         let mut enabled_backends = fetchium_config
             .search
             .backends
@@ -142,7 +151,7 @@ impl OrchestratorConfig {
 
         if enabled_backends.is_empty() {
             enabled_backends = ALL_DEFAULT_BACKENDS.to_vec();
-        } else {
+        } else if append_reliable_fallbacks {
             // Always ensure reliable API backends are present as fallbacks
             for backend in RELIABLE_API_BACKENDS {
                 if !enabled_backends.contains(backend) {
@@ -183,7 +192,11 @@ impl OrchestratorConfig {
     }
 }
 
-fn merge_api_keys(config_primary: &Option<String>, config_keys: &[String], env_var: &str) -> Vec<String> {
+fn merge_api_keys(
+    config_primary: &Option<String>,
+    config_keys: &[String],
+    env_var: &str,
+) -> Vec<String> {
     let mut keys = Vec::new();
     if let Some(key) = config_primary.as_ref().filter(|key| !key.trim().is_empty()) {
         keys.push(key.clone());
@@ -668,7 +681,9 @@ impl SearchOrchestrator {
             is_multilingual_technical_explainer_query(query, original_query_language)
                 && matches!(original_query_language, Some("bd" | "bn"));
         let bengali_planner_plan = if bengali_technical_explainer_query {
-            plan_bengali_technical_query(query).await.unwrap_or_default()
+            plan_bengali_technical_query(query)
+                .await
+                .unwrap_or_default()
         } else {
             BengaliPlannerPlan::default()
         };
@@ -721,7 +736,7 @@ impl SearchOrchestrator {
         let _search_timer = self.metrics.start_operation("search_total");
 
         // Step 1: Parallel dispatch with circuit breaker + bulkhead protection
-        let mut handles = Vec::with_capacity(selected_set.len());
+        let mut handles = JoinSet::new();
         let mut skipped_backends = Vec::new();
 
         for backend in &self.backends {
@@ -746,7 +761,7 @@ impl SearchOrchestrator {
             let metrics = self.metrics.clone();
             let ctx = search_ctx.clone();
 
-            handles.push(tokio::spawn(async move {
+            handles.spawn(async move {
                 let id = backend.id();
                 let id_str = format!("{:?}", id);
                 let _timer = metrics.start_operation(&format!("backend_{}", id));
@@ -784,7 +799,7 @@ impl SearchOrchestrator {
                     }
                 };
                 (id, results)
-            }));
+            });
         }
 
         if !skipped_backends.is_empty() {
@@ -817,34 +832,39 @@ impl SearchOrchestrator {
         let mut quality_backends_responded: u32 = 0;
         let mut premium_backends_responded: u32 = 0;
 
-        let mut remaining: futures::stream::FuturesUnordered<_> = handles.into_iter().collect();
+        enum DispatchEvent<T> {
+            Join(Option<Result<T, tokio::task::JoinError>>),
+            ExitEarly,
+        }
 
-        use futures::StreamExt;
-        while let Some(result) = tokio::select! {
-            r = remaining.next() => r,
-            _ = tokio::time::sleep_until(early_deadline) => {
-                // If we have enough results from at least 2 quality backends, return early at 1.5s
-                if all.len() >= requested_max as usize
-                    && quality_backends_responded
-                        >= if deeper_recall_query { 3 } else { 2 }
-                {
-                    info!("Orchestrator: early-return (fast) with {} results, {} backends still pending",
-                          all.len(), remaining.len());
-                    None
-                } else {
-                    // Not enough yet, wait for next result or hard deadline
-                    tokio::select! {
-                        r = remaining.next() => r,
-                        _ = tokio::time::sleep_until(hard_deadline) => {
-                            info!("Orchestrator: hard timeout hit with {} results", all.len());
-                            None
+        let mut exit_early = false;
+        while !handles.is_empty() {
+            let event = tokio::select! {
+                r = handles.join_next() => DispatchEvent::Join(r),
+                _ = tokio::time::sleep_until(early_deadline) => {
+                    if all.len() >= requested_max as usize
+                        && quality_backends_responded >= if deeper_recall_query { 3 } else { 2 }
+                    {
+                        info!(
+                            "Orchestrator: early-return (fast) with {} results, {} backends still pending",
+                            all.len(),
+                            handles.len()
+                        );
+                        DispatchEvent::ExitEarly
+                    } else {
+                        tokio::select! {
+                            r = handles.join_next() => DispatchEvent::Join(r),
+                            _ = tokio::time::sleep_until(hard_deadline) => {
+                                info!("Orchestrator: hard timeout hit with {} results", all.len());
+                                DispatchEvent::ExitEarly
+                            }
                         }
                     }
                 }
-            }
-        } {
-            match result {
-                Ok((backend_id, results)) => {
+            };
+
+            match event {
+                DispatchEvent::Join(Some(Ok((backend_id, results)))) => {
                     let quality = (results.len() as f64 / 10.0).min(1.0);
                     self.backend_selector
                         .report_outcome(&backend_id, results.len(), quality);
@@ -876,6 +896,7 @@ impl SearchOrchestrator {
                             "Orchestrator: super-early return (premium) with {} results",
                             all.len()
                         );
+                        exit_early = true;
                         break;
                     }
 
@@ -887,16 +908,27 @@ impl SearchOrchestrator {
                         info!(
                             "Orchestrator: early-return (quality) with {} results, {} backends still pending",
                             all.len(),
-                            remaining.len()
+                            handles.len()
                         );
+                        exit_early = true;
                         break;
                     }
                 }
-                Err(e) => {
+                DispatchEvent::Join(Some(Err(e))) => {
                     self.metrics.record_error("backend_panic");
                     warn!("Backend task panicked: {e}");
                 }
+                DispatchEvent::Join(None) => break,
+                DispatchEvent::ExitEarly => {
+                    exit_early = true;
+                    break;
+                }
             }
+        }
+
+        if exit_early && !handles.is_empty() {
+            handles.abort_all();
+            while handles.join_next().await.is_some() {}
         }
 
         let rescue_threshold = ((retrieval_max as usize) / 2).max(3);
@@ -1131,11 +1163,16 @@ impl SearchOrchestrator {
                     (BackendId::Bing, Duration::from_secs(10)),
                     (BackendId::Brave, Duration::from_secs(8)),
                 ] {
-                    if let Some(backend) = self.backends.iter().find(|b| b.id() == backend_id).cloned()
+                    if let Some(backend) =
+                        self.backends.iter().find(|b| b.id() == backend_id).cloned()
                     {
                         if let Ok(Ok(results)) = timeout(
                             retry_timeout,
-                            backend.search_with_context(&source_query, per_backend.min(6), &search_ctx),
+                            backend.search_with_context(
+                                &source_query,
+                                per_backend.min(6),
+                                &search_ctx,
+                            ),
                         )
                         .await
                         {
@@ -1218,7 +1255,13 @@ impl SearchOrchestrator {
                 detect_query_language(effective_query).or_else(|| detect_query_language(query));
             let boost_words = extract_content_words(effective_query, boost_query_language);
             let query_phrases = extract_query_phrases(query, detect_query_language(query));
-            if boost_words.len() >= 2 {
+            let short_concept_query = is_short_concept_query(
+                boost_words.len(),
+                intent,
+                strict_health_query,
+                effective_query,
+            );
+            if !boost_words.is_empty() {
                 for r in &mut ranked {
                     let haystack =
                         format!("{} {}", r.title.to_lowercase(), r.snippet.to_lowercase());
@@ -1261,6 +1304,9 @@ impl SearchOrchestrator {
                         boost *= technical_howto_multiplier(effective_query, &haystack, &r.url);
                     } else if health_sensitive_query {
                         boost *= broad_health_multiplier(effective_query, &haystack, &r.url);
+                    }
+                    if short_concept_query {
+                        boost *= short_concept_title_match_boost(effective_query, &r.title, &r.url);
                     }
                     if let Some(score) = r.score.as_mut() {
                         *score *= boost;
@@ -1375,16 +1421,12 @@ impl SearchOrchestrator {
                 && license_query_match_count(effective_query, &haystack, &r.url) >= 2;
             let philosophy_candidate = is_philosophy_query(effective_query)
                 && philosophy_query_match_count(effective_query, &haystack, &r.url) >= 2;
-            let multilingual_technical_matches = multilingual_technical_explainer_match_count(
-                effective_query,
-                &haystack,
-                &r.url,
-            );
-            let trusted_bengali_technical_candidate =
-                matches!(query_language, Some("bn" | "bd"))
-                    && is_multilingual_technical_explainer_query(effective_query, query_language)
-                    && multilingual_technical_trusted_source(&r.url)
-                    && multilingual_technical_matches >= 1;
+            let multilingual_technical_matches =
+                multilingual_technical_explainer_match_count(effective_query, &haystack, &r.url);
+            let trusted_bengali_technical_candidate = matches!(query_language, Some("bn" | "bd"))
+                && is_multilingual_technical_explainer_query(effective_query, query_language)
+                && multilingual_technical_trusted_source(&r.url)
+                && multilingual_technical_matches >= 1;
             let score_floor = if (intent == rank::fusion::QueryIntent::Comparison
                 && comparison_matches >= comparison_entity_threshold(effective_query))
                 || (language_learning_query && language_learning_matches >= 2)
@@ -1707,6 +1749,12 @@ impl SearchOrchestrator {
             let is_howto = intent == rank::fusion::QueryIntent::HowTo;
             let is_code = intent == rank::fusion::QueryIntent::Code;
             let is_comparison = intent == rank::fusion::QueryIntent::Comparison;
+            let short_concept_query = is_short_concept_query(
+                query_content_words.len(),
+                intent,
+                strict_health_query,
+                effective_query,
+            );
             // HowTo/Code/Casual: Wikipedia articles rarely useful; Comparison allows 1
             let wiki_cap: u32 = if strict_health_query
                 || is_multilingual_technical_explainer_query(effective_query, query_language)
@@ -1716,7 +1764,11 @@ impl SearchOrchestrator {
                 || is_howto
                 || is_code
             {
-                0
+                if short_concept_query {
+                    1
+                } else {
+                    0
+                }
             } else if is_comparison {
                 1
             } else {
@@ -1993,7 +2045,7 @@ impl SearchOrchestrator {
                         && (!language_learning_query || language_learning_matches >= 2)
                         && (!is_multilingual_technical_explainer_query(
                             effective_query,
-                            query_language
+                            query_language,
                         ) || multilingual_technical_matches >= 2)
                         && (intent != rank::fusion::QueryIntent::Comparison
                             || comparison_matches > 0)
@@ -2437,6 +2489,58 @@ fn count_phrase_matches(haystack: &str, phrases: &[String]) -> usize {
         .count()
 }
 
+fn is_short_concept_query(
+    term_count: usize,
+    intent: rank::fusion::QueryIntent,
+    strict_health_query: bool,
+    query: &str,
+) -> bool {
+    term_count > 0
+        && term_count <= 3
+        && intent != rank::fusion::QueryIntent::CurrentEvents
+        && intent != rank::fusion::QueryIntent::HowTo
+        && intent != rank::fusion::QueryIntent::Code
+        && intent != rank::fusion::QueryIntent::Comparison
+        && !is_practical_query(query)
+        && !strict_health_query
+}
+
+fn normalize_exact_match_text(text: &str) -> String {
+    text.split(|c: char| !c.is_alphanumeric())
+        .filter(|token| !token.is_empty())
+        .map(|token| token.to_lowercase())
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn short_concept_title_match_boost(query: &str, title: &str, url: &str) -> f64 {
+    let query_norm = normalize_exact_match_text(query);
+    if query_norm.is_empty() {
+        return 1.0;
+    }
+
+    let title_norm = normalize_exact_match_text(title);
+    let url_norm = normalize_exact_match_text(url);
+
+    if title_norm == query_norm {
+        return 1.45;
+    }
+    if query_norm.contains(' ') {
+        if title_norm.starts_with(&format!("{query_norm} ")) || title_norm.contains(&query_norm) {
+            return 1.30;
+        }
+    } else if title_norm
+        .split_whitespace()
+        .any(|token| token == query_norm.as_str())
+    {
+        return 1.20;
+    }
+    if url_norm.contains(&query_norm) {
+        return 1.10;
+    }
+    1.0
+}
+
 /// True when query contains non-ASCII alphabetic characters (e.g. CJK, accented scripts).
 ///
 /// Used to avoid over-applying ASCII word-match filters to multilingual queries.
@@ -2530,9 +2634,11 @@ fn is_strict_health_query(query: &str) -> bool {
     .iter()
     .any(|pattern| lower.contains(pattern));
 
-    let is_health_comparison = has_medication_word && (
-        lower.contains("compare") || lower.contains("comparison") || lower.contains("versus") || lower.contains(" vs ")
-    );
+    let is_health_comparison = has_medication_word
+        && (lower.contains("compare")
+            || lower.contains("comparison")
+            || lower.contains("versus")
+            || lower.contains(" vs "));
 
     let has_medication_signal = has_medication_word || is_health_comparison;
 
@@ -3074,7 +3180,8 @@ fn multilingual_technical_explainer_multiplier(query: &str, haystack: &str, url:
         multiplier *= 1.15;
     }
     if (query_lower.contains("artificial intelligence") || query_lower.contains("কৃত্রিম বুদ্ধিমত্তা"))
-        && (haystack.contains("artificial intelligence") || haystack.contains("ai")) {
+        && (haystack.contains("artificial intelligence") || haystack.contains("ai"))
+    {
         multiplier *= 1.15;
     }
     if (query_lower.contains("kubernetes") || query_lower.contains("কুবেরনেটিস"))
@@ -3085,11 +3192,7 @@ fn multilingual_technical_explainer_multiplier(query: &str, haystack: &str, url:
     multiplier
 }
 
-fn multilingual_technical_explainer_match_count(
-    query: &str,
-    haystack: &str,
-    url: &str,
-) -> usize {
+fn multilingual_technical_explainer_match_count(query: &str, haystack: &str, url: &str) -> usize {
     let query_lower = query.to_lowercase();
     let domain = extract_domain(url);
     let mut count = 0;
@@ -3109,7 +3212,8 @@ fn multilingual_technical_explainer_match_count(
         count += 1;
     }
     if (query_lower.contains("artificial intelligence") || query_lower.contains("কৃত্রিম বুদ্ধিমত্তা"))
-        && (haystack.contains("artificial intelligence") || haystack.contains("ai")) {
+        && (haystack.contains("artificial intelligence") || haystack.contains("ai"))
+    {
         count += 1;
     }
     if (query_lower.contains("kubernetes") || query_lower.contains("কুবেরনেটিস"))
@@ -3180,10 +3284,7 @@ async fn plan_bengali_technical_query(query: &str) -> Option<BengaliPlannerPlan>
             "User query: {query}\nReturn JSON only. Example: {{\"retry_query\":\"what is kubernetes docs\",\"source_pack_queries\":[\"site:kubernetes.io kubernetes overview\"]}}"
         ),
     };
-    let response = ollama
-        .chat("qwen3.5:8b", &[system, user], 0.1)
-        .await
-        .ok()?;
+    let response = ollama.chat("qwen3.5:8b", &[system, user], 0.1).await.ok()?;
     parse_bengali_planner_response(&response)
 }
 
@@ -3268,14 +3369,16 @@ fn bengali_source_pack_queries(original_query: &str, effective_query: &str) -> V
             "site:postgresql.org docs introduction database".to_string(),
         ];
     }
-    if original_lower.contains("নেটওয়ার্কিং") || effective_lower.contains("networking") {
+    if original_lower.contains("নেটওয়ার্কিং") || effective_lower.contains("networking")
+    {
         return vec![
             "site:cloudflare.com what is computer networking".to_string(),
             "site:cisco.com networking basics".to_string(),
             "site:networklessons.com networking basics".to_string(),
         ];
     }
-    if original_lower.contains("কুবেরনেটিস") || effective_lower.contains("kubernetes") {
+    if original_lower.contains("কুবেরনেটিস") || effective_lower.contains("kubernetes")
+    {
         return vec![
             "site:kubernetes.io kubernetes overview".to_string(),
             "site:cloud.google.com kubernetes overview".to_string(),
@@ -3488,8 +3591,7 @@ fn broad_health_match_count(query: &str, haystack: &str, url: &str) -> usize {
         count += 1;
     }
     if query_lower.contains("diabetes")
-        && (haystack.contains("type 2 diabetes")
-            || haystack.contains("t2d"))
+        && (haystack.contains("type 2 diabetes") || haystack.contains("t2d"))
     {
         count += 1;
     }
@@ -3593,7 +3695,9 @@ fn comparison_entity_match_count(query: &str, haystack: &str) -> usize {
                     .any(|token| token == entity)
             } else if entity.contains(' ') {
                 // If the entity is multiple words, require all of them to be present
-                entity.split_whitespace().all(|word| haystack.contains(word))
+                entity
+                    .split_whitespace()
+                    .all(|word| haystack.contains(word))
             } else {
                 haystack.contains(entity)
             }
@@ -4005,6 +4109,8 @@ fn backend_timeout_for(id: &BackendId, default_timeout: Duration) -> Duration {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use async_trait::async_trait;
+    use std::sync::atomic::{AtomicBool, Ordering};
 
     #[test]
     fn extract_content_words_strips_stopwords() {
@@ -4240,6 +4346,45 @@ mod tests {
         let noisy_haystack = "academic production medicine";
         let short_terms = vec!["ci".to_string(), "cd".to_string()];
         assert_eq!(count_term_matches(noisy_haystack, &short_terms), 0);
+    }
+
+    #[test]
+    fn short_concept_query_detection_is_conservative() {
+        assert!(is_short_concept_query(
+            2,
+            rank::fusion::QueryIntent::Informational,
+            false,
+            "spectator ion"
+        ));
+        assert!(!is_short_concept_query(
+            4,
+            rank::fusion::QueryIntent::Informational,
+            false,
+            "how spectator ions behave in precipitation reactions"
+        ));
+        assert!(!is_short_concept_query(
+            2,
+            rank::fusion::QueryIntent::HowTo,
+            false,
+            "how to use docker"
+        ));
+    }
+
+    #[test]
+    fn short_concept_title_match_boost_prefers_exact_titles() {
+        let exact = short_concept_title_match_boost(
+            "spectator ion",
+            "Spectator ion",
+            "https://en.wikipedia.org/wiki/Spectator_ion",
+        );
+        let partial = short_concept_title_match_boost(
+            "spectator ion",
+            "Precipitation reaction overview",
+            "https://chem.libretexts.org/topics/precipitation_reaction",
+        );
+        assert!(exact > partial);
+        assert!(exact > 1.0);
+        assert_eq!(partial, 1.0);
     }
 
     #[test]
@@ -4587,5 +4732,100 @@ mod tests {
         assert_eq!(hosts[0], "a.com");
         assert_eq!(hosts[1], "b.com");
         assert_eq!(hosts[2], "c.com");
+    }
+
+    #[derive(Clone)]
+    struct TestBackend {
+        id: BackendId,
+        delay: Duration,
+        results: Vec<ResultItem>,
+        cancelled: Arc<AtomicBool>,
+    }
+
+    #[async_trait]
+    impl SearchBackend for TestBackend {
+        fn id(&self) -> BackendId {
+            self.id.clone()
+        }
+
+        async fn search(&self, _query: &str, _max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
+            struct DropGuard(Arc<AtomicBool>);
+            impl Drop for DropGuard {
+                fn drop(&mut self) {
+                    self.0.store(true, Ordering::SeqCst);
+                }
+            }
+
+            let guard = DropGuard(Arc::clone(&self.cancelled));
+            tokio::time::sleep(self.delay).await;
+            std::mem::forget(guard);
+            Ok(self.results.clone())
+        }
+    }
+
+    #[tokio::test]
+    async fn early_return_aborts_pending_backend_tasks() {
+        let fast = TestBackend {
+            id: BackendId::Tavily,
+            delay: Duration::from_millis(5),
+            results: vec![ResultItem {
+                title: "Fast".into(),
+                url: "https://example.com/fast".into(),
+                snippet: "fast result".into(),
+                rank: 1,
+                backend: BackendId::Tavily,
+                score: Some(1.0),
+                published_date: None,
+            }],
+            cancelled: Arc::new(AtomicBool::new(false)),
+        };
+        let slow_cancelled = Arc::new(AtomicBool::new(false));
+        let slow = TestBackend {
+            id: BackendId::Searxng,
+            delay: Duration::from_secs(5),
+            results: vec![ResultItem {
+                title: "Slow".into(),
+                url: "https://example.com/slow".into(),
+                snippet: "slow result".into(),
+                rank: 1,
+                backend: BackendId::Searxng,
+                score: Some(0.4),
+                published_date: None,
+            }],
+            cancelled: Arc::clone(&slow_cancelled),
+        };
+
+        let orchestrator = SearchOrchestrator {
+            backends: vec![Arc::new(fast), Arc::new(slow)],
+            config: OrchestratorConfig {
+                max_results_per_backend: 5,
+                max_total_results: 1,
+                backend_timeout: Duration::from_secs(30),
+                enabled_backends: vec![BackendId::Tavily, BackendId::Searxng],
+                simhash_threshold: 6,
+                freshness_need: 0.5,
+                use_hyperfusion: true,
+                tavily_api_keys: Vec::new(),
+                serper_api_keys: Vec::new(),
+                exa_api_keys: Vec::new(),
+                firecrawl_api_keys: Vec::new(),
+            },
+            weight_overrides: HashMap::new(),
+            circuit_breaker: CircuitBreaker::new(),
+            bulkhead: Bulkhead::new(),
+            metrics: PipelineMetrics::new(),
+            in_flight: Arc::new(AsyncMutex::new(HashMap::new())),
+            backend_selector: AdaptiveBackendSelector::default(),
+        };
+
+        let started = std::time::Instant::now();
+        let _results = orchestrator
+            .search("polyandry", Some(1))
+            .await
+            .expect("search");
+        assert!(started.elapsed() < Duration::from_secs(1));
+
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        assert!(slow_cancelled.load(Ordering::SeqCst));
     }
 }

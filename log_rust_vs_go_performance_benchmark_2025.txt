@@ -1,0 +1,29 @@
+   Compiling fetchium-core v1.0.0 (/home/echo/projects/Fetchium/crates/fetchium-core)
+   Compiling fetchium-mcp v1.0.0 (/home/echo/projects/Fetchium/crates/fetchium-mcp)
+   Compiling fetchium-api v1.0.0 (/home/echo/projects/Fetchium/crates/fetchium-api)
+   Compiling fetchium-cli v1.0.0 (/home/echo/projects/Fetchium/crates/fetchium-cli)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 50.26s
+     Running `target/debug/fetchium --config test_config.toml --no-cache -f json search 'rust vs go performance benchmark 2025' -n 5`
+[2m2026-03-10T14:57:22.828570Z[0m [32m INFO[0m Orchestrator: "rust vs go performance benchmark 2025" intent=Comparison, 8 of 11 backend(s) selected, max=5
+[2m2026-03-10T14:57:22.828601Z[0m [32m INFO[0m ABS/circuit-breaker: skipped 3 backend(s): ["ABS:Reddit", "ABS:HackerNews", "ABS:Arxiv"]
+[2m2026-03-10T14:57:23.206564Z[0m [32m INFO[0m Backend Exa: 10 results
+[2m2026-03-10T14:57:23.217001Z[0m [32m INFO[0m Backend StackOverflow: 0 results
+[2m2026-03-10T14:57:23.302980Z[0m [32m INFO[0m Backend Github: 0 results
+[2m2026-03-10T14:57:23.460182Z[0m [32m INFO[0m Backend Wikipedia: 15 results
+[2m2026-03-10T14:57:23.477709Z[0m [33m WARN[0m Serper key exhausted or limited, rotating... Error: HTTP 400 Bad Request from https://google.serper.dev/search
+[2m2026-03-10T14:57:23.479734Z[0m [33m WARN[0m Serper key exhausted or limited, rotating... Error: HTTP 400 Bad Request from https://google.serper.dev/scholar
+[2m2026-03-10T14:57:23.839226Z[0m [33m WARN[0m Firecrawl key exhausted or limited, rotating... Error: HTTP 402 Payment Required from https://api.firecrawl.dev/v1/search
+[2m2026-03-10T14:57:23.914586Z[0m [33m WARN[0m Tavily key exhausted or limited, rotating... Error: HTTP 432 <unknown status code> from https://api.tavily.com/search
+[2m2026-03-10T14:57:24.288779Z[0m [33m WARN[0m Tavily key exhausted or limited, rotating... Error: HTTP 432 <unknown status code> from https://api.tavily.com/search
+[2m2026-03-10T14:57:24.288812Z[0m [33m WARN[0m Backend Tavily error: [Unknown] HTTP 432 <unknown status code> from https://api.tavily.com/search (url: https://api.tavily.com/search)
+[2m2026-03-10T14:57:24.307568Z[0m [33m WARN[0m Serper key exhausted or limited, rotating... Error: HTTP 400 Bad Request from https://google.serper.dev/news
+[2m2026-03-10T14:57:24.308190Z[0m [33m WARN[0m Serper key exhausted or limited, rotating... Error: HTTP 400 Bad Request from https://google.serper.dev/scholar
+[2m2026-03-10T14:57:24.333168Z[0m [33m WARN[0m Firecrawl key exhausted or limited, rotating... Error: HTTP 402 Payment Required from https://api.firecrawl.dev/v1/search
+[2m2026-03-10T14:57:24.738666Z[0m [32m INFO[0m Backend Firecrawl: 5 results
+[2m2026-03-10T14:57:25.332009Z[0m [32m INFO[0m SearXNG local (***REMOVED***): 15 results ✓
+[2m2026-03-10T14:57:25.332028Z[0m [32m INFO[0m Backend Searxng: 15 results
+[2m2026-03-10T14:57:25.629284Z[0m [32m INFO[0m Orchestrator: early-return (fast) with 45 results, 1 backends still pending
+[2m2026-03-10T14:57:25.782268Z[0m [32m INFO[0m Backend Serper: 19 results
+[2m2026-03-10T14:57:27.087256Z[0m [32m INFO[0m Orchestrator: returning 5 results for "rust vs go performance benchmark 2025"
+[2m2026-03-10T14:57:27.087897Z[0m [32m INFO[0m Search complete: 5 results in 4277ms
+  Found 5 result(s) in 4277ms

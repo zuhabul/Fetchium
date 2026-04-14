@@ -1,0 +1,23 @@
+    Finished `dev` profile [optimized + debuginfo] target(s) in 0.20s
+     Running `target/debug/fetchium --config test_config.toml --no-cache -f json search 'what are the symptoms of long covid in adults 2025' -n 5`
+[2m2026-03-10T14:09:30.762506Z[0m [32m INFO[0m Autoprompt: "what are the symptoms of long covid in adults 2025" → "symptoms of long covid in adults 2025"
+[2m2026-03-10T14:09:30.762593Z[0m [32m INFO[0m Orchestrator: "symptoms of long covid in adults 2025" intent=CurrentEvents, 5 of 11 backend(s) selected, max=5
+[2m2026-03-10T14:09:30.762614Z[0m [32m INFO[0m ABS/circuit-breaker: skipped 6 backend(s): ["ABS:Reddit", "ABS:StackOverflow", "ABS:Github", "ABS:HackerNews", "ABS:Wikipedia", "ABS:Arxiv"]
+[2m2026-03-10T14:09:31.003316Z[0m [32m INFO[0m SearXNG local (***REMOVED***): 10 results ✓
+[2m2026-03-10T14:09:31.003337Z[0m [32m INFO[0m Backend Searxng: 10 results
+[2m2026-03-10T14:09:31.350716Z[0m [33m WARN[0m Serper key exhausted or limited, rotating... Error: HTTP 400 Bad Request from https://google.serper.dev/scholar
+[2m2026-03-10T14:09:31.352810Z[0m [33m WARN[0m Serper key exhausted or limited, rotating... Error: HTTP 400 Bad Request from https://google.serper.dev/news
+[2m2026-03-10T14:09:31.370575Z[0m [33m WARN[0m Serper key exhausted or limited, rotating... Error: HTTP 400 Bad Request from https://google.serper.dev/search
+[2m2026-03-10T14:09:31.429705Z[0m [33m WARN[0m Serper key exhausted or limited, rotating... Error: HTTP 400 Bad Request from https://google.serper.dev/news
+[2m2026-03-10T14:09:31.570954Z[0m [33m WARN[0m Firecrawl key exhausted or limited, rotating... Error: HTTP 402 Payment Required from https://api.firecrawl.dev/v1/search
+[2m2026-03-10T14:09:31.666262Z[0m [33m WARN[0m Tavily key exhausted or limited, rotating... Error: HTTP 432 <unknown status code> from https://api.tavily.com/search
+[2m2026-03-10T14:09:31.841916Z[0m [33m WARN[0m Firecrawl key exhausted or limited, rotating... Error: HTTP 402 Payment Required from https://api.firecrawl.dev/v1/search
+[2m2026-03-10T14:09:31.991193Z[0m [33m WARN[0m Tavily key exhausted or limited, rotating... Error: HTTP 432 <unknown status code> from https://api.tavily.com/search
+[2m2026-03-10T14:09:31.991218Z[0m [33m WARN[0m Backend Tavily error: [Unknown] HTTP 432 <unknown status code> from https://api.tavily.com/search (url: https://api.tavily.com/search)
+[2m2026-03-10T14:09:32.120351Z[0m [32m INFO[0m Backend Exa: 10 results
+[2m2026-03-10T14:09:32.199350Z[0m [32m INFO[0m Backend Firecrawl: 5 results
+[2m2026-03-10T14:09:33.563818Z[0m [32m INFO[0m Orchestrator: early-return (fast) with 25 results, 1 backends still pending
+[2m2026-03-10T14:09:33.901188Z[0m [32m INFO[0m Backend Serper: 10 results
+[2m2026-03-10T14:09:34.181325Z[0m [32m INFO[0m Orchestrator: returning 3 results for "what are the symptoms of long covid in adults 2025"
+[2m2026-03-10T14:09:34.181479Z[0m [32m INFO[0m Search complete: 3 results in 3436ms
+  Found 3 result(s) in 3436ms

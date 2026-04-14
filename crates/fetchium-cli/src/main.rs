@@ -9,7 +9,10 @@ use clap::Parser;
 use cli::{Cli, Commands};
 use std::time::Instant;
 
-#[tokio::main(worker_threads = 4)]
+// The REST service path runs through this binary, and the default 4 Tokio
+// workers can starve health/accept handling during mixed search + extraction
+// load. Keep a wider runtime here for the long-lived server workload.
+#[tokio::main(worker_threads = 16)]
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 

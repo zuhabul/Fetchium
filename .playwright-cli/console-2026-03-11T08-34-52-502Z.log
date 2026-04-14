@@ -1,0 +1,2 @@
+[      30ms] [ERROR] Error with Permissions-Policy header: Parse of permissions policy failed because of errors reported by structured header parser. @ :0
+[     119ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://admin.fetchium.com/favicon.ico:0

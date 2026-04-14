@@ -1,0 +1,6 @@
+[    3574ms] [WARNING] [JavaScript Warning: "Failed to create WebGL context: WebGL creation failed: 
+* WebglAllowWindowsNativeGl:false restricts context creation on this system. ()
+* Exhausted GL driver options. (FEATURE_FAILURE_WEBGL_EXHAUSTED_DRIVERS)" {file: "http://127.0.0.1:3111/_next/static/chunks/1442.fa73f81c06e7cc90.js" line: 1}] @ http://127.0.0.1:3111/_next/static/chunks/1442.fa73f81c06e7cc90.js:1
+[    3576ms] [WARNING] [JavaScript Warning: "Failed to create WebGL context: WebGL creation failed: 
+* WebglAllowWindowsNativeGl:false restricts context creation on this system. ()
+* Exhausted GL driver options. (FEATURE_FAILURE_WEBGL_EXHAUSTED_DRIVERS)" {file: "http://127.0.0.1:3111/_next/static/chunks/1442.fa73f81c06e7cc90.js" line: 1}] @ http://127.0.0.1:3111/_next/static/chunks/1442.fa73f81c06e7cc90.js:1

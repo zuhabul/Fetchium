@@ -44,10 +44,23 @@ pub fn build_router(state: AppState) -> Router {
             post(handlers::submit_youtube_analyze_job),
         )
         .route("/jobs/:id", get(handlers::get_job_status))
-        .route("/dashboard/billing", get(handlers_auth::get_dashboard_billing))
-        .route("/dashboard/overview", get(handlers_auth::get_dashboard_overview))
-        .route("/dashboard/quickstart", get(handlers_auth::get_dashboard_quickstart))
-        .route("/dashboard/settings", get(handlers_auth::get_dashboard_settings).patch(handlers_auth::update_dashboard_settings))
+        .route(
+            "/dashboard/billing",
+            get(handlers_auth::get_dashboard_billing),
+        )
+        .route(
+            "/dashboard/overview",
+            get(handlers_auth::get_dashboard_overview),
+        )
+        .route(
+            "/dashboard/quickstart",
+            get(handlers_auth::get_dashboard_quickstart),
+        )
+        .route(
+            "/dashboard/settings",
+            get(handlers_auth::get_dashboard_settings)
+                .patch(handlers_auth::update_dashboard_settings),
+        )
         .route("/dashboard/usage", get(handlers_auth::get_dashboard_usage))
         .route("/usage", get(handlers_auth::get_usage))
         .route("/meta/routes", get(handlers_auth::get_route_registry));
@@ -132,7 +145,10 @@ pub fn build_router(state: AppState) -> Router {
         )
         .route("/crm/accounts/:org_id/notes", post(admin::crm::add_note))
         // Support
-        .route("/support/tickets", get(admin::support::list).post(admin::support::create))
+        .route(
+            "/support/tickets",
+            get(admin::support::list).post(admin::support::create),
+        )
         .route("/support/tickets/:id", get(admin::support::get))
         .route("/support/tickets/:id/notes", post(admin::support::add_note))
         .route("/support/tickets/:id/assign", patch(admin::support::assign))

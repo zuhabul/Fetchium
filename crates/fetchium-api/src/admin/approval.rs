@@ -42,7 +42,9 @@ pub async fn list(
     let limit = p.limit.unwrap_or(50).min(200);
     let offset = p.offset.unwrap_or(0).min(total);
     let page: Vec<_> = all.into_iter().skip(offset).take(limit).collect();
-    Ok(Json(serde_json::json!({"data": page, "total": total, "limit": limit, "offset": offset})))
+    Ok(Json(
+        serde_json::json!({"data": page, "total": total, "limit": limit, "offset": offset}),
+    ))
 }
 
 pub async fn create(

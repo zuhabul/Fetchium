@@ -1,0 +1,23 @@
+    Finished `dev` profile [optimized + debuginfo] target(s) in 0.20s
+     Running `target/debug/fetchium --config test_config.toml --no-cache -f json search 'latest developments in solid state batteries' -n 5`
+[2m2026-03-10T14:09:34.570980Z[0m [32m INFO[0m Orchestrator: "latest developments in solid state batteries" intent=CurrentEvents, 8 of 11 backend(s) selected, max=5
+[2m2026-03-10T14:09:34.571023Z[0m [32m INFO[0m ABS/circuit-breaker: skipped 3 backend(s): ["ABS:StackOverflow", "ABS:Github", "ABS:Arxiv"]
+[2m2026-03-10T14:09:35.090424Z[0m [32m INFO[0m Backend HackerNews: 1 results
+[2m2026-03-10T14:09:35.167275Z[0m [33m WARN[0m Serper key exhausted or limited, rotating... Error: HTTP 400 Bad Request from https://google.serper.dev/news
+[2m2026-03-10T14:09:35.170184Z[0m [33m WARN[0m Serper key exhausted or limited, rotating... Error: HTTP 400 Bad Request from https://google.serper.dev/search
+[2m2026-03-10T14:09:35.179453Z[0m [33m WARN[0m Serper key exhausted or limited, rotating... Error: HTTP 400 Bad Request from https://google.serper.dev/scholar
+[2m2026-03-10T14:09:35.246612Z[0m [33m WARN[0m Serper key exhausted or limited, rotating... Error: HTTP 400 Bad Request from https://google.serper.dev/search
+[2m2026-03-10T14:09:35.267749Z[0m [32m INFO[0m Backend Wikipedia: 15 results
+[2m2026-03-10T14:09:35.389865Z[0m [33m WARN[0m Firecrawl key exhausted or limited, rotating... Error: HTTP 402 Payment Required from https://api.firecrawl.dev/v1/search
+[2m2026-03-10T14:09:35.461623Z[0m [33m WARN[0m Tavily key exhausted or limited, rotating... Error: HTTP 432 <unknown status code> from https://api.tavily.com/search
+[2m2026-03-10T14:09:35.664795Z[0m [33m WARN[0m Firecrawl key exhausted or limited, rotating... Error: HTTP 402 Payment Required from https://api.firecrawl.dev/v1/search
+[2m2026-03-10T14:09:35.786635Z[0m [33m WARN[0m Tavily key exhausted or limited, rotating... Error: HTTP 432 <unknown status code> from https://api.tavily.com/search
+[2m2026-03-10T14:09:35.786693Z[0m [33m WARN[0m Backend Tavily error: [Unknown] HTTP 432 <unknown status code> from https://api.tavily.com/search (url: https://api.tavily.com/search)
+[2m2026-03-10T14:09:35.903716Z[0m [32m INFO[0m SearXNG local (***REMOVED***): 10 results ✓
+[2m2026-03-10T14:09:35.903742Z[0m [32m INFO[0m Backend Searxng: 10 results
+[2m2026-03-10T14:09:35.996086Z[0m [32m INFO[0m Backend Firecrawl: 5 results
+[2m2026-03-10T14:09:35.996129Z[0m [32m INFO[0m Orchestrator: super-early return (premium) with 31 results
+[2m2026-03-10T14:09:36.163486Z[0m [32m INFO[0m Backend Exa: 10 results
+[2m2026-03-10T14:09:36.183527Z[0m [32m INFO[0m Orchestrator: returning 5 results for "latest developments in solid state batteries"
+[2m2026-03-10T14:09:36.183634Z[0m [32m INFO[0m Search complete: 5 results in 1632ms
+  Found 5 result(s) in 1632ms

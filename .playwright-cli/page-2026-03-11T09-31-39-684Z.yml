@@ -1,0 +1,132 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]: Fetchium
+        - generic [ref=e10]: ADMIN
+      - navigation [ref=e11]:
+        - link "Overview" [ref=e12] [cursor=pointer]:
+          - /url: /overview
+          - img [ref=e13]
+          - text: Overview
+        - link "Orgs" [ref=e18] [cursor=pointer]:
+          - /url: /orgs
+          - img [ref=e19]
+          - text: Orgs
+        - link "Users" [ref=e23] [cursor=pointer]:
+          - /url: /users
+          - img [ref=e24]
+          - text: Users
+        - link "API Keys" [ref=e29] [cursor=pointer]:
+          - /url: /keys
+          - img [ref=e30]
+          - text: API Keys
+        - link "Usage" [ref=e34] [cursor=pointer]:
+          - /url: /usage
+          - img [ref=e35]
+          - text: Usage
+        - link "Billing" [ref=e37] [cursor=pointer]:
+          - /url: /billing
+          - img [ref=e38]
+          - text: Billing
+        - link "CRM" [ref=e40] [cursor=pointer]:
+          - /url: /crm
+          - img [ref=e41]
+          - text: CRM
+          - img [ref=e46]
+        - link "Support" [ref=e48] [cursor=pointer]:
+          - /url: /support
+          - img [ref=e49]
+          - text: Support
+        - link "Campaigns" [ref=e51] [cursor=pointer]:
+          - /url: /campaigns
+          - img [ref=e52]
+          - text: Campaigns
+        - link "Incidents" [ref=e55] [cursor=pointer]:
+          - /url: /incidents
+          - img [ref=e56]
+          - text: Incidents
+        - link "Proxy Ops" [ref=e58] [cursor=pointer]:
+          - /url: /proxy
+          - img [ref=e59]
+          - text: Proxy Ops
+        - link "Audit" [ref=e62] [cursor=pointer]:
+          - /url: /audit
+          - img [ref=e63]
+          - text: Audit
+        - link "Flags" [ref=e65] [cursor=pointer]:
+          - /url: /flags
+          - img [ref=e66]
+          - text: Flags
+        - link "System" [ref=e68] [cursor=pointer]:
+          - /url: /system
+          - img [ref=e69]
+          - text: System
+        - link "Settings" [ref=e72] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e73]
+          - text: Settings
+      - generic [ref=e76]:
+        - generic [ref=e77]:
+          - generic [ref=e78]: A
+          - generic [ref=e79]:
+            - paragraph [ref=e80]: Admin
+            - paragraph [ref=e81]: admin@fetchium.com
+        - generic [ref=e82]:
+          - generic [ref=e83]: Owner
+          - button "Sign out" [ref=e84] [cursor=pointer]:
+            - img [ref=e85]
+            - text: Sign out
+    - main [ref=e88]:
+      - generic [ref=e89]:
+        - generic [ref=e90]:
+          - heading "CRM" [level=1] [ref=e92]
+          - generic [ref=e93]:
+            - button "Search ⌘K" [ref=e94] [cursor=pointer]:
+              - img [ref=e95]
+              - generic [ref=e98]: Search
+              - generic [ref=e99]: ⌘K
+            - button "Notifications" [ref=e101] [cursor=pointer]:
+              - img [ref=e102]
+        - generic [ref=e107]:
+          - generic [ref=e108]:
+            - heading "Accounts" [level=2] [ref=e109]
+            - generic [ref=e110]:
+              - generic [ref=e111]: "Stage:"
+              - link "all" [ref=e112] [cursor=pointer]:
+                - /url: /crm?stage=all&health=all
+              - link "prospect" [ref=e113] [cursor=pointer]:
+                - /url: /crm?stage=prospect&health=all
+              - link "trial" [ref=e114] [cursor=pointer]:
+                - /url: /crm?stage=trial&health=all
+              - link "customer" [ref=e115] [cursor=pointer]:
+                - /url: /crm?stage=customer&health=all
+              - link "expansion" [ref=e116] [cursor=pointer]:
+                - /url: /crm?stage=expansion&health=all
+              - link "churned" [ref=e117] [cursor=pointer]:
+                - /url: /crm?stage=churned&health=all
+            - generic [ref=e118]:
+              - generic [ref=e119]: "Health:"
+              - link "all" [ref=e120] [cursor=pointer]:
+                - /url: /crm?stage=all&health=all
+              - link "<40" [ref=e121] [cursor=pointer]:
+                - /url: /crm?stage=all&health=<40
+              - link "40-70" [ref=e122] [cursor=pointer]:
+                - /url: /crm?stage=all&health=40-70
+              - link ">70" [ref=e123] [cursor=pointer]:
+                - /url: /crm?stage=all&health=>70
+          - table [ref=e124]:
+            - rowgroup [ref=e125]:
+              - row "Org Stage Health Score ARR CSM Last Contacted Churn Risk" [ref=e126]:
+                - columnheader "Org" [ref=e127]
+                - columnheader "Stage" [ref=e128]
+                - columnheader "Health Score" [ref=e129]
+                - columnheader "ARR" [ref=e130]
+                - columnheader "CSM" [ref=e131]
+                - columnheader "Last Contacted" [ref=e132]
+                - columnheader "Churn Risk" [ref=e133]
+            - rowgroup [ref=e134]:
+              - row "No accounts found" [ref=e135]:
+                - cell "No accounts found" [ref=e136]
+  - alert [ref=e137]

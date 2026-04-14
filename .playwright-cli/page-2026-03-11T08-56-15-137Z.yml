@@ -1,0 +1,111 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]: Fetchium
+        - generic [ref=e10]: ADMIN
+      - navigation [ref=e11]:
+        - link "Overview" [ref=e12] [cursor=pointer]:
+          - /url: /overview
+          - img [ref=e13]
+          - text: Overview
+        - link "Orgs" [ref=e18] [cursor=pointer]:
+          - /url: /orgs
+          - img [ref=e19]
+          - text: Orgs
+          - img [ref=e23]
+        - link "Users" [ref=e25] [cursor=pointer]:
+          - /url: /users
+          - img [ref=e26]
+          - text: Users
+        - link "API Keys" [ref=e31] [cursor=pointer]:
+          - /url: /keys
+          - img [ref=e32]
+          - text: API Keys
+        - link "Usage" [ref=e36] [cursor=pointer]:
+          - /url: /usage
+          - img [ref=e37]
+          - text: Usage
+        - link "Billing" [ref=e39] [cursor=pointer]:
+          - /url: /billing
+          - img [ref=e40]
+          - text: Billing
+        - link "CRM" [ref=e42] [cursor=pointer]:
+          - /url: /crm
+          - img [ref=e43]
+          - text: CRM
+        - link "Support" [ref=e48] [cursor=pointer]:
+          - /url: /support
+          - img [ref=e49]
+          - text: Support
+        - link "Campaigns" [ref=e51] [cursor=pointer]:
+          - /url: /campaigns
+          - img [ref=e52]
+          - text: Campaigns
+        - link "Incidents" [ref=e55] [cursor=pointer]:
+          - /url: /incidents
+          - img [ref=e56]
+          - text: Incidents
+        - link "Proxy Ops" [ref=e58] [cursor=pointer]:
+          - /url: /proxy
+          - img [ref=e59]
+          - text: Proxy Ops
+        - link "Audit" [ref=e62] [cursor=pointer]:
+          - /url: /audit
+          - img [ref=e63]
+          - text: Audit
+        - link "Flags" [ref=e65] [cursor=pointer]:
+          - /url: /flags
+          - img [ref=e66]
+          - text: Flags
+        - link "System" [ref=e68] [cursor=pointer]:
+          - /url: /system
+          - img [ref=e69]
+          - text: System
+        - link "Settings" [ref=e72] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e73]
+          - text: Settings
+      - generic [ref=e76]:
+        - generic [ref=e77]:
+          - generic [ref=e78]: A
+          - generic [ref=e79]:
+            - paragraph [ref=e80]: Admin
+            - paragraph [ref=e81]: admin@fetchium.com
+        - generic [ref=e82]:
+          - generic [ref=e83]: Owner
+          - button "Sign out" [ref=e84] [cursor=pointer]:
+            - img [ref=e85]
+            - text: Sign out
+    - main [ref=e88]:
+      - generic [ref=e89]:
+        - generic [ref=e90]:
+          - heading "Organizations" [level=1] [ref=e91]
+          - paragraph [ref=e92]: 0 orgs total
+        - generic [ref=e93]:
+          - button "Search ⌘K" [ref=e94] [cursor=pointer]:
+            - img [ref=e95]
+            - generic [ref=e98]: Search
+            - generic [ref=e99]: ⌘K
+          - button "Notifications" [ref=e101] [cursor=pointer]:
+            - img [ref=e102]
+      - generic [ref=e106]:
+        - generic [ref=e107]:
+          - searchbox "Search orgs..." [ref=e108]
+          - combobox [ref=e109]:
+            - option "All plans" [selected]
+            - option "Free"
+            - option "Starter"
+            - option "Pro"
+            - option "Enterprise"
+          - combobox [ref=e110]:
+            - option "All statuses" [selected]
+            - option "Active"
+            - option "Suspended"
+            - option "Trial"
+            - option "Churned"
+        - generic [ref=e112]:
+          - img [ref=e113]
+          - paragraph [ref=e117]: No organizations found
+  - alert [ref=e118]

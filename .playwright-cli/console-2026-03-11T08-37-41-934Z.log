@@ -1,0 +1,2 @@
+[     126ms] [ERROR] Error with Permissions-Policy header: Parse of permissions policy failed because of errors reported by structured header parser. @ :0
+[  390420ms] [ERROR] Failed to load resource: the server responded with a status of 502 () @ https://admin.fetchium.com/api/admin/metrics/summary:0

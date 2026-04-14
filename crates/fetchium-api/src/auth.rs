@@ -684,14 +684,17 @@ impl AuthDb {
                     "SELECT DISTINCT endpoint FROM usage_logs
                      WHERE key_id = ?1 AND status >= 200 AND status < 300",
                 )?;
-                let results: Vec<String> = stmt.query_map(params![key_id], |row| row.get(0))?
+                let results: Vec<String> = stmt
+                    .query_map(params![key_id], |row| row.get(0))?
                     .filter_map(|r| r.ok())
                     .collect();
                 results
             };
 
             let tried_search = used_endpoints.iter().any(|e| e == "/v1/search");
-            let tried_scrape = used_endpoints.iter().any(|e| e == "/v1/scrape" || e == "/v1/fetch");
+            let tried_scrape = used_endpoints
+                .iter()
+                .any(|e| e == "/v1/scrape" || e == "/v1/fetch");
             let tried_research = used_endpoints.iter().any(|e| e == "/v1/research");
 
             if !tried_search {
@@ -739,29 +742,35 @@ impl AuthDb {
             params![key_id, now],
         )?;
 
-        let settings = conn.query_row(
-            "SELECT workspace_name, email_updates, incident_alerts, changelog_notifications,
+        let settings = conn
+            .query_row(
+                "SELECT workspace_name, email_updates, incident_alerts, changelog_notifications,
                     default_search_tier, default_max_sources, theme, updated_at
              FROM customer_settings WHERE key_id = ?1",
-            params![key_id],
-            |row| {
-                Ok(CustomerSettings {
-                    workspace_name: row.get(0)?,
-                    email_updates: row.get::<_, i32>(1)? != 0,
-                    incident_alerts: row.get::<_, i32>(2)? != 0,
-                    changelog_notifications: row.get::<_, i32>(3)? != 0,
-                    default_search_tier: row.get(4)?,
-                    default_max_sources: row.get::<_, i32>(5)? as u32,
-                    theme: row.get(6)?,
-                    updated_at: row.get(7)?,
-                })
-            },
-        ).context("get customer settings")?;
+                params![key_id],
+                |row| {
+                    Ok(CustomerSettings {
+                        workspace_name: row.get(0)?,
+                        email_updates: row.get::<_, i32>(1)? != 0,
+                        incident_alerts: row.get::<_, i32>(2)? != 0,
+                        changelog_notifications: row.get::<_, i32>(3)? != 0,
+                        default_search_tier: row.get(4)?,
+                        default_max_sources: row.get::<_, i32>(5)? as u32,
+                        theme: row.get(6)?,
+                        updated_at: row.get(7)?,
+                    })
+                },
+            )
+            .context("get customer settings")?;
 
         Ok(settings)
     }
 
-    pub fn update_customer_settings(&self, key_id: &str, patch: &serde_json::Value) -> Result<CustomerSettings> {
+    pub fn update_customer_settings(
+        &self,
+        key_id: &str,
+        patch: &serde_json::Value,
+    ) -> Result<CustomerSettings> {
         let conn = self.conn.lock();
         let now = Utc::now().to_rfc3339();
 
@@ -790,7 +799,10 @@ impl AuthDb {
                 params![v as i32, now, key_id],
             )?;
         }
-        if let Some(v) = patch.get("changelog_notifications").and_then(|v| v.as_bool()) {
+        if let Some(v) = patch
+            .get("changelog_notifications")
+            .and_then(|v| v.as_bool())
+        {
             conn.execute(
                 "UPDATE customer_settings SET changelog_notifications = ?1, updated_at = ?2 WHERE key_id = ?3",
                 params![v as i32, now, key_id],
@@ -827,7 +839,11 @@ impl AuthDb {
         self.get_customer_settings(key_id)
     }
 
-    pub fn get_dashboard_settings(&self, key_id: &str, plan: &str) -> Result<DashboardSettingsResponse> {
+    pub fn get_dashboard_settings(
+        &self,
+        key_id: &str,
+        plan: &str,
+    ) -> Result<DashboardSettingsResponse> {
         let conn = self.conn.lock();
 
         // Get key record for session info
@@ -856,7 +872,11 @@ impl AuthDb {
             session: DashboardSettingsSession {
                 key_id: key_id.to_string(),
                 api_key_preview: if key_prefix.len() >= 12 {
-                    format!("{}...{}", &key_prefix[..12], &key_prefix[key_prefix.len().saturating_sub(4)..])
+                    format!(
+                        "{}...{}",
+                        &key_prefix[..12],
+                        &key_prefix[key_prefix.len().saturating_sub(4)..]
+                    )
                 } else {
                     key_prefix
                 },
@@ -868,7 +888,11 @@ impl AuthDb {
         })
     }
 
-    pub fn get_usage_timeseries_with_tokens(&self, key_id: &str, days: usize) -> Result<Vec<UsageTimeseriesPoint>> {
+    pub fn get_usage_timeseries_with_tokens(
+        &self,
+        key_id: &str,
+        days: usize,
+    ) -> Result<Vec<UsageTimeseriesPoint>> {
         let conn = self.conn.lock();
         let since_days = format!("-{} days", days.saturating_sub(1));
         let mut stmt = conn.prepare(
@@ -892,7 +916,12 @@ impl AuthDb {
         Ok(rows)
     }
 
-    pub fn get_endpoint_usage_breakdown(&self, key_id: &str, days: usize, limit: usize) -> Result<Vec<EndpointUsageBreakdown>> {
+    pub fn get_endpoint_usage_breakdown(
+        &self,
+        key_id: &str,
+        days: usize,
+        limit: usize,
+    ) -> Result<Vec<EndpointUsageBreakdown>> {
         let conn = self.conn.lock();
         let since_days = format!("-{} days", days.saturating_sub(1));
         let mut stmt = conn.prepare(
@@ -919,7 +948,11 @@ impl AuthDb {
         Ok(rows)
     }
 
-    pub fn get_usage_health_summary(&self, key_id: &str, days: usize) -> Result<UsageHealthSummary> {
+    pub fn get_usage_health_summary(
+        &self,
+        key_id: &str,
+        days: usize,
+    ) -> Result<UsageHealthSummary> {
         let conn = self.conn.lock();
         let since_days = format!("-{} days", days.saturating_sub(1));
         let (total, success_count): (u32, u32) = conn.query_row(
@@ -1087,8 +1120,10 @@ mod tests {
         let (_, record) = db.create_key("overview test", "pro").unwrap();
         db.record_usage(&record.id, "/v1/search", 200, 1200, 100)
             .unwrap();
-        db.record_usage(&record.id, "/v1/search", 500, 0, 300).unwrap();
-        db.record_usage(&record.id, "/v1/fetch", 200, 800, 200).unwrap();
+        db.record_usage(&record.id, "/v1/search", 500, 0, 300)
+            .unwrap();
+        db.record_usage(&record.id, "/v1/fetch", 200, 800, 200)
+            .unwrap();
 
         let overview = db.get_dashboard_overview(&record.id, "pro").unwrap();
 

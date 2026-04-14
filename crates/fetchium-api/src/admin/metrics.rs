@@ -21,13 +21,10 @@ fn health_cache() -> &'static HealthCache {
 /// TCP reachability check with a 2-second timeout.
 async fn tcp_reachable(host: &str, port: u16) -> bool {
     let addr = format!("{host}:{port}");
-    tokio::time::timeout(
-        Duration::from_secs(2),
-        tokio::net::TcpStream::connect(addr),
-    )
-    .await
-    .map(|r| r.is_ok())
-    .unwrap_or(false)
+    tokio::time::timeout(Duration::from_secs(2), tokio::net::TcpStream::connect(addr))
+        .await
+        .map(|r| r.is_ok())
+        .unwrap_or(false)
 }
 
 pub async fn realtime(_auth: AdminAuth, State(state): State<AppState>) -> Json<serde_json::Value> {
@@ -280,7 +277,7 @@ pub async fn cache_clear(
     if require(&auth.user, Permission::ProxyReset).is_err() {
         return Json(serde_json::json!({"error": "forbidden"}));
     }
-    state.cache.clear();
+    state.cache.clear().await;
     let _ = state.admin_db.as_ref().map(|db| {
         db.log_audit(
             Some(&auth.user.id),

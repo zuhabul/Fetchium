@@ -131,7 +131,10 @@ pub fn bm25_score(result: &ResultItem, ctx: &ScoringContext) -> f64 {
         let tf = freqs.get(term).copied().unwrap_or(0) as f64;
         if tf == 0.0 {
             // Half-weight for substring match (still O(N) but better than before)
-            let partial = ctx.result_words[idx].iter().filter(|w| w.contains(term)).count() as f64;
+            let partial = ctx.result_words[idx]
+                .iter()
+                .filter(|w| w.contains(term))
+                .count() as f64;
             if partial > 0.0 {
                 let denom = partial * 0.5 + K1 * (1.0 - B + B * doc_len / AVG_DL);
                 score += 0.5 * (partial * 0.5 * (K1 + 1.0)) / denom;
