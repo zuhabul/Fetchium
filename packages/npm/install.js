@@ -13,8 +13,7 @@ const { execFileSync } = require("child_process");
 
 const PKG = require("./package.json");
 const VERSION = PKG.version;
-const REPO = "zuhabul/fetchium";
-const S3_BASE = "https://fetchium.s3.ap-southeast-1.amazonaws.com/releases";
+const REPO = "zuhabul/Fetchium";
 const BIN_DIR = path.join(__dirname, "bin");
 const IS_WIN = process.platform === "win32";
 
@@ -42,9 +41,9 @@ function getArtifact() {
   const filename = `${info.name}${info.ext}`;
   return {
     filename,
-    // Primary: S3 (versioned path, no auth required)
-    url: `${S3_BASE}/v${VERSION}/${filename}`,
-    // Fallback: GitHub Releases
+    // Primary: GitHub Releases
+    url: `https://github.com/${REPO}/releases/download/v${VERSION}/${filename}`,
+    // Fallback: same URL (kept for future CDN swap)
     fallbackUrl: `https://github.com/${REPO}/releases/download/v${VERSION}/${filename}`,
     binName: info.bin,
     isZip: info.ext === ".zip",
@@ -136,18 +135,12 @@ async function main() {
   try {
     await download(artifact.url, tmpArchive);
   } catch (err) {
-    console.warn(`\n⚠  Primary download failed: ${err.message}`);
-    console.warn(`  Trying fallback: ${artifact.fallbackUrl}`);
-    try {
-      await download(artifact.fallbackUrl, tmpArchive);
-    } catch (err2) {
-      console.warn(`\n⚠  Fallback download also failed: ${err2.message}`);
-      console.warn("\nAlternative installation methods:");
-      console.warn("  Shell:   curl -sSf https://install.fetchium.com | sh");
-      console.warn("  Brew:    brew install zuhabul/tap/fetchium");
-      console.warn("  Binstall: cargo binstall fetchium");
-      return;
-    }
+    console.warn(`\n⚠  Download failed: ${err.message}`);
+    console.warn("\nAlternative installation methods:");
+    console.warn("  Shell:    curl -sSf https://install.fetchium.com | sh");
+    console.warn("  Brew:     brew install zuhabul/fetchium/fetchium");
+    console.warn("  Binstall: cargo binstall fetchium-cli");
+    return;
   }
 
   try {
@@ -172,12 +165,12 @@ async function main() {
     console.log(`\n✓ fetchium v${VERSION} installed`);
   }
   console.log(`  Run: fetchium --help`);
-  console.log(`  Docs: https://docs.fetchium.com\n`);
+  console.log("  Docs: https://docs.fetchium.com\n");
 }
 
 main().catch((err) => {
   // Swallow errors so npm install never fails because of this postinstall
   console.warn(`\n⚠  fetchium postinstall warning: ${err.message}`);
-  console.warn("  You can install manually: https://docs.fetchium.com/self-hosting\n");
+  console.warn("  Self-host: https://docs.fetchium.com/self-hosting\n");
   process.exitCode = 0;
 });
