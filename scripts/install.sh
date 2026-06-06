@@ -6,7 +6,7 @@
 #   FETCHIUM_VERSION      - Pin a specific version (default: latest)
 set -eu
 
-REPO="zuhabul/fetchium"
+REPO="zuhabul/Fetchium"
 BIN_NAME="fetchium"
 INSTALL_DIR="${FETCHIUM_INSTALL_DIR:-/usr/local/bin}"
 VERSION="${FETCHIUM_VERSION:-}"
