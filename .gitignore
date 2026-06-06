@@ -63,4 +63,4 @@ infra/*.env.production
 *.dat
 .DS_Store
 graphify-out/
-packages/npm/bin/
+packages/npm/bin/fetchium

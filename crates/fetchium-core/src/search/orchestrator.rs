@@ -134,14 +134,12 @@ impl OrchestratorConfig {
         max_results: u32,
     ) -> Self {
         let internal_headroom = max_results.max(10);
-        let append_reliable_fallbacks = std::env::var(
-            "FETCHIUM_SEARCH_APPEND_RELIABLE_FALLBACKS",
-        )
-        .map(|value| {
-            let normalized = value.trim().to_ascii_lowercase();
-            !matches!(normalized.as_str(), "0" | "false" | "no" | "off")
-        })
-        .unwrap_or(true);
+        let append_reliable_fallbacks = std::env::var("FETCHIUM_SEARCH_APPEND_RELIABLE_FALLBACKS")
+            .map(|value| {
+                let normalized = value.trim().to_ascii_lowercase();
+                !matches!(normalized.as_str(), "0" | "false" | "no" | "off")
+            })
+            .unwrap_or(true);
         let mut enabled_backends = fetchium_config
             .search
             .backends
