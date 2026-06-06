@@ -120,7 +120,7 @@ tower = { version = "0.4" }
 tower-http = { version = "0.5", features = ["cors", "trace", "timeout", "limit", "request-id", "set-header"] }
 
 # Core library (internal)
-fetchium-core = { path = "crates/fetchium-core", features = ["embeddings"] }
+fetchium-core = { path = "crates/fetchium-core", version = "1.0.0", features = ["embeddings"] }
 
 [profile.release]
 opt-level = 3

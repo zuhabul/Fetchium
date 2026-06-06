@@ -36,8 +36,8 @@ path = "src/main.rs"
 
 [dependencies]
 fetchium-core.workspace = true
-fetchium-mcp = { path = "../fetchium-mcp" }
-fetchium-api = { path = "../fetchium-api" }
+fetchium-mcp = { path = "../fetchium-mcp", version = "1.0.0" }
+fetchium-api = { path = "../fetchium-api", version = "1.0.0" }
 
 # CLI
 clap.workspace = true
