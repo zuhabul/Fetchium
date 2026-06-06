@@ -28,6 +28,7 @@
       ]
     }
   },
+  "bootstrap-sha": "70bd6265a769965c68b3e4c927963910cff9e590",
   "pull-request-title-pattern": "chore(main): release ${version}",
   "commit-message": "chore(release): release ${version}",
   "separate-pull-requests": false,
