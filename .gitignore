@@ -64,3 +64,10 @@ infra/*.env.production
 .DS_Store
 graphify-out/
 packages/npm/bin/fetchium
+
+# Generated benchmark reports & debug output
+benchmark_report_*.json
+output/playwright/
+npm/bin/fetchium
+# No PHP in this project — block accidental/malicious additions
+*.php

