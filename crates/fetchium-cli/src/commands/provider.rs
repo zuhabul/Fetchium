@@ -1475,6 +1475,12 @@ async fn auth_gemini_oauth(config: &FetchiumConfig) -> anyhow::Result<()> {
     let _ = std::process::Command::new("xdg-open")
         .arg(verification_url)
         .spawn();
+    #[cfg(target_os = "windows")]
+    let _ = std::process::Command::new("cmd")
+        .args(["/C", "start", "", verification_url])
+        .spawn();
+    #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
+    let _ = verification_url;
 
     println!(
         "  Waiting for authorization... ({}s timeout, Ctrl+C to cancel)",
