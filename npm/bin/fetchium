@@ -1,6 +1,0 @@
-#!/usr/bin/env node
-
-'use strict';
-
-// Main fetchium CLI launcher
-require('./fetchium.js');
