@@ -63,21 +63,21 @@ The CLI (`fetchium-cli/src/main.rs`) parses args, loads config, then dispatches 
 
 ## fetchium-core Module Map
 
-Most modules are currently stubs awaiting Phase 1+ implementation. Implemented:
+The retrieval pipeline is implemented across these modules. Foundational types/config:
 
-- `types.rs` — All shared data types (PRD §43): `AgentSearchResult`, `SearchResult`, `ResultItem`, `Segment`, `Finding`, `Source`, `EvidenceGraph`, `CepLayer`, `PdsTier`, `ResourceTier`, `BackendId`, etc.
-- `error.rs` — `FetchiumError`, `StructuredError`, `ErrorKind` (19 variants), `FetchiumResult<T>`
+- `types.rs` — Shared data types: `AgentSearchResult`, `SearchResult`, `ResultItem`, `Segment`, `Finding`, `Source`, `EvidenceGraph`, `CepLayer`, `PdsTier`, `ResourceTier`, `BackendId`, etc.
+- `error.rs` — `FetchiumError`, `StructuredError`, `ErrorKind`, `FetchiumResult<T>`
 - `config.rs` — `FetchiumConfig` loaded from `~/.fetchium/config.toml` with env var overrides; includes `detect_resource_tier()` and `data_dir()`
-- `http/client.rs` — `HttpClient` stub (reqwest with pooling/retries)
+- `http/client.rs` — `HttpClient` (reqwest with pooling/retries)
 - `resource/mod.rs` — `detect_tier()` delegating to `FetchiumConfig::detect_resource_tier()`
 
-Planned modules follow this pipeline order:
+The core pipeline runs in this order:
 ```
 search/ → extract/ → rank/ → token/ → validate/ → citation/ → output/
                                                               ↑
                                              research/ ──────┘
 ```
-Advanced: `ai/`, `intelligence/`, `cache/`, `index/`, `plugin/`, `privacy/`, `collab/`, `domain/`
+Additional modules: `ai/`, `intelligence/`, `cache/`, `index/`, `plugin/`, `privacy/`, `collab/`, `domain/`, `youtube/`, `setup/`.
 
 ## Optional Feature Flags (fetchium-core)
 
@@ -93,17 +93,11 @@ Heavy optional dependencies are gated behind features:
 
 Build with a feature: `cargo build -p fetchium-core --features headless`
 
-## Task Planning System
+## Design Reference
 
-Implementation is tracked across 9 phases:
+- **`prd.md`** — Product Requirements Document describing the algorithms and intended behaviors.
 
-- **`TASKS.md`** — Master index: phase overview, dependency graph, task ID format (`P{phase}-E{epic}-T{task}`), parallelization matrix
-- **`tasks/phase-N-*.md`** — Detailed per-phase files with step-by-step Rust code, file paths, and acceptance criteria checklists
-- **`prd.md`** — Product Requirements Document (source of truth for all algorithms and behaviors)
-
-**Current status:** Phase 0 scaffold complete. Phases 1–7 are stubs. Start implementation at `tasks/phase-1-mvp-core.md`.
-
-Rules from `TASKS.md` to follow: run `cargo build && cargo test && cargo clippy` after every task; keep files under 500 lines; use workspace dependencies (never add directly to a crate's Cargo.toml if it can be shared); all public APIs get `///` doc comments.
+Conventions: run `cargo build && cargo test && cargo clippy` after changes; keep files focused; put shared dependencies in the workspace `Cargo.toml` (reference with `.workspace = true` per crate, never duplicate a version already in the workspace); document public APIs with `///` comments.
 
 ## Key PRD Algorithms
 
@@ -198,16 +192,19 @@ release.yml workflow fires:
 sh scripts/setup-dev.sh   # installs commit-msg and pre-commit git hooks
 ```
 
-### Distribution channels (all automated)
+### Distribution channels
 
-| Channel | Install command | Updated automatically |
-|---------|----------------|----------------------|
-| GitHub Releases | Direct download | ✅ On every release |
-| Shell installer | `curl -sSf https://install.fetchium.com \| sh` | ✅ Points to latest |
-| npm | `npm install -g fetchium` | ✅ Via npm publish |
-| npx | `npx fetchium` | ✅ Via npm publish |
-| Homebrew | `brew install zuhabul/tap/fetchium` | ✅ Via tap PR |
-| cargo-binstall | `cargo binstall fetchium` | ✅ Metadata in Cargo.toml |
+| Channel | Install command | Status |
+|---------|----------------|--------|
+| Cargo (git) | `cargo install --git https://github.com/zuhabul/Fetchium fetchium-cli` | ✅ Works today |
+| From source | `cargo build -p fetchium-cli --release` | ✅ Works today |
+| GitHub Releases | `fetchium-linux-x64.tar.gz` (Linux x86-64) | ✅ Available |
+| crates.io | `cargo install fetchium-cli` | ⏳ Pending publish (release pipeline) |
+| npm / npx | TBD — the `fetchium` name is taken; use a scoped name (e.g. `@zuhabul/fetchium`) | ⏳ Not yet published |
+| Homebrew | `brew install zuhabul/tap/fetchium` | ⏳ Tap not yet created |
+
+> The release pipeline (release-please + `release.yml`) is configured to publish to these channels;
+> they activate once the registry names/secrets are set up. Update this table as each goes live.
 
 ### Required GitHub Secrets
 
