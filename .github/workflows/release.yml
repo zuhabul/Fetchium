@@ -174,7 +174,7 @@ jobs:
       - name: Sync version into npm package
         shell: bash
         run: |
-          TAG="${{ github.event.release.tag_name }}"
+          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
           VERSION="${TAG#v}"
           # Update package.json version to match release
           cd packages/npm
@@ -214,18 +214,10 @@ jobs:
       - name: Sync version into adapter package
         shell: bash
         run: |
-          TAG="${{ github.event.release.tag_name }}"
+          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
           VERSION="${TAG#v}"
-          python - <<'PY'
-          import pathlib
-          import re
-          package_dir = pathlib.Path("${{ matrix.package_dir }}")
-          pyproject = package_dir / "pyproject.toml"
-          content = pyproject.read_text()
-          updated = re.sub(r'^version = "[^"]+"$', f'version = "{VERSION}"', content, count=1, flags=re.M)
-          pyproject.write_text(updated)
-          print(f"adapter version set to {VERSION} for {pyproject}")
-          PY
+          sed -i "s/^version = \"[^\"]*\"/version = \"${VERSION}\"/" "${{ matrix.package_dir }}/pyproject.toml"
+          echo "adapter version set to ${VERSION} for ${{ matrix.package_dir }}/pyproject.toml"
 
       - name: Build adapter package
         run: |
@@ -307,9 +299,9 @@ jobs:
       - name: Compute SHA256s and generate formula
         shell: bash
         run: |
-          TAG="${{ github.event.release.tag_name }}"
+          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
           VERSION="${TAG#v}"
-          BASE_URL="https://github.com/zuhabul/fetchium/releases/download/${TAG}"
+          BASE_URL="https://github.com/zuhabul/Fetchium/releases/download/${TAG}"
 
           SHA_LINUX_X64=$(cat artifacts/fetchium-linux-x64.tar.gz.sha256)
           SHA_LINUX_ARM64=$(cat artifacts/fetchium-linux-arm64.tar.gz.sha256)
@@ -369,7 +361,7 @@ jobs:
           destination_folder: Formula
           user_email: "github-actions[bot]@users.noreply.github.com"
           user_name: "github-actions[bot]"
-          commit_message: "chore: update fetchium to ${{ github.event.release.tag_name }}"
+          commit_message: "chore: update fetchium to ${{ github.event.release.tag_name || github.event.inputs.tag }}"
 
   # ─────────────────────────────────────────────────────────────
   # 5. Post-release summary
@@ -382,7 +374,7 @@ jobs:
     steps:
       - name: Summary
         run: |
-          TAG="${{ github.event.release.tag_name }}"
+          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
           VERSION="${TAG#v}"
           echo "## Release ${TAG} Distribution Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
