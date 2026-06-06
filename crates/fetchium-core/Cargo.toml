@@ -4,7 +4,10 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
 description = "Fetchium core library — search, extract, rank, validate, cache"
+categories = ["web-programming", "text-processing"]
+keywords = ["search", "retrieval", "extraction", "ai", "mcp"]
 
 [features]
 default = ["http-backends"]
