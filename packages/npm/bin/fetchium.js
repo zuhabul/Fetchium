@@ -15,7 +15,7 @@ if (!fs.existsSync(BIN_PATH)) {
   console.error(
     `\n⚠  fetchium binary not found at: ${BIN_PATH}\n\n` +
     `This usually means the postinstall script failed. Try:\n\n` +
-    `  npm install -g fetchium\n\n` +
+    `  npm install -g fetchium-cli\n\n` +
     `Or install via shell:\n` +
     `  curl -sSf https://install.fetchium.com | sh\n`
   );

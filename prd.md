@@ -1351,7 +1351,7 @@ Local hybrid index (BM25 + vector) with late chunking for superior embeddings.
 ### Package Manager Support
 
 ```bash
-npm install -g fetchium
+npm install -g fetchium-cli
 pnpm add -g fetchium
 bun add -g fetchium
 ```
@@ -1596,7 +1596,7 @@ Fetchium ships as a **Rust binary** with an **npm wrapper** for seamless install
 
 ```bash
 # Installs pre-built native binary for your platform
-npm install -g fetchium
+npm install -g fetchium-cli
 pnpm add -g fetchium
 bun add -g fetchium
 
@@ -3447,7 +3447,7 @@ The npm package is a thin wrapper that downloads the correct platform binary:
 ```
 
 This pattern (used by esbuild, turbo, SWC) ensures:
-- `npm install -g fetchium` works seamlessly
+- `npm install -g fetchium-cli` works seamlessly
 - `pnpm add -g fetchium` works seamlessly
 - `bun add -g fetchium` works seamlessly
 - No Rust toolchain needed for end users
