@@ -12,13 +12,16 @@
 //! Full HTML: `div.result`, `a.result__a`, `a.result__snippet`, `span.result__url`
 //! Lite HTML:  `b a[href]` (titles), `td[valign=top]` (snippets)
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::http::HttpClient;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
 use scraper::{Html, Selector};
 use tracing::{debug, info};
+
+/// Max IP-rotation retries on CAPTCHA/block detection (2 = 1 cached + 1 fresh IP).
+const MAX_IP_RETRIES: usize = 2;
 
 /// Full DDG HTML endpoint.
 const DDG_HTML_URL: &str = "https://html.duckduckgo.com/html/";
@@ -264,54 +267,102 @@ impl DuckDuckGoBackend {
         String::new()
     }
 
-    /// Fetch results from the full DDG HTML endpoint.
-    async fn try_full(&self, query: &str, max_results: u32, df: &str) -> Vec<ResultItem> {
-        let form: &[(&str, &str)] = &[("q", query), ("b", ""), ("s", "0"), ("kl", ""), ("df", df)];
+    /// Fetch results from the full DDG HTML endpoint with automatic IP rotation on block.
+    /// Fetch from DDG full HTML endpoint.
+    /// `use_proxy=false` → direct (free); `use_proxy=true` → residential with IP rotation.
+    async fn try_full(
+        &self,
+        query: &str,
+        max_results: u32,
+        df: &str,
+        use_proxy: bool,
+        locale: Option<&str>,
+    ) -> Vec<ResultItem> {
+        let form: Vec<(&str, &str)> =
+            vec![("q", query), ("b", ""), ("s", "0"), ("kl", ""), ("df", df)];
+        let retries = if use_proxy { MAX_IP_RETRIES } else { 1 };
 
-        match self
-            .client
-            .client()
-            .post(DDG_HTML_URL)
-            .form(form)
-            .header("User-Agent", BROWSER_UA)
-            .header(
-                "Accept",
-                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            )
-            .header("Accept-Language", "en-US,en;q=0.9")
-            .header("Referer", "https://duckduckgo.com/")
-            .header("Cache-Control", "no-cache")
-            .send()
-            .await
-        {
-            Ok(resp) if resp.status().is_success() || resp.status().as_u16() == 202 => {
-                match resp.text().await {
-                    Ok(html) if !html.trim().is_empty() => {
-                        if Self::is_captcha_page(&html) {
-                            debug!("DDG: CAPTCHA detected on full endpoint for {query:?}");
-                            vec![]
-                        } else {
+        for attempt in 0..retries {
+            let client = if !use_proxy {
+                self.client.client_direct()
+            } else if attempt == 0 {
+                self.client
+                    .proxy_client_for_domain_with_locale("duckduckgo.com", locale)
+            } else {
+                info!(
+                    "DDG full: block — rotating proxy/IP (attempt {}/{})",
+                    attempt + 1,
+                    MAX_IP_RETRIES
+                );
+                tokio::time::sleep(std::time::Duration::from_millis(300 * attempt as u64)).await;
+                self.client
+                    .fresh_client_for_domain_with_locale("duckduckgo.com", locale)
+            };
+
+            match client
+                .post(DDG_HTML_URL)
+                .form(&form)
+                .header("User-Agent", BROWSER_UA)
+                .header(
+                    "Accept",
+                    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                )
+                .header("Accept-Language", "en-US,en;q=0.9")
+                .header("Referer", "https://duckduckgo.com/")
+                .header("Cache-Control", "no-cache")
+                .send()
+                .await
+            {
+                Ok(resp) if resp.status().is_success() || resp.status().as_u16() == 202 => {
+                    match resp.text().await {
+                        Ok(html) if !html.trim().is_empty() => {
+                            if Self::is_captcha_page(&html) {
+                                debug!("DDG full: CAPTCHA attempt {attempt} proxy={use_proxy} for {query:?}");
+                                continue;
+                            }
                             let r = self.parse_results(&html, max_results);
-                            debug!("DDG full HTML: {} results for {query:?}", r.len());
-                            r
+                            if !r.is_empty() {
+                                debug!(
+                                    "DDG full: {} results proxy={use_proxy} for {query:?}",
+                                    r.len()
+                                );
+                                return r;
+                            }
                         }
+                        _ => {}
                     }
-                    _ => vec![],
+                }
+                Ok(resp) if resp.status().as_u16() == 403 || resp.status().as_u16() == 429 => {
+                    debug!(
+                        "DDG full: HTTP {} attempt {attempt} proxy={use_proxy}",
+                        resp.status()
+                    );
+                }
+                Ok(resp) => {
+                    debug!(
+                        "DDG full: HTTP {} proxy={use_proxy} for {query:?}",
+                        resp.status()
+                    );
+                    return vec![];
+                }
+                Err(e) => {
+                    debug!("DDG full: request error attempt {attempt} proxy={use_proxy}: {e}");
                 }
             }
-            Ok(resp) => {
-                debug!("DDG full HTML: HTTP {} for {query:?}", resp.status());
-                vec![]
-            }
-            Err(e) => {
-                debug!("DDG full HTML request failed: {e}");
-                vec![]
-            }
         }
+        vec![]
     }
 
-    /// Fetch results from the DDG lite endpoint.
-    async fn try_lite(&self, query: &str, max_results: u32, df: &str) -> Vec<ResultItem> {
+    /// Fetch from DDG lite endpoint.
+    /// `use_proxy=false` → direct (free); `use_proxy=true` → residential with IP rotation.
+    async fn try_lite(
+        &self,
+        query: &str,
+        max_results: u32,
+        df: &str,
+        use_proxy: bool,
+        locale: Option<&str>,
+    ) -> Vec<ResultItem> {
         let lite_form: Vec<(&str, &str)> = if df.is_empty() {
             vec![("q", query), ("s", "0"), ("o", "json"), ("dc", "1")]
         } else {
@@ -323,46 +374,76 @@ impl DuckDuckGoBackend {
                 ("df", df),
             ]
         };
+        let retries = if use_proxy { MAX_IP_RETRIES } else { 1 };
 
-        match self
-            .client
-            .client()
-            .post(DDG_LITE_URL)
-            .form(&lite_form)
-            .header("User-Agent", BROWSER_UA)
-            .header(
-                "Accept",
-                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            )
-            .header("Accept-Language", "en-US,en;q=0.9")
-            .header("Referer", "https://duckduckgo.com/")
-            .send()
-            .await
-        {
-            Ok(resp) if resp.status().is_success() || resp.status().as_u16() == 202 => {
-                match resp.text().await {
-                    Ok(html) if !html.trim().is_empty() => {
-                        if Self::is_captcha_page(&html) {
-                            debug!("DDG: CAPTCHA detected on lite endpoint for {query:?}");
-                            vec![]
-                        } else {
+        for attempt in 0..retries {
+            let client = if !use_proxy {
+                self.client.client_direct()
+            } else if attempt == 0 {
+                self.client
+                    .proxy_client_for_domain_with_locale("duckduckgo.com", locale)
+            } else {
+                info!(
+                    "DDG lite: block — rotating proxy/IP (attempt {}/{})",
+                    attempt + 1,
+                    MAX_IP_RETRIES
+                );
+                tokio::time::sleep(std::time::Duration::from_millis(300 * attempt as u64)).await;
+                self.client
+                    .fresh_client_for_domain_with_locale("duckduckgo.com", locale)
+            };
+
+            match client
+                .post(DDG_LITE_URL)
+                .form(&lite_form)
+                .header("User-Agent", BROWSER_UA)
+                .header(
+                    "Accept",
+                    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                )
+                .header("Accept-Language", "en-US,en;q=0.9")
+                .header("Referer", "https://duckduckgo.com/")
+                .send()
+                .await
+            {
+                Ok(resp) if resp.status().is_success() || resp.status().as_u16() == 202 => {
+                    match resp.text().await {
+                        Ok(html) if !html.trim().is_empty() => {
+                            if Self::is_captcha_page(&html) {
+                                debug!("DDG lite: CAPTCHA attempt {attempt} proxy={use_proxy} for {query:?}");
+                                continue;
+                            }
                             let r = self.parse_lite_results(&html, max_results);
-                            debug!("DDG lite: {} results for {query:?}", r.len());
-                            r
+                            if !r.is_empty() {
+                                debug!(
+                                    "DDG lite: {} results proxy={use_proxy} for {query:?}",
+                                    r.len()
+                                );
+                                return r;
+                            }
                         }
+                        _ => {}
                     }
-                    _ => vec![],
+                }
+                Ok(resp) if resp.status().as_u16() == 403 || resp.status().as_u16() == 429 => {
+                    debug!(
+                        "DDG lite: HTTP {} attempt {attempt} proxy={use_proxy}",
+                        resp.status()
+                    );
+                }
+                Ok(resp) => {
+                    debug!(
+                        "DDG lite: HTTP {} proxy={use_proxy} for {query:?}",
+                        resp.status()
+                    );
+                    return vec![];
+                }
+                Err(e) => {
+                    debug!("DDG lite: request error attempt {attempt} proxy={use_proxy}: {e}");
                 }
             }
-            Ok(resp) => {
-                debug!("DDG lite: HTTP {} for {query:?}", resp.status());
-                vec![]
-            }
-            Err(e) => {
-                debug!("DDG lite request failed: {e}");
-                vec![]
-            }
         }
+        vec![]
     }
 }
 
@@ -382,34 +463,54 @@ impl DuckDuckGoBackend {
         query: &str,
         max_results: u32,
         df: &str,
-    ) -> HsxResult<Vec<ResultItem>> {
-        info!("DDG search: query={query:?}, max={max_results}, df={df:?}");
+        locale: Option<&str>,
+    ) -> FetchiumResult<Vec<ResultItem>> {
+        info!("DDG search: query={query:?}, max={max_results}, df={df:?}, locale={locale:?}");
 
         if query.trim().is_empty() {
             return Ok(Vec::new());
         }
 
-        let (full, lite) = tokio::join!(
-            self.try_full(query, max_results, df),
-            self.try_lite(query, max_results, df),
-        );
+        // 4-tier cascade — cheapest first, residential only as last resort:
+        // Tier 1: direct full HTML  (free, no proxy cost)
+        // Tier 2: direct lite HTML  (free, ~8KB vs ~250KB for full)
+        // Tier 3: residential full  (costs DataImpulse GB, with IP rotation)
+        // Tier 4: residential lite  (costs DataImpulse GB, smallest payload)
 
-        if !full.is_empty() {
-            info!(
-                "DDG: {} results via full endpoint for {query:?}",
-                full.len()
-            );
-            Ok(full)
-        } else if !lite.is_empty() {
-            info!(
-                "DDG: {} results via lite endpoint for {query:?}",
-                lite.len()
-            );
-            Ok(lite)
-        } else {
-            debug!("DDG: no results for {query:?} (CAPTCHA or rate-limited)");
-            Ok(Vec::new())
+        let r = self.try_full(query, max_results, df, false, locale).await;
+        if !r.is_empty() {
+            info!("DDG: {} results via direct full for {query:?}", r.len());
+            return Ok(r);
         }
+
+        let r = self.try_lite(query, max_results, df, false, locale).await;
+        if !r.is_empty() {
+            info!("DDG: {} results via direct lite for {query:?}", r.len());
+            return Ok(r);
+        }
+
+        info!("DDG: direct blocked for {query:?} — escalating to residential proxy");
+
+        let r = self.try_full(query, max_results, df, true, locale).await;
+        if !r.is_empty() {
+            info!(
+                "DDG: {} results via residential full for {query:?}",
+                r.len()
+            );
+            return Ok(r);
+        }
+
+        let r = self.try_lite(query, max_results, df, true, locale).await;
+        if !r.is_empty() {
+            info!(
+                "DDG: {} results via residential lite for {query:?}",
+                r.len()
+            );
+            return Ok(r);
+        }
+
+        debug!("DDG: no results for {query:?} (all tiers exhausted)");
+        Ok(Vec::new())
     }
 }
 
@@ -423,8 +524,8 @@ impl SearchBackend for DuckDuckGoBackend {
         false
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
-        self.search_inner(query, max_results, "").await
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
+        self.search_inner(query, max_results, "", None).await
     }
 
     async fn search_with_context(
@@ -432,9 +533,10 @@ impl SearchBackend for DuckDuckGoBackend {
         query: &str,
         max_results: u32,
         ctx: &SearchContext,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let df = Self::time_range_to_df(ctx.time_range);
-        self.search_inner(query, max_results, df).await
+        self.search_inner(query, max_results, df, ctx.locale.as_deref())
+            .await
     }
 }
 
@@ -462,10 +564,10 @@ fn percent_decode(input: &str) -> Result<String, ()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::HsxConfig;
+    use crate::config::FetchiumConfig;
 
     fn make_backend() -> DuckDuckGoBackend {
-        let config = HsxConfig::default();
+        let config = FetchiumConfig::default();
         let client = HttpClient::new(&config).expect("client");
         DuckDuckGoBackend::new(client)
     }

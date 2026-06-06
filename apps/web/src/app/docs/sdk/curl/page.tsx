@@ -14,7 +14,7 @@ export default function CurlSDK() {
       </p>
 
       <h2>Setup</h2>
-      <CodeBlock language="bash" code={`export FETCHIUM_API_KEY="fetchium_your_key_here"
+      <CodeBlock language="bash" code={`export FETCHIUM_API_KEY="fetchium_..."
 export FETCHIUM_BASE="https://api.fetchium.com"`} />
 
       <h2>Search</h2>
@@ -89,10 +89,10 @@ curl -s "$FETCHIUM_BASE/health" | jq .`} />
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/sdk/typescript", title: "TypeScript", desc: "TS/Node integration" },
-          { href: "/docs/sdk/python", title: "Python", desc: "Python integration" },
-          { href: "/docs/api/search", title: "Search API", desc: "Reference docs" },
-          { href: "/docs/sdk/mcp", title: "MCP Protocol", desc: "Model Context Protocol" },
+          { href: "https://docs.fetchium.com/sdk/typescript", title: "TypeScript", desc: "TS/Node integration" },
+          { href: "https://docs.fetchium.com/sdk/python", title: "Python", desc: "Python integration" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "Reference docs" },
+          { href: "https://docs.fetchium.com/sdk/mcp", title: "MCP Protocol", desc: "Model Context Protocol" },
         ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

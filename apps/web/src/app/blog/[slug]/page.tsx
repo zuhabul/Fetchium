@@ -57,14 +57,14 @@ print(result)` },
       { type: "p", content: "The retriever automatically handles multi-backend search, content extraction, token budgeting, and citation tracking. Your LLM receives clean, relevant content ready to use." },
       { type: "h2", content: "What Fetchium does behind the scenes" },
       { type: "ul", content: [
-        "Dispatches your query to 11+ backends in parallel (DuckDuckGo, Brave, GitHub, StackOverflow, and more)",
+        "Dispatches your query to 17 backends in parallel (DuckDuckGo, Brave, GitHub, StackOverflow, and more)",
         "Ranks results using HyperFusion — 8 signals including BM25, semantic similarity, and source authority",
         "Extracts clean content from each result URL using the 5-layer CEP pipeline",
         "Packs the most relevant content into your 4,096-token budget using QATBE",
         "Returns structured citations for every fact"
       ]},
       { type: "h2", content: "Further reading" },
-      { type: "p", content: "See the Fetchium API reference at /docs/api/search and the Python SDK docs at /docs/sdk/python for the full parameter reference." },
+      { type: "p", content: "See the Fetchium API reference at https://docs.fetchium.com/api/search and the Python SDK docs at https://docs.fetchium.com/sdk/python for the full parameter reference." },
     ],
   },
   "token-budgeted-extraction-llm-cost": {
@@ -177,7 +177,7 @@ export default async function BlogArticlePage({ params }: Props) {
               {[
                 { href: "/blog/token-budgeted-extraction-llm-cost", label: "Token-Budgeted Extraction: Why Context Size Matters" },
                 { href: "/product/search", label: "Fetchium Search API — Technical Deep Dive" },
-                { href: "/docs/algorithms/cep", label: "CEP Algorithm Documentation" },
+                { href: "https://docs.fetchium.com/algorithms/cep", label: "CEP Algorithm Documentation" },
                 { href: "/compare/tavily", label: "Fetchium vs Tavily Comparison" },
               ].filter(l => l.href !== `/blog/${slug}`).slice(0, 3).map((l) => (
                 <Link key={l.href} href={l.href} className="rounded-xl border border-white/6 bg-white/[0.02] p-3 text-[13px] text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">

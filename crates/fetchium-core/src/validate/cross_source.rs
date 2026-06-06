@@ -42,17 +42,36 @@ impl CrossSourceVerifier {
 
     /// Run V4 cross-source verification.
     pub fn verify(&self, sources: &[SourceContent]) -> LayerResult {
+        self.verify_with_query(sources, "")
+    }
+
+    /// Run V4 cross-source verification with query-aware evidence sufficiency checks.
+    pub fn verify_with_query(&self, sources: &[SourceContent], query: &str) -> LayerResult {
         let start = std::time::Instant::now();
+        let risk = ValidationRisk::for_query(query);
 
         if sources.len() < self.min_sources {
+            let high_stakes = risk == ValidationRisk::HighStakes;
             return LayerResult {
                 layer: ValidationLayerId::V4CrossSource,
-                passed: true,
-                score: 0.5,
+                passed: !high_stakes,
+                score: if high_stakes { 0.15 } else { 0.5 },
                 issues: vec![ValidationIssue {
-                    severity: IssueSeverity::Info,
-                    code: "V4_INSUFFICIENT_SOURCES".into(),
-                    message: format!("Need {} sources, have {}", self.min_sources, sources.len()),
+                    severity: if high_stakes {
+                        IssueSeverity::Error
+                    } else {
+                        IssueSeverity::Info
+                    },
+                    code: if high_stakes {
+                        "V4_INSUFFICIENT_HIGH_STAKES_EVIDENCE".into()
+                    } else {
+                        "V4_INSUFFICIENT_SOURCES".into()
+                    },
+                    message: format!(
+                        "Need {} independent sources, have {}",
+                        self.min_sources,
+                        sources.len()
+                    ),
                     source_url: None,
                 }],
                 duration_ms: start.elapsed().as_millis() as u64,
@@ -62,6 +81,18 @@ impl CrossSourceVerifier {
         let all_claims = self.extract_claims(sources);
         let clusters = self.cluster_claims(&all_claims);
         let mut issues = Vec::new();
+        let unique_domains = self.unique_domain_count(sources);
+        if risk == ValidationRisk::HighStakes && unique_domains < self.min_sources {
+            issues.push(ValidationIssue {
+                severity: IssueSeverity::Error,
+                code: "V4_LOW_SOURCE_DIVERSITY".into(),
+                message: format!(
+                    "High-stakes query requires {} independent domains, found {}",
+                    self.min_sources, unique_domains
+                ),
+                source_url: None,
+            });
+        }
         let mut scores = Vec::new();
 
         for cluster in &clusters {
@@ -159,6 +190,24 @@ impl CrossSourceVerifier {
             issues,
             duration_ms: start.elapsed().as_millis() as u64,
         }
+    }
+
+    fn unique_domain_count(&self, sources: &[SourceContent]) -> usize {
+        sources
+            .iter()
+            .filter_map(|source| {
+                url::Url::parse(&source.url)
+                    .ok()
+                    .and_then(|url| url.host_str().map(Self::normalize_host))
+            })
+            .collect::<HashSet<_>>()
+            .len()
+    }
+
+    fn normalize_host(host: &str) -> String {
+        host.strip_prefix("www.")
+            .unwrap_or(host)
+            .to_ascii_lowercase()
     }
 
     fn extract_claims(&self, sources: &[SourceContent]) -> Vec<Claim> {
@@ -380,6 +429,39 @@ mod tests {
         let r = v.verify(&[src(0, "https://a.com", &["claim"], 0.9)]);
         assert!(r.passed);
         assert_eq!(r.score, 0.5);
+    }
+
+    #[test]
+    fn insufficient_high_stakes_sources_fail_closed() {
+        let v = CrossSourceVerifier::new();
+        let r = v.verify_with_query(
+            &[src(
+                0,
+                "https://example.com/medical",
+                &["aspirin helps"],
+                0.9,
+            )],
+            "aspirin dosage for children",
+        );
+        assert!(!r.passed);
+        assert!(r
+            .issues
+            .iter()
+            .any(|i| i.code == "V4_INSUFFICIENT_HIGH_STAKES_EVIDENCE"));
+    }
+
+    #[test]
+    fn low_source_diversity_fails_for_high_stakes_queries() {
+        let v = CrossSourceVerifier::new();
+        let r = v.verify_with_query(
+            &[
+                src(0, "https://example.com/a", &["ETF fees changed"], 0.9),
+                src(1, "https://www.example.com/b", &["ETF fees changed"], 0.8),
+            ],
+            "best ETF for retirement",
+        );
+        assert!(!r.passed);
+        assert!(r.issues.iter().any(|i| i.code == "V4_LOW_SOURCE_DIVERSITY"));
     }
 
     #[test]

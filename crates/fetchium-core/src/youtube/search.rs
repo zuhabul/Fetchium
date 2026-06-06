@@ -7,7 +7,7 @@
 //! 4. yt-dlp subprocess (if installed)
 //! 5. DuckDuckGo `site:youtube.com/watch` scraping (last resort)
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::client::HttpClient;
 use crate::youtube::types::*;
 use serde_json::Value;
@@ -22,8 +22,8 @@ pub async fn search_youtube(
     query: &str,
     max_results: usize,
     http: &HttpClient,
-    config: &crate::config::HsxConfig,
-) -> HsxResult<(Vec<YouTubeSearchResult>, YouTubeSearchSource)> {
+    config: &crate::config::FetchiumConfig,
+) -> FetchiumResult<(Vec<YouTubeSearchResult>, YouTubeSearchSource)> {
     let (tx, mut rx) =
         tokio::sync::mpsc::channel::<(Vec<YouTubeSearchResult>, YouTubeSearchSource)>(8);
 
@@ -105,7 +105,7 @@ pub async fn search_youtube(
     // Return first successful result; 12s global cap
     match tokio::time::timeout(Duration::from_secs(12), rx.recv()).await {
         Ok(Some((results, source))) => Ok((results, source)),
-        _ => Err(HsxError::YouTube(format!(
+        _ => Err(FetchiumError::YouTube(format!(
             "YouTube search failed for '{query}' — all sources timed out or returned no results"
         ))),
     }
@@ -196,7 +196,7 @@ async fn search_innertube(
     max_results: usize,
     http: &HttpClient,
     timeout: Duration,
-) -> HsxResult<Vec<YouTubeSearchResult>> {
+) -> FetchiumResult<Vec<YouTubeSearchResult>> {
     let body = serde_json::json!({
         "context": {
             "client": {
@@ -226,13 +226,13 @@ async fn search_innertube(
             .body(body)
             .send()
             .await
-            .map_err(|e| HsxError::YouTube(format!("Innertube search send: {e}")))?
+            .map_err(|e| FetchiumError::YouTube(format!("Innertube search send: {e}")))?
             .text()
             .await
-            .map_err(|e| HsxError::YouTube(format!("Innertube search body: {e}")))
+            .map_err(|e| FetchiumError::YouTube(format!("Innertube search body: {e}")))
     })
     .await
-    .map_err(|_| HsxError::YouTube("Innertube search timeout".into()))??;
+    .map_err(|_| FetchiumError::YouTube("Innertube search timeout".into()))??;
 
     parse_innertube_search_results(&response_text, max_results)
 }
@@ -241,9 +241,9 @@ async fn search_innertube(
 fn parse_innertube_search_results(
     body: &str,
     max_results: usize,
-) -> HsxResult<Vec<YouTubeSearchResult>> {
+) -> FetchiumResult<Vec<YouTubeSearchResult>> {
     let v: Value = serde_json::from_str(body)
-        .map_err(|e| HsxError::YouTube(format!("Innertube JSON: {e}")))?;
+        .map_err(|e| FetchiumError::YouTube(format!("Innertube JSON: {e}")))?;
 
     let mut results = Vec::new();
 
@@ -254,7 +254,7 @@ fn parse_innertube_search_results(
 
     let sections = primary
         .as_array()
-        .ok_or_else(|| HsxError::YouTube("No search sections in Innertube response".into()))?;
+        .ok_or_else(|| FetchiumError::YouTube("No search sections in Innertube response".into()))?;
 
     'outer: for section in sections {
         let items = section["itemSectionRenderer"]["contents"]
@@ -376,9 +376,9 @@ fn parse_view_count_text(s: &str) -> u64 {
 /// Fetch trending videos.
 pub async fn trending_videos(
     http: &HttpClient,
-    config: &crate::config::HsxConfig,
+    config: &crate::config::FetchiumConfig,
     max_results: usize,
-) -> HsxResult<Vec<YouTubeSearchResult>> {
+) -> FetchiumResult<Vec<YouTubeSearchResult>> {
     for instance in &config.youtube.invidious_instances {
         let url = format!("{instance}/api/v1/trending");
         if let Ok(Ok(body)) = tokio::time::timeout(
@@ -407,16 +407,18 @@ pub async fn trending_videos(
         }
     }
 
-    Err(HsxError::YouTube("Could not fetch trending videos".into()))
+    Err(FetchiumError::YouTube(
+        "Could not fetch trending videos".into(),
+    ))
 }
 
 /// Search for related videos given a video ID.
 pub async fn related_videos(
     video_id: &str,
     http: &HttpClient,
-    config: &crate::config::HsxConfig,
+    config: &crate::config::FetchiumConfig,
     max_results: usize,
-) -> HsxResult<Vec<YouTubeSearchResult>> {
+) -> FetchiumResult<Vec<YouTubeSearchResult>> {
     for instance in &config.youtube.invidious_instances {
         let url = format!("{instance}/api/v1/videos/{video_id}");
         match tokio::time::timeout(
@@ -456,7 +458,9 @@ pub async fn related_videos(
             _ => continue,
         }
     }
-    Err(HsxError::YouTube("Could not fetch related videos".into()))
+    Err(FetchiumError::YouTube(
+        "Could not fetch related videos".into(),
+    ))
 }
 
 // ─── Invidious / Piped Parsers ─────────────────────────────────
@@ -464,9 +468,9 @@ pub async fn related_videos(
 fn parse_invidious_search_results(
     body: &str,
     max_results: usize,
-) -> HsxResult<Vec<YouTubeSearchResult>> {
+) -> FetchiumResult<Vec<YouTubeSearchResult>> {
     let arr: Vec<Value> = serde_json::from_str(body)
-        .map_err(|e| HsxError::YouTube(format!("Invidious parse: {e}")))?;
+        .map_err(|e| FetchiumError::YouTube(format!("Invidious parse: {e}")))?;
 
     let results = arr
         .iter()
@@ -496,14 +500,14 @@ fn parse_invidious_search_results(
 fn parse_piped_search_results(
     body: &str,
     max_results: usize,
-) -> HsxResult<Vec<YouTubeSearchResult>> {
-    let v: Value =
-        serde_json::from_str(body).map_err(|e| HsxError::YouTube(format!("Piped parse: {e}")))?;
+) -> FetchiumResult<Vec<YouTubeSearchResult>> {
+    let v: Value = serde_json::from_str(body)
+        .map_err(|e| FetchiumError::YouTube(format!("Piped parse: {e}")))?;
 
     let items = v["items"]
         .as_array()
         .or_else(|| v.as_array())
-        .ok_or_else(|| HsxError::YouTube("No items in Piped response".into()))?;
+        .ok_or_else(|| FetchiumError::YouTube("No items in Piped response".into()))?;
 
     let results = items
         .iter()
@@ -544,7 +548,7 @@ async fn search_via_ddg(
     query: &str,
     max_results: usize,
     http: &HttpClient,
-) -> HsxResult<Vec<YouTubeSearchResult>> {
+) -> FetchiumResult<Vec<YouTubeSearchResult>> {
     let ddg_query = format!("site:youtube.com/watch {query}");
     let encoded: String = url::form_urlencoded::byte_serialize(ddg_query.as_bytes()).collect();
 
@@ -561,13 +565,13 @@ async fn search_via_ddg(
             .body(format!("q={encoded}&kl=us-en"))
             .send()
             .await
-            .map_err(|e| HsxError::YouTube(format!("DDG send: {e}")))?
+            .map_err(|e| FetchiumError::YouTube(format!("DDG send: {e}")))?
             .text()
             .await
-            .map_err(|e| HsxError::YouTube(format!("DDG body: {e}")))
+            .map_err(|e| FetchiumError::YouTube(format!("DDG body: {e}")))
     })
     .await
-    .map_err(|_| HsxError::YouTube("DDG YouTube search timed out (10s)".into()))??;
+    .map_err(|_| FetchiumError::YouTube("DDG YouTube search timed out (10s)".into()))??;
 
     Ok(parse_ddg_youtube_results(&body, max_results))
 }
@@ -700,7 +704,7 @@ fn percent_decode_simple(s: &str) -> String {
 
 // ─── yt-dlp Fallback ───────────────────────────────────────────
 
-async fn search_ytdlp(query: &str, max_results: usize) -> HsxResult<Vec<YouTubeSearchResult>> {
+async fn search_ytdlp(query: &str, max_results: usize) -> FetchiumResult<Vec<YouTubeSearchResult>> {
     // 10s cap so yt-dlp doesn't outlive the search phase when the network is slow.
     let output = tokio::time::timeout(
         Duration::from_secs(10),
@@ -714,20 +718,20 @@ async fn search_ytdlp(query: &str, max_results: usize) -> HsxResult<Vec<YouTubeS
             .output(),
     )
     .await
-    .map_err(|_| HsxError::YouTube("yt-dlp timed out".into()))?
-    .map_err(|e| HsxError::YouTube(format!("yt-dlp not available: {e}")))?;
+    .map_err(|_| FetchiumError::YouTube("yt-dlp timed out".into()))?
+    .map_err(|e| FetchiumError::YouTube(format!("yt-dlp not available: {e}")))?;
 
     if !output.status.success() {
-        return Err(HsxError::YouTube("yt-dlp search failed".into()));
+        return Err(FetchiumError::YouTube("yt-dlp search failed".into()));
     }
 
     let body = String::from_utf8_lossy(&output.stdout);
-    let v: Value =
-        serde_json::from_str(&body).map_err(|e| HsxError::YouTube(format!("yt-dlp JSON: {e}")))?;
+    let v: Value = serde_json::from_str(&body)
+        .map_err(|e| FetchiumError::YouTube(format!("yt-dlp JSON: {e}")))?;
 
     let entries = v["entries"]
         .as_array()
-        .ok_or_else(|| HsxError::YouTube("No entries in yt-dlp output".into()))?;
+        .ok_or_else(|| FetchiumError::YouTube("No entries in yt-dlp output".into()))?;
 
     let results = entries
         .iter()

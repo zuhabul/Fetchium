@@ -621,7 +621,7 @@ impl ProvidersConfig {
             let from_multi_env = std::env::var("GEMINI_API_KEYS")
                 .map(|k| !k.is_empty())
                 .unwrap_or(false);
-            let from_auth = crate::ai::credentials::hsx_auth_get("gemini")
+            let from_auth = crate::ai::credentials::fetchium_auth_get("gemini")
                 .map(|a| a.key_count() > 0)
                 .unwrap_or(false);
             from_config || from_env || from_multi_env || from_auth
@@ -689,7 +689,7 @@ impl ProvidersConfig {
                             || std::env::var("GEMINI_API_KEYS")
                                 .map(|k| !k.is_empty())
                                 .unwrap_or(false)
-                            || crate::ai::credentials::hsx_auth_get("gemini")
+                            || crate::ai::credentials::fetchium_auth_get("gemini")
                                 .map(|a| a.key_count() > 0)
                                 .unwrap_or(false)
                             || get_gemini_access_token_if_valid().is_some()

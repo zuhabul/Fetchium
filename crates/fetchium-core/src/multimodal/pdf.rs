@@ -1,25 +1,27 @@
 //! PDF text extraction via pdftotext subprocess (poppler-utils).
 
 use super::{ContentType, MultimodalContent, MultimodalSegment};
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use std::process::Command;
 
 /// Extract text from a local PDF file using `pdftotext`.
 ///
 /// Falls back gracefully if pdftotext is not installed.
-pub fn extract_pdf_file(path: &std::path::Path) -> HsxResult<MultimodalContent> {
+pub fn extract_pdf_file(path: &std::path::Path) -> FetchiumResult<MultimodalContent> {
     // Run: pdftotext -layout <path> -
     let output = Command::new("pdftotext")
         .args(["-layout", &path.to_string_lossy(), "-"])
         .output()
         .map_err(|e| {
-            HsxError::Extraction(format!(
+            FetchiumError::Extraction(format!(
                 "pdftotext not available (install poppler-utils): {e}"
             ))
         })?;
 
     if !output.status.success() {
-        return Err(HsxError::Extraction("pdftotext returned an error".into()));
+        return Err(FetchiumError::Extraction(
+            "pdftotext returned an error".into(),
+        ));
     }
 
     let full_text = String::from_utf8_lossy(&output.stdout).to_string();
@@ -51,7 +53,7 @@ pub fn extract_pdf_file(path: &std::path::Path) -> HsxResult<MultimodalContent> 
 pub async fn extract_pdf_url(
     url: &str,
     http: &crate::http::client::HttpClient,
-) -> HsxResult<MultimodalContent> {
+) -> FetchiumResult<MultimodalContent> {
     // Fetch the URL using the inner reqwest client for binary content
     let resp = http
         .client()
@@ -59,12 +61,12 @@ pub async fn extract_pdf_url(
         .timeout(std::time::Duration::from_secs(30))
         .send()
         .await
-        .map_err(crate::error::HsxError::Network)?;
+        .map_err(crate::error::FetchiumError::Network)?;
 
     let bytes = resp
         .bytes()
         .await
-        .map_err(crate::error::HsxError::Network)?;
+        .map_err(crate::error::FetchiumError::Network)?;
 
     // Write to a temp file and run pdftotext
     let mut tmp = tempfile::Builder::new().suffix(".pdf").tempfile()?;

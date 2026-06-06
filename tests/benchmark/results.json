@@ -1,0 +1,3158 @@
+{
+  "results": {
+    "factual/What is photosynthesis": {
+      "Fetchium": {
+        "latency_ms": 2350,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "Photosynthesis - PMC - NIH",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5264509/",
+            "snippet": "Photosynthesis is the ultimate source of all of humankind's food and oxygen, whereas fossilized photosynthetic fuels provide \u223c87% of the world's energy."
+          },
+          {
+            "title": "Photosynthesis (UPDATED) - YouTube",
+            "url": "https://www.youtube.com/watch?v=CMiPYHNNg28",
+            "snippet": "Explore one of the most fascinating processes plants can do: photosynthesis! In this Amoeba Sisters updated photosynthesis video, ..."
+          },
+          {
+            "title": "Reimagining Photosynthesis for Efficiency",
+            "url": "https://cals.ncsu.edu/news/reimagining-photosynthesis-for-efficiency/",
+            "snippet": "[NC State University] Research at NC State University exploring artificial photosynthesis through designed proteins could one day open the door to new..."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1166,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "What is Photosynthesis | Smithsonian Science Education Center",
+            "url": "https://ssec.si.edu/stemvisions-blog/what-photosynthesis",
+            "snippet": "Plants use sunlight, water, and the gases in the air to make glucose, which is a form of sugar that plants need to survive. This process is called ..."
+          },
+          {
+            "title": "Photosynthesis | Definition, Formula, Process, Diagram, Reactants ...",
+            "url": "https://www.britannica.com/science/photosynthesis",
+            "snippet": "Photosynthesis, the process by which green plants and certain other organisms transform light energy into chemical energy."
+          },
+          {
+            "title": "What is Photosynthesis? - YouTube",
+            "url": "https://www.youtube.com/watch?v=E22APTvfwyE",
+            "snippet": "photosynthesis #biology #plants #ngscience Learn all about the fascinating process of photosynthesis! Head to ngscience.com for a range of ..."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1278,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "Photosynthesis | Definition, Formula, Process, Diagram ...",
+            "url": "https://www.britannica.com/science/photosynthesis",
+            "snippet": "Photosynthesis | Definition, Formula, Process, Diagram, Reactants, Products, & Facts | Britannica\n\nphotosynthesis\n\n[Photosynthesis](https://cdn.bri"
+          },
+          {
+            "title": "Photosynthesis - National Geographic Education",
+            "url": "https://education.nationalgeographic.org/resource/photosynthesis/",
+            "snippet": "Photosynthesis\n\n## ENCYCLOPEDIC ENTRY\n\nOpen Educational Resource\n\nOpen Educational Resource\n\n## ENCYCLOPEDIC ENTRY\n\nOER\n\nOER\n\n# Photosynthesis\n\n# Photosynthesis\n\nPhotosynthesis is the process by which"
+          },
+          {
+            "title": "8.1: Overview of Photosynthesis - Biology LibreTexts",
+            "url": "https://bio.libretexts.org/Bookshelves/Introductory_and_General_Biology/General_Biology_1e_(OpenStax)/2%253A_The_Cell/08%253A_Photosynthesis/8.1%253A_Overview_of_Photosynthesis",
+            "snippet": "8.1: Overview of Photosynthesis - Biology LibreTexts Skip to main content\n\nSkills to Develop\n\n- Summarize the process of photosynthesis\n- Identify the substrates and products of photosynthesis\n- Descr"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1464,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "Photosynthesis - National Geographic Education",
+            "url": "https://education.nationalgeographic.org/resource/photosynthesis/",
+            "snippet": "Photosynthesis is the process by which plants use sunlight, water, and carbon dioxide to create oxygen and energy in the form of sugar. * View this resource as a Google Doc. Most life on Earth depends"
+          },
+          {
+            "title": "Photosynthesis - Understanding Global Change",
+            "url": "https://ugc.berkeley.edu/background-content/photosynthesis/",
+            "snippet": "Photosynthesis is the processes of using sunlight to convert chemical compounds (specifically **carbon dioxide** and **water**) into **food**. Locate the photosynthesis icon and identify other Earth s"
+          },
+          {
+            "title": "What is Photosynthesis? - YouTube",
+            "url": "https://www.youtube.com/watch?v=E22APTvfwyE",
+            "snippet": "photosynthesis #biology #plants #ngscience Learn all about the fascinating process of photosynthesis! Head to ngscience.com for a range of"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 1260,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "factual/How does TCP/IP work": {
+      "Fetchium": {
+        "latency_ms": 2008,
+        "result_count": 5,
+        "relevance": 9.2,
+        "error": null,
+        "results": [
+          {
+            "title": "What is TCP/IP and How Does it Work? - Erie Institute of Technology",
+            "url": "https://erieit.edu/what-is-tcp-ip-how-does-it-work/",
+            "snippet": "In simple terms, TCP and IP are two sides of the same coin. They each provide their own important functions for the delivery of data for the TCP/IP protocol. The TCP does the work to allow data to be "
+          },
+          {
+            "title": "TCP/IP addressing and subnetting - Windows Client | Microsoft Learn",
+            "url": "https://learn.microsoft.com/en-us/troubleshoot/windows-client/networking/tcpip-addressing-and-subnetting",
+            "snippet": "For this process to work, an IP address has two parts. The first part of an IP address is used as a network address, the last part as a host address. If you take the example 192.168.123.132 and divide"
+          },
+          {
+            "title": "TCP/IP Model - GeeksforGeeks",
+            "url": "https://www.geeksforgeeks.org/computer-networks/tcp-ip-model/",
+            "snippet": "Internet Layer: Frames are unpacked to extract packets and use the IP address to ensure it reaches the correct device. Transport Layer: Segments are reassembled into the original message, and any miss"
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1397,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "What is TCP/IP and How Does it Work? - TechTarget",
+            "url": "https://www.techtarget.com/searchnetworking/definition/TCP-IP",
+            "snippet": "TCP/IP specifies how data is exchanged over the internet by providing end-to-end communications that identify how it should be broken into ..."
+          },
+          {
+            "title": "What is TCP/IP and How Does it Work? - Erie Institute of Technology",
+            "url": "https://erieit.edu/what-is-tcp-ip-how-does-it-work/",
+            "snippet": "The TCP does the work to allow data to be received between two connected computers. IP finds the destination, or location, of the communicating ..."
+          },
+          {
+            "title": "What is TCP/IP in Networking? - Fortinet",
+            "url": "https://www.fortinet.com/resources/cyberglossary/tcp-ip",
+            "snippet": "TCP enables data to be transferred between applications and devices on a network and is used in the TCP IP model. It is designed to break down a message, such ..."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1131,
+        "result_count": 5,
+        "relevance": 9.2,
+        "error": null,
+        "results": [
+          {
+            "title": "TCP/IP Model",
+            "url": "https://www.geeksforgeeks.org/computer-networks/tcp-ip-model/",
+            "snippet": "TCP/IP Model - GeeksforGeeks\n\nCourses\n\nTutorials\n\nInterview Prep\n\n- DBMS\n- [Compiler Design](https://www.geeksforgeeks.org/compiler-design/compiler-design-t"
+          },
+          {
+            "title": "What is TCP/IP and How Does it Work?",
+            "url": "https://www.techtarget.com/searchnetworking/definition/TCP-IP",
+            "snippet": "What is TCP/IP and How Does it Work? | TechTarget\n\nBy\n\n- Amy Novotny, Senior Managing Editor\n- [Mary E. Shacklett,](https://www.techtarget.com/con"
+          },
+          {
+            "title": "What is TCP/IP and how does it work?",
+            "url": "https://us.norton.com/blog/privacy/tcp-ip",
+            "snippet": "What is TCP/IP and how does it work?\nProtect your internet connection\nDownload Norton VPN to encrypt your online connection, secure the data you send and receive, and access the content you love.\n[Get"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1498,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "What is TCP/IP and How Does it Work? - Erie Institute of Technology",
+            "url": "https://erieit.edu/what-is-tcp-ip-how-does-it-work/",
+            "snippet": "TCP provides connectivity between hosts at the transport layer of the TCP/IP protocol layers. The main responsibility of TCP/IP is the transferring and receiving of data of a computer between two devi"
+          },
+          {
+            "title": "What is TCP/IP and How Does it Work? - TechTarget",
+            "url": "https://www.techtarget.com/searchnetworking/definition/TCP-IP",
+            "snippet": "* TCP is a higher-level smart communications protocol that still uses IP as a way to transport data packets, but it also connects computers, applications, web pages and web servers. TCP/IP uses the cl"
+          },
+          {
+            "title": "What is TCP/IP and how does it work? - Avira",
+            "url": "https://www.avira.com/en/blog/tcp-ip?srsltid=AfmBOorru494QK4Uw4fwmlrtvE5b8dgvLiD7xF8gLn_ChZ0yYmv_jOxT",
+            "snippet": "TCP and IP are usually used together as \u201cTCP/IP\u201d because they go hand in hand. TCP carries out the data delivery and IP is responsible for the"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 909,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "factual/What causes earthquakes": {
+      "Fetchium": {
+        "latency_ms": 1995,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "What causes earthquakes? - British Geological Survey - BGS",
+            "url": "https://www.bgs.ac.uk/discovering-geology/earth-hazards/earthquakes/what-causes-earthquakes/",
+            "snippet": "Earthquakes occur when the ground is subjected to so much force that it fractures or breaks. Most earthquakes are associated with tectonic plate boundaries."
+          },
+          {
+            "title": "Why Do Earthquakes Happen? - Michigan Technological University",
+            "url": "https://www.mtu.edu/geo/community/seismology/learn/earthquake-cause/",
+            "snippet": "Earthquakes are usually caused when underground rock suddenly breaks and there is rapid motion along a fault. This sudden release of energy causes the seismic ..."
+          },
+          {
+            "title": "What Causes Earthquakes? - KQED",
+            "url": "https://www.kqed.org/science/20903/what-causes-earthquakes",
+            "snippet": "When the plates finally give and slip due to the increased pressure, energy is released as seismic waves, causing the ground to shake. This is ..."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1481,
+        "result_count": 5,
+        "relevance": 9.2,
+        "error": null,
+        "results": [
+          {
+            "title": "What causes earthquakes?",
+            "url": "https://www.bgs.ac.uk/discovering-geology/earth-hazards/earthquakes/what-causes-earthquakes/",
+            "snippet": "Earthquakes occur when the ground is subjected to so much force that it fractures or breaks. Most earthquakes are associated with tectonic plate boundaries."
+          },
+          {
+            "title": "The Science of Earthquakes | U.S. Geological Survey",
+            "url": "https://www.usgs.gov/programs/earthquake-hazards/science-earthquakes",
+            "snippet": "An earthquake is what happens when two blocks of the earth suddenly slip past one another. The surface where they slip is called the fault or fault plane."
+          },
+          {
+            "title": "What Causes Earthquakes? - YouTube",
+            "url": "https://www.youtube.com/watch?v=AArne-wh_Uc",
+            "snippet": "If you enjoyed this video, you will also love the science videos from our friends at http://GenerationGenius.com/SciShow."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1632,
+        "result_count": 5,
+        "relevance": 7.6,
+        "error": null,
+        "results": [
+          {
+            "title": "How Do Earthquakes Occur? | Explanation, Why the Earth Shakes, & Facts | Britannica",
+            "url": "https://www.britannica.com/science/How-Do-Earthquakes-Occur",
+            "snippet": "How Do Earthquakes Occur? | Explanation, Why the Earth Shakes, & Facts | Britannica\n\nHow Do Earthquakes Occur?\n\n[Earthquake damage](https"
+          },
+          {
+            "title": "What causes earthquakes? A geologist explains where they\u2019re most common and why",
+            "url": "https://www.theconversation.com/what-causes-earthquakes-a-geologist-explains-where-theyre-most-common-and-why-213337",
+            "snippet": "What causes earthquakes? A geologist explains where they\u2019re most common and why\n\nA man works his way through the rubble of buildings in Marrakesh, Morocco, after a magnitude 6.8 earthquake on Sept. 8,"
+          },
+          {
+            "title": "What causes earthquakes? - Swiss Seismological Service",
+            "url": "http://www.seismo.ethz.ch/en/knowledge/faq/what-causes-earthquakes/",
+            "snippet": "SED | What causes earthquakes? --\n\nDE EN FR IT\n\nThe content of the page starts here\n\n# What causes earthquakes?\n\nEarthquakes are caused by a sudden release of stress along faults in the Earth's crust."
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1723,
+        "result_count": 5,
+        "relevance": 9.2,
+        "error": null,
+        "results": [
+          {
+            "title": "What causes earthquakes?",
+            "url": "https://www.bgs.ac.uk/discovering-geology/earth-hazards/earthquakes/what-causes-earthquakes/",
+            "snippet": "###### Quick links. **...** Home \u00bb Discovering Geology \u00bb Earth hazards \u00bb Earthquakes \u00bb What causes earthquakes? # What causes earthquakes? Share this articleFacebookTwitterPinterest;)WhatsAppEmail)Cop"
+          },
+          {
+            "title": "Earthquake",
+            "url": "https://en.wikipedia.org/wiki/Earthquake",
+            "snippet": "Earthquakes are caused mostly by the rupture of geological faults but also by other events such as volcanic activity, landslides, mine blasts, fracking and"
+          },
+          {
+            "title": "ELI5: What causes Earthquakes? : r/explainlikeimfive - Reddit",
+            "url": "https://www.reddit.com/r/explainlikeimfive/comments/1bwv0vx/eli5_what_causes_earthquakes/",
+            "snippet": "Earthquakes occur because rock is moving against rock. Plate tectonics does create most of our earthquakes, but not all of them."
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 899,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "how_to/how to get coffee stains out of white shirt": {
+      "Fetchium": {
+        "latency_ms": 1930,
+        "result_count": 5,
+        "relevance": 9.7,
+        "error": null,
+        "results": [
+          {
+            "title": "How to get coffee stain out of white shirt - Remove Any Stains",
+            "url": "https://removeanystains.com/how-to-get-coffee-stain-out-of-white-shirt/",
+            "snippet": "In this comprehensive guide, we'll walk you through the best methods for getting coffee stains out of white fabric, including pre-treating, hand-washing, machine-washing, and even some DIY stain-remov"
+          },
+          {
+            "title": "7+ Easy Ways to Get Coffee Stains Out of Shirts - Tips Bulletin",
+            "url": "https://www.tipsbulletin.com/how-to-get-coffee-stains-out-of-shirts/",
+            "snippet": "Thank you for reading our tips on how to remove coffee stains from a white shirt and more. If you found any of the coffee stain on a shirt removal tips and ideas useful, please share our post with oth"
+          },
+          {
+            "title": "How to Get Coffee Stains Out of a White Shirt: Easy Methods",
+            "url": "https://www.wikihow.com/Get-Coffee-Stains-Out-of-a-White-Shirt",
+            "snippet": "Coffee stains are a bummer, bur fortunately, they're not hard to remove. Gently rub the stain with a clean, dry cloth. Pre-soak the stain in a solution of warm water, a few drops of dish soap, and 1 t"
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1513,
+        "result_count": 5,
+        "relevance": 6.0,
+        "error": null,
+        "results": [
+          {
+            "title": "Any tips on removing a coffee stain from a white shirt? Ugh ... - Reddit",
+            "url": "https://www.reddit.com/r/laundry/comments/1foky8h/any_tips_on_removing_a_coffee_stain_from_a_white/",
+            "snippet": "I boil a kettle full of water and pour it into a bowl with a scoop of Oxyclean. Then I dunk the stained clothing item and let it soak for a while. Then wash as ..."
+          },
+          {
+            "title": "How to remove coffee stain: all the solutions - Lavazza",
+            "url": "https://www.lavazza.co.uk/en/coffee-secrets/how-to-remove-coffee-stain",
+            "snippet": "Mix one tablespoon of dish soap, one tablespoon of white vinegar and two cups of warm water, and apply the solution to the stain. Blot gently with a clean cloth ..."
+          },
+          {
+            "title": "Spilled coffee on your favorite shirt? Here's my go-to DIY coffee stain ...",
+            "url": "https://www.instagram.com/reel/DKKBH3Vv3Hm/?hl=en",
+            "snippet": "1 cup white vinegar ... 1 cup warm water ... 1 tablespoon dish soap Blot the stain, apply the mix, scrub gently, and let it soak for 30 ..."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 964,
+        "result_count": 5,
+        "relevance": 6.5,
+        "error": null,
+        "results": [
+          {
+            "title": "How to Remove Coffee Stains from a Shirt: A Comprehensive Guide - CoffeePlusThree",
+            "url": "https://coffeeplusthree.com/how-to-remove-coffee-stains-from-a-shirt/",
+            "snippet": "How to Remove Coffee Stains from a Shirt: A Comprehensive Guide - CoffeePlusThree\n\nCoffee stains on your favorite shirt can be frustrating, but they don\u2019t have to be permanent. With the right techniqu"
+          },
+          {
+            "title": "Can Coffee Stains Be Removed from White Clothes? A Comprehensive Guide - SoftHandTech",
+            "url": "https://softhandtech.com/does-coffee-come-out-of-white-clothes/",
+            "snippet": "Can Coffee Stains Be Removed from White Clothes? A Comprehensive Guide - SoftHandTech\n\nCoffee is often celebrated as the morning elixir that helps kickstart our day. But for those who love their daily"
+          },
+          {
+            "title": "The Ultimate Guide to Removing Coffee Stains from White Shirts - SmallUsefulTips",
+            "url": "https://smallusefultips.com/how-do-i-get-a-coffee-stain-out-of-a-white-shirt/",
+            "snippet": "The Ultimate Guide to Removing Coffee Stains from White Shirts - SmallUsefulTips\n\nThere\u2019s no denying it: coffee and white shirts are not a good mix. But sometimes, accidents do happen, and you\u2019re left"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1696,
+        "result_count": 5,
+        "relevance": 5.9,
+        "error": null,
+        "results": [
+          {
+            "title": "How to remove coffee stains from a white shirt - Quora",
+            "url": "https://www.quora.com/How-can-I-remove-coffee-stains-from-a-white-shirt",
+            "snippet": "Use Fels Naptha soap. Wet the stain rub the Fells nap the into the front and the back of the stain let it sit for a few hours rub it again with"
+          },
+          {
+            "title": "How to remove coffee stains from white shirts? - Facebook",
+            "url": "https://www.facebook.com/groups/homemakingtips/posts/1567657467264077/",
+            "snippet": "Use liquid detergent, put it directly on the stain and rub it in then wash it. I spill coffee on my clothes occasionally. It works."
+          },
+          {
+            "title": "How To Remove Coffee Stains From Clothes?",
+            "url": "https://angelinos.com/blogs/news/how-to-remove-coffee-stains-from-clothes?srsltid=AfmBOooKHSe887Zleq5imfRdwXmJ8aPtM4mwoALI_y01Njp5VWgggsVG",
+            "snippet": "# How To Remove Coffee Stains From Clothes? * Before attempting to remove coffee stains, check the garment's care label to understand the fabric type and follow the recommended cleaning methods, as di"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 857,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "how_to/how to set up a home Wi-Fi network": {
+      "Fetchium": {
+        "latency_ms": 2120,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "How to Set Up a Home Wi-Fi Network : 7 Steps - Instructables",
+            "url": "https://www.instructables.com/How-to-Set-Up-a-Home-Wi-Fi-Network/",
+            "snippet": "Setting up a home Wi-Fi network allows you to connect multiple devices to the internet without the hassle of wires. This guide will walk you through the process of setting up your Wi-Fi network easily"
+          },
+          {
+            "title": "How to Set up a Wireless Network (WiFi) Connection - wikiHow",
+            "url": "https://www.wikihow.com/Set-up-a-Wireless-Network-(WiFi)-Connection",
+            "snippet": "An easy-to-follow guide for fast home Wi-Fi setupDo you want to create a solid home network for all of your wireless devices? If you want to use a network or access the internet wirelessly, you'll nee"
+          },
+          {
+            "title": "How to Set Up Your Home Wi-Fi Network | HighSpeedInternet.com",
+            "url": "https://www.highspeedinternet.com/resources/how-to-set-up-a-home-wi-fi-network",
+            "snippet": "Have all your equipment but don't know where to start? Our guide walks you through how to set up your home Wi-Fi network."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1476,
+        "result_count": 5,
+        "relevance": 5.6,
+        "error": null,
+        "results": [
+          {
+            "title": "Setting up a wireless network in Windows - Microsoft Support",
+            "url": "https://support.microsoft.com/en-us/windows/setting-up-a-wireless-network-in-windows-97914e31-3aa4-406d-cef6-f1629e2c3721",
+            "snippet": "Do one of the following, depending on which version of Windows is running on your PC: In Windows 10, select Start , then select Settings > Network & Internet > ..."
+          },
+          {
+            "title": "How to Set Up a Router - Step-by-Step - Cisco",
+            "url": "https://www.cisco.com/site/us/en/learn/topics/small-business/how-to-set-up-router.html",
+            "snippet": "Step 1: Decide where to place the router \u00b7 Step 2: Connect to the Internet \u00b7 Step 3: Configure the wireless router gateway \u00b7 Step 4: Connect gateway to router."
+          },
+          {
+            "title": "How to set up your home network - CHOICE",
+            "url": "https://www.choice.com.au/electronics-and-technology/home-entertainment/home-entertainment-networks/articles/how-to-set-up-your-home-network",
+            "snippet": "A step-by-step guide to creating a home network using a wireless router to connect your home entertainment, office equipment and smart appliances."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1114,
+        "result_count": 5,
+        "relevance": 8.8,
+        "error": null,
+        "results": [
+          {
+            "title": "Setting Up Your Home Wi-Fi: A Comprehensive Guide to a Secure and Efficient Network - TheWiFiGuide",
+            "url": "https://thewifiguide.com/how-do-i-setup-my-home-wi-fi/",
+            "snippet": "Setting Up Your Home Wi-Fi: A Comprehensive Guide to a Secure and Efficient Network - TheWiFiGuideSkip to content\n# Setting Up Your Home Wi-Fi: A Comprehensive Guide to a Secure and Effici"
+          },
+          {
+            "title": "How to Set Up a Home Wi-Fi Network : 7 Steps - Instructables",
+            "url": "https://www.instructables.com/How-to-Set-Up-a-Home-Wi-Fi-Network/",
+            "snippet": "How to Set Up a Home Wi-Fi Network : 7 Steps - Instructables"
+          },
+          {
+            "title": "How to Set up a Home Wi-Fi Network",
+            "url": "https://lifewire.com/how-to-set-up-your-home-wi-fi-network-2378223",
+            "snippet": "How to Set up a Home Wi-Fi Network \u200bGASREGULAR\nSkip to content\nMenu\n\nLifewire\n\nTech for Humans\nSearch\nCloseSearch the siteGO\nNewsletter!\n* [Apple Watch Under $20"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1680,
+        "result_count": 5,
+        "relevance": 8.0,
+        "error": null,
+        "results": [
+          {
+            "title": "How to Set Up a Home Network: A Professional Guide",
+            "url": "https://www.comms-express.com/infozone/article/how-to-set-up-a-home-network-a-professional-guide/",
+            "snippet": "To install a home WiFi network, you should first connect your modem to your router using an Ethernet cable. Then, connect your devices to your router using"
+          },
+          {
+            "title": "How to Set up a Home Wi-Fi Network - Lifewire",
+            "url": "https://www.lifewire.com/how-to-set-up-your-home-wi-fi-network-2378223",
+            "snippet": "Find the best location for the wireless router \u00b7 Turn off the modem \u00b7 Connect the router to the modem \u00b7 Connect a laptop or computer to the router"
+          },
+          {
+            "title": "What is the best way to set up a whole-home WiFi? - Quora",
+            "url": "https://www.quora.com/What-is-the-best-way-to-set-up-a-whole-home-WiFi",
+            "snippet": "Connect the router to the modem. Plug an ethernet cable (typically provided with the router) into the router's WAN port and then the other end"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 863,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "how_to/how to start investing in stocks": {
+      "Fetchium": {
+        "latency_ms": 2430,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "How I used Google Cloud Platform to start investing in stocks",
+            "url": "https://dev.to/dansyuqri/how-i-used-google-cloud-platform-to-start-investing-in-stocks-34mb",
+            "snippet": "HN story by bhalp1 | 2 points"
+          },
+          {
+            "title": "How To Invest In Stocks: A Quick Guide To Get Started | Bankrate",
+            "url": "https://www.bankrate.com/investing/how-to-invest-in-stocks/",
+            "snippet": "You don\u2019t need much money to start investing in stocks. Most online brokers have no minimum investment requirements and many offer fractional share investing, which lets you get started for as little "
+          },
+          {
+            "title": "Ask HN: Advice for young stock investor?",
+            "url": "https://news.ycombinator.com/item?id=11806625",
+            "snippet": "How did you start out investing in stocks? How did it pan out for you?<p>-one young investor"
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1392,
+        "result_count": 5,
+        "relevance": 7.3,
+        "error": null,
+        "results": [
+          {
+            "title": "The Basics of Investing In Stocks",
+            "url": "https://dfi.wa.gov/financial-education/information/basics-investing-stocks",
+            "snippet": "Researching Stocks. Before investing in a stock, it's a good idea to research the company and the stock's performance history. Information you should consider ..."
+          },
+          {
+            "title": "Ex-Banker Explains: How to Invest for Beginners in 2026 - YouTube",
+            "url": "https://www.youtube.com/watch?v=gMyVHBhDvz4",
+            "snippet": "My products: Start Here (free): Intentional Spending Tracker ... Warren Buffett: The Only 4 Stocks I'd Buy If Markets Crash 50% Tomorrow."
+          },
+          {
+            "title": "How to start investing | Investing for beginners | Fidelity",
+            "url": "https://www.fidelity.com/viewpoints/personal-finance/how-to-start-investing",
+            "snippet": "How to start investing \u00b7 Step 1: Figure out what you're investing for \u00b7 Step 2: Choose an account type \u00b7 Step 3: Open the account and put money in it \u00b7 Step 4: Pick ..."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1274,
+        "result_count": 5,
+        "relevance": 6.3,
+        "error": null,
+        "results": [
+          {
+            "title": "How to Invest in Stocks: Step-by-Step Beginner's Guide | The Motley Fool",
+            "url": "https://www.fool.com/how-to-invest/how-to-buy-stocks-in-10-easy-steps.aspx?referring_guid=71ce147e-b993-4544-9513-296a19fcc3b3",
+            "snippet": "How to Invest in Stocks: Step-by-Step Beginner&#x27;s Guide | The Motley Fool\nAccessibility Menu\nSearch for a company\n[ \u25b2 S&amp;P 500 **+195%** | \u25b2 Stock Advisor **+904%** Join The Motley "
+          },
+          {
+            "title": "How to Invest in Stocks: 2025 Beginner's Guide",
+            "url": "https://www.nerdwallet.com/investing/learn/how-to-invest-in-stocks",
+            "snippet": "How to Invest in Stocks: 2026 Beginner&#39;s Guide - NerdWallet\nSkip to content\nSearch\n[Sign In](https://www.nerdwallet.com/api/nts/v1/login?redirectTo=https://"
+          },
+          {
+            "title": "How to buy stocks: A 4-step guide to start investing",
+            "url": "https://www.msn.com/en-us/money/savingandinvesting/how-to-buy-stocks-a-4-step-guide-to-start-investing/ar-AA1WDKcy",
+            "snippet": "How to buy stocks: A 4-step guide to start investing\n\n Sponsored\n![](https://img-s-msn-com.akamaized.net/tenant/amp/"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1605,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "How to Invest in Stocks for Beginners: A Step-by-Step Guide",
+            "url": "https://www.commonsllc.com/insights/how-to-invest-in-stocks-for-beginners",
+            "snippet": "Getting started in the stock market can seem complex, but it boils down to three simple actions: **open a brokerage account**, **fund it with money you can afford to invest**, and **start picking your"
+          },
+          {
+            "title": "How to Invest in Stocks: 5 Steps to Get Started | The Motley Fool",
+            "url": "https://www.fool.com/investing/how-to-invest/stocks/",
+            "snippet": "# How to Invest in Stocks: 5 Steps to Get Started. * Only use money for stock investment that you won't need for at least five years due to market volatility. ## Investing in stocks: FAQ. ### Can I in"
+          },
+          {
+            "title": "How to Start Investing on Your Own | Charles Schwab",
+            "url": "https://www.schwab.com/how-to-invest/how-to-start-investing",
+            "snippet": "Or do you just want to get started and learn how to invest in the stock market? Investor A invested each year at the market trough. Investors A and C invested their yearly $2,000 investments in T-bill"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 854,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "current_events/latest developments in AI regulation 2026": {
+      "Fetchium": {
+        "latency_ms": 2141,
+        "result_count": 5,
+        "relevance": 6.4,
+        "error": null,
+        "results": [
+          {
+            "title": "The AI Regulation Landscape for 2026: What Legal and Compliance Leaders ...",
+            "url": "https://www.jdsupra.com/legalnews/the-ai-regulation-landscape-for-2026-7255123/",
+            "snippet": "Below is a look at the most important AI regulations to watch in 2026 around the world, including those already slated to take effect and expanding to additional developments that will influence ..."
+          },
+          {
+            "title": "AI Regulation in 2026: US, EU, and Global Overview | Medium",
+            "url": "https://medium.com/@kumon/ai-regulation-developments-in-2026-6292eed8d125",
+            "snippet": "A concise overview of AI regulations as of 2026, covering US state laws, the EU AI Act, and frameworks from Asia, what developers and users need to know."
+          },
+          {
+            "title": "AI Regulations to Watch in 2026 - Law.com",
+            "url": "https://www.law.com/legaltechnews/2026/01/02/ai-regulations-to-watch-in-2026-/",
+            "snippet": "AI Regulations to Watch in 2026 A host of new laws and executive actions are slated to change the AI regulatory landscape in the coming year. 1 minute read January 02, 2026 at 01:36 PM"
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1346,
+        "result_count": 5,
+        "relevance": 6.4,
+        "error": null,
+        "results": [
+          {
+            "title": "2026 global AI trends: Six key developments shaping the next phase ...",
+            "url": "https://www.dentons.com/en/insights/articles/2026/january/20/2026-global-ai-trends",
+            "snippet": "The EU AI Act is in force, with core compliance obligations applying from August 2026. \u00b7 A proposed \u201comnibus\u201d package may soften or delay certain ..."
+          },
+          {
+            "title": "2026 Year in Preview: AI Regulatory Developments for Companies ...",
+            "url": "https://www.wsgr.com/en/insights/2026-year-in-preview-ai-regulatory-developments-for-companies-to-watch-out-for.html",
+            "snippet": "These include laws that regulate the use of AI in mental health, create safeguards for AI companions to address self-harm, require transparency ..."
+          },
+          {
+            "title": "AI Regulations around the World - 2026 - Mind Foundry",
+            "url": "http://www.mindfoundry.ai/blog/ai-regulations-around-the-world",
+            "snippet": "AI regulations worldwide are changing rapidly. This piece outlines the global regulatory landscape in 2025 and why it's important that we understand it."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1185,
+        "result_count": 5,
+        "relevance": 2.0,
+        "error": null,
+        "results": [
+          {
+            "title": "Governance and Enforcement structure of the AI Act | European Data Protection Supervisor",
+            "url": "https://www.edps.europa.eu/data-protection/our-work/publications/speeches-articles/2026-03-04-governance-and-enforcement-structure-ai-act_en",
+            "snippet": "Governance and Enforcement structure of the AI Act | European Data Protection Supervisor\n\nPrint\n\n# Governance and Enforcement structure of the AI Act\n\n4\n\nMar\n\n2026\n\nSpeech by the"
+          },
+          {
+            "title": "UK lawmakers back licensing\u2011first approach, adding pressure to global AI copyright standards \u2013 Computerworld",
+            "url": "https://www.computerworld.com/article/4141726/uk-lawmakers-back-licensing%E2%80%91first-approach-adding-pressure-to-global-ai-copyright-standards.html",
+            "snippet": "UK lawmakers back licensing\u2011first approach, adding pressure to global AI copyright standards \u2013 Computerworld\n\n# UK lawmakers back licensing\u2011first approach, adding pressure to global AI copyright stand"
+          },
+          {
+            "title": "UK Regulator to Agentic AI Developers and Deployers: Complying With GDPR Is a Must - Lexology",
+            "url": "https://www.lexology.com/library/detail.aspx?g=8b6ef0ff-584f-4b21-97a2-a6f4306ebcbb",
+            "snippet": "UK Regulator to Agentic AI Developers and Deployers: Complying With GDPR Is a Must - Lexology\n\n\ufeff\n\nFollow\n\nPlease login to follow content.\n\n- [Instruct](https://www.lexology.com/instructcounsel/find?aI"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1417,
+        "result_count": 5,
+        "relevance": 6.4,
+        "error": null,
+        "results": [
+          {
+            "title": "2026 Year in Preview: AI Regulatory Developments for Companies ...",
+            "url": "https://www.wsgr.com/en/insights/2026-year-in-preview-ai-regulatory-developments-for-companies-to-watch-out-for.html",
+            "snippet": "These include laws that regulate the use of AI in mental health, create safeguards for AI companions to address self-harm, require transparency"
+          },
+          {
+            "title": "AI Regulation in 2026: The Complete Survival Guide for Businesses",
+            "url": "https://www.kiteworks.com/cybersecurity-risk-management/ai-regulation-2026-business-compliance-guide/",
+            "snippet": "Discover the 10 AI regulatory developments reshaping business compliance in 2026\u2014from EU AI Act deadlines to state AG crackdowns\u2014and how to"
+          },
+          {
+            "title": "2026 global AI trends: Six key developments shaping the next phase ...",
+            "url": "https://www.dentons.com/en/insights/articles/2026/january/20/2026-global-ai-trends",
+            "snippet": "The EU AI Act is in force, with core compliance obligations applying from August 2026. \u00b7 A proposed \u201comnibus\u201d package may soften or delay certain"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 846,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "current_events/SpaceX Starship launch updates": {
+      "Fetchium": {
+        "latency_ms": 1844,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "SpaceX prepares for Flight 12 Starship prelaunch testing, the first V3 Starship 39 (Starbase updates)",
+            "url": "https://www.teslaoracle.com/2026/02/27/spacex-prepares-for-flight-12-starship-39-prelaunch-testing-at-starbase-the-first-v3-starship-starbase-updates/",
+            "snippet": "[Tesla Oracle] SpaceX prepares to the Flight 12 launch test as it takes the first Starship V3 (Ship 39) to the Massey's Outpost for cryo-proof and static..."
+          },
+          {
+            "title": "SpaceX Starship V3 gets launch date update from Elon Musk",
+            "url": "https://www.teslarati.com/spacex-starship-v3-gets-launch-date-update-from-elon-musk/",
+            "snippet": "[Teslarati] Elon Musk has announced that SpaceX's next Starship launch, Flight 12, is expected in about six weeks. This suggests that the first flight..."
+          },
+          {
+            "title": "Launch preview: SpaceX tries for third time to launch Starship Flight 10 from Starbase, Texas",
+            "url": "https://spaceflightnow.com/2025/08/26/live-coverage-spacex-tries-for-third-time-to-launch-starship-flight-10-from-starbase-texas/",
+            "snippet": "[Spaceflight Now] Launch preview: SpaceX tries for third time to launch Starship Flight 10 from Starbase, Texas ... SpaceX is hoping that with two successive days..."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 931,
+        "result_count": 5,
+        "relevance": 6.4,
+        "error": null,
+        "results": [
+          {
+            "title": "Launches - SpaceX",
+            "url": "https://www.spacex.com/launches",
+            "snippet": "Upcoming launches ; Starlink Mission. Falcon 9, SLC-4E, California, Droneship, March 11, 2026 ; Starlink Mission. Falcon 9, SLC-40, Florida, Droneship, March 12, ..."
+          },
+          {
+            "title": "Starship Version 3 Is Finally About To Light Up! - YouTube",
+            "url": "https://www.youtube.com/watch?v=CGPF6LMN-ww",
+            "snippet": "Go to https://ground.news/marcus to stay fully informed and get global perspectives on SpaceX, Starship and more. Subscribe through my link ..."
+          },
+          {
+            "title": "Updates - SpaceX",
+            "url": "https://www.spacex.com/updates",
+            "snippet": "Expansion of Starship production and launch operations in Florida will enable SpaceX to significantly increase the build and flight rates for Starship, which ..."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1056,
+        "result_count": 5,
+        "relevance": 7.6,
+        "error": null,
+        "results": [
+          {
+            "title": "SpaceX's Starship rocket could launch in March. What we know about date",
+            "url": "https://usatoday.com/story/news/nation/2026/03/02/elon-musk-spacex-starship-launch-date/88901990007/",
+            "snippet": "SpaceX's Starship rocket could launch in March. What we know about dateSkip to main content\n\n- Crossword\n- Opinion\n- [Travel](https://u"
+          },
+          {
+            "title": "Starship could make 2026 debut in March as SpaceX preps for Florida",
+            "url": "https://floridatoday.com/story/news/2026/03/03/spacex-starship-flight-12-launch-date-florida/88945058007/",
+            "snippet": "Starship could make 2026 debut in March as SpaceX preps for Florida\n\nNEWS\n\n# SpaceX hasn't launched Starship in months. Why the delay, what's next?\n\n## It's unusual f"
+          },
+          {
+            "title": "When is the next Starship launch? Musk gives update on flight 12",
+            "url": "http://ydr.com/story/news/nation/2026/01/30/starship-rocket-launch-spacex-flight-12/88412374007/",
+            "snippet": "When is the next Starship launch? Musk gives update on flight 12\n\nNATION\n\n# Elon Musk gives an updated timeline for 1st Starship launch of 2026\n\n## Elon Musk has suggested that SpaceX's next Starship "
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1521,
+        "result_count": 5,
+        "relevance": 7.6,
+        "error": null,
+        "results": [
+          {
+            "title": "Updates - SpaceX",
+            "url": "https://www.spacex.com/updates",
+            "snippet": "[![Image 65](https://www.spacex.com/assets/images/updates/pre-strapi-updates/HP_SN15_Desktop.jpg)](https://www.spacex.com/launches/starship-sn15-flight-test/). [![Image 69](https://www.spacex.com/asse"
+          },
+          {
+            "title": "Starship Launch Schedule - RocketLaunch.org",
+            "url": "https://rocketlaunch.org/launch-schedule/spacex/starship",
+            "snippet": "# StarshipLaunch Schedule. Stay up-to-date on upcoming Starshiprocket launches with our live schedule.You can browse all 2 planned Starship missions on our website, and you can live stream any Starshi"
+          },
+          {
+            "title": "SpaceX Starship Tracker - Space Launch Now",
+            "url": "https://spacelaunchnow.me/starship",
+            "snippet": "12th test flight of the two-stage Starship launch vehicle. 12th test flight of the two-stage Starship launch vehicle. Super Heavy booster used for the fifth Starship integrated flight test. First Supe"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 939,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "current_events/climate change policy 2026": {
+      "Fetchium": {
+        "latency_ms": 2037,
+        "result_count": 5,
+        "relevance": 9.2,
+        "error": null,
+        "results": [
+          {
+            "title": "Climate Policy Outlook: Federal & State Regulations 2026",
+            "url": "https://environmentallaw.lclark.edu/blog/climate-policy-outlook-key-federal-and-state-environmental-regulations-to-watch-in-2026/",
+            "snippet": "U.S. climate policy in 2026 is defined by federal regulatory reversals and assertive state action. From EPA rule changes to expanding state emissions programs, courts and administrative law will shape"
+          },
+          {
+            "title": "Where things stand on climate change in 2026",
+            "url": "https://yaleclimateconnections.org/2026/01/where-things-stand-on-climate-change-in-2026/",
+            "snippet": "Policy & Politics Where things stand on climate change in 2026 Last year saw the U.S. move backward on climate while China ascended. Here's what to expect next. by Dana Nuccitelli January 9, 2026"
+          },
+          {
+            "title": "Sustainability and Climate in Focus: Trends to Watch for 2026",
+            "url": "https://www.msci.com/research-and-insights/blog-post/sustainability-and-climate-in-focus-trends-to-watch-for-2026",
+            "snippet": "Central banks advance on climate-risk oversight as policy diverges While some policymakers are easing back on sustainability reporting requirements, prudential regulators remain focused on the financi"
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1147,
+        "result_count": 5,
+        "relevance": 6.4,
+        "error": null,
+        "results": [
+          {
+            "title": "US and Climate: From the UNFCCC to the Endangerment Finding",
+            "url": "https://www.ussif.org/policy/weekly-policy-insights/new-era-of-us-climate-policy",
+            "snippet": "The Trump Administration is rolling out official policies stepping away from international collaboration and domestic efforts to combat ..."
+          },
+          {
+            "title": "Where things stand on climate change in 2026",
+            "url": "https://yaleclimateconnections.org/2026/01/where-things-stand-on-climate-change-in-2026/",
+            "snippet": "The clean energy transition will continue in 2026. All signs indicate that clean technologies will continue to dominate new energy deployments ..."
+          },
+          {
+            "title": "A few good reasons to keep climate action on your 2026 priority list.",
+            "url": "https://www.changeclimate.org/blog/the-case-for-climate-action-in-2026",
+            "snippet": "The Case for Climate Action in 2026. Embracing climate action can make your business stronger. Consumer brands can make a huge difference in ..."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1425,
+        "result_count": 5,
+        "relevance": 7.6,
+        "error": null,
+        "results": [
+          {
+            "title": "Where things stand on climate change in 2026",
+            "url": "https://yaleclimateconnections.org/2026/01/where-things-stand-on-climate-change-in-2026/",
+            "snippet": "Where things stand on climate change in 2026 \u00bb Yale Climate Connections\n\n## Climate information in Spanish is more accessible than ever\n\nWe're excited to announce Yale Climate Connections' new Spanish"
+          },
+          {
+            "title": "5 Things to Watch in Climate and Environment in 2026",
+            "url": "https://unu.edu/ehs/article/5-things-watch-climate-and-environment-2026",
+            "snippet": "5 Things to Watch in Climate and Environment in 2026 | United Nations University\n\nWe have passed the midway point of the decade. Climate change is impacting and shaping daily life across our globe at "
+          },
+          {
+            "title": "3 Climate Stories That Will Shape the World in 2026",
+            "url": "https://www.wri.org/insights/stories-to-watch-climate-economy-2026",
+            "snippet": "3 Stories to Watch in 2026 | World Resources Institute\n\nWhat can we help you find?\n\n- Explore WRI Perspectives\n- [Contact an Expert](https://www.wri.org/about/experts-s"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1692,
+        "result_count": 5,
+        "relevance": 6.4,
+        "error": null,
+        "results": [
+          {
+            "title": "Where things stand on climate change in 2026",
+            "url": "https://yaleclimateconnections.org/2026/01/where-things-stand-on-climate-change-in-2026/",
+            "snippet": "[Skip to content](https://yaleclimateconnections.org/2026/01/where-things-stand-on-climate-change-in-2026/#main). [![Image 3: Yale Climate Connections](https://i0.wp.com/yaleclimateconnections.org/wp-"
+          },
+          {
+            "title": "5 Things to Watch in Climate and Environment in 2026",
+            "url": "https://unu.edu/ehs/article/5-things-watch-climate-and-environment-2026",
+            "snippet": "2026 is a crucial year for climate action, cooperation, sustainable cities and science. The latest WMO Global Annual to Decadal Climate Update warns that global temperatures are likely to stay at or n"
+          },
+          {
+            "title": "Where U.S. carbon policy is being decided in 2026 - Niskanen Center",
+            "url": "https://www.niskanencenter.org/where-u-s-carbon-policy-is-being-decided-in-2026/",
+            "snippet": "[](https://www.niskanencenter.org/ \"Niskanen Center\"). *   [Newsletter](https://www.niskanencenter.org/newsletter). *   [Who are we](https://www.niskanencenter.org/where-u-s-carbon-policy-is-being-dec"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 953,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "comparison/rust vs go for backend development": {
+      "Fetchium": {
+        "latency_ms": 2158,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "Rust vs Go for backend development : r/rust",
+            "url": "https://www.reddit.com/r/rust/comments/1ffo0rt/rust_vs_go_for_backend_development/",
+            "snippet": "... then go, if you're certain you're going to be needing or working with large, complex microservices architectures \u00b7 Rust is a great language but I don't see it ever hitting the kind of popularity o"
+          },
+          {
+            "title": "Exploring the adoption of Go and Rust among backend developers",
+            "url": "https://www.developernation.net/blog/exploring-the-adoption-of-go-and-rust-among-backend-developers/",
+            "snippet": "Go and Rust are emerging as top choices in backend development, with Go known for simplicity and performance, and Rust for safety and memory management. This post explores their adoption trends based "
+          },
+          {
+            "title": "\ufe0f Rust vs Go: The Ultimate Showdown for Backend Development",
+            "url": "https://dev.to/hamzakhan/rust-vs-go-the-ultimate-showdown-for-backend-development-5cll",
+            "snippet": "Choose Rust if you need low-level control, memory safety, and performance for systems programming. Choose Go if you want simplicity, fast ..."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 817,
+        "result_count": 5,
+        "relevance": 8.9,
+        "error": null,
+        "results": [
+          {
+            "title": "Rust vs Go for backend development - Reddit",
+            "url": "https://www.reddit.com/r/rust/comments/1ffo0rt/rust_vs_go_for_backend_development/",
+            "snippet": "use rust if you want your code to be reliable and do what you expect, use go if you are a sloppy programmer who doesn't care about quality."
+          },
+          {
+            "title": "\ufe0f Rust vs Go: The Ultimate Showdown for Backend Development",
+            "url": "https://dev.to/hamzakhan/rust-vs-go-the-ultimate-showdown-for-backend-development-5cll",
+            "snippet": "Choose Rust if you need low-level control, memory safety, and performance for systems programming. Choose Go if you want simplicity, fast ..."
+          },
+          {
+            "title": "Rust vs Go: Which One to Choose in 2025 - The JetBrains Blog",
+            "url": "https://blog.jetbrains.com/rust/2025/06/12/rust-vs-go/",
+            "snippet": "Its standard library includes powerful tools for building networked services, which makes Go a preferred choice for backend development."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1126,
+        "result_count": 5,
+        "relevance": 6.3,
+        "error": null,
+        "results": [
+          {
+            "title": "Go vs Rust: Top Differences That Actually Matter in Production (2026) \u2013 TheLinuxCode",
+            "url": "https://thelinuxcode.com/go-vs-rust-top-differences-that-actually-matter-in-production-2026/",
+            "snippet": "Go vs Rust: Top Differences That Actually Matter in Production (2026) \u2013 TheLinuxCode\n\nAt some point you stop arguing about syntax and you start arguing about outages.\n\nI usually see the Go-vs-Rust dec"
+          },
+          {
+            "title": "Rust vs Go: Which Backend Language Should You Master for 2026? | ITJobNotify Blog | ITJobNotify",
+            "url": "https://itjobnotify.com/blog/rust-vs-go-backend-2026",
+            "snippet": "Rust vs Go: Which Backend Language Should You Master for 2026? | ITJobNotify Blog | ITJobNotify\n\nBack to Blog\n\nJan 20266 min read [Pinaki Nandan Hota](https://itjobnoti"
+          },
+          {
+            "title": "Go vs Rust: Backend Language Choice for 2026 - Codism",
+            "url": "https://codism.io/go-vs-rust-backend-language-choice-for-2026/",
+            "snippet": "Go vs Rust: Backend Language Choice for 2026 - Codism\n\n## Go vs Rust: Backend Language Choice for 2026\n\nChoosing the right backend language is a critical decision for building scalable, secure, and hi"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1592,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "\ud83d\udee0\ufe0f Rust vs Go: The Ultimate Showdown for Backend Development",
+            "url": "https://dev.to/hamzakhan/rust-vs-go-the-ultimate-showdown-for-backend-development-5cll",
+            "snippet": "# \ud83d\udee0\ufe0f Rust vs Go: The Ultimate Showdown for Backend Development \u26a1. When it comes to modern backend development, **Rust** and **Go** (Golang) are two languages that stand out for their performance, safe"
+          },
+          {
+            "title": "Rust vs Go: Battle for the Backend",
+            "url": "https://effective-programmer.com/rust-vs-go-battle-for-the-backend-368f775de9fc",
+            "snippet": "Rust might win the synthetic benchmarks, but Go's simplicity could mean faster development and fewer bugs in your particular situation."
+          },
+          {
+            "title": "Rust vs Go for backend development - Reddit",
+            "url": "https://www.reddit.com/r/rust/comments/1ffo0rt/rust_vs_go_for_backend_development/",
+            "snippet": "use rust if you want your code to be reliable and do what you expect, use go if you are a sloppy programmer who doesn't care about quality."
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 860,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "comparison/React vs Vue vs Svelte comparison": {
+      "Fetchium": {
+        "latency_ms": 2081,
+        "result_count": 5,
+        "relevance": 9.6,
+        "error": null,
+        "results": [
+          {
+            "title": "Vue vs React vs Svelte API comparison by Evan You",
+            "url": "https://twitter.com/youyuxi/status/1169325119984082945/photo/1",
+            "snippet": "r/reactjs | 28 points"
+          },
+          {
+            "title": "React vs. Vue vs. Svelte: The 2025 Performance Comparison",
+            "url": "https://medium.com/@jessicajournal/react-vs-vue-vs-svelte-the-ultimate-2025-frontend-performance-comparison-5b5ce68614e2",
+            "snippet": "Explore the 2025 performance showdown between React, Vue, and Svelte. Learn which modern frontend framework suits your business best."
+          },
+          {
+            "title": "Svelte 5 vs React 19 vs Vue 4 [2026 Guide] - usama.codes",
+            "url": "https://usama.codes/blog/svelte-5-vs-react-19-vs-vue-4-comparison",
+            "snippet": "Framework comparison: Svelte 5, React 19, and Vue 4. Performance benchmarks, features, and which to choose."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 929,
+        "result_count": 5,
+        "relevance": 8.0,
+        "error": null,
+        "results": [
+          {
+            "title": "React vs Vue vs Svelte: Choosing the Right Framework for 2025",
+            "url": "https://medium.com/@ignatovich.dm/react-vs-vue-vs-svelte-choosing-the-right-framework-for-2025-4f4bb9da35b4",
+            "snippet": "Job Market: Fewer Svelte-specific job opportunities compared to React or Vue. Best For: Small, performance-critical applications. Teams that ..."
+          },
+          {
+            "title": "Tell me why I should use Vue over svelte : r/vuejs - Reddit",
+            "url": "https://www.reddit.com/r/vuejs/comments/1gm0fbs/tell_me_why_i_should_use_vue_over_svelte/",
+            "snippet": "They're like 90% the same thing right now with Svelte runes being out. Vue does have an ecosystem edge, however."
+          },
+          {
+            "title": "React, Angular, Vue, and Svelte: A Comparison - Ascendient Learning",
+            "url": "https://www.ascendientlearning.com/blog/comparing-angular-react-vue-svelte",
+            "snippet": "Svelte and Vue are the simplest. If they can gain in popularity, one or the other will overtake React as the best option. Angular is the ..."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1131,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "Svelte 5 vs React 19 vs Vue 4 [2026 Guide]",
+            "url": "https://usama.codes/blog/svelte-5-vs-react-19-vs-vue-4-comparison",
+            "snippet": "Svelte 5 vs React 19 vs Vue 4 [2026 Guide]"
+          },
+          {
+            "title": "React 19 vs Vue 3.6 vs Svelte 5: 2026 Framework Convergence | byteiota",
+            "url": "https://byteiota.com/react-19-vs-vue-3-6-vs-svelte-5-2026-framework-convergence/",
+            "snippet": "React 19 vs Vue 3.6 vs Svelte 5: 2026 Framework Convergence | byteiota\n\nReact 19, Vue 3.6, and Svelte 5 all reached stable or beta status between October 2024 and January 2025\u2014the first time in years "
+          },
+          {
+            "title": "React 19 vs Svelte 5 vs Vue 4 Performance Benchmarks 2025 with Lighthouse Scores and Bundle Size Comparison - JavaScript Jobs Hub",
+            "url": "https://jsgurujobs.com/blog/svelte-5-vs-react-19-vs-vue-4-the-2025-framework-war-nobody-expected-performance-benchmarks",
+            "snippet": "React 19 vs Svelte 5 vs Vue 4 Performance Benchmarks 2025 with Lighthouse Scores and Bundle Size Comparison - JavaScript Jobs Hub\n\n\u2190 Back to Blog\n\nJohn Smith \u2022 December "
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1796,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "JavaScript Frameworks in 2024: React vs. Vue vs. Svelte",
+            "url": "https://dev.to/tarunsinghofficial/javascript-frameworks-in-2024-react-vs-vue-vs-svelte-which-one-to-choose-4c0p",
+            "snippet": "In 2024, React, Vue, and Svelte stand out as the most popular frameworks, each with its unique strengths and weaknesses. In this article, we will explore the core features, performance, learning curve"
+          },
+          {
+            "title": "Introducing Svelte, and Comparing Svelte with React and Vue",
+            "url": "https://joshcollinsworth.com/blog/introducing-svelte-comparing-with-react-vue",
+            "snippet": "## What is Svelte? At a basic level, you could think of Svelte as a frontend user interface (UI) framework akin to React, Vue, etc. As with any frontend framework, you use Svelte to build components, "
+          },
+          {
+            "title": "React vs. Vue vs. Svelte: The Real 2025 Guide to Picking Your First ...",
+            "url": "https://clinkitsolutions.com/react-vs-vue-vs-svelte-the-real-2025-guide-to-picking-your-first-javascript-framework/",
+            "snippet": "React still rules the job boards, Vue has become smoother and more polished than ever, and Svelte keeps making noise as the fresh, high-performance alternative everyone \u201cloves.\u201d Blogs, tutorials, and "
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 961,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "comparison/PostgreSQL vs MySQL performance": {
+      "Fetchium": {
+        "latency_ms": 2272,
+        "result_count": 5,
+        "relevance": 9.5,
+        "error": null,
+        "results": [
+          {
+            "title": "MySQL vs PostgreSQL Performance: throughput &amp; latency, reads &amp; writes",
+            "url": "https://binaryigor.com/mysql-vs-postgresql-performance.html",
+            "snippet": "Hey guys!\n\nGiven popularity of these two databases and debates often people who have as to which is better, I was curious to compare them on a single dimension - *performance*.\n\nI had my contender, bu"
+          },
+          {
+            "title": "database - Realistic performance comparison of MySQL vs PostgreSQL - Stack Overflow",
+            "url": "https://stackoverflow.com/questions/32346572/realistic-performance-comparison-of-mysql-vs-postgresql",
+            "snippet": ""
+          },
+          {
+            "title": "Postgres vs. MySQL",
+            "url": "https://dev.to/outerbase/postgres-vs-mysql-14cp",
+            "snippet": "Write Efficiency: PostgreSQL handled heavy insert loads with less resource usage. \u00b7 Read Performance: MySQL did well initially but dropped off ..."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1264,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "MySQL vs PostgreSQL Performance: throughput & latency, reads ...",
+            "url": "https://www.reddit.com/r/programming/comments/1q5fqbp/mysql_vs_postgresql_performance_throughput/",
+            "snippet": "MySQL vs PostgreSQL Performance: throughput & latency, reads & writes \u00b7 3.72x higher throughput \u00b7 latency lower 9.34x by mean and 8.77x by 99th ..."
+          },
+          {
+            "title": "PostgreSQL vs MySQL: Which Database Should You Choose in ...",
+            "url": "https://www.bytebase.com/blog/postgres-vs-mysql/",
+            "snippet": "For most workloads, the performance between Postgres and MySQL is comparable with at most 30% variations. On the other hand, regardless of which ..."
+          },
+          {
+            "title": "PostgreSQL vs. MySQL: Key differences - Fivetran",
+            "url": "https://www.fivetran.com/blog/postgresql-vs-mysql",
+            "snippet": "Discover the strengths of PostgreSQL and MySQL. Compare features, performance, and use cases to find the best database for your next project ..."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1156,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "MySQL vs PostgreSQL in 2026\u20137 key differences you should know before choosing | by Nazar Egorov | Feb, 2026 | Medium",
+            "url": "https://medium.com/%40ngza5tqf/mysql-vs-postgresql-in-2026-7-key-differences-you-should-know-before-choosing-6d42b1819bcd",
+            "snippet": "MySQL vs PostgreSQL in 2026\u20137 key differences you should know before choosing | by Nazar Egorov | Feb, 2026 | Medium\nSitemap\n[Open in app](https://play.google"
+          },
+          {
+            "title": "MySQL vs PostgreSQL: A Comprehensive Performance Benchmark",
+            "url": "https://www.oreateai.com/blog/mysql-vs-postgresql-a-comprehensive-performance-benchmark/3029d59f0e1326439fe55364c9c3e63d",
+            "snippet": "MySQL vs PostgreSQL: A Comprehensive Performance Benchmark - Oreate AI Blog\nSkip to content\nOreate AI Blog\nRead the latest guides, tips, and insights on s"
+          },
+          {
+            "title": "PostgreSQL vs MySQL: Which Database to Choose",
+            "url": "https://oneuptime.com/blog/post/2026-01-21-postgresql-vs-mysql/view",
+            "snippet": "PostgreSQL vs MySQL: Which Database to Choose\nSkip to main content\n\nOneUptime\nOneUptime logo\n\nOpen menu\n[Sign"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1661,
+        "result_count": 5,
+        "relevance": 9.5,
+        "error": null,
+        "results": [
+          {
+            "title": "A Performance Benchmark for the PostgreSQL and MySQL Databases",
+            "url": "https://www.mdpi.com/1999-5903/16/10/382",
+            "snippet": "For select queries with a where clause, PostgreSQL required 0.09 ms to 0.13 ms compared to MySQL's 0.9 ms to 1 ms, making it roughly 9 times more efficient."
+          },
+          {
+            "title": "PostgreSQL vs MySQL Performance - DZone",
+            "url": "https://dzone.com/articles/postgresql-versus-mysql-performance",
+            "snippet": "This allows us to measure the performance differences between these two different databases, and end up with a result resembling the performance difference we might expect in our application. Notice, "
+          },
+          {
+            "title": "PostgreSQL vs. MySQL: Key differences - Fivetran",
+            "url": "https://www.fivetran.com/blog/postgresql-vs-mysql",
+            "snippet": "First, let\u2019s go over the architectural differences between PostgreSQL and MySQL to see how they manage data, performance, and scalability. Features like JSONB support enable efficient storage and quer"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 911,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "casual_everyday/best pizza in new york": {
+      "Fetchium": {
+        "latency_ms": 1937,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "The 23 Best Pizza Places In NYC - New York - The Infatuation",
+            "url": "https://www.theinfatuation.com/new-york/guides/best-pizza-nyc",
+            "snippet": "New York / guides / The 23 Best Pizza Places In NYC Filter NYC Guide The 23 Best Pizza Places In NYC The top pizzas in NYC, according to us."
+          },
+          {
+            "title": "Six NYC pizzerias just won at the 2025 Best Pizza Awards - TimeOut",
+            "url": "https://www.timeout.com/newyork/news/six-nyc-pizzerias-were-just-named-among-the-best-pizza-in-the-world-062625",
+            "snippet": "New York's own Lucali, L'Industrie, Don Antonio and more are ranked among the best pizza in the world."
+          },
+          {
+            "title": "28 Best Pizza Places In NYC (2025)",
+            "url": "https://secretnyc.co/best-pizza-in-nyc/",
+            "snippet": "28 Places With The Absolute Best Pizza In NYC New York pizza is a sacred thing, so we took coming up with a list of the best pizza in NYC very, very seriously, and we don't think you'll be disappointe"
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 2030,
+        "result_count": 5,
+        "relevance": 8.8,
+        "error": null,
+        "results": [
+          {
+            "title": "The Best Pizzerias of New York City - Eater NY",
+            "url": "https://ny.eater.com/maps/best-pizza-new-york-city-nyc-pizzerias",
+            "snippet": "The Best Pizzerias of New York City \u00b7 Pugsley Pizza \u00b7 Mama's Too \u00b7 Don Antonio \u00b7 John's of Bleecker Street \u00b7 Joe's Pizza \u00b7 Ops [East Village] \u00b7 Arturo's."
+          },
+          {
+            "title": "Manhattan Pizza Tour - My List and other recommendations I could ...",
+            "url": "https://www.reddit.com/r/FoodNYC/comments/1o4500t/manhattan_pizza_tour_my_list_and_other/",
+            "snippet": "L'industrie: L'Industrie Pizzeria \u00b7 Prince St Pizza: Try the Vodka Slice Prince Street Pizza \u00b7 Rubirosa: Rubirosa (I have no clue about this place)."
+          },
+          {
+            "title": "Six NYC pizzerias just won at the 2025 Best Pizza Awards - TimeOut",
+            "url": "https://www.timeout.com/newyork/news/six-nyc-pizzerias-were-just-named-among-the-best-pizza-in-the-world-062625",
+            "snippet": "New York's own Lucali, L'Industrie, Don Antonio and more are ranked among the best pizza in the world."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1218,
+        "result_count": 5,
+        "relevance": 7.6,
+        "error": null,
+        "results": [
+          {
+            "title": "Guide: The Best Pizza in NYC - From Dollar Slices to Iconic Pizzerias",
+            "url": "https://andershusa.com/where-to-eat-best-pizza-nyc/",
+            "snippet": "Guide: The Best Pizza in NYC - From Dollar Slices to Iconic Pizzerias\n\nGot a rumor? Please share as many details as possible.\n\nIf there's something you don't know, leave it blank.\n\nVenue Name\n\nOpening"
+          },
+          {
+            "title": "The Best Pizzerias of New York City - Eater NY",
+            "url": "https://ny.eater.com/maps/best-pizza-new-york-city-nyc-pizzerias",
+            "snippet": "Best Pizza in New York City | Eater NY\n\nGet ourApp\n\n[App](https://apps.apple.com/app/apple-store/id6"
+          },
+          {
+            "title": "Six NYC pizzerias just won at the 2025 Best Pizza Awards - TimeOut",
+            "url": "https://www.timeout.com/newyork/news/six-nyc-pizzerias-were-just-named-among-the-best-pizza-in-the-world-062625",
+            "snippet": "Six NYC pizzerias just won at the 2025 Best Pizza Awards\nGo to the contentGo to the footer\nNo thanks\nSubscribe\n\ud83d\ude4cAwesome, you&#x27;re subscribed!\nThanks for subscrib"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 2213,
+        "result_count": 5,
+        "relevance": 8.8,
+        "error": null,
+        "results": [
+          {
+            "title": "Best-Selling Thin Crust Pizza in Upper Manhattan Area | Bleeker ...",
+            "url": "https://bleeckerstreetpizza.com/",
+            "snippet": "bleecker-street-pizza-new-york-1. bleecker-street-pizza-new-york-1. ## \"Best Pizza in New York\" 3 Years Running. ## Winner \"Best Pizza in New York\" 3 Years Running. ## Taste Why We Are Named the Best "
+          },
+          {
+            "title": "Six NYC pizzerias just won at the 2025 Best Pizza Awards - TimeOut",
+            "url": "https://www.timeout.com/newyork/news/six-nyc-pizzerias-were-just-named-among-the-best-pizza-in-the-world-062625",
+            "snippet": "# Six NYC pizzerias were just named among the best pizza in the world. Back for the third year, the 2025 awards ceremony took place yesterday, June 25 in Milan, Italy, with a\u00a0global voting panel of 51"
+          },
+          {
+            "title": "Best Pizza - Classic New York City Pizza - Williamsburg, Brooklyn",
+            "url": "https://www.bestpizzawilliamsburg.com/",
+            "snippet": "Best Pizza - Classic New York City Pizza - Williamsburg, Brooklyn. [Skip to main content](https://www.bestpizzawilliamsburg.com/#main-content). [![Image 1: Best Pizza Home](https://images.getbento.com"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 852,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "casual_everyday/cheap flights to paris": {
+      "Fetchium": {
+        "latency_ms": 1425,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "Cheap flights to Paris - Kayak",
+            "url": "https://www.kayak.com/flight-routes/United-States-US0/Paris-PAR",
+            "snippet": "If traveling to Paris, the cheapest city to fly from in the last 3 days was Newark, with flights as low as $204 one-way and $430 round-trip."
+          },
+          {
+            "title": "Find Cheap Flights to Paris - Google",
+            "url": "https://www.google.com/travel/flights/flights-to-paris.html?gl=US&hl=en-US",
+            "snippet": "Use Google Flights to find cheap flights to Paris from United States, starting at $400, and book tickets for your next getaway."
+          },
+          {
+            "title": "Cheap flights to Paris - Flight from United States to Paris",
+            "url": "https://wwws.airfrance.us/en-us/flights-to-paris",
+            "snippet": "Find your cheap flight to Paris with Air France from $528. Discover our selection of return flights at the best price to Paris PAR."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1338,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "How much is the cheapest flight to Paris? - Expedia",
+            "url": "https://www.expedia.com/Cheap-Flights-To-Paris.d179898.Travel-Guide-Flights",
+            "snippet": "How much is the cheapest flight to Paris? Prices were available within the past 7 days and start at $23 for one-way flights and $68 for round trip, for the ..."
+          },
+          {
+            "title": "Cheap flights to Paris - Flight from United States to Paris",
+            "url": "https://wwws.airfrance.us/en-us/flights-to-paris",
+            "snippet": "Find your cheap flight to Paris with Air France from $528. Discover our selection of return flights at the best price to Paris PAR."
+          },
+          {
+            "title": "Cheap Flights to Paris | Skyscanner",
+            "url": "https://www.skyscanner.com/flights-to/pari/cheap-flights-to-paris.html",
+            "snippet": "Looking for cheap flights to Paris? \u2708\ufe0f Compare prices from hundreds of major travel agents and airlines, including Delta, United and American Airlines."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1231,
+        "result_count": 5,
+        "relevance": 9.6,
+        "error": null,
+        "results": [
+          {
+            "title": "$204+ Cheap Flights to Paris, France | Cheapflights",
+            "url": "https://www.cheapflights.com/flights-to-paris/",
+            "snippet": "$204+ Cheap Flights to Paris, France | Cheapflights\n\n\nMenu\nHomeSearch by date[Vac"
+          },
+          {
+            "title": "\u00a330+ Cheap Flights to Paris, France | Cheapflights",
+            "url": "https://www.cheapflights.co.uk/flights/Paris/",
+            "snippet": "# Cheap flights to Paris from \u00a321\n\n##### This is the cheapest one-way flight price found by a Cheapflights user in the last 72 hours by searching for a"
+          },
+          {
+            "title": "$40+ Cheap Flights from London Heathrow Airport to Paris | Cheapflights",
+            "url": "https://www.cheapflights.com/flights-to-paris/heathrow/",
+            "snippet": "Home Cheap flights from London Heathrow to Paris 1. Tell us where you want to go Enter your travel information like dates, passengers, trip type (one-way or round trip), and preferred cabin class then"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1582,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "Cheap Flights To Paris (CDG) - Orbitz",
+            "url": "https://www.orbitz.com/Cheap-Flights-To-Paris.d179898.Travel-Guide-Flights",
+            "snippet": "Find inexpensive Paris(CDG) flights today with Orbitz. Flights to PAR start at $178. Some airlines are waiving change fees for new bookings as COVID-19"
+          },
+          {
+            "title": "How much is the cheapest flight to Paris? - Expedia",
+            "url": "https://www.expedia.com/Cheap-Flights-To-Paris.d179898.Travel-Guide-Flights",
+            "snippet": "How much is the cheapest flight to Paris? Prices were available within the past 7 days and start at $23 for one-way flights and $68 for round trip, for the"
+          },
+          {
+            "title": "Cheap flights to Paris - Flight from United States to Paris",
+            "url": "https://wwws.airfrance.us/en-us/flights-to-paris",
+            "snippet": "# Flights to Paris with Air France from $528\\*. ## Find your flight to Paris. | Los Angeles (LAX) | Paris (CDG) | Round-trip / Economy | 05/05/2026 - 05/12/2026 | From  $761\\*  Seen: 3 hrs ago |. | Sa"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 883,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "casual_everyday/signs of burnout": {
+      "Fetchium": {
+        "latency_ms": 2338,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "The first signs of burnout are coming from the people who embrace AI the most",
+            "url": "https://techcrunch.com/2026/02/09/the-first-signs-of-burnout-are-coming-from-the-people-who-embrace-ai-the-most/",
+            "snippet": "HN story by badcryptobitch | 4 points"
+          },
+          {
+            "title": "Depression: Learn More \u2013 What is burnout? - NCBI - NIH",
+            "url": "https://www.ncbi.nlm.nih.gov/books/NBK279286/",
+            "snippet": "The signs of burnout include: Exhaustion: People affected feel drained and emotionally exhausted. They report not having enough energy, being ..."
+          },
+          {
+            "title": "Burnout: signs, causes and ways to recover",
+            "url": "https://www.mentalhealth.org.uk/explore-mental-health/articles/burnout-signs-causes-and-ways-recover",
+            "snippet": "Emotional signs of burnout \u00b7 feeling withdrawn \u00b7 losing your motivation \u00b7 self-doubt \u00b7 feeling more emotional (tearful, angry, sensitive) \u00b7 emotional exhaustion ..."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1032,
+        "result_count": 5,
+        "relevance": 7.6,
+        "error": null,
+        "results": [
+          {
+            "title": "Burnout: Signs, causes, and how to recover | Mental Health America",
+            "url": "https://mhanational.org/resources/burnout-signs-causes-recover/",
+            "snippet": "Common signs of burnout \u00b7 Constant exhaustion, no matter how much you rest \u00b7 Dreading responsibilities you once enjoyed \u00b7 Feeling detached, unmotivated, or ..."
+          },
+          {
+            "title": "Burnout: Symptoms, Risk Factors, Prevention, Treatment - WebMD",
+            "url": "https://www.webmd.com/mental-health/burnout-symptoms-signs",
+            "snippet": "Physical burnout symptoms: You may feel greatly fatigued and without energy. You may get sick often, have body aches and recurring headaches, ..."
+          },
+          {
+            "title": "6 Signs You're Burned Out: How to Cope and Prevent It",
+            "url": "https://www.trs.texas.gov/learning-resources/publications/pulse/6-signs-youre-burned-out-how-cope-and-prevent-it",
+            "snippet": "Here are six signs you're burned out: 1. It's affecting how you do \u2013 or how you feel about \u2013 your job. 2. Your sleep is off. 3. You're physically exhausted."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1236,
+        "result_count": 5,
+        "relevance": 7.6,
+        "error": null,
+        "results": [
+          {
+            "title": "Burnout: Symptoms, Risk Factors, Prevention, Treatment - WebMD",
+            "url": "https://www.webmd.com/mental-health/burnout-symptoms-signs",
+            "snippet": "Burnout: Symptoms, Risk Factors, Prevention, Treatment\n\nMedically Reviewed by Smitha Bhandari, MD on February 03, 2026\n\n9 min read\n\n## What Is Burnout?\n\nIt"
+          },
+          {
+            "title": "How to spot the symptoms of burnout and treat them, according to wellbeing experts | The Independent",
+            "url": "http://independent.co.uk/health-and-fitness/how-to-avoid-burnout-b2841532.html",
+            "snippet": "## Stay up to date with notifications from The\u00a0Independent\n\nNotifications can be managed in browser preferences.\n\nNot nowYes please\n\nSwipe for next article\n\nIf you find yourself feeling frazzled and o"
+          },
+          {
+            "title": "12 Hidden Signs of Burnout and What to Do",
+            "url": "https://www.verywellhealth.com/signs-of-burnout-8683361",
+            "snippet": "-- 12 Hidden Signs of Burnout and What to Do\n\nTable of Contents\n\nView All\n\nTable of Contents\n\nWhat It Is\n\nWarning Signs\n\nBurnout or Depression?\n\nRecovery Tips\n\nClose\n\n### Key Takeaways\n\n- Self-care an"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1567,
+        "result_count": 5,
+        "relevance": 9.2,
+        "error": null,
+        "results": [
+          {
+            "title": "Five signs you're already experiencing burnout (and how to fix it)",
+            "url": "https://www.bbcgoodfood.com/health/five-signs-youre-already-experiencing-burnout-and-how-to-fix-it",
+            "snippet": "# Five signs you're already experiencing burnout (and how to fix it). We\u2019ll highlight the key signs to be aware of so that you can identify potential burnout. Burnout is a state of emotional, mental a"
+          },
+          {
+            "title": "5 Signs You're Experiencing Burnout \u2014 And Why It's Not Just \u201cStress\u201d",
+            "url": "https://www.legacycommunityhealth.org/newsblog-5-signs-youre-experiencing-burnout-and-why-its-not-just-stress/",
+            "snippet": "# 5 Signs You\u2019re Experiencing Burnout \u2014 And Why It\u2019s Not Just \u201cStress\u201d. Whether it\u2019s time with friends, hobbies, or even your work, burnout makes everything feel like a chore. These groups often work "
+          },
+          {
+            "title": "Burnout: Symptoms, Risk Factors, Prevention, Treatment - WebMD",
+            "url": "https://www.webmd.com/mental-health/burnout-symptoms-signs",
+            "snippet": "## What Is Burnout? Burnout can be caused by stress, but it's not the same. Stress can make you feel overwhelmed, but burnout makes you feel depleted and used up. The effects of burnout can hurt your "
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 873,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "technical/kubernetes pod networking deep dive": {
+      "Fetchium": {
+        "latency_ms": 2924,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "Understanding the Kubernetes Pod Networking Model",
+            "url": "https://oneuptime.com/blog/post/2026-02-20-kubernetes-pod-networking-model/view",
+            "snippet": "Deep dive into how Kubernetes pod networking works including IP-per-pod, veth pairs, bridges, and cross-node communication."
+          },
+          {
+            "title": "Deep dive into Kubernetes architecture and Pod Networking",
+            "url": "https://dev.to/nomzykush/deep-dive-into-kubernetes-architecture-and-pod-networking-52mb",
+            "snippet": "The Kubernetes networking plugin handles the routing of traffic from the Pod to the Service, which can span multiple Pods running on different nodes within the cluster. Internet-to-Service networking:"
+          },
+          {
+            "title": "Kubernetes Pod networking deep dive - LinkedIn",
+            "url": "https://www.linkedin.com/pulse/kubernetes-pod-networking-deep-dive-dk-cao-qrkrc",
+            "snippet": "In this article, we'll discuss the Kubernetes Pod networking model and the basic ideas of how CNI providers implement Pod networking ..."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1131,
+        "result_count": 5,
+        "relevance": 9.0,
+        "error": null,
+        "results": [
+          {
+            "title": "Kubernetes Networking: A Deep Dive | by Hristo Stoychev - Medium",
+            "url": "https://medium.com/@h.stoychev87/kubernetes-networking-a-deep-dive-6081d794e97c",
+            "snippet": "Each pod in Kubernetes is assigned a unique IP address, allowing direct communication between pods without the need for Network Address ..."
+          },
+          {
+            "title": "Master Kubernetes Networking: A Deep Dive Guide",
+            "url": "https://www.plural.sh/blog/kubernetes-networking-guide/",
+            "snippet": "A foundational concept in Kubernetes networking is the IP-per-Pod model. Each Pod in a Kubernetes cluster is assigned its own unique IP address, ..."
+          },
+          {
+            "title": "A Deep Dive into Kubernetes Networking | Ivinco Blog",
+            "url": "https://www.ivinco.com/blog/a-deep-dive-into-kubernetes-networking",
+            "snippet": "Kelsey Hightower's Kubernetes The Hard Way guide is not only effective but also highlights the simplicity and cleanliness in maintaining the networking aspect."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1079,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "Understanding the Kubernetes Pod Networking Model",
+            "url": "https://oneuptime.com/blog/post/2026-02-20-kubernetes-pod-networking-model/view",
+            "snippet": "Understanding the Kubernetes Pod Networking Model\n\n# Understanding the Kubernetes Pod Networking Model\n\nDeep dive into how Kubernetes pod networking works including IP-per-pod, veth pairs, bridges, an"
+          },
+          {
+            "title": "Master Kubernetes Networking: A Deep Dive Guide",
+            "url": "https://www.plural.sh/blog/kubernetes-networking-guide/",
+            "snippet": "Master Kubernetes Networking: A Deep Dive Guide\nSkip to content\n[Blog | Plural](https://www.plural.sh/blog"
+          },
+          {
+            "title": "Kubernetes Networking Fundamentals: How Pods Actually Communicate Inside a Cluster | by Ali Khalkhali | Feb, 2026 | Medium",
+            "url": "https://blog.devops.dev/kubernetes-networking-fundamentals-how-pods-actually-communicate-inside-a-cluster-3032b8a8a1b5",
+            "snippet": "Kubernetes Networking Fundamentals: How Pods Actually Communicate Inside a Cluster | by Ali Khalkhali | Feb, 2026 | Medium\n\nSitemap\n\n[Open in app](https:"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1521,
+        "result_count": 5,
+        "relevance": 9.0,
+        "error": null,
+        "results": [
+          {
+            "title": "A Deep Dive into Kubernetes Networking | Ivinco Blog",
+            "url": "https://www.ivinco.com/blog/a-deep-dive-into-kubernetes-networking",
+            "snippet": "(IP Address Management) plugin (from the Container Network Interface Specification). Name: nginx-65899c769f-wxdx6 Namespace: default Node: worker-0/10.240.0.20 Start Time: Thu, 05 Jul 2018 14:20:06 -0"
+          },
+          {
+            "title": "Deep dive into Kubernetes architecture and Pod Networking - Dev.to",
+            "url": "https://dev.to/nomzykush/deep-dive-into-kubernetes-architecture-and-pod-networking-52mb",
+            "snippet": "For example, if you are running your Kubernetes cluster on a cloud provider such as AWS or GCP, the Cloud-controller-manager will manage the creation and deletion of load balancers, volumes, and nodes"
+          },
+          {
+            "title": "Kubernetes Networking: A Deep Dive | by Hristo Stoychev - Medium",
+            "url": "https://medium.com/@h.stoychev87/kubernetes-networking-a-deep-dive-6081d794e97c",
+            "snippet": "In this guide, we\u2019ll walk through the Kubernetes networking model, explore how traffic flows within and outside the cluster, break down key components like Services, CNI plugins, Ingress, network poli"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 852,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "technical/zero-knowledge proofs explained": {
+      "Fetchium": {
+        "latency_ms": 1889,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "Zero-knowledge proofs explained in 5 levels of difficulty",
+            "url": "https://www.youtube.com/watch?v=fOGdb1CTu5c",
+            "snippet": "HN story by marai2 | 3 points"
+          },
+          {
+            "title": "Zero-knowledge proofs, explained",
+            "url": "https://www.binance.com/en/square/post/30020731157330",
+            "snippet": "[Binance] What are zero-knowledge proofs? Zero-knowledge proofs (ZKPs) are an innovative cryptographic method that enables a party (the prover) to..."
+          },
+          {
+            "title": "Zero-knowledge proofs explained in plain English",
+            "url": "https://medium.com/coinmonks/zero-knowledge-proofs-explained-727b9b8e0e5e",
+            "snippet": "HN story by ArlietaBex | 3 points"
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1021,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "Zero-knowledge proofs explained in 3 examples - Circularise",
+            "url": "https://www.circularise.com/blogs/zero-knowledge-proofs-explained-in-3-examples",
+            "snippet": "A zero-knowledge proof (ZKP) is a method of proving the validity of a statement without revealing anything other than the validity of the statement itself."
+          },
+          {
+            "title": "Zero-knowledge proof - Wikipedia",
+            "url": "https://en.wikipedia.org/wiki/Zero-knowledge_proof",
+            "snippet": "In cryptography, a zero-knowledge proof is a protocol in which one party (the prover) can convince another party (the verifier) that some given statement is ..."
+          },
+          {
+            "title": "Zero-Knowledge Proof (ZKP) \u2014 Explained - Chainlink",
+            "url": "https://chain.link/education/zero-knowledge-proof-zkp",
+            "snippet": "Zero-knowledge proofs (ZKPs) are a cryptographic method used to prove knowledge about a piece of data, without revealing the data itself."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1619,
+        "result_count": 5,
+        "relevance": 6.8,
+        "error": null,
+        "results": [
+          {
+            "title": "Zero-Knowledge Proofs: A Beginner's Guide",
+            "url": "https://www.dock.io/post/zero-knowledge-proofs",
+            "snippet": "Zero-Knowledge Proofs: A Beginner's Guide\n\nBy clicking \"Accept\", you agree to the storing of cookies on your device to enhance site navigation, analyze site usage and assist in our marketing efforts. "
+          },
+          {
+            "title": "What Is a Zero-knowledge Proof and How Does It Work?",
+            "url": "https://blog.sei.io/blockchain/fundamentals/what-is-a-zero-knowledge-proof-and-how-does-it-work/",
+            "snippet": "What Is a Zero-knowledge Proof and How Does It Work?\n\nA zero-knowledge proof (ZKP) is a cryptographic method that allows one party (the prover) to convince another party (the verifier) that a given st"
+          },
+          {
+            "title": "Zero-knowledge proofs explained in 3 examples",
+            "url": "https://www.circularise.com/blogs/zero-knowledge-proofs-explained-in-3-examples",
+            "snippet": "Zero-knowledge proofs explained in 3 examples Weglot.initialize({ api_key: 'wg_56be53350e16e00ebdf042b764e3b0e67' }); --\n\nBlog overview\n\nAuthor\n\nTian Daphne\n\nCopyw"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1562,
+        "result_count": 5,
+        "relevance": 7.9,
+        "error": null,
+        "results": [
+          {
+            "title": "What are Zero Knowledge Proofs - Explain Like I'm Five - YouTube",
+            "url": "https://www.youtube.com/watch?v=t58q7uPDfvY",
+            "snippet": "A simple and straightforward explanation of what is zero-knowledge proof, what it means to be zero-knowledge, and an example to visualize"
+          },
+          {
+            "title": "Zero-knowledge proofs explained in 3 examples - Circularise",
+            "url": "https://www.circularise.com/blogs/zero-knowledge-proofs-explained-in-3-examples",
+            "snippet": "In cryptography, zero-knowledge proofs let you convince me that you know something, or have done something, without revealing to me what that secret thing was. **Non-interactive zero-knowledge proofs*"
+          },
+          {
+            "title": "Zero-Knowledge Proofs Explained : r/CryptoTechnology - Reddit",
+            "url": "https://www.reddit.com/r/CryptoTechnology/comments/1ka4txu/zeroknowledge_proofs_explained/",
+            "snippet": "Zero-knowledge proofs are like tamper-proof stamps on opaque envelopes: they let the blockchain confirm that John's $1,000 was correctly split"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 853,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "technical/WebAssembly performance benchmarks": {
+      "Fetchium": {
+        "latency_ms": 1525,
+        "result_count": 5,
+        "relevance": 8.9,
+        "error": null,
+        "results": [
+          {
+            "title": "Understanding the Performance of WebAssembly Applications",
+            "url": "https://benchmarkingwasm.github.io/BenchmarkingWebAssembly/",
+            "snippet": "Our results show that when benchmarks are tested with extra-small or small input size, WebAssembly is faster than JavaScript in almost all benchmarks (97.6% and ..."
+          },
+          {
+            "title": "AMD Ryzen 9 7950X Review - Impressive 16-core Powerhouse - Web Browser Performance",
+            "url": "https://www.techpowerup.com/review/amd-ryzen-9-7950x/9.html",
+            "snippet": "[TechPowerUp] The JetStream 2 browser benchmark combines multiple JavaScript and WebAssembly benchmarks with several advanced workloads to determine how quickly a browser..."
+          },
+          {
+            "title": "How does WebAssembly performance compare to JavaScript in your experience?",
+            "url": "https://www.reddit.com/r/WebAssembly/comments/ayusi5/how_does_webassembly_performance_compare_to/",
+            "snippet": "I'm thinking of using WebAssembly to get better initial load and runtime performance but the general impression from the few benchmarks I could find is that WebAssembly is only marginally faster. What"
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1324,
+        "result_count": 5,
+        "relevance": 7.9,
+        "error": null,
+        "results": [
+          {
+            "title": "Understanding the Performance of WebAssembly Applications",
+            "url": "https://benchmarkingwasm.github.io/BenchmarkingWebAssembly/",
+            "snippet": "Our results show that when benchmarks are tested with extra-small or small input size, WebAssembly is faster than JavaScript in almost all benchmarks (97.6% and ..."
+          },
+          {
+            "title": "The Benchmark Bake-Off: Which Runtime Actually Wins in 2025?",
+            "url": "https://medium.com/the-rise-of-device-independent-architecture/the-benchmark-bake-off-which-runtime-actually-wins-in-2025-ebf69ec5a080",
+            "snippet": "WebAssembly narrows the performance gap, especially with AOT/JIT engines, and adds advantages in startup time, density, and portability."
+          },
+          {
+            "title": "Performance of WebAssembly runtimes in 2023",
+            "url": "https://00f.net/2023/01/04/webassembly-benchmark-2023/",
+            "snippet": "WebAssembly includes several proposals to improve performance, such as the ability to perform tail-call optimizations, support for 128-bit vectors, threads, ..."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1072,
+        "result_count": 5,
+        "relevance": 8.9,
+        "error": null,
+        "results": [
+          {
+            "title": "WebAssembly Runtime Benchmarks 2026 | Wasmtime vs Wasmer ...",
+            "url": "https://wasmruntime.com/en/benchmarks",
+            "snippet": "WebAssembly Runtime Benchmarks 2026 | Wasmtime vs Wasmer vs WasmEdge | wasmRuntime.com\n\nTL;DR \u00b7 Editorial Summary\n\nAs of January 15, 2026, our analysis shows:Wasm3 is fastest for cold start (interpret"
+          },
+          {
+            "title": "WebAssembly vs JavaScript Performance: Benchmarks, Speed Tests & Tips | Medium",
+            "url": "https://medium.com/%40hashbyt/webassembly-vs-javascript-the-performance-battle-b2936d4c6c03",
+            "snippet": "WebAssembly vs JavaScript Performance: Benchmarks, Speed Tests & Tips | Medium\n\nSitemap\n\n[Open in app](https://play.google.com/store/apps/details?id=com.mediu"
+          },
+          {
+            "title": "I Benchmarked WebAssembly vs Node.js for 6 Months",
+            "url": "https://javascript.plainenglish.io/i-benchmarked-webassembly-vs-node-js-a0ebdcfabead",
+            "snippet": "I Benchmarked WebAssembly vs Node.js for 6 Months \u2014 When the Performance Gains Are Worth the Complexity | by Orami | JavaScript in Plain English\n\n[Sitemap](https://javascript.plainenglish.io/sitemap/s"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1663,
+        "result_count": 5,
+        "relevance": 7.3,
+        "error": null,
+        "results": [
+          {
+            "title": "Benchmarking WebAssembly for Embedded Systems",
+            "url": "https://dl.acm.org/doi/full/10.1145/3736169",
+            "snippet": "WebAssembly is a modern, low-level virtual machine with designed for improved application performance in web browsers."
+          },
+          {
+            "title": "WebAssembly/benchmarks: Resources for collaborative ... - GitHub",
+            "url": "https://github.com/WebAssembly/benchmarks",
+            "snippet": "Benchmarks help drive improvements in performance for a number of tools that produce, analyze, optimize, and execute WebAssembly code. Having a"
+          },
+          {
+            "title": "A real-world WebAssembly benchmark - Nutrient",
+            "url": "https://www.nutrient.io/blog/a-real-world-webassembly-benchmark/",
+            "snippet": "Only a few months later, we released an updated version of Nutrient Web SDK \u2014 one that doesn\u2019t require a server component and instead uses WebAssembly (Wasm, WA) to render documents directly in the br"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 889,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "opinion/best programming language for beginners 2026": {
+      "Fetchium": {
+        "latency_ms": 1755,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "If I Were Starting Coding in 2026, I'd Learn These Languages",
+            "url": "https://medium.com/@TusharKanjariya/if-i-were-starting-coding-in-2026-id-learn-these-languages-0d94532f6a2e",
+            "snippet": "A practical guide to the best programming languages to learn in 2026, with real projects and job-focused advice."
+          },
+          {
+            "title": "Best Programming Languages to Learn in 2026",
+            "url": "https://www.simplilearn.com/best-programming-languages-start-learning-today-article",
+            "snippet": "[Simplilearn.com] Find the best programming languages to start learning today. Trends, use-cases, demand and learning paths for python, java, javascript and..."
+          },
+          {
+            "title": "The 15 Best Programming Languages to Learn in 2026",
+            "url": "https://www.fullstackacademy.com/blog/nine-best-programming-languages-to-learn",
+            "snippet": "When you're new to programming, it's tough to know where to start. To help narrow the field, here are 15 of the most in-demand programming languages."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 977,
+        "result_count": 5,
+        "relevance": 7.4,
+        "error": null,
+        "results": [
+          {
+            "title": "The Only Programming Languages Worth Learning in 2026 - YouTube",
+            "url": "https://www.youtube.com/watch?v=zsPD9aohymw",
+            "snippet": "... best programing languages to learn in 2026 based on actual usage data, developer adoption, and where the industry is clearly heading. Want ..."
+          },
+          {
+            "title": "Which programming language do you recommend I start learning?",
+            "url": "https://www.reddit.com/r/programacion/comments/1o7gefh/que_lenguaje_de_programaci%C3%B3n_me_recomiendan/?tl=en",
+            "snippet": "I think the best way to start is with Python or JavaScript, maybe Go. But more than programming languages, learn algorithms first, that's the ..."
+          },
+          {
+            "title": "If I Were Starting Coding in 2026, I'd Learn These Languages",
+            "url": "https://medium.com/@TusharKanjariya/if-i-were-starting-coding-in-2026-id-learn-these-languages-0d94532f6a2e",
+            "snippet": "Go is perfect for huge systems that handle thousands of users at once. Learn it when you need that. \u00b7 Rust is amazing for super fast, low-level ..."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 2134,
+        "result_count": 5,
+        "relevance": 7.4,
+        "error": null,
+        "results": [
+          {
+            "title": "How to Choose Your First Programming Language in 2026: A Complete Beginner's Guide - DEV Community",
+            "url": "https://dev.to/4ds-dev/how-to-choose-your-first-programming-language-in-2026-a-complete-beginners-guide-2gmk",
+            "snippet": "How to Choose Your First Programming Language in 2026: A Complete Beginner's Guide - DEV Community\n\nChoosing your first programming language is like picking your first car: you need to know where you'"
+          },
+          {
+            "title": "Top 5 Easiest Programming Languages to Learn in 2026 - Softensity",
+            "url": "https://www.softensity.com/blog/top-5-easiest-programming-languages-to-learn-in-2026/",
+            "snippet": "Best Programming Languages to Learn First in 2025 | Softensity\n\n### Why Choosing the Right Beginner Language Matters\n\nEntering the world of programming in 2026 looks different than it did even a few y"
+          },
+          {
+            "title": "The Best Programming Language for 2026 (According to Reality ...",
+            "url": "https://blog.stackademic.com/the-best-programming-language-for-2026-according-to-reality-not-twitter-df2a690a984d",
+            "snippet": "The Best Programming Language for 2026 (According to Reality, Not Twitter)\u2b50\u2b50\u2b50\u2b50\u2b50 | by aisynd | Jan, 2026 | Stackademic\n\nSitemap\n\n[Open in app](https:"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1581,
+        "result_count": 5,
+        "relevance": 7.4,
+        "error": null,
+        "results": [
+          {
+            "title": "Top 5 Easiest Programming Languages to Learn in 2026 - Softensity",
+            "url": "https://www.softensity.com/blog/top-5-easiest-programming-languages-to-learn-in-2026/",
+            "snippet": "# Top 5 Easiest Programming Languages to Learn in 2026. ### Why Choosing the Right Beginner Language Matters. Companies expect beginners to understand not only syntax, but also real-world application,"
+          },
+          {
+            "title": "What are the best programming languages to learn in 2026 ... - Quora",
+            "url": "https://www.quora.com/What-are-the-best-programming-languages-to-learn-in-2026-for-a-successful-career-in-tech",
+            "snippet": "Here on Quora, I've recommended Julia, C#, Haskell, Smalltalk, Ruby, and Swift as best first languages. And I've not been wrong, in fact, since"
+          },
+          {
+            "title": "If I Were Starting Coding in 2026, I'd Learn These Languages",
+            "url": "https://medium.com/@TusharKanjariya/if-i-were-starting-coding-in-2026-id-learn-these-languages-0d94532f6a2e",
+            "snippet": "Go is perfect for huge systems that handle thousands of users at once. Learn it when you need that. \u00b7 Rust is amazing for super fast, low-level"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 904,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "opinion/is AI going to replace software engineers": {
+      "Fetchium": {
+        "latency_ms": 1777,
+        "result_count": 5,
+        "relevance": 8.0,
+        "error": null,
+        "results": [
+          {
+            "title": "AI is not going to replace software engineers, but it ...",
+            "url": "https://www.linkedin.com/posts/dave-farley-a67927_ai-is-not-going-to-replace-software-engineers-activity-7334163475520262144-Kmbs",
+            "snippet": "We cannot provide a description for this page right now"
+          },
+          {
+            "title": "Software engineering",
+            "url": "https://en.wikipedia.org/wiki/Software_engineering",
+            "snippet": "2023-01-25. Retrieved 2023-05-12. Kay, Grace. &quot;Software engineers are panicking about being replaced by AI&quot;. Business Insider. Retrieved 2023-05-12. Fowler"
+          },
+          {
+            "title": "r/ClaudeAI on Reddit: Reality check on \"AI will replace software engineers in 12 months\" claims",
+            "url": "https://www.reddit.com/r/ClaudeAI/comments/1qpfzqm/reality_check_on_ai_will_replace_software/",
+            "snippet": ""
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1320,
+        "result_count": 5,
+        "relevance": 8.8,
+        "error": null,
+        "results": [
+          {
+            "title": "Reality check on \"AI will replace software engineers in 12 months ...",
+            "url": "https://www.reddit.com/r/ClaudeAI/comments/1qpfzqm/reality_check_on_ai_will_replace_software/",
+            "snippet": "It won't \"replace\" all engineers but a lot of coders will lose their jobs. E.g. if you have a domain knowledge (e.g. coding in finance or pharma) ..."
+          },
+          {
+            "title": "Will AI Make Software Engineers Obsolete? Here's the Reality",
+            "url": "https://bootcamps.cs.cmu.edu/blog/will-ai-replace-software-engineers-reality-check",
+            "snippet": "Discover why AI won't replace software engineers anytime soon and learn how a coding bootcamp can help you thrive in a tech role."
+          },
+          {
+            "title": "Why Replacing Developers with AI is Going Horribly Wrong - YouTube",
+            "url": "https://www.youtube.com/watch?v=v3tLa5nHz-M",
+            "snippet": "Get started today! \u2192 https://skl.sh/sajjaadkhader02261 AI was supposed to replace software engineers by now. It didn't. In this video, I ..."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1770,
+        "result_count": 5,
+        "relevance": 4.0,
+        "error": null,
+        "results": [
+          {
+            "title": "Will AI Replace Developers in 2026? Companies Cited AI in 55,000 Job Cuts Last Year. Here Is the Real Answer. | Abhishek Gautam",
+            "url": "https://www.abhs.in/blog/will-ai-replace-developers-honest-answer-2026",
+            "snippet": "Will AI Replace Developers in 2026? 55,000 Job Cuts Cited AI Last Year. Here's What the Data Actually Shows. | Abhishek Gautam\n\n\u2190 All posts\n\n[Portfolio](https://www.abhs.in"
+          },
+          {
+            "title": "The End of \u201cSoftware Engineer\u201d: Why Anthropic\u2019s Claude Code Creator Says the Title Will Disappear by 2026 | by Faisal haque | Feb, 2026 | Artificial Intelligence in Plain English",
+            "url": "https://building.theatlantic.com/the-end-of-software-engineer-why-anthropics-claude-code-creator-says-the-title-will-disappear-c35f2dfe66f5",
+            "snippet": "The End of \u201cSoftware Engineer\u201d: Why Anthropic\u2019s Claude Code Creator Says the Title Will Disappear by 2026 | by Faisal haque | Feb, 2026 | Artificial Intelligence in Plain English\n\n[Sitemap](https://bu"
+          },
+          {
+            "title": "Will AI Replace Software Engineers? Latest 2026 Market Reports and Job Reality - Ai Creative Blog",
+            "url": "https://aicreativeblog.com/will-ai-replace-software-engineers/",
+            "snippet": "Will AI Replace Software Engineers? Latest 2026 Market Reports and Job Reality - Ai Creative Blog\n\nMenu\n\n\ud83c\udfe0 Home \ud83d\udcf0 All Articles\n\n\ud83d\udcc1 C"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 2303,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "AI is not going to replace software engineers, but it is ... - LinkedIn",
+            "url": "https://www.linkedin.com/posts/dave-farley-a67927_ai-is-not-going-to-replace-software-engineers-activity-7334163475520262144-Kmbs",
+            "snippet": "# AI won't replace software engineers, but it will expose those who don't think like engineers. AI is not going to replace software engineers, but it is going to expose the ones who never learned to t"
+          },
+          {
+            "title": "Will AI Replace Software Engineers? A 30-year Veteran's Perspective",
+            "url": "https://medium.com/the-business-of-ai/will-ai-replace-software-engineers-a-30-year-veterans-perspective-f6f5cdfc2c94",
+            "snippet": "# Will AI Replace Software Engineers? A common perspective being touted is that large language models and AI are dramatically simplifying the process of creating quality software. It started in the 19"
+          },
+          {
+            "title": "Will AI Replace Software Engineers? - Forbes",
+            "url": "https://www.forbes.com/councils/forbesbusinesscouncil/2025/09/29/will-ai-replace-software-engineers/",
+            "snippet": "*   2026 Top Women Wealth Advisors Best in State List. You've read a lot about how AI is going to eliminate need for software developers. We must embrace GenAI in our own development to be competitive"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 924,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "opinion/best noise cancelling headphones": {
+      "Fetchium": {
+        "latency_ms": 1921,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "r/digitalnomad on Reddit: What are the best noise-cancelling headphones or brands widely chosen currently?",
+            "url": "https://www.reddit.com/r/digitalnomad/comments/1pt8k3a/what_are_the_best_noisecancelling_headphones_or/",
+            "snippet": ""
+          },
+          {
+            "title": "Best noise cancelling headphones for deep work (2026)",
+            "url": "https://medium.com/@kenshievanassche/deep-work-in-a-noisy-world-the-best-noise-cancelling-headphones-for-studying-and-actually-6e4d1e24da53",
+            "snippet": "Marketing lies aside, some ANC barely touches chatter. Here are the headphones that help with speech + sudden noise, plus my no-lyrics focus stack. \u2014 r/headphones | 43 points"
+          },
+          {
+            "title": "The 4 Best Noise-Cancelling Headphones of 2026 | Reviews by Wirecutter",
+            "url": "https://www.nytimes.com/wirecutter/reviews/best-noise-cancelling-headphones/",
+            "snippet": "If you only have around $100 to spend on headphones, check out the Soundcore Space One headphones. The noise cancellation is price-defying, the sound quality is enjoyable, and the fit is comfortable. "
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 895,
+        "result_count": 5,
+        "relevance": 8.8,
+        "error": null,
+        "results": [
+          {
+            "title": "The Best Noise-Cancelling Headphones - The New York Times",
+            "url": "https://www.nytimes.com/wirecutter/reviews/best-noise-cancelling-headphones/",
+            "snippet": "The Sony WH-1000XM6 is our favorite pair of noise-cancelling headphones, but we also have recommendations for people who prefer earbuds or who want to spend ..."
+          },
+          {
+            "title": "What are the best noise-cancelling headphones or brands widely ...",
+            "url": "https://www.reddit.com/r/digitalnomad/comments/1pt8k3a/what_are_the_best_noisecancelling_headphones_or/",
+            "snippet": "The ones I see most often as listed as \"the best\" are Sony XM6, Bose QuietComfort Ultra, B&W Px7S3, and Polycom Blackwire 7225 (my wife's ..."
+          },
+          {
+            "title": "The Five Best Noise-Canceling Headphones and Earphones ...",
+            "url": "https://www.soundstagexperience.com/index.php/features-menu/pulse-menu/686-the-five-best-noise-canceling-headphones-and-earphones-according-to-me",
+            "snippet": "The QC25s deliver the best noise canceling of any over- or on-ear headphone model I've tested, in many cases beating the competitors by 10-20dB in the \u201cjet ..."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1398,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "The 4 Best Noise-Cancelling Headphones of 2026",
+            "url": "https://www.nytimes.com/wirecutter/reviews/best-noise-cancelling-headphones/",
+            "snippet": "The 4 Best Noise-Cancelling Headphones of 2025 | Reviews by Wirecutter\nAdvertisement\nSKIP ADVERTISEMENT\nWirecutterWirecutter\n[Skip To Conten"
+          },
+          {
+            "title": "The 6 Best Headphones of 2026",
+            "url": "https://www.rtings.com/headphones/reviews/best/headphones",
+            "snippet": "The 6 Best Headphones of 2026 - RTINGS.com\n\nBest\n\nHeadphones [Noise Cancelling](https://w"
+          },
+          {
+            "title": "Noise-Cancelling Headphones",
+            "url": "https://www.bestbuy.com/site/headphones/noise-cancelling-headphones/pcmcat1506545802590.c?id=pcmcat1506545802590",
+            "snippet": "Best Buy International: Select your Country - Best Buy\n\nHello!\n\n# Choose a country.\n\n#### Canada\n\n#### United States\n\n### Shopping in the U.S.?\n\nInternational customers can shop on www.bestbuy.com and"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1543,
+        "result_count": 5,
+        "relevance": 9.6,
+        "error": null,
+        "results": [
+          {
+            "title": "Best Noise Cancelling Headphones | Lab Tested - TechGearLab",
+            "url": "https://www.techgearlab.com/topics/audio/best-noise-cancelling-headphones",
+            "snippet": "But, before you rush to buy the Sony XM6, we urge you to consider the Bose QuietComfort Ultra (2nd Gen) Headphones, which are nearly as good at noise cancellation as the Sony XM6, but are more comfort"
+          },
+          {
+            "title": "The Best Noise-Cancelling Headphones - The New York Times",
+            "url": "https://www.nytimes.com/wirecutter/reviews/best-noise-cancelling-headphones/",
+            "snippet": "**These are the best earbuds for blocking noise.** This pair takes the most-effective ANC of any earbuds we\u2019ve measured \u2014 28.7 dB in the airplane range \u2014 and pairs it with specially designed ear tips "
+          },
+          {
+            "title": "The Five Best Noise-Canceling Headphones and Earphones ...",
+            "url": "https://www.soundstagexperience.com/index.php/features-menu/pulse-menu/686-the-five-best-noise-canceling-headphones-and-earphones-according-to-me",
+            "snippet": "The QC25s deliver the best noise canceling of any over- or on-ear headphone model I've tested, in many cases beating the competitors by 10-20dB."
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 1027,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "academic/transformer architecture attention mechanism paper": {
+      "Fetchium": {
+        "latency_ms": 2442,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "Attention Is All You Need \u2014 Full Paper Breakdown - DEV Community",
+            "url": "https://dev.to/seahjs/attention-is-all-you-need-full-paper-breakdown-2kf3",
+            "snippet": "The 2017 paper \"Attention Is All You Need\" by Vaswani et al. introduced the Transformer \u2014 the architecture behind GPT, Claude, Gemini, and every major LLM today. It replaced recurrent models entirely "
+          },
+          {
+            "title": "Attention Is All You Need",
+            "url": "https://en.wikipedia.org/wiki/Attention_Is_All_You_Need",
+            "snippet": "deep learning architecture known as the transformer, based on the attention mechanism proposed in 2014 by Bahdanau et al. The transformer approach it describes"
+          },
+          {
+            "title": "atikul-islam-sajib/TransformerScratch",
+            "url": "https://github.com/atikul-islam-sajib/TransformerScratch",
+            "snippet": "\"Attention Is All You Need\" is a 2017 landmark research paper authored by eight scientists working at Google, that introduced a new deep learning architecture known as the transformer based on attenti"
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1215,
+        "result_count": 5,
+        "relevance": 8.3,
+        "error": null,
+        "results": [
+          {
+            "title": "[1706.03762] Attention Is All You Need - arXiv.org",
+            "url": "https://arxiv.org/abs/1706.03762",
+            "snippet": "We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely."
+          },
+          {
+            "title": "[PDF] Attention is All you Need - NIPS",
+            "url": "https://papers.neurips.cc/paper/7181-attention-is-all-you-need.pdf",
+            "snippet": "We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely."
+          },
+          {
+            "title": "Transformer Architecture and Attention Mechanisms in Genome ...",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10376273/",
+            "snippet": "This review provides a comprehensive analysis of the most recent advancements in the application of transformer architectures and attention mechanisms to ..."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 915,
+        "result_count": 5,
+        "relevance": 5.4,
+        "error": null,
+        "results": [
+          {
+            "title": "[1706.03762] Attention Is All You Need",
+            "url": "https://arxiv.org/abs/1706.03762",
+            "snippet": "[1706.03762] Attention Is All You Need\n\n--\n\n# Computer Science Computation and Language\n\narXiv:1706.03762 (cs)\n\n[Submitted on 12 Jun 2017 (v1), last revised 2 Aug"
+          },
+          {
+            "title": "Attention is All you Need",
+            "url": "https://papers.neurips.cc/paper/7181-attention-is-all-you-need.pdf",
+            "snippet": "Attention Is All You Need\nAshish Vaswani\u2217\nGoogle Brain\navaswani@google.com\nNoam Shazeer\u2217\nGoogle Brain\nnoam@google.com\nNiki Parmar\u2217\nGoogle Research\nnikip@google.com\nJakob Uszkoreit\u2217\nGoogle Research\nusz"
+          },
+          {
+            "title": "Transformer Architecture and Attention Mechanisms in ... - PMC",
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10376273/",
+            "snippet": "Transformer Architecture and Attention Mechanisms in Genome Data Analysis: A Comprehensive Review - PMCSkip to main content\n\nAn"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1508,
+        "result_count": 5,
+        "relevance": 9.0,
+        "error": null,
+        "results": [
+          {
+            "title": "Transformer Architecture Explained 'Attention Is All You Need'",
+            "url": "https://www.youtube.com/watch?v=XwYY0lCGWW8",
+            "snippet": "... paper, covering its Attention Mechanism, Multi-Headed Attention, and Encoder-Decoder structure. By the end, you'll have a solid"
+          },
+          {
+            "title": "Understanding The Transformers architecture: \u201cAttention is all you ...",
+            "url": "https://akramboutzouga.medium.com/understanding-the-transformers-architecture-attention-is-all-you-need-paper-reading-a0e9ae2cd8aa",
+            "snippet": "This paper presents the Transformer's design, its advantages, and its exceptional performance in machine translation tasks."
+          },
+          {
+            "title": "Transformer Architecture Explained With Self-Attention Mechanism",
+            "url": "https://www.codecademy.com/article/transformer-architecture-self-attention-mechanism",
+            "snippet": "A transformer architecture has different components, such as input embedding, positional encoding, a multi-head attention layer, an Add & Norm layer, a feed-forward neural network, a masked multi-head"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 821,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "academic/CRISPR gene editing recent breakthroughs": {
+      "Fetchium": {
+        "latency_ms": 2253,
+        "result_count": 5,
+        "relevance": 7.1,
+        "error": null,
+        "results": [
+          {
+            "title": "Recent advances in therapeutic gene-editing technologies",
+            "url": "https://www.sciencedirect.com/science/article/pii/S152500162500200X",
+            "snippet": "The US Food and Drug Administration (FDA) has approved the first CRISPR-Cas9-based gene-editing therapy, Exa-cel (exagamglogene autotemcel, brand name Casgevy), ..."
+          },
+          {
+            "title": "New gene-editing method could advance regenerative medicine",
+            "url": "https://today.uic.edu/new-gene-editing-method-could-help-advance-regenerative-medicine/",
+            "snippet": "[UIC today] A breakthrough in CRISPR gene editing may allow scientists to more efficiently engineer cells for use in medical therapies, according to a..."
+          },
+          {
+            "title": "World's First Patient Treated with Personalized CRISPR Gene ...",
+            "url": "https://www.chop.edu/news/worlds-first-patient-treated-personalized-crispr-gene-editing-therapy-childrens-hospital",
+            "snippet": "In a historic medical breakthrough, a child diagnosed with a rare genetic disorder has been successfully treated with a customized CRISPR gene editing therapy ..."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 773,
+        "result_count": 5,
+        "relevance": 5.5,
+        "error": null,
+        "results": [
+          {
+            "title": "World's First Patient Treated with Personalized CRISPR Gene ...",
+            "url": "https://www.chop.edu/news/worlds-first-patient-treated-personalized-crispr-gene-editing-therapy-childrens-hospital",
+            "snippet": "In a historic medical breakthrough, a child diagnosed with a rare genetic disorder has been successfully treated with a customized CRISPR gene ..."
+          },
+          {
+            "title": "AI-powered CRISPR could lead to faster gene therapies, Stanford ...",
+            "url": "https://med.stanford.edu/news/all-news/2025/09/ai-crispr-gene-therapy.html",
+            "snippet": "CRISPR-GPT, a large language model developed at Stanford Medicine, is accelerating gene-editing processes and increasing accessibility to CRISPR ..."
+          },
+          {
+            "title": "Scientists develop technology that brings new precision to genome ...",
+            "url": "https://www.broadinstitute.org/news/technology-brings-new-precision-to-genome-editing",
+            "snippet": "Fast-acting, cell-permeable protein system that controls CRISPR-Cas9 could reduce off-target effects and advance gene therapy."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1260,
+        "result_count": 5,
+        "relevance": 3.7,
+        "error": null,
+        "results": [
+          {
+            "title": "Exapted CRISPR\u2013Cas12f homologues drive RNA-guided transcription | Nature",
+            "url": "https://www.nature.com/articles/s41586-026-10166-7",
+            "snippet": "Exapted CRISPR\u2013Cas12f homologues drive RNA-guided transcription | Nature\nSkip to main content\nThank you for visiting nature.com. You are using a browser version with limited support for CS"
+          },
+          {
+            "title": "CRISPR gene editing of angiopoietin-like 3: toward one-time precision therapy for dyslipidaemia | Signal Transduction and Targeted Therapy",
+            "url": "https://www.nature.com/articles/s41392-026-02605-8?error=cookies_not_supported&code=ca3b5c26-496c-4fcb-9623-0f054811cd5b",
+            "snippet": "CRISPR gene editing of angiopoietin-like 3: toward one-time precision therapy for dyslipidaemia | Signal Transduction and Targeted Therapy\nSkip to main content\nThank you for visiting natur"
+          },
+          {
+            "title": "Improved in vivo gene knockout with high specificity using multiplexed Cas12a sgRNAs | Nature Communications",
+            "url": "https://www.nature.com/articles/s41467-026-68434-z?error=cookies_not_supported&code=420ca623-bbc8-417d-9577-28dc31f88924",
+            "snippet": "Improved in vivo gene knockout with high specificity using multiplexed Cas12a sgRNAs | Nature Communications\nSkip to main content\nThank you for visiting nature.com. You are using a browser"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1485,
+        "result_count": 5,
+        "relevance": 6.2,
+        "error": null,
+        "results": [
+          {
+            "title": "Gene Editing - CRISPR Therapeutics",
+            "url": "https://crisprtx.com/gene-editing",
+            "snippet": "CRISPR/Cas9 \u2013 a revolutionary gene-editing technology that can be used to modify or correct precise regions of our DNA to treat serious diseases."
+          },
+          {
+            "title": "World's First Patient Treated with Personalized CRISPR Gene ...",
+            "url": "https://www.chop.edu/news/worlds-first-patient-treated-personalized-crispr-gene-editing-therapy-childrens-hospital",
+            "snippet": "In a historic medical breakthrough, a child diagnosed with a rare genetic disorder has been successfully treated with a customized CRISPR gene"
+          },
+          {
+            "title": "World's first patient treated with personalized CRISPR gene editing ...",
+            "url": "https://penntoday.upenn.edu/news/penn-medicine-worlds-first-patient-treated-personalized-crispr-gene-editing-therapy-childrens-hospital",
+            "snippet": "A landmark study from CHOP and Penn Medicine showcases the power of customized gene editing therapy to treat a patient with a rare metabolic disease."
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 839,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "academic/quantum error correction techniques": {
+      "Fetchium": {
+        "latency_ms": 2090,
+        "result_count": 5,
+        "relevance": 9.2,
+        "error": null,
+        "results": [
+          {
+            "title": "Quantum error correction - Wikipedia",
+            "url": "https://en.wikipedia.org/wiki/Quantum_error_correction",
+            "snippet": "In January 2025, researchers at ... states (qudits) with up to eight states. By encoding quantum information in the nuclear spin of a phosphorus atom embedded in silicon and employing advanced pulse c"
+          },
+          {
+            "title": "Microsoft Quantum | Quantum error correction",
+            "url": "https://quantum.microsoft.com/en-us/insights/education/concepts/quantum-error-correction",
+            "snippet": "Quantum error correction techniques enable the construction of logical qubits from multiple physical qubits, reducing the impact of errors on the overall computation and making it possible to scale up"
+          },
+          {
+            "title": "October 10, 2019 Quantum Error Correction: An Introductory Guide Joschka Ro\ufb00e",
+            "url": "https://iontrap.duke.edu/files/2025/03/arxiv_sub_v2.pdf",
+            "snippet": "In place of lookup tables, large-scale quantum error correction codes use approximate inference \u00b7 techniques to determine the most likely error to have occurred given a certain syndrome S."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1299,
+        "result_count": 5,
+        "relevance": 9.2,
+        "error": null,
+        "results": [
+          {
+            "title": "Quantum error correction - Wikipedia",
+            "url": "https://en.wikipedia.org/wiki/Quantum_error_correction",
+            "snippet": "Quantum error correction (QEC) comprises a set of techniques used in quantum memory and quantum computing to protect quantum information from errors arising ..."
+          },
+          {
+            "title": "What is quantum error correction? | Q-CTRL",
+            "url": "https://q-ctrl.com/topics/what-is-quantum-error-correction",
+            "snippet": "Quantum Error Correction - or QEC for short - is an algorithm known to identify and fix errors in quantum computers."
+          },
+          {
+            "title": "Quantum error correction - Microsoft Quantum",
+            "url": "https://quantum.microsoft.com/en-us/insights/education/concepts/quantum-error-correction",
+            "snippet": "Quantum error correction techniques enable the construction of logical qubits from multiple physical qubits, reducing the impact of errors on the overall ..."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 875,
+        "result_count": 5,
+        "relevance": 8.0,
+        "error": null,
+        "results": [
+          {
+            "title": "A Short Introduction to Quantum Error Correction | Brazilian Journal of Physics | Springer Nature Link",
+            "url": "https://link.springer.com/article/10.1007/s13538-026-02007-9",
+            "snippet": "A Short Introduction to Quantum Error Correction | Brazilian Journal of Physics | Springer Nature Link\n\n# A Short Introduction to Quantum Error Correction\n\n- Published: 14 February 2026\n- [Open access"
+          },
+          {
+            "title": "Quantum Errors and Quantum Error Correction (QEC) Methods",
+            "url": "https://postquantum.com/quantum-computing/quantum-error-correction/",
+            "snippet": "Quantum Errors and Quantum Error Correction (QEC) Methods\n\nShare via:\n\n- More\n\n## Table of Contents\n\n## Introduction\n\nQuantum computers process information using qubits that can exist in [superpositio"
+          },
+          {
+            "title": "Quantum Error Correction: The Key to Quantum Computing",
+            "url": "https://www.bluequbit.io/quantum-error-correction",
+            "snippet": "Quantum Error Correction: The Key to Quantum Computing\n\n###### Company\n\nDocs Blog [SDK Docs](https://app.bluequbit.io/sdk-docs/index.h"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1611,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "[PDF] Chapter 7 Quantum Error Correction",
+            "url": "https://www.preskill.caltech.edu/ph229/notes/chap7.pdf",
+            "snippet": "7.2 Criteria for Quantum Error Correction In our discussion of error recovery using the nine-qubit code, we have assumed that each qubit undergoes either a bit-\ufb02ip error or a phase-\ufb02ip error (or both)"
+          },
+          {
+            "title": "Differences in error suppression, mitigation, and correction - IBM",
+            "url": "https://www.ibm.com/quantum/blog/quantum-error-suppression-mitigation-correction",
+            "snippet": "Beyond several hundreds of qubits with equivalent circuit depth, we envision potential hybrid quantum error correction and error mitigation techniques. Error correction is how we hope to achieve our u"
+          },
+          {
+            "title": "Quantum error correction - Wikipedia",
+            "url": "https://en.wikipedia.org/wiki/Quantum_error_correction",
+            "snippet": "*   [4.1 Bit-flip code](https://en.wikipedia.org/wiki/Quantum_error_correction#Bit-flip_code). For instance, the ((5,6,2)){\\displaystyle ((5,6,2))}![Image 21: {\\displaystyle ((5,6,2))}](https://wikime"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 1572,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "code/python asyncio tutorial with examples": {
+      "Fetchium": {
+        "latency_ms": 1769,
+        "result_count": 5,
+        "relevance": 8.8,
+        "error": null,
+        "results": [
+          {
+            "title": "Asyncio in Python: A Comprehensive Guide with Examples. - Medium",
+            "url": "https://medium.com/@obaff/asyncio-in-python-a-comprehensive-guide-with-examples-3a3f854017f9",
+            "snippet": "This tutorial will introduce the basics of asyncio, gradually moving from simple to more complex examples. 1. What is Asynchronous ..."
+          },
+          {
+            "title": "Python Asyncio Part 1 \u2013 Basic Concepts and Patterns | cloudfit-public-docs",
+            "url": "https://bbc.github.io/cloudfit-public-docs/asyncio/asyncio-part-1.html",
+            "snippet": "In particular whilst there were a number of very elementary tutorials which introduced some of the basic syntax there were none I could find which were aimed at experienced Python programmers and fill"
+          },
+          {
+            "title": "Python's asyncio: A Hands-On Walkthrough \u2013 Real Python",
+            "url": "https://realpython.com/async-io-python/",
+            "snippet": "Jul 30, 2025 \u00b7 Explore how Python asyncio works and when to use it. Follow hands-on examples to build efficient programs with coroutines and awaitable tasks."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1066,
+        "result_count": 5,
+        "relevance": 7.2,
+        "error": null,
+        "results": [
+          {
+            "title": "Python's asyncio: A Hands-On Walkthrough",
+            "url": "https://realpython.com/async-io-python/",
+            "snippet": "Explore how Python asyncio works and when to use it. Follow hands-on examples to build efficient programs with coroutines and awaitable ..."
+          },
+          {
+            "title": "Complete Guide to Asynchronous Programming with Animations",
+            "url": "https://www.youtube.com/watch?v=oAkLSJNr5zY",
+            "snippet": "... Examples Repo - https://github.com/CoreyMSchafer ... Python Tutorial: AsyncIO - Complete Guide to Asynchronous Programming with Animations."
+          },
+          {
+            "title": "Mastering Python's Asyncio: A Practical Guide | by Moraneus - Medium",
+            "url": "https://medium.com/@moraneus/mastering-pythons-asyncio-a-practical-guide-0a673265cf04",
+            "snippet": "This toolkit is Python's answer to writing clean, efficient, and scalable code for concurrent I/O operations."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1015,
+        "result_count": 5,
+        "relevance": 6.4,
+        "error": null,
+        "results": [
+          {
+            "title": "Python asyncio: Complete Guide to Async Programming 2026 | DevToolbox Blog",
+            "url": "https://devtoolbox.dedyn.io/blog/python-asyncio-complete-guide",
+            "snippet": "Python asyncio: Complete Guide to Async Programming 2026 | DevToolbox Blog\n\n# Python asyncio: Complete Guide to Async Programming 2026\n\nPython's`asyncio` library lets you write concurrent code that ha"
+          },
+          {
+            "title": "How to Use asyncio for Concurrent Programming in Python",
+            "url": "https://oneuptime.com/blog/post/2026-01-24-asyncio-concurrent-programming-python/view",
+            "snippet": "How to Use asyncio for Concurrent Programming in Python\n\n# How to Use asyncio for Concurrent Programming in Python\n\nMaster Python's asyncio library for writing concurrent code. Learn async/await synta"
+          },
+          {
+            "title": "Asyncio in Python Explained: Master Asynchronous Programming (2025 Guide) | by ITLearningAi | Feb, 2026 | Medium",
+            "url": "https://medium.com/%40itlearningai/asyncio-in-python-explained-master-asynchronous-programming-2025-guide-b0dd493ffaed",
+            "snippet": "Asyncio in Python Explained: Master Asynchronous Programming (2025 Guide) | by ITLearningAi | Feb, 2026 | Medium\n\nSitemap\n\n[Open in app](https://play.google.c"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1890,
+        "result_count": 5,
+        "relevance": 7.6,
+        "error": null,
+        "results": [
+          {
+            "title": "Python's asyncio: A Hands-On Walkthrough",
+            "url": "https://realpython.com/async-io-python/",
+            "snippet": "The core building blocks of async I/O in Python are awaitable objects\u2014most often coroutines\u2014that an event loop schedules and executes asynchronously. In this tutorial, you\u2019ll learn how Python `asyncio"
+          },
+          {
+            "title": "asyncio in Python - GeeksforGeeks",
+            "url": "https://www.geeksforgeeks.org/python/asyncio-in-python/",
+            "snippet": "Asyncio is a Python library that is used for concurrent programming, including the use of async iterator in Python. ## Asynchronous Programming with Asyncio in Python. import asyncio async def fn(): p"
+          },
+          {
+            "title": "Asyncio in Python: A Comprehensive Guide with Examples. - Medium",
+            "url": "https://medium.com/@obaff/asyncio-in-python-a-comprehensive-guide-with-examples-3a3f854017f9",
+            "snippet": "# Asyncio in Python: A Comprehensive Guide with Examples. Python\u2019s *asyncio* library is designed for writing concurrent code using the *async/await* syntax. It provides a foundation for writing asynch"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 824,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "code/rust lifetime annotations explained": {
+      "Fetchium": {
+        "latency_ms": 3580,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "What are Lifetimes in Rust? Explained with Code Examples",
+            "url": "https://www.freecodecamp.org/news/what-are-lifetimes-in-rust-explained-with-code-examples/",
+            "snippet": "In the example, the lifetime annotations indicate that max should live at most as long as the lifetimes of s1 or s2. It also indicates that max returns a reference that lives as long as s1. A Rust pro"
+          },
+          {
+            "title": "Lifetimes - The Rust Programming Language",
+            "url": "https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/first-edition/lifetimes.html",
+            "snippet": "Note It's important to understand that lifetime annotations are descriptive, not prescriptive. This means that how long a reference is valid is determined by the code, not by the annotations. The anno"
+          },
+          {
+            "title": "What is the significance of lifetime annotations in Rust?",
+            "url": "https://stackoverflow.com/questions/78015566/what-is-the-significance-of-lifetime-annotations-in-rust",
+            "snippet": "Lifetimes must be specified when they are part of an interface, because the compiler only works locally, and needs some way to communicate lifetime constraints ..."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 937,
+        "result_count": 5,
+        "relevance": 6.8,
+        "error": null,
+        "results": [
+          {
+            "title": "Validating References with Lifetimes",
+            "url": "https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html",
+            "snippet": "Lifetime annotations don't change how long any of the references live. Rather, they describe the relationships of the lifetimes of multiple ..."
+          },
+          {
+            "title": "Simplest, Best Explanation of Lifetimes? : r/rust - Reddit",
+            "url": "https://www.reddit.com/r/rust/comments/bltnfv/simplest_best_explanation_of_lifetimes/",
+            "snippet": "All the slices we derive from the buffer need to be annotated with this lifetime so the compiler can guarantee the Rust invariants while this ..."
+          },
+          {
+            "title": "What are Lifetimes in Rust? Explained with Code Examples",
+            "url": "https://www.freecodecamp.org/news/what-are-lifetimes-in-rust-explained-with-code-examples/",
+            "snippet": "The lifetime annotation indicates that max should live at most as long as 'a . Using multiple lifetimes follows the same syntax: max<'a, 'b>."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1088,
+        "result_count": 5,
+        "relevance": 8.0,
+        "error": null,
+        "results": [
+          {
+            "title": "Rust Lifetimes Explained - DEV Community",
+            "url": "https://dev.to/godofgeeks/rust-lifetimes-explained-1f9m",
+            "snippet": "Rust Lifetimes Explained - DEV Community\n\n## Rust Lifetimes: Keeping Your Code Safe (Without the Existential Dread)\n\nEver felt like you're juggling chainsaws while trying to write code? You're not alo"
+          },
+          {
+            "title": "How to Understand Explicit Lifetime Annotations in Rust",
+            "url": "https://oneuptime.com/blog/post/2026-01-25-explicit-lifetime-annotations-rust/view",
+            "snippet": "How to Understand Explicit Lifetime Annotations in Rust\n\n# How to Understand Explicit Lifetime Annotations in Rust\n\nLearn when and how to use explicit lifetime annotations in Rust. Understand lifetime"
+          },
+          {
+            "title": "Lifetime Annotations - Comprehensive Rust \ud83e\udd80",
+            "url": "https://google.github.io/comprehensive-rust/lifetimes/lifetime-annotations.html",
+            "snippet": "Lifetime Annotations - Comprehensive Rust \ud83e\udd80****\n* Light\n* Rust\n* Coal\n* Navy\n* Ayu**\n# Comprehensive Rust \ud83e\udd80**\n* English\n* Brazilian Portuguese (Portugu\u00eas do Brasil)\n* Chinese Simplified (\u6c49\u8bed)\n* Chine"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1516,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "Lifetime annotations in Rust - Syntax, Examples & Explanation",
+            "url": "https://leyaa.ai/codefly/learn/rust/part-3/rust-lifetime-annotations",
+            "snippet": "Lifetime annotations help Rust know how long references should be valid. They prevent bugs by making sure data lives long enough."
+          },
+          {
+            "title": "Lifetime Annotations in Rust: Ensuring Memory Safety | by Dehvcurtis",
+            "url": "https://medium.com/@dehvcurtis/lifetime-annotations-in-rust-ensuring-memory-safety-6e1a5b799460",
+            "snippet": "## What are Lifetimes in Rust? In Rust, **lifetimes** are a way of ensuring that **references are always valid**. Rust uses lifetimes to prevent **dangling references** \u2014 references that point to data"
+          },
+          {
+            "title": "What are Lifetimes in Rust? Explained with Code Examples",
+            "url": "https://www.freecodecamp.org/news/what-are-lifetimes-in-rust-explained-with-code-examples/",
+            "snippet": "A Rust project has many cases that would require explicit lifetime annotations, and in the next few sections, we'll go over each of them. A function only needs an explicit lifetime annotation when it "
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 821,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "code/implement binary search tree javascript": {
+      "Fetchium": {
+        "latency_ms": 1886,
+        "result_count": 5,
+        "relevance": 10,
+        "error": null,
+        "results": [
+          {
+            "title": "vadimg/js_bintrees",
+            "url": "https://github.com/vadimg/js_bintrees",
+            "snippet": "Javascript implementation of binary search trees \u2014 224 stars | JavaScript"
+          },
+          {
+            "title": "How to implement Binary search tree Data structure in JavaScript | Reactgo",
+            "url": "https://reactgo.com/binary-search-tree-javascript/",
+            "snippet": "The Contains method helps us to check whether the data is present inside the binary search tree or not. contains(data){ const found = this.find(data) if(found){ return true } return false } Bfs is an "
+          },
+          {
+            "title": "sorting - javascript binary search tree implementation - Stack Overflow",
+            "url": "https://stackoverflow.com/questions/1331289/javascript-binary-search-tree-implementation",
+            "snippet": "Aug 25, 2009 ... Anyone know of any good examples of a simple BTree implementation in Javascript? I have a bunch of things arriving randomly, and want to insert each one\u00a0..."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 731,
+        "result_count": 5,
+        "relevance": 8.7,
+        "error": null,
+        "results": [
+          {
+            "title": "Building Binary Search Trees in JavaScript",
+            "url": "https://dvbrandt90.medium.com/building-binary-search-trees-in-javascript-7c91e5ad39e7",
+            "snippet": "In this post, we will walk through what a tree is and where it comes from, as well as some of the benefits of using this data structure."
+          },
+          {
+            "title": "Binary Search Tree in Javascript",
+            "url": "https://www.geeksforgeeks.org/javascript/implementation-binary-search-tree-javascript/",
+            "snippet": "In this article, we would be implementing the Binary Search Tree data structure in Javascript. A tree is a collection of nodes connected by some ..."
+          },
+          {
+            "title": "Binary Search Tree Algorithms for JavaScript Beginners",
+            "url": "https://www.freecodecamp.org/news/binary-tree-algorithms-for-javascript-beginners/",
+            "snippet": "In this article, I will try my best to explain some core algorithms you should learn before a coding interview."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 858,
+        "result_count": 5,
+        "relevance": 9.0,
+        "error": null,
+        "results": [
+          {
+            "title": "Building and Understanding Binary Search Trees in JavaScript",
+            "url": "https://junaidbinjaman.help/building-and-understanding-binary-search-trees-in-javascript",
+            "snippet": "Building and Understanding Binary Search Trees in JavaScript\n\n[![Dev Dive - Blogs by Junaid](https://cdn.hashnode.com/res/hashnode/image/upload/v1725695567989/c869a177-"
+          },
+          {
+            "title": "Implement a Binary Search Tree in JavaScript: Implementation Guide | InitJS",
+            "url": "https://initjs.org/implement-a-binary-search-tree-in-javascript-952a44ee7c26",
+            "snippet": "Implement a Binary Search Tree in JavaScript: Implementation Guide | InitJS\n[Open in app](https://rsci.app.link/?$canonical_url=https://medium.com/p/952a44ee7c26&amp;~feature=LoOpenInAppButton&amp;~ch"
+          },
+          {
+            "title": "Building a Binary Search Tree from a JavaScript Array",
+            "url": "https://www.tempmail.us.com/en/binary-search-tree/building-a-binary-search-tree-from-a-javascript-array",
+            "snippet": "Building a Binary Search Tree from a JavaScript Array\n\n# Building a Binary Search Tree from a JavaScript Array\n\n--\n\nTuesday, October 1, 2024 at 8:25:51 PM\n\n## Binary Search Tree Construction with Arra"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1482,
+        "result_count": 5,
+        "relevance": 9.0,
+        "error": null,
+        "results": [
+          {
+            "title": "javascript binary search tree implementation [closed] - Stack Overflow",
+            "url": "https://stackoverflow.com/questions/1331289/javascript-binary-search-tree-implementation",
+            "snippet": "//find the left most node to find the min value of a binary tree;. node.value : traverse(node.left);. //find the right most node to find the max value of a binary tree;. node.value : traverse(node.rig"
+          },
+          {
+            "title": "Binary Search Tree in JavaScript - Medium",
+            "url": "https://medium.com/swlh/binary-search-tree-in-javascript-31cb74d8263b",
+            "snippet": "Binary search tree, as shown in its name, is an ordered tree data structure. Like all tree data structure, binary search tree has a **root**, the top node (just one node), **parent** node has at most "
+          },
+          {
+            "title": "Implement Depth-First Search in a Binary Search Tree with JavaScript",
+            "url": "https://dev.to/mattdclarke/implement-depth-first-search-in-a-binary-search-tree-with-javascript-1p96",
+            "snippet": "Binary search trees are a useful data structure for storing data in an ordered format that makes searching for values, insertion and deletion quick. A binary search tree is a type of binary tree that "
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 818,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "multilingual/comment apprendre le francais rapidement": {
+      "Fetchium": {
+        "latency_ms": 2022,
+        "result_count": 5,
+        "relevance": 8.0,
+        "error": null,
+        "results": [
+          {
+            "title": "Comment apprendre facilement et rapidement le francais ? - Quora",
+            "url": "https://fr.quora.com/Comment-apprendre-facilement-et-rapidement-le-francais?no_redirect=1",
+            "snippet": "Je redis: Prenez un bon livre, laissez les sites comme Duolingo, Memorise etc, utilisez beaucoup les applications aidantes comme les ..."
+          },
+          {
+            "title": "Comment apprendre le fran\u00e7ais rapidement ? - Global Lingua",
+            "url": "https://www.globallingua.ca/fr/espace-educatif/comment-apprendre-le-francais-rapidement",
+            "snippet": "L'immersion compl\u00e8te est \u00e9galement une m\u00e9thode infaillible pour apprendre le fran\u00e7ais rapidement. Quand toutes vos interactions se font en ..."
+          },
+          {
+            "title": "Comment apprendre \u00e0 parler fran\u00e7ais rapidement ? Voici, le ...",
+            "url": "https://www.ohlalafrenchcourse.com/fr/blog/article/comment-apprendre-a-parler-francais-rapidement-voici-le-meilleur-moyen",
+            "snippet": "S'immerger dans la langue fran\u00e7aise : \u00b7 Regarder des s\u00e9ries, des films, des dessins-anim\u00e9s. \u00b7 \u00c9couter des podcasts, des livres audio, la radio. \u00b7 Lire un livre, un ..."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1116,
+        "result_count": 5,
+        "relevance": 4.8,
+        "error": null,
+        "results": [
+          {
+            "title": "J'ai besoin d'apprendre le fran\u00e7ais, par o\u00f9 commencer ? : r/French",
+            "url": "https://www.reddit.com/r/French/comments/13mzda1/i_need_to_learn_french_how_should_i_start/?tl=fr",
+            "snippet": "Je pense qu'utiliser un livre et suivre des instructions vid\u00e9o est un excellent moyen de pratiquer la langue. Et il y a quelques autres sites ..."
+          },
+          {
+            "title": "Apprendre le fran\u00e7ais FLE gratuitement, cours de fran\u00e7ais avec ...",
+            "url": "https://apprendre.tv5monde.com/fr",
+            "snippet": "C'est un site gratuit et interactif pour apprendre le fran\u00e7ais \u00e0 partir de vid\u00e9os, d'\u00e9missions et de reportages d'actualit\u00e9. Choisissez parmi plus de 2000 ..."
+          },
+          {
+            "title": "Comment Apprendre du Vocabulaire tr\u00e8s facilement en Fran\u00e7ais",
+            "url": "https://www.youtube.com/watch?v=ymkWfvhiTc0",
+            "snippet": "Share your videos with friends, family, and the world."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1148,
+        "result_count": 5,
+        "relevance": 6.4,
+        "error": null,
+        "results": [
+          {
+            "title": "Comment apprendre le fran\u00e7ais rapidement: 10 \u00e9tapes",
+            "url": "https://fr.wikihow.com/apprendre-le-fran%C3%A7ais-rapidement",
+            "snippet": "Comment apprendre le fran\u00e7ais rapidement: 10 \u00e9tapes\n\nSkip to Content\n\n- En savoir plus au sujet de wikiHow\n- [Cours](https://fr.wik"
+          },
+          {
+            "title": "Comment apprendre le fran\u00e7ais rapidement : guide complet pour un apprentissage efficace",
+            "url": "https://speakmeeters.com/blog/comment-apprendre-francais-rapidement-guide-efficace",
+            "snippet": "Comment apprendre le fran\u00e7ais rapidement : guide complet pour un apprentissage efficace\n\n# Comment apprendre le fran\u00e7ais rapidement : guide complet pour un apprentissage efficace\n\n[Olivia Rhany](https"
+          },
+          {
+            "title": "Apprendre le fran\u00e7ais rapidement et efficacement",
+            "url": "https://www.savoir-tout-sur-tout.fr/astuces-apprendre-francais-rapidement/",
+            "snippet": "Apprendre le fran\u00e7ais rapidement et efficacement\n\n# Astuces pour apprendre le fran\u00e7ais plus rapidement\n\n[par St\u00e9phane.C : r\u00e9dacteur en Chef](https://www.savoir-tout-sur-tout.fr/author/ghislain-riondet"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1449,
+        "result_count": 5,
+        "relevance": 6.8,
+        "error": null,
+        "results": [
+          {
+            "title": "Parler fran\u00e7ais rapidement : 6 conseils en or",
+            "url": "https://www.francaisauthentique.com/parler-francais-rapidement/",
+            "snippet": "Tu pars bient\u00f4t \u00e0 Paris pour un voyage d\u2019affaires ou pour un s\u00e9jour linguistique et tu as besoin d\u2019**\u00eatre \u00e0 l\u2019aise \u00e0 l\u2019oral en fran\u00e7ais**\u00a0? Pour cela, tu vas remplacer tout le contenu que tu lis, \u00e9cou"
+          },
+          {
+            "title": "Comment apprendre facilement et rapidement le francais ? - Quora",
+            "url": "https://fr.quora.com/Comment-apprendre-facilement-et-rapidement-le-francais?no_redirect=1",
+            "snippet": "Je redis: Prenez un bon livre, laissez les sites comme Duolingo, Memorise etc, utilisez beaucoup les applications aidantes comme les"
+          },
+          {
+            "title": "Comment apprendre \u00e0 parler fran\u00e7ais rapidement ? Voici, le ...",
+            "url": "https://www.ohlalafrenchcourse.com/fr/blog/article/comment-apprendre-a-parler-francais-rapidement-voici-le-meilleur-moyen",
+            "snippet": "*Aujourd'hui, je vais te donner le meilleur moyen selon moi pour parler rapidement en fran\u00e7ais et pour avoir un tr\u00e8s bon niveau de fran\u00e7ais \u00e0 l'oral.*. Mais aujourd'hui, je vais te donner le meilleur "
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 822,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "multilingual/como cocinar paella valenciana": {
+      "Fetchium": {
+        "latency_ms": 1942,
+        "result_count": 5,
+        "relevance": 8.4,
+        "error": null,
+        "results": [
+          {
+            "title": "Streak 81:  Un video sobre paella",
+            "url": "https://www.reddit.com/r/WriteStreakES/comments/1hitbkm/streak_81_un_video_sobre_paella/",
+            "snippet": "El chef en el video era de Espa\u00f1a y demostraba c\u00f3mo cocinar Paella Valenciana. Utilizaba pollo y conejo junto con algunas verduras, como frijoles y alcachofas. Creo que vive en Inglaterra porque dijo "
+          },
+          {
+            "title": "Aprende a cocinar la Paella valenciana",
+            "url": "https://www.visitvalencia.com/que-hacer-valencia/gastronomia/que-comer-valencia/receta-paella-valenciana",
+            "snippet": "La paella estar\u00e1 lista cuando el agua se haya evaporado pero no est\u00e9 totalmente secPara que tenga \u2018socarrat\u2019 el fondo de la paella, dejar a fuego lento un poco m\u00e1s de tiempo."
+          },
+          {
+            "title": "Arturo Roig explica por qu\u00e9 hay que utilizar agua y no caldo a la hora de cocinar una paella valenciana perfecta",
+            "url": "https://www.eldebate.com/espana/comunidad-valenciana/20260202/arturo-roig-explica-hay-utilizar-agua-no-caldo-hora-cocinar-paella-valenciana-perfecta_380626.html",
+            "snippet": "[El Debate] Por eso se entiende que Arturo Roig explique que \u00abla paella valenciana se hace desde cero, con agua. Si usamos un caldo, tiene que ser con los..."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 1211,
+        "result_count": 5,
+        "relevance": 5.6,
+        "error": null,
+        "results": [
+          {
+            "title": "Valencian Paella, the most popular and talked-about recipe, with all ...",
+            "url": "https://www.youtube.com/watch?v=vWySIREExjo",
+            "snippet": "Esto lo dejo como el aut\u00e9ntico secreto d la Paella Valenciana,pero no se lo cont\u00e9is a nadie: - Justo antes de echar el arroz,darle de probar ..."
+          },
+          {
+            "title": "LA AUT\u00c9NTICA PAELLA VALENCIANA!! Receta paso a ... - YouTube",
+            "url": "https://www.youtube.com/watch?v=Rh51jFzvADo",
+            "snippet": "Hoy os traigo la receta de la autentica y genuina paella valenciana, con los verdaderos ingredientes que se utilizan y la forma correcta que ..."
+          },
+          {
+            "title": "Receta de Paella valenciana para compartir - Recetas Nestl\u00e9",
+            "url": "https://www.recetasnestle.com.co/recetas/paella-valenciana",
+            "snippet": "Ingredientes \u00b7 3 cucharadas aceite de oliva (42 g) \u00b7 1 pechuga de pollo sin piel y sin hueso cortada en trozos medianos (453 g) \u00b7 1/2 libra de carne de cerdo ..."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1447,
+        "result_count": 5,
+        "relevance": 6.4,
+        "error": null,
+        "results": [
+          {
+            "title": "Paella Valenciana: Receta Tradicional Aut\u00e9ntica | Arroz SOS",
+            "url": "https://www.arrozsos.es/recetas/paella-valenciana-receta-autentica-arroz-sos/",
+            "snippet": "Paella Valenciana: Receta Tradicional Aut\u00e9ntica | Arroz SOS\n\nArroz SOS> Recetas> [Recetas de paella](https://www.arrozsos.es/recetas/pae"
+          },
+          {
+            "title": "Paella Valenciana \u2013 receta aut\u00e9ntica f\u00e1cil y sorprendente [2025]",
+            "url": "https://cocinasabores.com/paella-valenciana-autentica-y-facil-paso-a-paso/",
+            "snippet": "Saltar al contenido\n\n# Paella Valenciana \u2013 receta aut\u00e9ntica f\u00e1cil y sorprendente \\[2025\\]\n\nMaria Chefai\n\n28, septiembre 2025\n\nLa paella es mucho "
+          },
+          {
+            "title": "La aut\u00e9ntica receta de la paella valenciana: c\u00f3mo hacer una paella tradicional - Gastraval",
+            "url": "https://gastraval.com/la-autentica-receta-de-la-paella-valenciana/",
+            "snippet": "La aut\u00e9ntica receta de la paella valenciana: c\u00f3mo hacer una paella tradicional - Gastraval\n\nSi hay un plato que representa la cocina espa\u00f1ola, ese es sin duda la [paella valenciana](https://gastraval."
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1674,
+        "result_count": 5,
+        "relevance": 6.0,
+        "error": null,
+        "results": [
+          {
+            "title": "Authentic Paella Valenciana Recipe - Allrecipes",
+            "url": "https://www.allrecipes.com/recipe/73337/authentic-paella-valenciana/",
+            "snippet": "Heat a paella pan over medium-high heat, and coat with olive oil. Add chicken, rabbit, and garlic; cook and stir until nicely browned."
+          },
+          {
+            "title": "Receta de Paella valenciana para compartir - Recetas Nestl\u00e9",
+            "url": "https://www.recetasnestle.com.co/recetas/paella-valenciana",
+            "snippet": "Esta puntuaci\u00f3n nutricional se genera considerando los nutrientes que contienen los alimentos del men\u00fa y proporciona una estimaci\u00f3n de c\u00f3mo el men\u00fa seleccionado contribuye a alcanzar las recomendacion"
+          },
+          {
+            "title": "Paella valenciana: receta tradicional | A examen - Consum",
+            "url": "https://www.consum.es/entrenosotros/paella/",
+            "snippet": "Habr\u00e1 variaciones seg\u00fan la zona, la temporada del a\u00f1o e incluso la disponibilidad de los ingredientes en nuestra nevera pero\u2026 las cosas y sobre todo, las del arroz, mejor por su nombre. Pon el aceite "
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 819,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    },
+    "multilingual/was ist quantencomputing einfach erklaert": {
+      "Fetchium": {
+        "latency_ms": 1510,
+        "result_count": 5,
+        "relevance": 7.2,
+        "error": null,
+        "results": [
+          {
+            "title": "Quantencomputing einfach erkl\u00e4rt - IT-Daily.net",
+            "url": "https://www.it-daily.net/spezial/quantencomputing/das-steckt-hinter-quantencomputing",
+            "snippet": "Quantencomputer beruhen auf den Prinzipien der Quantenmechanik, n\u00e4mlich \u00dcberlagerung, Verschr\u00e4nkung und Dekoh\u00e4renz. In der Quantenmechanik ist ..."
+          },
+          {
+            "title": "Einfach erkl\u00e4rt: Quantencomputing | Deutsche Telekom",
+            "url": "https://www.telekom.com/de/konzern/details/einfach-erklaert-quantencomputing-565600",
+            "snippet": "Ein Quanten-Computer erreicht mit Qubits deutlich mehr Rechenleistung als ein Supercomputer mit Bits. Wie das funktioniert einfach erkl\u00e4rt."
+          },
+          {
+            "title": "Bitcoin und Quantencomputing: Nic Carter erkl\u00e4rt die Bedrohung und die n\u00e4chsten Schritte",
+            "url": "https://www.coindesk.com/de/tech/2025/10/20/quantum-computing-is-biggest-risk-to-bitcoin-says-coin-metrics-co-founder",
+            "snippet": "[CoinDesk] Carter bezeichnet Quantencomputing als das gr\u00f6\u00dfte langfristige Risiko f\u00fcr die Kernkryptografie von Bitcoin. Er erkl\u00e4rt in einfachen Worten,..."
+          }
+        ]
+      },
+      "Serper": {
+        "latency_ms": 943,
+        "result_count": 5,
+        "relevance": 4.4,
+        "error": null,
+        "results": [
+          {
+            "title": "Einfach erkl\u00e4rt: Quantencomputing | Deutsche Telekom",
+            "url": "https://www.telekom.com/de/konzern/details/einfach-erklaert-quantencomputing-565600",
+            "snippet": "Ein Quanten-Computer erreicht mit Qubits deutlich mehr Rechenleistung als ein Supercomputer mit Bits. Wie das funktioniert einfach erkl\u00e4rt."
+          },
+          {
+            "title": "Quantencomputer \u2013 von der Theorie zur Praxis, einfach erkl\u00e4rt",
+            "url": "https://www.cassini.de/inspire/quantencomupting-einfach-erklaert",
+            "snippet": "Wissenschaftler arbeiten kontinuierlich an Quantencomputern. Was Quantencomputer k\u00f6nnen, welchen Zweck sie erf\u00fcllen und wie sie funktionieren, erfahren Sie ..."
+          },
+          {
+            "title": "Quantencomputer einfach erkl\u00e4rt \u2013 vom Bit zum Qubit - YouTube",
+            "url": "https://www.youtube.com/watch?v=De2KUQmfURk",
+            "snippet": "Coach Simone verr\u00e4t dir im neuen \u201eFuture Bites\u201c #Erkl\u00e4rvideo schnell und einfach, warum #Quantencomputer unsere Zukunft ver\u00e4ndern werden."
+          }
+        ]
+      },
+      "Exa": {
+        "latency_ms": 1138,
+        "result_count": 5,
+        "relevance": 6.8,
+        "error": null,
+        "results": [
+          {
+            "title": "Wie Funktioniert Quantencomputing? \u2013 Einfach Erkl\u00e4rt F\u00fcr Einsteiger",
+            "url": "https://vipruf.de/wie-funktioniert-quantencomputing-einfach-erklart-fur-einsteiger/",
+            "snippet": "Wie Funktioniert Quantencomputing? \u2013 Einfach Erkl\u00e4rt F\u00fcr Einsteiger\n\nClose Menu\n\nFacebook X (Twitter) Instagram\n\nFacebook X (Twitter) Instagram\n\nKONTAKTIERE UNS\n\n"
+          },
+          {
+            "title": "Wie funktioniert ein Quantencomputer? Einfache Erkl\u00e4rung [2026]",
+            "url": "https://lippke.li/quantencomputer/",
+            "snippet": "Wie funktioniert ein Quantencomputer? Einfache Erkl\u00e4rung [2026]\n\n# Wie funktioniert ein Quantencomputer? Einfache Erkl\u00e4rung [2026]\n\nQuantencomputer einfach erkl\u00e4rt? Geht das ohne Vorwissen?\n\nJa! Diese"
+          },
+          {
+            "title": "Was ist Quantencomputing? Kurz und einfach erkl\u00e4rt",
+            "url": "https://rnt.de/glossar/quantencomputing/",
+            "snippet": "Was ist Quantencomputing? Kurz und einfach erkl\u00e4rt\n\nQuantencomputing\n\n# Quantencomputing\n\nQuantencomputing ist ein Teilgebiet der Informatik, das auf den Prinzipien der Quantenmechanik basiert. Im Geg"
+          }
+        ]
+      },
+      "Tavily": {
+        "latency_ms": 1704,
+        "result_count": 5,
+        "relevance": 5.6,
+        "error": null,
+        "results": [
+          {
+            "title": "Einfach erkl\u00e4rt: Quantencomputing | Deutsche Telekom",
+            "url": "https://www.telekom.com/de/konzern/details/einfach-erklaert-quantencomputing-565600",
+            "snippet": "Das ist ein Strom von elektrischen oder optischen Impulsen, die Einsen und Nullen darstellen. Es ist die Physik der kleinsten Teile. Es ist die Physik der kleinsten Teile. Es ist die Physik der kleins"
+          },
+          {
+            "title": "Was ist Quantencomputing? Kurz und einfach erkl\u00e4rt",
+            "url": "https://rnt.de/glossar/quantencomputing/",
+            "snippet": "Quantencomputing ist ein Teilgebiet der Informatik, das auf den Prinzipien der Quantenmechanik basiert. Im Gegensatz zu klassischen Computern,"
+          },
+          {
+            "title": "Quantencomputer \u2013 von der Theorie zur Praxis, einfach erkl\u00e4rt",
+            "url": "https://www.cassini.de/inspire/quantencomupting-einfach-erklaert",
+            "snippet": "Sie haben\u00a0mit dem Nachsehen eine Messung ausgel\u00f6st \u2013 und das hat laut der Quantentheorie\u00a0die Wellenfunktion\u00a0der Superposition\u00a0zum Kollabieren gebracht. Ersteres \u00fcberf\u00fchrt\u00a0die Nullen\u00a0und Einsen der Qub"
+          }
+        ]
+      },
+      "Firecrawl": {
+        "latency_ms": 818,
+        "result_count": 0,
+        "relevance": 0,
+        "error": "HTTP 402: {\"success\":false,\"error\":\"Insufficient credits to perform this request. For more credits, you can up",
+        "results": []
+      }
+    }
+  },
+  "category_scores": {
+    "Fetchium": {
+      "factual": 9.7,
+      "how_to": 9.4,
+      "current_events": 8.0,
+      "comparison": 9.7,
+      "casual_everyday": 10.0,
+      "technical": 9.6,
+      "opinion": 8.8,
+      "academic": 8.2,
+      "code": 9.1,
+      "multilingual": 7.9
+    },
+    "Serper": {
+      "factual": 9.2,
+      "how_to": 6.3,
+      "current_events": 6.4,
+      "comparison": 9.0,
+      "casual_everyday": 8.8,
+      "technical": 8.4,
+      "opinion": 8.3,
+      "academic": 7.7,
+      "code": 7.6,
+      "multilingual": 4.9
+    },
+    "Exa": {
+      "factual": 8.9,
+      "how_to": 7.2,
+      "current_events": 5.7,
+      "comparison": 7.7,
+      "casual_everyday": 8.3,
+      "technical": 8.0,
+      "opinion": 6.6,
+      "academic": 5.7,
+      "code": 7.8,
+      "multilingual": 6.5
+    },
+    "Tavily": {
+      "factual": 9.7,
+      "how_to": 7.4,
+      "current_events": 6.8,
+      "comparison": 9.3,
+      "casual_everyday": 9.3,
+      "technical": 8.1,
+      "opinion": 8.5,
+      "academic": 7.9,
+      "code": 8.3,
+      "multilingual": 6.1
+    },
+    "Firecrawl": {
+      "factual": 0.0,
+      "how_to": 0.0,
+      "current_events": 0.0,
+      "comparison": 0.0,
+      "casual_everyday": 0.0,
+      "technical": 0.0,
+      "opinion": 0.0,
+      "academic": 0.0,
+      "code": 0.0,
+      "multilingual": 0.0
+    }
+  },
+  "category_latencies": {
+    "Fetchium": {
+      "factual": 2117,
+      "how_to": 2160,
+      "current_events": 2007,
+      "comparison": 2170,
+      "casual_everyday": 1900,
+      "technical": 2112,
+      "opinion": 1817,
+      "academic": 2261,
+      "code": 2411,
+      "multilingual": 1824
+    },
+    "Serper": {
+      "factual": 1348,
+      "how_to": 1460,
+      "current_events": 1141,
+      "comparison": 1003,
+      "casual_everyday": 1466,
+      "technical": 1158,
+      "opinion": 1064,
+      "academic": 1095,
+      "code": 911,
+      "multilingual": 1090
+    },
+    "Exa": {
+      "factual": 1347,
+      "how_to": 1117,
+      "current_events": 1222,
+      "comparison": 1137,
+      "casual_everyday": 1228,
+      "technical": 1256,
+      "opinion": 1767,
+      "academic": 1016,
+      "code": 987,
+      "multilingual": 1244
+    },
+    "Tavily": {
+      "factual": 1561,
+      "how_to": 1660,
+      "current_events": 1543,
+      "comparison": 1683,
+      "casual_everyday": 1787,
+      "technical": 1582,
+      "opinion": 1809,
+      "academic": 1534,
+      "code": 1629,
+      "multilingual": 1609
+    },
+    "Firecrawl": {
+      "factual": 1022,
+      "how_to": 858,
+      "current_events": 912,
+      "comparison": 910,
+      "casual_everyday": 869,
+      "technical": 864,
+      "opinion": 951,
+      "academic": 1077,
+      "code": 821,
+      "multilingual": 819
+    }
+  }
+}

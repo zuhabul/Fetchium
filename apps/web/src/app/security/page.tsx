@@ -5,9 +5,9 @@ import Footer from "@/components/Footer";
 import { Shield, Lock, Server, Eye, CheckCircle } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Fetchium Security — Privacy-First, Self-Hostable, Zero Telemetry",
+  title: "Fetchium Security — Privacy-First and Zero Telemetry",
   description:
-    "Fetchium is built privacy-first: zero telemetry by default, full self-hosting, TLS everywhere, no query logging. Security practices, responsible disclosure, and compliance roadmap.",
+    "Fetchium is built privacy-first: zero telemetry by default, TLS everywhere, and no query logging on the hosted API. Security practices, responsible disclosure, and compliance roadmap.",
 };
 
 const pillars = [
@@ -15,11 +15,6 @@ const pillars = [
     icon: Eye,
     title: "Zero Telemetry by Default",
     desc: "Your queries are processed in-memory and never logged, stored, or analyzed without your explicit consent. There is no usage data sent to third-party analytics or advertising systems. Ever.",
-  },
-  {
-    icon: Server,
-    title: "Full Self-Hosting",
-    desc: "Every feature available in the hosted API is available in self-hosted mode. Run Fetchium on your own infrastructure — your data never leaves your network. Docker image available for all platforms.",
   },
   {
     icon: Lock,
@@ -67,7 +62,7 @@ export default function SecurityPage() {
             </h1>
             <p className="text-base sm:text-lg text-slate-400 max-w-2xl leading-relaxed">
               Security and privacy are not features — they are constraints that shaped every architectural
-              decision. Zero telemetry, full self-hosting, and TLS everywhere are defaults, not upsells.
+              decision. Zero telemetry and TLS everywhere are defaults, not upsells.
             </p>
           </div>
 
@@ -95,7 +90,6 @@ export default function SecurityPage() {
                 "API queries are processed in-memory. No query content is written to disk or database on the hosted API.",
                 "API keys and user account data are stored in PostgreSQL with Argon2 hashing for secrets.",
                 "Usage metrics (request counts, latency) are stored in aggregate — never linked to query content.",
-                "The PIE cross-session learning feature stores patterns in a local SQLite file in self-hosted mode only.",
                 "Logs retain IP addresses for 7 days for abuse prevention, then are deleted.",
                 "No query content is shared with third-party services. Backend search queries to DuckDuckGo, Brave, etc. do not include your API key or user identity.",
               ].map((item) => (

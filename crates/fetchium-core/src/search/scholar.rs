@@ -5,7 +5,7 @@
 //!
 //! Requires `--features headless`.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
@@ -202,7 +202,7 @@ impl SearchBackend for ScholarBackend {
         true
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         #[cfg(not(feature = "headless"))]
         {
             let _ = (query, max_results);

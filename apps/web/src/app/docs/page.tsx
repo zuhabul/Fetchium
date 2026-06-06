@@ -5,12 +5,11 @@ import CodeBlock from "@/components/docs/CodeBlock";
 export const metadata: Metadata = { title: "Introduction" };
 
 const QUICKLINKS = [
-  { title: "Quick Start", desc: "Make your first API call in under 2 minutes.", href: "/docs/quickstart", icon: "⚡" },
-  { title: "Authentication", desc: "Bearer tokens, admin secrets, key rotation.", href: "/docs/authentication", icon: "🔑" },
-  { title: "Search API", desc: "Federated search with ranking.", href: "/docs/api/search", icon: "🔍" },
-  { title: "Research API", desc: "Deep multi-source synthesis.", href: "/docs/api/research", icon: "🔬" },
-  { title: "MCP Protocol", desc: "12 tools for MCP-compatible clients.", href: "/docs/sdk/mcp", icon: "🧩" },
-  { title: "Self-Hosting", desc: "Run Fetchium on your own infra.", href: "/docs/self-hosting/docker", icon: "🐳" },
+  { title: "Quick Start", desc: "Make your first API call in under 2 minutes.", href: "https://docs.fetchium.com/quickstart", icon: "⚡" },
+  { title: "Authentication", desc: "Bearer tokens, admin secrets, key rotation.", href: "https://docs.fetchium.com/authentication", icon: "🔑" },
+  { title: "Search API", desc: "Federated search with ranking.", href: "https://docs.fetchium.com/api/search", icon: "🔍" },
+  { title: "Research API", desc: "Deep multi-source synthesis.", href: "https://docs.fetchium.com/api/research", icon: "🔬" },
+  { title: "MCP Protocol", desc: "12 MCP tools across core, YouTube, and social workflows.", href: "https://docs.fetchium.com/sdk/mcp", icon: "🧩" },
 ];
 
 export default function DocsIndex() {
@@ -48,7 +47,7 @@ export default function DocsIndex() {
         language="bash"
         filename="search.sh"
         code={`curl -X POST https://api.fetchium.com/v1/search \\
-  -H "Authorization: Bearer fetchium_your_api_key" \\
+  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "query": "rust async programming best practices",
@@ -65,9 +64,11 @@ export default function DocsIndex() {
           <tr><td><code>POST</code></td><td><code>/v1/search</code></td><td>Bearer</td><td>Federated web search</td></tr>
           <tr><td><code>POST</code></td><td><code>/v1/scrape</code>, <code>/v1/fetch</code></td><td>Bearer</td><td>Single URL extraction</td></tr>
           <tr><td><code>POST</code></td><td><code>/v1/research</code></td><td>Bearer</td><td>Deep research synthesis</td></tr>
+          <tr><td><code>POST</code></td><td><code>/v1/research/jobs</code></td><td>Bearer</td><td>Async research submission</td></tr>
           <tr><td><code>POST</code></td><td><code>/v1/estimate</code></td><td>Bearer</td><td>Token estimate for a URL</td></tr>
           <tr><td><code>POST</code></td><td><code>/v1/youtube/search</code></td><td>Bearer</td><td>YouTube search pipeline</td></tr>
           <tr><td><code>POST</code></td><td><code>/v1/youtube/analyze</code></td><td>Bearer</td><td>Single video analysis</td></tr>
+          <tr><td><code>GET</code></td><td><code>/v1/jobs/:id</code></td><td>Bearer</td><td>Poll async job status</td></tr>
           <tr><td><code>POST</code></td><td><code>/v1/social/research</code></td><td>Bearer</td><td>Unified social research</td></tr>
           <tr><td><code>POST</code></td><td><code>/v1/social/reddit</code></td><td>Bearer</td><td>Reddit-specific search</td></tr>
           <tr><td><code>POST</code></td><td><code>/v1/social/hackernews</code></td><td>Bearer</td><td>Hacker News-specific search</td></tr>
@@ -75,6 +76,7 @@ export default function DocsIndex() {
           <tr><td><code>POST</code></td><td><code>/v1/keys</code></td><td><code>X-Admin-Secret</code></td><td>Create API key</td></tr>
           <tr><td><code>GET</code></td><td><code>/v1/keys</code></td><td><code>X-Admin-Secret</code></td><td>List API keys</td></tr>
           <tr><td><code>DELETE</code></td><td><code>/v1/keys/:id</code></td><td><code>X-Admin-Secret</code></td><td>Revoke API key</td></tr>
+          <tr><td><code>GET/POST</code></td><td><code>/v1/proxy/*</code></td><td><code>X-Admin-Secret</code></td><td>Proxy pool administration</td></tr>
         </tbody>
       </table>
 

@@ -6,7 +6,7 @@
 //! 3. TikTok internal search API (requires proper headers)
 //! 4. TikTok discover page HTML as last resort
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::client::HttpClient;
 use crate::social::tiktok::types::*;
 use serde_json::Value;
@@ -21,7 +21,7 @@ pub async fn search_videos(
     query: &str,
     config: &TikTokPipelineConfig,
     http: &HttpClient,
-) -> HsxResult<Vec<TikTokVideo>> {
+) -> FetchiumResult<Vec<TikTokVideo>> {
     // ── Tier 1: tikwm.com public search API (full metrics, no auth) ───
     if let Ok(videos) = search_via_tikwm(query, config.max_videos, http).await {
         if !videos.is_empty() {
@@ -94,7 +94,7 @@ async fn search_via_tikwm(
     query: &str,
     max: usize,
     http: &HttpClient,
-) -> HsxResult<Vec<TikTokVideo>> {
+) -> FetchiumResult<Vec<TikTokVideo>> {
     let encoded: String = url::form_urlencoded::byte_serialize(query.as_bytes()).collect();
     let url = format!("https://www.tikwm.com/api/feed/search?keywords={encoded}&count={max}");
 
@@ -116,9 +116,9 @@ async fn search_via_tikwm(
     parse_tikwm_response(&body, max)
 }
 
-fn parse_tikwm_response(json_str: &str, max: usize) -> HsxResult<Vec<TikTokVideo>> {
+fn parse_tikwm_response(json_str: &str, max: usize) -> FetchiumResult<Vec<TikTokVideo>> {
     let v: Value = serde_json::from_str(json_str)
-        .map_err(|e| HsxError::Internal(format!("tikwm JSON: {e}")))?;
+        .map_err(|e| FetchiumError::Internal(format!("tikwm JSON: {e}")))?;
 
     if v["code"].as_i64().unwrap_or(-1) != 0 {
         return Ok(Vec::new());
@@ -257,7 +257,11 @@ fn format_unix_ts(ts: u64) -> String {
 const DDG_HTML_URL: &str = "https://html.duckduckgo.com/html/";
 
 /// Search TikTok via DuckDuckGo — tries `site:tiktok.com/@` then general `site:tiktok.com`.
-async fn search_via_ddg(query: &str, max: usize, http: &HttpClient) -> HsxResult<Vec<TikTokVideo>> {
+async fn search_via_ddg(
+    query: &str,
+    max: usize,
+    http: &HttpClient,
+) -> FetchiumResult<Vec<TikTokVideo>> {
     // Try targeting user videos specifically, then fall back to general TikTok search
     let ddg_query = format!("site:tiktok.com/@ {query}");
     let form: &[(&str, &str)] = &[("q", &ddg_query), ("b", ""), ("kl", "en-us")];
@@ -558,7 +562,7 @@ fn resolve_ddg_url(href: &str) -> String {
 pub async fn fetch_trends(
     config: &TikTokPipelineConfig,
     http: &HttpClient,
-) -> HsxResult<Vec<TikTokTrend>> {
+) -> FetchiumResult<Vec<TikTokTrend>> {
     // TikTok's trending hashtags via public Creative Center API
     let url = "https://ads.tiktok.com/creative_radar_api/v1/popular_trend/hashtag/list?page=1&limit=20&period=7&country_code=US";
 
@@ -589,9 +593,9 @@ pub async fn fetch_trends(
 
 // ─── Parsers ─────────────────────────────────────────────────────
 
-fn parse_tiktok_search_api(body: &str, max: usize) -> HsxResult<Vec<TikTokVideo>> {
+fn parse_tiktok_search_api(body: &str, max: usize) -> FetchiumResult<Vec<TikTokVideo>> {
     let v: Value = serde_json::from_str(body)
-        .map_err(|e| HsxError::Internal(format!("TikTok search API: {e}")))?;
+        .map_err(|e| FetchiumError::Internal(format!("TikTok search API: {e}")))?;
 
     let items = match v["data"].as_array() {
         Some(a) => a,
@@ -711,9 +715,9 @@ fn parse_tiktok_html(html: &str, max: usize) -> Vec<TikTokVideo> {
     videos
 }
 
-fn parse_creative_center_trends(body: &str) -> HsxResult<Vec<TikTokTrend>> {
+fn parse_creative_center_trends(body: &str) -> FetchiumResult<Vec<TikTokTrend>> {
     let v: Value = serde_json::from_str(body)
-        .map_err(|e| HsxError::Internal(format!("TikTok Creative Center: {e}")))?;
+        .map_err(|e| FetchiumError::Internal(format!("TikTok Creative Center: {e}")))?;
 
     let list = match v["data"]["list"].as_array() {
         Some(a) => a,

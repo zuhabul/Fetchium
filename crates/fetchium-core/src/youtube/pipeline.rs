@@ -1,7 +1,7 @@
 //! YouTube Intelligence pipeline — full 11-step orchestration.
 
-use crate::config::HsxConfig;
-use crate::error::{HsxError, HsxResult};
+use crate::config::FetchiumConfig;
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::client::HttpClient;
 use crate::youtube::types::*;
 use crate::youtube::{comments, intelligence, metadata, ranking, search, transcript};
@@ -30,16 +30,16 @@ const PIPELINE_TIMEOUT_SECS: u64 = 22;
 /// 11. Generate teaching content (optional)
 pub async fn run_youtube_pipeline(
     pipeline_config: &YouTubePipelineConfig,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
-) -> HsxResult<YouTubePipelineResult> {
+) -> FetchiumResult<YouTubePipelineResult> {
     tokio::time::timeout(
         Duration::from_secs(PIPELINE_TIMEOUT_SECS),
         run_youtube_pipeline_inner(pipeline_config, config, http),
     )
     .await
     .map_err(|_| {
-        HsxError::YouTube(format!(
+        FetchiumError::YouTube(format!(
             "YouTube pipeline timed out after {PIPELINE_TIMEOUT_SECS}s for '{}'",
             pipeline_config.query
         ))
@@ -49,9 +49,9 @@ pub async fn run_youtube_pipeline(
 /// Inner implementation — called by `run_youtube_pipeline` under a hard timeout.
 async fn run_youtube_pipeline_inner(
     pipeline_config: &YouTubePipelineConfig,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
-) -> HsxResult<YouTubePipelineResult> {
+) -> FetchiumResult<YouTubePipelineResult> {
     let start = Instant::now();
 
     // Step 1: Search
@@ -64,7 +64,7 @@ async fn run_youtube_pipeline_inner(
     .await?;
 
     if search_results.is_empty() {
-        return Err(HsxError::YouTube(format!(
+        return Err(FetchiumError::YouTube(format!(
             "No YouTube videos found for '{}'",
             pipeline_config.query
         )));
@@ -74,7 +74,9 @@ async fn run_youtube_pipeline_inner(
     let analyses = fetch_all_video_data(&search_results, pipeline_config, config, http).await;
 
     if analyses.is_empty() {
-        return Err(HsxError::YouTube("Failed to analyze any videos".into()));
+        return Err(FetchiumError::YouTube(
+            "Failed to analyze any videos".into(),
+        ));
     }
 
     // Step 7: Rank with VideoFusion
@@ -99,12 +101,12 @@ async fn run_youtube_pipeline_inner(
 /// Analyze a single video by URL.
 pub async fn analyze_single_video(
     url: &str,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     fetch_comments_flag: bool,
     fetch_transcript_flag: bool,
     generate_teaching_flag: bool,
-) -> HsxResult<YouTubePipelineResult> {
+) -> FetchiumResult<YouTubePipelineResult> {
     let start = Instant::now();
     let video_id = crate::multimodal::video::extract_video_id(url)?;
 
@@ -180,7 +182,7 @@ const FETCH_PHASE_TIMEOUT_SECS: u64 = 10;
 async fn fetch_all_video_data(
     search_results: &[YouTubeSearchResult],
     pipeline_config: &YouTubePipelineConfig,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
 ) -> Vec<VideoAnalysis> {
     use std::sync::Arc;
@@ -188,7 +190,7 @@ async fn fetch_all_video_data(
     use tokio::task::JoinSet;
 
     let sem = Arc::new(Semaphore::new(MAX_CONCURRENT_FETCHES));
-    let mut tasks: JoinSet<HsxResult<VideoAnalysis>> = JoinSet::new();
+    let mut tasks: JoinSet<FetchiumResult<VideoAnalysis>> = JoinSet::new();
 
     for result in search_results.iter().take(pipeline_config.max_videos) {
         let seed = result.clone();
@@ -242,11 +244,11 @@ async fn fetch_all_video_data(
 /// Fetch metadata + transcript + comments for a single video.
 async fn fetch_single_video_data(
     seed: &YouTubeSearchResult,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     fetch_transcript_flag: bool,
     fetch_comments_flag: bool,
-) -> HsxResult<VideoAnalysis> {
+) -> FetchiumResult<VideoAnalysis> {
     let video_id = &seed.video_id;
     // Parallel fetch: metadata + transcript + comments
     let (meta_result, transcript_result, comments_result) = tokio::join!(

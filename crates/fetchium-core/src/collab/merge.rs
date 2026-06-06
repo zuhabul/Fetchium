@@ -1,6 +1,6 @@
 //! Research session merging with deduplication (PRD §37).
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,7 +25,7 @@ pub fn merge_sessions(
     sessions_dir: &std::path::Path,
     session_a: &str,
     session_b: &str,
-) -> Result<MergeResult, HsxError> {
+) -> Result<MergeResult, FetchiumError> {
     let findings_a = load_findings(sessions_dir, session_a)?;
     let findings_b = load_findings(sessions_dir, session_b)?;
 
@@ -55,7 +55,7 @@ pub fn merge_sessions(
 fn load_findings(
     sessions_dir: &std::path::Path,
     session_id: &str,
-) -> Result<Vec<Finding>, HsxError> {
+) -> Result<Vec<Finding>, FetchiumError> {
     let path = sessions_dir.join(session_id).join("findings.json");
     if !path.exists() {
         return Ok(vec![]);

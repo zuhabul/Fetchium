@@ -3,12 +3,12 @@
 use crate::cli::{FacebookArgs, Format};
 use anyhow::Result;
 use colored::Colorize;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use std::time::Instant;
 
 /// Run the `fetchium facebook` subcommand.
-pub async fn run(args: FacebookArgs, config: &HsxConfig, format: Format) -> Result<()> {
+pub async fn run(args: FacebookArgs, config: &FetchiumConfig, format: Format) -> Result<()> {
     let start = Instant::now();
 
     match args.action {

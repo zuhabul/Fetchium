@@ -6,7 +6,7 @@
 use crate::cli::{AgentFetchArgs, Tier};
 use fetchium_core::{
     cache::{fetch_key, qatbe_key, MemoryCache},
-    config::HsxConfig,
+    config::FetchiumConfig,
     extract::pipeline,
     http::client::HttpClient,
     token::{pds, qatbe},
@@ -26,7 +26,7 @@ fn to_pds_tier(tier: Tier) -> PdsTier {
     }
 }
 
-pub async fn run(args: AgentFetchArgs, config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(args: AgentFetchArgs, config: &FetchiumConfig) -> anyhow::Result<()> {
     let start = Instant::now();
 
     // Step 1: Validate URL scheme

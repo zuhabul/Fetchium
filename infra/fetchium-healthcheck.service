@@ -1,0 +1,8 @@
+[Unit]
+Description=Fetchium API health watchdog
+After=network.target fetchium-api.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/home/echo/.fetchium/env
+ExecStart=/home/echo/projects/Fetchium/scripts/fetchium-healthcheck.sh

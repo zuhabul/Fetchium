@@ -9,7 +9,7 @@
 
 use colored::Colorize;
 use fetchium_core::{
-    config::HsxConfig,
+    config::FetchiumConfig,
     setup::{checker, chromium, searxng},
 };
 
@@ -17,7 +17,7 @@ use crate::cli::SetupArgs;
 
 const SEARXNG_PORT: u16 = 4040;
 
-pub async fn run(args: SetupArgs, config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(args: SetupArgs, config: &FetchiumConfig) -> anyhow::Result<()> {
     // No flags → full auto-setup (the "just works" path)
     let run_all = !args.headless && !args.searxng && !args.check;
 

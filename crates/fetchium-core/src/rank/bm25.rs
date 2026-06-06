@@ -4,7 +4,7 @@
 //! Phase 1: standalone BM25 scoring for result re-ranking.
 //! Phase 2: integrated into the full 8-signal HyperFusion pipeline.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::types::ResultItem;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
@@ -41,7 +41,7 @@ pub struct ScoredResult {
 
 impl Bm25Scorer {
     /// Create a new BM25 scorer.
-    pub fn new() -> HsxResult<Self> {
+    pub fn new() -> FetchiumResult<Self> {
         let mut schema_builder = Schema::builder();
         let title_field = schema_builder.add_text_field("title", TEXT | STORED);
         let body_field = schema_builder.add_text_field("body", TEXT | STORED);
@@ -65,7 +65,7 @@ impl Bm25Scorer {
         documents: &[ScoringDocument],
         query: &str,
         top_n: usize,
-    ) -> HsxResult<Vec<ScoredResult>> {
+    ) -> FetchiumResult<Vec<ScoredResult>> {
         if documents.is_empty() || query.is_empty() {
             return Ok(Vec::new());
         }
@@ -75,7 +75,7 @@ impl Bm25Scorer {
         // Build writer with 50MB heap
         let mut writer = index
             .writer(50_000_000)
-            .map_err(|e| crate::error::HsxError::Extraction(e.to_string()))?;
+            .map_err(|e| crate::error::FetchiumError::Extraction(e.to_string()))?;
 
         for doc_data in documents {
             writer
@@ -84,18 +84,18 @@ impl Bm25Scorer {
                     self.body_field => doc_data.body.as_str(),
                     self.url_field => doc_data.url.as_str(),
                 ))
-                .map_err(|e| crate::error::HsxError::Extraction(e.to_string()))?;
+                .map_err(|e| crate::error::FetchiumError::Extraction(e.to_string()))?;
         }
 
         writer
             .commit()
-            .map_err(|e| crate::error::HsxError::Extraction(e.to_string()))?;
+            .map_err(|e| crate::error::FetchiumError::Extraction(e.to_string()))?;
 
         info!("BM25: indexed {} documents", documents.len());
 
         let reader = index
             .reader()
-            .map_err(|e| crate::error::HsxError::Extraction(e.to_string()))?;
+            .map_err(|e| crate::error::FetchiumError::Extraction(e.to_string()))?;
         let searcher = reader.searcher();
 
         let query_parser = QueryParser::for_index(&index, vec![self.title_field, self.body_field]);
@@ -116,13 +116,13 @@ impl Bm25Scorer {
 
         let top_docs = searcher
             .search(&parsed, &TopDocs::with_limit(top_n))
-            .map_err(|e| crate::error::HsxError::Extraction(e.to_string()))?;
+            .map_err(|e| crate::error::FetchiumError::Extraction(e.to_string()))?;
 
         let mut results = Vec::new();
         for (score, doc_address) in top_docs {
             let doc: TantivyDocument = searcher
                 .doc(doc_address)
-                .map_err(|e| crate::error::HsxError::Extraction(e.to_string()))?;
+                .map_err(|e| crate::error::FetchiumError::Extraction(e.to_string()))?;
 
             let url = doc
                 .get_first(self.url_field)
@@ -151,7 +151,7 @@ impl Bm25Scorer {
     ///
     /// Builds an in-memory index from titles + snippets, scores them,
     /// applies BM25 scores back to the items, and re-sorts.
-    pub fn rerank(&self, items: &mut [ResultItem], query: &str) -> HsxResult<()> {
+    pub fn rerank(&self, items: &mut [ResultItem], query: &str) -> FetchiumResult<()> {
         if items.is_empty() || query.is_empty() {
             return Ok(());
         }

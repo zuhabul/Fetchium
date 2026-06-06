@@ -3,7 +3,7 @@
 use crate::cli::Format;
 use anyhow::{Context, Result};
 use colored::Colorize;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::summarize::{self, SummarizeConfig};
 use fetchium_core::youtube::pipeline;
@@ -14,7 +14,11 @@ use serde::Serialize;
 use std::time::Duration;
 
 /// Run the YouTube subcommand.
-pub async fn run(args: crate::cli::YouTubeArgs, config: &HsxConfig, format: Format) -> Result<()> {
+pub async fn run(
+    args: crate::cli::YouTubeArgs,
+    config: &FetchiumConfig,
+    format: Format,
+) -> Result<()> {
     let http = HttpClient::new(config)?;
 
     match args.action {
@@ -56,7 +60,7 @@ pub async fn run(args: crate::cli::YouTubeArgs, config: &HsxConfig, format: Form
 
 async fn run_search(
     args: &crate::cli::YtSearchArgs,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {
@@ -112,7 +116,7 @@ async fn run_search(
 
 async fn run_video(
     args: &crate::cli::YtVideoArgs,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {
@@ -141,7 +145,7 @@ async fn run_video(
 
 async fn run_watch(
     args: &crate::cli::YtWatchArgs,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {
@@ -329,7 +333,7 @@ async fn run_playlist(args: &crate::cli::YtPlaylistArgs, format: Format) -> Resu
 
 async fn run_playlist_analyze(
     args: &crate::cli::YtPlaylistAnalyzeArgs,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {
@@ -379,7 +383,7 @@ async fn run_playlist_analyze(
 
 async fn run_channel_audit(
     args: &crate::cli::YtChannelAuditArgs,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {
@@ -450,7 +454,7 @@ async fn run_channel_audit(
 
 async fn run_analyze(
     args: &crate::cli::YtAnalyzeArgs,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {
@@ -480,7 +484,7 @@ async fn run_analyze(
 
 async fn run_transcript(
     args: &crate::cli::YtTranscriptArgs,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {
@@ -648,7 +652,7 @@ async fn run_transcript(
 
 async fn run_research(
     args: &crate::cli::YtResearchArgs,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {
@@ -689,7 +693,7 @@ async fn run_research(
 
 async fn run_compare(
     args: &crate::cli::YtCompareArgs,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     format: Format,
 ) -> Result<()> {

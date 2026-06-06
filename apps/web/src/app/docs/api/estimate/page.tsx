@@ -35,10 +35,10 @@ export default function EstimateApiReference() {
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/api/scrape", title: "Scrape API", desc: "Run full extraction" },
-          { href: "/docs/api/search", title: "Search API", desc: "Find pages first" },
-          { href: "/docs/api/research", title: "Research API", desc: "End-to-end synthesis" },
-          { href: "/docs/api/usage", title: "Usage API", desc: "Track quota" },
+          { href: "https://docs.fetchium.com/api/scrape", title: "Scrape API", desc: "Run full extraction" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "Find pages first" },
+          { href: "https://docs.fetchium.com/api/research", title: "Research API", desc: "End-to-end synthesis" },
+          { href: "https://docs.fetchium.com/api/usage", title: "Usage API", desc: "Track quota" },
         ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

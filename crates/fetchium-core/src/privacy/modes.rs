@@ -1,6 +1,6 @@
 //! Privacy mode definitions and enforcement (PRD §36).
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 /// The four privacy operating modes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -72,7 +72,7 @@ impl Default for RuntimeConfig {
 }
 
 /// Apply a privacy mode to a `RuntimeConfig`.
-pub fn apply_mode(mode: PrivacyMode, config: &mut RuntimeConfig) -> Result<(), HsxError> {
+pub fn apply_mode(mode: PrivacyMode, config: &mut RuntimeConfig) -> Result<(), FetchiumError> {
     match mode {
         PrivacyMode::Standard => {}
         PrivacyMode::Private => {
@@ -101,7 +101,7 @@ pub fn apply_mode(mode: PrivacyMode, config: &mut RuntimeConfig) -> Result<(), H
 }
 
 /// Check if Tor SOCKS5 proxy is reachable on 127.0.0.1:9050.
-fn check_tor_available() -> Result<(), HsxError> {
+fn check_tor_available() -> Result<(), FetchiumError> {
     use std::net::TcpStream;
     use std::time::Duration;
     TcpStream::connect_timeout(
@@ -110,7 +110,7 @@ fn check_tor_available() -> Result<(), HsxError> {
     )
     .map(|_| ())
     .map_err(|_| {
-        HsxError::Internal(
+        FetchiumError::Internal(
             "Tor SOCKS5 proxy not reachable at 127.0.0.1:9050. \
              Install Tor and ensure it is running (`tor` or `brew install tor && brew services start tor`)."
                 .into(),

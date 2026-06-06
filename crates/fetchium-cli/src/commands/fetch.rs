@@ -13,7 +13,7 @@ use crate::cli::{FetchArgs, Format, Tier};
 use anyhow::Context;
 use colored::Colorize;
 use fetchium_core::cache::{fetch_key, qatbe_key, MemoryCache};
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::extract::pipeline;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::output::{format_content_markdown, format_content_text, format_segments_json};
@@ -34,7 +34,7 @@ fn map_tier(tier: Tier) -> PdsTier {
 }
 
 /// Run the `fetchium fetch <url>` / `fetchium view <url>` command.
-pub async fn run(args: FetchArgs, config: &HsxConfig, format: Format) -> anyhow::Result<()> {
+pub async fn run(args: FetchArgs, config: &FetchiumConfig, format: Format) -> anyhow::Result<()> {
     // ── Step 1: Validate URL ──────────────────────────────────────────────
     let url = args.url.trim();
     if !url.starts_with("http://") && !url.starts_with("https://") {

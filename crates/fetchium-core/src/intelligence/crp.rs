@@ -9,7 +9,7 @@
 //!
 //! Short-circuits at any step if the resolution is conclusive.
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -80,7 +80,10 @@ pub struct Resolution {
 ///
 /// The `stm_trust_fn` callback retrieves the PIE trust score for a domain.
 /// Pass `|_| 0.5` when PIE is unavailable.
-pub fn resolve<F>(contradiction: &CrpContradiction, stm_trust_fn: F) -> Result<Resolution, HsxError>
+pub fn resolve<F>(
+    contradiction: &CrpContradiction,
+    stm_trust_fn: F,
+) -> Result<Resolution, FetchiumError>
 where
     F: Fn(&str) -> f64,
 {
@@ -326,7 +329,7 @@ fn step_weighted_synthesis(c: &CrpContradiction, prior_steps: &[ResolutionStep])
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-fn shared_word_ratio(a: &str, b: &str) -> f64 {
+pub fn shared_word_ratio(a: &str, b: &str) -> f64 {
     let stop_words: std::collections::HashSet<&str> = [
         "the", "a", "an", "is", "was", "are", "were", "of", "in", "to", "and", "or",
     ]

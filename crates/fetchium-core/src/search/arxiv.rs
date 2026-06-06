@@ -6,7 +6,7 @@
 //! Parsing is done with a lightweight hand-written state machine rather than
 //! pulling in an XML crate dependency.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::http::HttpClient;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
@@ -37,7 +37,7 @@ impl SearchBackend for ArxivBackend {
         BackendId::Arxiv
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         let max = max_results.min(20);
         let url = format!(
             "{ARXIV_API}?search_query=all:{}&max_results={max}&sortBy=relevance",

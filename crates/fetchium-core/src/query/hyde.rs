@@ -39,7 +39,7 @@ pub fn hyde_prompt(query: &str) -> String {
 pub async fn hyde_embed(
     query: &str,
     ollama_response: Option<&str>,
-) -> Result<Vec<f32>, crate::error::HsxError> {
+) -> Result<Vec<f32>, crate::error::FetchiumError> {
     // If we have an LLM-generated hypothetical document, embed that instead
     let text_to_embed = ollama_response.unwrap_or(query);
 
@@ -60,7 +60,7 @@ pub async fn smart_embed(
     query: &str,
     intent_confidence: f64,
     ollama_response: Option<&str>,
-) -> Result<Vec<f32>, crate::error::HsxError> {
+) -> Result<Vec<f32>, crate::error::FetchiumError> {
     if should_use_hyde(query, intent_confidence) && ollama_response.is_some() {
         info!(query = query, "Applying HyDE for ambiguous query");
         hyde_embed(query, ollama_response).await

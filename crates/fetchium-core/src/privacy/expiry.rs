@@ -1,6 +1,6 @@
 //! Auto-expiring research artifacts (PRD §36.3).
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use crate::intelligence::enable_wal;
 use rusqlite::Connection;
 use std::sync::Mutex;
@@ -11,7 +11,7 @@ pub struct ExpiryScheduler {
 }
 
 impl ExpiryScheduler {
-    pub fn new(db_path: &std::path::Path) -> Result<Self, HsxError> {
+    pub fn new(db_path: &std::path::Path) -> Result<Self, FetchiumError> {
         let conn = Connection::open(db_path)?;
         enable_wal(&conn)?;
         conn.execute_batch(
@@ -28,7 +28,12 @@ impl ExpiryScheduler {
     }
 
     /// Schedule `result_id` for deletion after `seconds` seconds.
-    pub fn schedule(&self, result_id: &str, label: &str, seconds: u64) -> Result<(), HsxError> {
+    pub fn schedule(
+        &self,
+        result_id: &str,
+        label: &str,
+        seconds: u64,
+    ) -> Result<(), FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let expire_at = chrono::Utc::now() + chrono::Duration::seconds(seconds as i64);
         conn.execute(
@@ -40,7 +45,7 @@ impl ExpiryScheduler {
     }
 
     /// Returns IDs that have passed their expiry time.
-    pub fn expired_ids(&self) -> Result<Vec<String>, HsxError> {
+    pub fn expired_ids(&self) -> Result<Vec<String>, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let now = chrono::Utc::now().to_rfc3339();
         let mut stmt =
@@ -53,7 +58,7 @@ impl ExpiryScheduler {
     }
 
     /// Remove all expiry records that have passed their expiry time.
-    pub fn clear_expired(&self) -> Result<usize, HsxError> {
+    pub fn clear_expired(&self) -> Result<usize, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let now = chrono::Utc::now().to_rfc3339();
         let count = conn.execute("DELETE FROM expiry_schedule WHERE expire_at < ?1", [&now])?;

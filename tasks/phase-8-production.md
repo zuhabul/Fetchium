@@ -63,13 +63,13 @@ Establish the unit test infrastructure across the entire workspace. Configure `c
 **Files to create/modify:**
 ```
 .github/workflows/ci.yml                         -- Add coverage job
-crates/hsx-core/src/types.rs                     -- Add #[cfg(test)] mod tests
-crates/hsx-core/src/config.rs                    -- Add #[cfg(test)] mod tests
-crates/hsx-core/src/error.rs                     -- Add #[cfg(test)] mod tests
-crates/hsx-core/src/rank/mod.rs                  -- Add #[cfg(test)] mod tests
-crates/hsx-core/src/token/mod.rs                 -- Add #[cfg(test)] mod tests
-crates/hsx-core/src/extract/mod.rs               -- Add #[cfg(test)] mod tests
-crates/hsx-core/src/test_utils.rs                -- Shared test helpers
+crates/fetchium-core/src/types.rs                     -- Add #[cfg(test)] mod tests
+crates/fetchium-core/src/config.rs                    -- Add #[cfg(test)] mod tests
+crates/fetchium-core/src/error.rs                     -- Add #[cfg(test)] mod tests
+crates/fetchium-core/src/rank/mod.rs                  -- Add #[cfg(test)] mod tests
+crates/fetchium-core/src/token/mod.rs                 -- Add #[cfg(test)] mod tests
+crates/fetchium-core/src/extract/mod.rs               -- Add #[cfg(test)] mod tests
+crates/fetchium-core/src/test_utils.rs                -- Shared test helpers
 tests/fixtures/                                   -- HTML test fixtures
 ```
 
@@ -90,7 +90,7 @@ proptest = "1"
 insta = { version = "1", features = ["yaml"] }
 ```
 
-**Step 2: Create a test helper module (`crates/hsx-core/src/test_utils.rs`)**
+**Step 2: Create a test helper module (`crates/fetchium-core/src/test_utils.rs`)**
 
 ```rust
 //! Shared test utilities available under #[cfg(test)] only.
@@ -131,7 +131,7 @@ pub fn load_fixture(name: &str) -> String {
 }
 ```
 
-**Step 3: Write core type unit tests (`crates/hsx-core/src/types.rs`)**
+**Step 3: Write core type unit tests (`crates/fetchium-core/src/types.rs`)**
 
 ```rust
 #[cfg(test)]
@@ -174,7 +174,7 @@ mod tests {
 }
 ```
 
-**Step 4: Write config loading tests (`crates/hsx-core/src/config.rs`)**
+**Step 4: Write config loading tests (`crates/fetchium-core/src/config.rs`)**
 
 ```rust
 #[cfg(test)]
@@ -184,7 +184,7 @@ mod tests {
 
     #[test]
     fn default_config_has_sane_values() {
-        let config = HsxConfig::default();
+        let config = FetchiumConfig::default();
         assert!(config.max_results > 0);
         assert!(config.timeout_secs > 0);
         assert!(config.max_concurrent_fetches > 0);
@@ -199,17 +199,17 @@ mod tests {
             timeout_secs = 30
             max_concurrent_fetches = 8
         "#).unwrap();
-        let config = HsxConfig::from_file(&config_path).unwrap();
+        let config = FetchiumConfig::from_file(&config_path).unwrap();
         assert_eq!(config.max_results, 20);
         assert_eq!(config.timeout_secs, 30);
     }
 
     #[test]
     fn config_env_override_takes_precedence() {
-        std::env::set_var("HSX_MAX_RESULTS", "42");
-        let config = HsxConfig::from_env().unwrap();
+        std::env::set_var("FETCHIUM_MAX_RESULTS", "42");
+        let config = FetchiumConfig::from_env().unwrap();
         assert_eq!(config.max_results, 42);
-        std::env::remove_var("HSX_MAX_RESULTS");
+        std::env::remove_var("FETCHIUM_MAX_RESULTS");
     }
 
     #[test]
@@ -217,12 +217,12 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let config_path = dir.path().join("config.toml");
         std::fs::write(&config_path, "timeout_secs = 0").unwrap();
-        assert!(HsxConfig::from_file(&config_path).is_err());
+        assert!(FetchiumConfig::from_file(&config_path).is_err());
     }
 }
 ```
 
-**Step 5: Write error type tests (`crates/hsx-core/src/error.rs`)**
+**Step 5: Write error type tests (`crates/fetchium-core/src/error.rs`)**
 
 ```rust
 #[cfg(test)]
@@ -231,7 +231,7 @@ mod tests {
 
     #[test]
     fn error_is_retryable_for_network_timeout() {
-        let err = HsxError::NetworkTimeout {
+        let err = FetchiumError::NetworkTimeout {
             url: "https://example.com".into(),
             timeout_ms: 5000,
         };
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn error_is_not_retryable_for_paywall() {
-        let err = HsxError::Paywall {
+        let err = FetchiumError::Paywall {
             url: "https://wsj.com/article".into(),
         };
         assert!(!err.is_retryable());
@@ -266,7 +266,7 @@ mod tests {
 **Step 6: Write property-based tests for ranking and tokens**
 
 ```rust
-// crates/hsx-core/src/token/mod.rs
+// crates/fetchium-core/src/token/mod.rs
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -598,7 +598,7 @@ async fn timeout_triggers_graceful_error() {
 **Estimated effort:** 3-4 days (initial), then ongoing
 
 **Description:**
-Build end-to-end tests that invoke the compiled `hsx` binary as a subprocess and assert on stdout, stderr, and exit codes. Use `assert_cmd` + `predicates` for fluent assertions. Test all major commands: `search`, `fetch`, `agent-search`, `agent-fetch`, `doctor`, `--version`. Mock external services using environment variable overrides pointing to wiremock servers.
+Build end-to-end tests that invoke the compiled `fetchium` binary as a subprocess and assert on stdout, stderr, and exit codes. Use `assert_cmd` + `predicates` for fluent assertions. Test all major commands: `search`, `fetch`, `agent-search`, `agent-fetch`, `doctor`, `--version`. Mock external services using environment variable overrides pointing to wiremock servers.
 
 **PRD References:**
 - SS45 "E2E" -- `assert_cmd` + `predicates` + mock servers for full CLI + agent commands
@@ -622,7 +622,7 @@ tests/e2e/cli_output_formats.rs                  -- JSON, markdown, CSV output
 
 **Step 1: Add E2E dependencies**
 
-In `hsx-cli/Cargo.toml` `[dev-dependencies]`:
+In `fetchium-cli/Cargo.toml` `[dev-dependencies]`:
 ```toml
 assert_cmd = { workspace = true }
 predicates = { workspace = true }
@@ -638,17 +638,17 @@ use predicates::prelude::*;
 
 #[test]
 fn cli_version_prints_version_string() {
-    Command::cargo_bin("hsx").unwrap()
+    Command::cargo_bin("fetchium").unwrap()
         .arg("--version")
         .assert()
         .success()
-        .stdout(predicate::str::contains("hsx"))
+        .stdout(predicate::str::contains("fetchium"))
         .stdout(predicate::str::is_match(r"\d+\.\d+\.\d+").unwrap());
 }
 
 #[test]
 fn cli_help_shows_usage() {
-    Command::cargo_bin("hsx").unwrap()
+    Command::cargo_bin("fetchium").unwrap()
         .arg("--help")
         .assert()
         .success()
@@ -659,7 +659,7 @@ fn cli_help_shows_usage() {
 
 #[test]
 fn cli_no_args_shows_help() {
-    Command::cargo_bin("hsx").unwrap()
+    Command::cargo_bin("fetchium").unwrap()
         .assert()
         .failure()
         .stderr(predicate::str::contains("Usage"));
@@ -667,7 +667,7 @@ fn cli_no_args_shows_help() {
 
 #[test]
 fn cli_doctor_runs_without_crash() {
-    Command::cargo_bin("hsx").unwrap()
+    Command::cargo_bin("fetchium").unwrap()
         .arg("doctor")
         .assert()
         .success()
@@ -677,7 +677,7 @@ fn cli_doctor_runs_without_crash() {
 
 #[test]
 fn cli_unknown_command_shows_error() {
-    Command::cargo_bin("hsx").unwrap()
+    Command::cargo_bin("fetchium").unwrap()
         .arg("nonexistent-command")
         .assert()
         .failure()
@@ -701,8 +701,8 @@ async fn search_json_output_is_valid_json() {
             .set_body_string(include_str!("../fixtures/ddg-results.html")))
         .mount(&mock_server).await;
 
-    let output = Command::cargo_bin("hsx").unwrap()
-        .env("HSX_DDG_BASE_URL", mock_server.uri())
+    let output = Command::cargo_bin("fetchium").unwrap()
+        .env("FETCHIUM_DDG_BASE_URL", mock_server.uri())
         .args(["search", "rust programming", "--format", "json"])
         .output().unwrap();
 
@@ -720,8 +720,8 @@ async fn search_with_max_results_flag() {
             .set_body_string(include_str!("../fixtures/ddg-results.html")))
         .mount(&mock_server).await;
 
-    let output = Command::cargo_bin("hsx").unwrap()
-        .env("HSX_DDG_BASE_URL", mock_server.uri())
+    let output = Command::cargo_bin("fetchium").unwrap()
+        .env("FETCHIUM_DDG_BASE_URL", mock_server.uri())
         .args(["search", "rust", "--max-results", "3", "--format", "json"])
         .output().unwrap();
 
@@ -744,8 +744,8 @@ use predicates::prelude::*;
 
 #[test]
 fn agent_search_outputs_json_by_default() {
-    let output = Command::cargo_bin("hsx").unwrap()
-        .env("HSX_TEST_MODE", "1")
+    let output = Command::cargo_bin("fetchium").unwrap()
+        .env("FETCHIUM_TEST_MODE", "1")
         .args(["agent-search", "test query"])
         .output().unwrap();
 
@@ -759,7 +759,7 @@ fn agent_search_outputs_json_by_default() {
 
 #[test]
 fn fetch_with_invalid_url_shows_error() {
-    Command::cargo_bin("hsx").unwrap()
+    Command::cargo_bin("fetchium").unwrap()
         .args(["fetch", "not-a-valid-url"])
         .assert()
         .failure()
@@ -769,14 +769,14 @@ fn fetch_with_invalid_url_shows_error() {
 ```
 
 **Acceptance criteria:**
-- [x] `hsx --version` outputs a semver string
-- [x] `hsx --help` lists all commands: search, fetch, agent-search, agent-fetch, doctor
-- [x] `hsx` with no args produces an error with usage info
-- [x] `hsx doctor` runs without crashing and prints system info
-- [x] `hsx search ... --format json` produces valid JSON
-- [x] `hsx search ... --max-results 3` returns at most 3 results
-- [x] `hsx agent-search` always outputs JSON
-- [x] `hsx fetch <invalid-url>` produces a clear error
+- [x] `fetchium --version` outputs a semver string
+- [x] `fetchium --help` lists all commands: search, fetch, agent-search, agent-fetch, doctor
+- [x] `fetchium` with no args produces an error with usage info
+- [x] `fetchium doctor` runs without crashing and prints system info
+- [x] `fetchium search ... --format json` produces valid JSON
+- [x] `fetchium search ... --max-results 3` returns at most 3 results
+- [x] `fetchium agent-search` always outputs JSON
+- [x] `fetchium fetch <invalid-url>` produces a clear error
 - [x] Unknown commands produce a helpful error message
 - [x] All E2E tests use mock servers where possible
 
@@ -818,7 +818,7 @@ Cargo.toml                                       -- Add [[bench]] entries
 criterion = { version = "0.5", features = ["html_reports"] }
 ```
 
-In `hsx-core/Cargo.toml`:
+In `fetchium-core/Cargo.toml`:
 ```toml
 [dev-dependencies]
 criterion = { workspace = true }
@@ -1062,7 +1062,7 @@ fuzz/corpus/                                     -- Seed corpora
 
 ```toml
 [package]
-name = "hsx-fuzz"
+name = "fetchium-fuzz"
 version = "0.0.0"
 publish = false
 edition = "2021"
@@ -1072,7 +1072,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-hsx-core = { path = "../crates/hsx-core" }
+fetchium-core = { path = "../crates/fetchium-core" }
 serde_json = "1"
 
 [workspace]
@@ -1148,11 +1148,11 @@ fuzz_target!(|data: &[u8]| {
 ```rust
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use hsx_core::config::HsxConfig;
+use hsx_core::config::FetchiumConfig;
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(toml_str) = std::str::from_utf8(data) {
-        let _ = toml::from_str::<HsxConfig>(toml_str);
+        let _ = toml::from_str::<FetchiumConfig>(toml_str);
     }
 });
 ```
@@ -1235,9 +1235,9 @@ Ensure every public type, function, trait, and module has `///` doc comments wit
 
 **Files to create/modify:**
 ```
-crates/hsx-core/src/lib.rs                       -- Add #![deny(missing_docs)], crate-level docs
-crates/hsx-mcp/src/lib.rs                        -- Add #![deny(missing_docs)]
-crates/hsx-api/src/lib.rs                        -- Add #![deny(missing_docs)]
+crates/fetchium-core/src/lib.rs                       -- Add #![deny(missing_docs)], crate-level docs
+crates/fetchium-mcp/src/lib.rs                        -- Add #![deny(missing_docs)]
+crates/fetchium-api/src/lib.rs                        -- Add #![deny(missing_docs)]
 .github/workflows/ci.yml                         -- Add docs build + deploy job
 ```
 
@@ -1246,12 +1246,12 @@ crates/hsx-api/src/lib.rs                        -- Add #![deny(missing_docs)]
 
 **Step-by-step implementation:**
 
-**Step 1: Add `deny(missing_docs)` and crate-level docs to `crates/hsx-core/src/lib.rs`**
+**Step 1: Add `deny(missing_docs)` and crate-level docs to `crates/fetchium-core/src/lib.rs`**
 
 ```rust
 //! # Fetchium Core Library
 //!
-//! `hsx-core` is the core library powering Fetchium, an AI-native
+//! `fetchium-core` is the core library powering Fetchium, an AI-native
 //! search, extraction, and research tool. It provides:
 //!
 //! - **Search backends** -- DuckDuckGo, Google, Bing, Scholar, SearXNG, and more
@@ -1309,7 +1309,7 @@ crates/hsx-api/src/lib.rs                        -- Add #![deny(missing_docs)]
 /// let segments = extract_content(html, "https://example.com", &ExtractorConfig::default()).unwrap();
 /// assert!(!segments.is_empty());
 /// ```
-pub fn extract_content(html: &str, url: &str, config: &ExtractorConfig) -> Result<Vec<ContentSegment>, HsxError> {
+pub fn extract_content(html: &str, url: &str, config: &ExtractorConfig) -> Result<Vec<ContentSegment>, FetchiumError> {
     // ...
 }
 ```
@@ -1393,11 +1393,11 @@ Content for `docs/guide/commands.md` (excerpt):
 ```markdown
 # Command Reference
 
-## hsx search
+## fetchium search
 Search the web using multiple engines with intelligent ranking.
 
 ### Usage
-hsx search <query> [options]
+fetchium search <query> [options]
 
 ### Options
 | Flag | Default | Description |
@@ -1408,18 +1408,18 @@ hsx search <query> [options]
 | --timeout | 10s | Per-engine timeout |
 
 ### Examples
-hsx search "Rust async runtime comparison"
-hsx search "quantum computing 2025" --format json --max-results 5
-hsx search "site:arxiv.org transformer attention" --engines scholar
+fetchium search "Rust async runtime comparison"
+fetchium search "quantum computing 2025" --format json --max-results 5
+fetchium search "site:arxiv.org transformer attention" --engines scholar
 
-## hsx agent-search
+## fetchium agent-search
 Machine-optimized search returning JSON with key_facts and metadata.
 
 ### Usage
-hsx agent-search <query> [options]
+fetchium agent-search <query> [options]
 
 ### Examples
-hsx agent-search "latest Rust release features" --budget 2000
+fetchium agent-search "latest Rust release features" --budget 2000
 ```
 
 Content for `docs/guide/agent-integration.md` (MCP excerpt):
@@ -1433,7 +1433,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "fetchium": {
-      "command": "hsx",
+      "command": "fetchium",
       "args": ["serve", "--mcp"]
     }
   }
@@ -1444,7 +1444,7 @@ Add to `.mcp.json` in your project root:
 {
   "servers": {
     "fetchium": {
-      "command": "hsx",
+      "command": "fetchium",
       "args": ["serve", "--mcp"],
       "env": {}
     }
@@ -1452,11 +1452,11 @@ Add to `.mcp.json` in your project root:
 }
 
 ### Available MCP Tools
-- `hypersearch_search` -- Token-budgeted web search
-- `hypersearch_fetch` -- Query-aware content extraction
-- `hypersearch_research` -- Multi-source research with citations
-- `hypersearch_estimate` -- Pre-fetch token estimation
-- `hypersearch_expand` -- Tier expansion without re-fetching
+- `fetchium_search` -- Token-budgeted web search
+- `fetchium_fetch` -- Query-aware content extraction
+- `fetchium_research` -- Multi-source research with citations
+- `fetchium_estimate` -- Pre-fetch token estimation
+- `fetchium_expand` -- Tier expansion without re-fetching
 ```
 
 **Acceptance criteria:**
@@ -1490,7 +1490,7 @@ docs/architecture/extending.md                   -- How to add backends, plugins
 ```
 
 **Acceptance criteria:**
-- [x] Architecture overview explains the 4-crate workspace (hsx-core, hsx-cli, hsx-mcp, hsx-api)
+- [x] Architecture overview explains the 4-crate workspace (fetchium-core, fetchium-cli, fetchium-mcp, fetchium-api)
 - [x] Data flow diagram: query -> search -> extract -> rank -> output
 - [x] Each of the 17 novel algorithms has a 1-paragraph summary
 - [x] Extension guide explains how to add a new search backend
@@ -1520,11 +1520,11 @@ Perform a security audit against every item in PRD SS41. Implement HTML sanitiza
 
 **Files to create/modify:**
 ```
-crates/hsx-core/src/http/sanitize.rs             -- HTML sanitization
-crates/hsx-core/src/http/tls.rs                  -- TLS enforcement
-crates/hsx-core/src/http/robots.rs               -- robots.txt parser + cache
-crates/hsx-core/src/http/rate_limit.rs           -- Per-domain rate limiting
-crates/hsx-core/src/privacy/redact.rs            -- PII redaction
+crates/fetchium-core/src/http/sanitize.rs             -- HTML sanitization
+crates/fetchium-core/src/http/tls.rs                  -- TLS enforcement
+crates/fetchium-core/src/http/robots.rs               -- robots.txt parser + cache
+crates/fetchium-core/src/http/rate_limit.rs           -- Per-domain rate limiting
+crates/fetchium-core/src/privacy/redact.rs            -- PII redaction
 .github/workflows/ci.yml                         -- Add cargo-audit job
 ```
 
@@ -1540,7 +1540,7 @@ crates/hsx-core/src/privacy/redact.rs            -- PII redaction
 ammonia = "4"    # HTML sanitization (same lib used by crates.io)
 ```
 
-**Step 2: HTML sanitization (`crates/hsx-core/src/http/sanitize.rs`)**
+**Step 2: HTML sanitization (`crates/fetchium-core/src/http/sanitize.rs`)**
 
 ```rust
 //! HTML sanitization for safe terminal and file output.
@@ -1615,26 +1615,26 @@ mod tests {
 }
 ```
 
-**Step 3: TLS enforcement (`crates/hsx-core/src/http/tls.rs`)**
+**Step 3: TLS enforcement (`crates/fetchium-core/src/http/tls.rs`)**
 
 ```rust
 //! TLS enforcement: require HTTPS, allow HTTP only for localhost.
 
 use url::Url;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 /// Reject plain HTTP for remote hosts. Allow for localhost.
-pub fn enforce_tls(url: &str) -> Result<(), HsxError> {
+pub fn enforce_tls(url: &str) -> Result<(), FetchiumError> {
     let parsed = Url::parse(url)
-        .map_err(|e| HsxError::InvalidUrl(format!("{url}: {e}")))?;
+        .map_err(|e| FetchiumError::InvalidUrl(format!("{url}: {e}")))?;
     match parsed.scheme() {
         "https" => Ok(()),
         "http" if is_localhost(&parsed) => Ok(()),
-        "http" => Err(HsxError::InsecureConnection {
+        "http" => Err(FetchiumError::InsecureConnection {
             url: url.to_string(),
             suggestion: format!("Use https://{} instead", parsed.host_str().unwrap_or("unknown")),
         }),
-        scheme => Err(HsxError::InvalidUrl(format!("Unsupported scheme: {scheme}"))),
+        scheme => Err(FetchiumError::InvalidUrl(format!("Unsupported scheme: {scheme}"))),
     }
 }
 
@@ -1707,8 +1707,8 @@ Profile and optimize against PRD SS40 latency targets. Configure release profile
 **Files to create/modify:**
 ```
 Cargo.toml                                       -- Release profile optimizations
-crates/hsx-core/src/extract/mod.rs               -- Hot-path optimizations
-crates/hsx-core/src/rank/mod.rs                  -- Hot-path optimizations
+crates/fetchium-core/src/extract/mod.rs               -- Hot-path optimizations
+crates/fetchium-core/src/rank/mod.rs                  -- Hot-path optimizations
 ```
 
 **Dependencies:**
@@ -1769,8 +1769,8 @@ mod perf_tests {
 
 **Acceptance criteria:**
 - [x] Release binary uses `opt-level = 3`, `lto = "fat"`, `codegen-units = 1`
-- [x] `hsx search` cached <1s, `agent-search` cached <500ms, `agent-fetch` cached <300ms (PRD SS40)
-- [x] `hsx fetch` cached <200ms, token estimation <100ms (PRD SS40)
+- [x] `fetchium search` cached <1s, `agent-search` cached <500ms, `agent-fetch` cached <300ms (PRD SS40)
+- [x] `fetchium fetch` cached <200ms, token estimation <100ms (PRD SS40)
 - [x] Extraction of 250KB HTML completes in <100ms
 - [x] Benchmark suite shows no regressions vs baseline
 - [x] Release binary size under 25MB (stripped)
@@ -1794,7 +1794,7 @@ Audit every error path against PRD SS44 principles: never crash, never hang, nev
 
 **Files to create/modify:**
 ```
-crates/hsx-core/src/error.rs                     -- Complete error taxonomy
+crates/fetchium-core/src/error.rs                     -- Complete error taxonomy
 All files with .unwrap() in non-test code        -- Replace with error propagation
 All async functions                              -- Ensure timeout wrappers
 ```
@@ -1812,7 +1812,7 @@ let parsed = Url::parse(&url).unwrap();
 
 // AFTER (safe):
 let parsed = Url::parse(&url)
-    .map_err(|e| HsxError::InvalidUrl(format!("{url}: {e}")))?;
+    .map_err(|e| FetchiumError::InvalidUrl(format!("{url}: {e}")))?;
 ```
 
 **Step 2: Timeout wrapper for all async operations**
@@ -1822,12 +1822,12 @@ use tokio::time::{timeout, Duration};
 
 /// Wrap any async operation with a timeout.
 /// PRD SS44: "Never hang -- every operation has a timeout."
-pub async fn with_timeout<F, T>(duration: Duration, op_name: &str, future: F) -> Result<T, HsxError>
-where F: std::future::Future<Output = Result<T, HsxError>>
+pub async fn with_timeout<F, T>(duration: Duration, op_name: &str, future: F) -> Result<T, FetchiumError>
+where F: std::future::Future<Output = Result<T, FetchiumError>>
 {
     match timeout(duration, future).await {
         Ok(result) => result,
-        Err(_) => Err(HsxError::OperationTimeout {
+        Err(_) => Err(FetchiumError::OperationTimeout {
             operation: op_name.to_string(),
             timeout_ms: duration.as_millis() as u64,
             suggestion: format!("{op_name} timed out after {}ms. Try --timeout to increase.", duration.as_millis()),
@@ -1839,21 +1839,21 @@ where F: std::future::Future<Output = Result<T, HsxError>>
 **Step 3: Verify every error has structured fields**
 
 ```rust
-impl HsxError {
+impl FetchiumError {
     pub fn is_retryable(&self) -> bool {
         matches!(self,
-            HsxError::NetworkTimeout { .. } |
-            HsxError::Http5xx { .. } |
-            HsxError::DnsFailure { .. }
+            FetchiumError::NetworkTimeout { .. } |
+            FetchiumError::Http5xx { .. } |
+            FetchiumError::DnsFailure { .. }
         )
     }
 
     pub fn suggested_action(&self) -> &str {
         match self {
-            HsxError::NetworkTimeout { .. } => "Retry with longer timeout or check network",
-            HsxError::AntiBot { .. } => "Try a different backend or wait before retrying",
-            HsxError::Paywall { .. } => "Content is paywalled. Try a free alternative source",
-            HsxError::AiUnavailable { .. } => "Start Ollama with: ollama serve",
+            FetchiumError::NetworkTimeout { .. } => "Retry with longer timeout or check network",
+            FetchiumError::AntiBot { .. } => "Try a different backend or wait before retrying",
+            FetchiumError::Paywall { .. } => "Content is paywalled. Try a free alternative source",
+            FetchiumError::AiUnavailable { .. } => "Start Ollama with: ollama serve",
             _ => "Check error details and try again",
         }
     }
@@ -1920,7 +1920,7 @@ archives = true
 checksum = "sha256"
 
 [dist.builds]
-cargo = [{ package = "hsx-cli" }]
+cargo = [{ package = "fetchium-cli" }]
 ```
 
 **Step 2: Release workflow (`.github/workflows/release.yml`)**
@@ -1980,23 +1980,23 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.cross }}" = "true" ]; then
-            cross build --release --target ${{ matrix.target }} --package hsx-cli
+            cross build --release --target ${{ matrix.target }} --package fetchium-cli
           else
-            cargo build --release --target ${{ matrix.target }} --package hsx-cli
+            cargo build --release --target ${{ matrix.target }} --package fetchium-cli
           fi
       - name: Package (Unix)
         if: runner.os != 'Windows'
         run: |
           ARCHIVE=fetchium-${{ matrix.target }}.${{ matrix.archive }}
-          chmod +x target/${{ matrix.target }}/release/hsx
-          tar czf "$ARCHIVE" -C target/${{ matrix.target }}/release hsx
+          chmod +x target/${{ matrix.target }}/release/fetchium
+          tar czf "$ARCHIVE" -C target/${{ matrix.target }}/release fetchium
           shasum -a 256 "$ARCHIVE" > "$ARCHIVE.sha256"
       - name: Package (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $ARCHIVE = "fetchium-${{ matrix.target }}.${{ matrix.archive }}"
-          Compress-Archive -Path "target/${{ matrix.target }}/release/hsx.exe" -DestinationPath $ARCHIVE
+          Compress-Archive -Path "target/${{ matrix.target }}/release/fetchium.exe" -DestinationPath $ARCHIVE
           (Get-FileHash $ARCHIVE -Algorithm SHA256).Hash | Out-File "$ARCHIVE.sha256"
       - uses: actions/upload-artifact@v4
         with:
@@ -2064,11 +2064,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo publish --package hsx-core
+      - run: cargo publish --package fetchium-core
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
       - run: sleep 30
-      - run: cargo publish --package hsx-cli
+      - run: cargo publish --package fetchium-cli
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
 ```
@@ -2276,11 +2276,11 @@ const binDir = path.join(__dirname, "..", "bin");
 fs.mkdirSync(binDir, { recursive: true });
 
 console.log(`Downloading Fetchium ${version} for ${platform}...`);
-const binName = process.platform === "win32" ? "hsx.exe" : "hsx";
+const binName = process.platform === "win32" ? "fetchium.exe" : "fetchium";
 if (ext === "tar.gz") {
   execSync(`curl -fsSL "${url}" | tar xz -C "${binDir}"`, { stdio: "inherit" });
 } else {
-  const zipPath = path.join(binDir, "hsx.zip");
+  const zipPath = path.join(binDir, "fetchium.zip");
   execSync(`curl -fsSL -o "${zipPath}" "${url}"`, { stdio: "inherit" });
   execSync(`unzip -o "${zipPath}" -d "${binDir}"`, { stdio: "inherit" });
   fs.unlinkSync(zipPath);
@@ -2303,8 +2303,8 @@ image = "ghcr.io/cross-rs/x86_64-unknown-linux-gnu:main"
 - [x] Pushing a `v*` tag triggers the release workflow
 - [x] GitHub Release created with archives + SHA256 checksums for all 5 platforms
 - [x] npm package installs correct binary for current platform
-- [x] `npm install -g fetchium && hsx --version` works
-- [x] `cargo publish --dry-run --package hsx-core` succeeds
+- [x] `npm install -g fetchium && fetchium --version` works
+- [x] `cargo publish --dry-run --package fetchium-core` succeeds
 - [x] Windows binary packaged as `.zip`, Unix as `.tar.gz`
 - [x] Pre-release tags (`-rc`, `-beta`) create prerelease GitHub Releases
 - [x] CI runs: fmt, clippy, build (3 OS), test, coverage, audit, docs on every PR

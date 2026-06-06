@@ -1,6 +1,8 @@
 //! REST API middleware — auth extraction, rate limiting, request logging.
 
+use crate::admin::db::AdminDb;
 use crate::auth::{ApiKeyRecord, AuthDb, PlanLimits};
+use crate::types::{JobState, JobStatusResponse};
 use axum::{
     async_trait,
     extract::{FromRef, FromRequestParts},
@@ -9,26 +11,43 @@ use axum::{
     Json,
 };
 use fetchium_core::cache::MemoryCache;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 
+fn search_concurrency_limit() -> usize {
+    std::env::var("FETCHIUM_SEARCH_CONCURRENCY")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+        .filter(|v| *v > 0)
+        .unwrap_or(2)
+}
+
 /// Shared application state injected into all axum handlers.
 /// AppState is Clone (cheap — all inner fields are Arc-wrapped).
 #[derive(Clone)]
 pub struct AppState {
-    pub config: HsxConfig,
+    pub config: FetchiumConfig,
     pub http: HttpClient,
     pub cache: MemoryCache,
     pub auth_db: Arc<AuthDb>,
+    pub admin_db: Option<Arc<AdminDb>>,
     pub rate_limiter: Arc<PerKeyRateLimiter>,
+    pub jobs: Arc<JobStore>,
+    /// Global concurrency limiter for search operations.
+    /// Prevents backend overload when multiple requests arrive simultaneously.
+    pub search_semaphore: Arc<tokio::sync::Semaphore>,
 }
 
 impl AppState {
-    pub fn new(config: HsxConfig, auth_db: Arc<AuthDb>) -> anyhow::Result<Self> {
+    pub fn new(
+        config: FetchiumConfig,
+        auth_db: Arc<AuthDb>,
+        admin_db: Option<Arc<AdminDb>>,
+    ) -> anyhow::Result<Self> {
         let http = HttpClient::new(&config)?;
         let cache = MemoryCache::new(
             config.cache.memory_max_entries,
@@ -40,7 +59,106 @@ impl AppState {
             http,
             cache,
             auth_db,
+            admin_db,
             rate_limiter: Arc::new(PerKeyRateLimiter::new()),
+            jobs: Arc::new(JobStore::new()),
+            // Concurrent searches: each dispatches multiple backend requests in
+            // parallel. Keep the default very conservative to avoid saturating
+            // the runtime and wedging the API under bursty local traffic.
+            search_semaphore: Arc::new(tokio::sync::Semaphore::new(search_concurrency_limit())),
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+struct StoredJob {
+    owner_key_id: String,
+    payload: JobStatusResponse,
+}
+
+pub struct JobStore {
+    jobs: Mutex<HashMap<String, StoredJob>>,
+}
+
+impl Default for JobStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl JobStore {
+    pub fn new() -> Self {
+        Self {
+            jobs: Mutex::new(HashMap::new()),
+        }
+    }
+
+    pub fn create(&self, owner_key_id: String, job_id: String, job_type: String) {
+        let payload = JobStatusResponse {
+            meta: crate::types::ResponseMeta {
+                request_id: job_id.clone(),
+                status: "queued".into(),
+                endpoint: "/v1/jobs/:id".into(),
+                duration_ms: 0,
+                query: None,
+                tier: None,
+                tokens_used: None,
+                sources_count: None,
+                result_id: Some(job_id.clone()),
+            },
+            job_id: job_id.clone(),
+            job_type,
+            status: JobState::Queued,
+            created_at: chrono::Utc::now().to_rfc3339(),
+            started_at: None,
+            completed_at: None,
+            result: None,
+            error: None,
+        };
+        self.jobs.lock().insert(
+            job_id,
+            StoredJob {
+                owner_key_id,
+                payload,
+            },
+        );
+    }
+
+    pub fn mark_running(&self, job_id: &str) {
+        if let Some(job) = self.jobs.lock().get_mut(job_id) {
+            job.payload.status = JobState::Running;
+            job.payload.meta.status = "running".into();
+            job.payload.started_at = Some(chrono::Utc::now().to_rfc3339());
+        }
+    }
+
+    pub fn complete(&self, job_id: &str, result: serde_json::Value) {
+        if let Some(job) = self.jobs.lock().get_mut(job_id) {
+            job.payload.status = JobState::Completed;
+            job.payload.meta.status = "completed".into();
+            job.payload.completed_at = Some(chrono::Utc::now().to_rfc3339());
+            job.payload.result = Some(result);
+            job.payload.error = None;
+        }
+    }
+
+    pub fn fail(&self, job_id: &str, error: String) {
+        if let Some(job) = self.jobs.lock().get_mut(job_id) {
+            job.payload.status = JobState::Failed;
+            job.payload.meta.status = "failed".into();
+            job.payload.completed_at = Some(chrono::Utc::now().to_rfc3339());
+            job.payload.error = Some(error);
+            job.payload.result = None;
+        }
+    }
+
+    pub fn get_owned(&self, job_id: &str, owner_key_id: &str) -> Option<JobStatusResponse> {
+        self.jobs.lock().get(job_id).and_then(|job| {
+            if job.owner_key_id == owner_key_id {
+                Some(job.payload.clone())
+            } else {
+                None
+            }
         })
     }
 }
@@ -185,8 +303,12 @@ where
             return Err(AuthError::InvalidToken);
         }
 
-        // Validate against DB (blocking operation — short, so acceptable inline)
-        let record = tokio::task::block_in_place(|| app_state.auth_db.validate_key(raw_key))
+        // Validate against DB (non-blocking via spawn_blocking thread pool)
+        let db = app_state.auth_db.clone();
+        let key_str = raw_key.to_string();
+        let record = tokio::task::spawn_blocking(move || db.validate_key(&key_str))
+            .await
+            .map_err(|_| AuthError::InvalidToken)?
             .map_err(|_| AuthError::InvalidToken)?
             .ok_or(AuthError::InvalidToken)?;
 
@@ -207,8 +329,12 @@ where
         }
 
         // Monthly quota
-        let within_quota =
-            tokio::task::block_in_place(|| app_state.auth_db.check_quota(&record.id, &record.plan));
+        let db2 = app_state.auth_db.clone();
+        let key_id = record.id.clone();
+        let plan = record.plan.clone();
+        let within_quota = tokio::task::spawn_blocking(move || db2.check_quota(&key_id, &plan))
+            .await
+            .unwrap_or(false);
         if !within_quota {
             return Err(AuthError::QuotaExceeded);
         }

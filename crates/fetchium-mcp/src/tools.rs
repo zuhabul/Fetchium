@@ -9,7 +9,7 @@ use serde_json::{json, Value};
 pub fn tool_definitions() -> Vec<Value> {
     vec![
         json!({
-            "name": "hypersearch_search",
+            "name": "fetchium_search",
             "description": "Search the web and return token-efficient results. Handles the full pipeline: multi-backend search, ranking, deduplication, validation, and token budgeting in a single call.",
             "inputSchema": {
                 "type": "object",
@@ -23,7 +23,7 @@ pub fn tool_definitions() -> Vec<Value> {
             }
         }),
         json!({
-            "name": "hypersearch_fetch",
+            "name": "fetchium_fetch",
             "description": "Fetch a URL with query-aware extraction. Extracts only content relevant to the query, within the token budget. Far more efficient than raw scraping.",
             "inputSchema": {
                 "type": "object",
@@ -37,7 +37,7 @@ pub fn tool_definitions() -> Vec<Value> {
             }
         }),
         json!({
-            "name": "hypersearch_research",
+            "name": "fetchium_research",
             "description": "Conduct multi-source research with citations and evidence tracking. Searches, extracts, ranks, validates, and synthesizes findings with full citation chains.",
             "inputSchema": {
                 "type": "object",
@@ -53,7 +53,7 @@ pub fn tool_definitions() -> Vec<Value> {
             }
         }),
         json!({
-            "name": "hypersearch_estimate",
+            "name": "fetchium_estimate",
             "description": "Estimate the token cost of fetching a URL without actually fetching it. Use this before committing tokens.",
             "inputSchema": {
                 "type": "object",
@@ -64,8 +64,8 @@ pub fn tool_definitions() -> Vec<Value> {
             }
         }),
         json!({
-            "name": "hypersearch_expand",
-            "description": "Get more detail on a previous result using its result_id and Progressive Detail Streaming (PDS). Expands from key_facts → summary → detailed → complete without re-fetching.",
+            "name": "fetchium_expand",
+            "description": "Get more detail on a previous result using its result_id and Progressive Detail Streaming (PDS). Expands from key_facts to summary to detailed to complete without re-fetching.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -178,6 +178,7 @@ pub struct SearchInput {
     pub token_budget: Option<usize>,
     pub tier: Option<String>,
     pub max_sources: Option<usize>,
+    pub include_content: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]

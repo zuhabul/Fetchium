@@ -7,7 +7,7 @@
 ```rust
 //! MyEngine search backend.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::http::HttpClient;
 use crate::types::ResultItem;
 
@@ -24,7 +24,7 @@ impl MyEngineBackend {
         }
     }
 
-    pub async fn search(&self, query: &str, max_results: usize) -> HsxResult<Vec<ResultItem>> {
+    pub async fn search(&self, query: &str, max_results: usize) -> FetchiumResult<Vec<ResultItem>> {
         let url = format!("{}/search?q={}&limit={}", self.base_url,
             urlencoding::encode(query), max_results);
         let response = self.client.fetch(&url).await?;
@@ -118,7 +118,6 @@ Optional heavy dependencies use Cargo features:
 | `embeddings` | `fastembed` | Semantic search, hybrid ranking |
 | `vector-search` | `usearch` | HNSW vector index |
 | `mcp` | `rmcp` | MCP server protocol |
-| `llama` | `llama-cpp-2` | Local LLM without Ollama |
 
 Build with a feature:
 ```bash

@@ -1,6 +1,6 @@
 //! Twitter/X trend aggregator scraping — free, no API key needed.
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use crate::http::client::HttpClient;
 use serde::{Deserialize, Serialize};
 
@@ -18,7 +18,7 @@ pub struct TrendingTopic {
 pub async fn fetch_trends(
     country: &str,
     http: &HttpClient,
-) -> Result<Vec<TrendingTopic>, HsxError> {
+) -> Result<Vec<TrendingTopic>, FetchiumError> {
     let mut trends = Vec::new();
 
     // Try trends24.in first (realtime trends)
@@ -43,7 +43,10 @@ pub async fn fetch_trends(
     Ok(trends)
 }
 
-async fn fetch_trends24(country: &str, http: &HttpClient) -> Result<Vec<TrendingTopic>, HsxError> {
+async fn fetch_trends24(
+    country: &str,
+    http: &HttpClient,
+) -> Result<Vec<TrendingTopic>, FetchiumError> {
     let country_path = match country.to_lowercase().as_str() {
         "us" | "united states" => "united-states",
         "uk" | "united kingdom" => "united-kingdom",
@@ -56,7 +59,7 @@ async fn fetch_trends24(country: &str, http: &HttpClient) -> Result<Vec<Trending
     {
         Ok(Ok(html)) => html,
         Ok(Err(e)) => return Err(e),
-        Err(_) => return Err(HsxError::Internal("trends24 timeout".into())),
+        Err(_) => return Err(FetchiumError::Internal("trends24 timeout".into())),
     };
 
     // Parse trending topics from HTML
@@ -86,7 +89,7 @@ async fn fetch_trends24(country: &str, http: &HttpClient) -> Result<Vec<Trending
 async fn fetch_getdaytrends(
     country: &str,
     http: &HttpClient,
-) -> Result<Vec<TrendingTopic>, HsxError> {
+) -> Result<Vec<TrendingTopic>, FetchiumError> {
     let url = format!("https://getdaytrends.com/{}/", country.to_lowercase());
 
     let html = match tokio::time::timeout(std::time::Duration::from_secs(8), http.fetch_text(&url))
@@ -94,7 +97,7 @@ async fn fetch_getdaytrends(
     {
         Ok(Ok(html)) => html,
         Ok(Err(e)) => return Err(e),
-        Err(_) => return Err(HsxError::Internal("getdaytrends timeout".into())),
+        Err(_) => return Err(FetchiumError::Internal("getdaytrends timeout".into())),
     };
 
     let mut topics = Vec::new();

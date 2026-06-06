@@ -42,6 +42,6 @@ cargo binstall fetchium
 
 ## Links
 
-- **Docs**: https://fetchium.com/docs
+- **Docs**: https://docs.fetchium.com
 - **API dashboard**: https://app.fetchium.com
 - **GitHub**: https://github.com/zuhabul/fetchium

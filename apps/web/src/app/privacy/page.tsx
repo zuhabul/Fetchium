@@ -99,17 +99,12 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-slate-200 mb-3">7. Self-Hosting</h2>
-              <p>If you self-host Fetchium, this Privacy Policy does not apply — you control all data processing. See the <Link href="/docs/self-hosting/docker" className="text-indigo-400 hover:text-indigo-300">self-hosting documentation</Link>.</p>
-            </section>
-
-            <section>
-              <h2 className="text-lg font-semibold text-slate-200 mb-3">8. Changes to This Policy</h2>
+              <h2 className="text-lg font-semibold text-slate-200 mb-3">7. Changes to This Policy</h2>
               <p>We will notify registered users by email before making material changes to this policy. The updated policy will be posted to this page with a revised date.</p>
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-slate-200 mb-3">9. Contact</h2>
+              <h2 className="text-lg font-semibold text-slate-200 mb-3">8. Contact</h2>
               <p>For privacy questions: <a href="mailto:privacy@fetchium.com" className="text-indigo-400 hover:text-indigo-300">privacy@fetchium.com</a></p>
             </section>
           </div>

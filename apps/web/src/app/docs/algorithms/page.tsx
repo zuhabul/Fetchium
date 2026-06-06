@@ -133,10 +133,9 @@ export default function AlgorithmsOverview() {
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/api/search", title: "Search API", desc: "See algorithms in action" },
-          { href: "/docs/api/research", title: "Research API", desc: "AMRS research swarm" },
-          { href: "/docs/quickstart", title: "Quick Start", desc: "Make your first API call" },
-          { href: "/docs/self-hosting/docker", title: "Self-Hosting", desc: "Run your own instance" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "See algorithms in action" },
+          { href: "https://docs.fetchium.com/api/research", title: "Research API", desc: "AMRS research swarm" },
+          { href: "https://docs.fetchium.com/quickstart", title: "Quick Start", desc: "Make your first API call" },
         ].map(l => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

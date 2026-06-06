@@ -27,7 +27,7 @@ All of the following must be `DONE` before starting any Phase 4 task:
 |-----------|-------|-----------------|
 | P3-E1 (Validation + RAR) | Phase 3 | 6-layer validation pipeline, RAR self-correction loop |
 | P3-E2 (Citations + EGP) | Phase 3 | Citation system (6 styles), Evidence Graph Protocol |
-| P3-E3 (Research mode) | Phase 3 | `hsx research` command, research pipeline |
+| P3-E3 (Research mode) | Phase 3 | `fetchium research` command, research pipeline |
 | P1-E3 (QATBE + SCS + PDS) | Phase 1 | Token budgeting, content segmentation, progressive detail |
 | P2-E3 (Parallel orchestrator) | Phase 2 | Full multi-backend search orchestrator |
 | P2-E4 (HyperFusion ranking) | Phase 2 | 8-signal ranking engine |
@@ -37,7 +37,7 @@ All of the following must be `DONE` before starting any Phase 4 task:
 ## Epic 4.1: AI Preview Engine
 
 > **PRD Sections:** SS23 (AI Preview Engine), SS10 Mode D (AI Preview)
-> **Crate:** `hsx-core` -- `src/ai/`
+> **Crate:** `fetchium-core` -- `src/ai/`
 > **Priority:** P1 | **Tasks:** 2
 
 ### P4-E1-T1: Ollama Integration & Model Router
@@ -59,7 +59,7 @@ Build the Ollama HTTP client that communicates with a local Ollama instance at `
 
 **Files to create/modify:**
 ```
-crates/hsx-core/src/ai/
+crates/fetchium-core/src/ai/
   mod.rs              -- Module root, re-exports
   ollama.rs           -- Ollama HTTP client (list models, chat, streaming)
   router.rs           -- Model routing by query complexity
@@ -170,7 +170,7 @@ use reqwest::Client;
 use tokio::io::AsyncBufReadExt;
 use futures::StreamExt;
 use crate::ai::types::*;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 pub struct OllamaClient {
     client: Client,
@@ -199,12 +199,12 @@ impl OllamaClient {
     }
 
     /// List all locally available models from Ollama.
-    pub async fn list_models(&self) -> Result<Vec<OllamaModel>, HsxError> {
+    pub async fn list_models(&self) -> Result<Vec<OllamaModel>, FetchiumError> {
         let resp = self.client
             .get(format!("{}/api/tags", self.base_url))
             .send()
             .await
-            .map_err(|e| HsxError::AiUnavailable(format!("Ollama unreachable: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Ollama unreachable: {e}")))?;
 
         #[derive(Deserialize)]
         struct TagsResponse {
@@ -212,7 +212,7 @@ impl OllamaClient {
         }
 
         let tags: TagsResponse = resp.json().await
-            .map_err(|e| HsxError::AiUnavailable(format!("Invalid Ollama response: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Invalid Ollama response: {e}")))?;
 
         Ok(tags.models)
     }
@@ -223,7 +223,7 @@ impl OllamaClient {
         model: &str,
         messages: &[ChatMessage],
         temperature: f32,
-    ) -> Result<String, HsxError> {
+    ) -> Result<String, FetchiumError> {
         let body = serde_json::json!({
             "model": model,
             "messages": messages,
@@ -238,10 +238,10 @@ impl OllamaClient {
             .json(&body)
             .send()
             .await
-            .map_err(|e| HsxError::AiUnavailable(format!("Ollama chat failed: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Ollama chat failed: {e}")))?;
 
         let chunk: OllamaChatChunk = resp.json().await
-            .map_err(|e| HsxError::AiUnavailable(format!("Invalid chat response: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Invalid chat response: {e}")))?;
 
         Ok(chunk.message.content)
     }
@@ -254,7 +254,7 @@ impl OllamaClient {
         messages: &[ChatMessage],
         temperature: f32,
         mut on_chunk: F,
-    ) -> Result<String, HsxError>
+    ) -> Result<String, FetchiumError>
     where
         F: FnMut(&str),
     {
@@ -272,7 +272,7 @@ impl OllamaClient {
             .json(&body)
             .send()
             .await
-            .map_err(|e| HsxError::AiUnavailable(format!("Ollama stream failed: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Ollama stream failed: {e}")))?;
 
         let mut full_response = String::new();
         let mut stream = resp.bytes_stream();
@@ -281,7 +281,7 @@ impl OllamaClient {
         let mut buffer = Vec::new();
         while let Some(chunk_result) = stream.next().await {
             let bytes = chunk_result
-                .map_err(|e| HsxError::AiUnavailable(format!("Stream read error: {e}")))?;
+                .map_err(|e| FetchiumError::AiUnavailable(format!("Stream read error: {e}")))?;
             buffer.extend_from_slice(&bytes);
 
             // Process complete JSON lines from the buffer
@@ -618,7 +618,7 @@ pub use types::*;
 
 ---
 
-### P4-E1-T2: `hsx ai` Command
+### P4-E1-T2: `fetchium ai` Command
 
 **ID:** `P4-E1-T2`
 **Status:** `TODO`
@@ -626,19 +626,19 @@ pub use types::*;
 **Estimated effort:** 2-3 days
 
 **Description:**
-Build the `hsx ai` CLI command that orchestrates the full AI preview pipeline: search -> QATBE extraction -> sandwich layout -> Ollama chat -> citation injection -> output. Support a `--model` flag for manual model override, streaming output to the terminal, and graceful fallback when Ollama is not available.
+Build the `fetchium ai` CLI command that orchestrates the full AI preview pipeline: search -> QATBE extraction -> sandwich layout -> Ollama chat -> citation injection -> output. Support a `--model` flag for manual model override, streaming output to the terminal, and graceful fallback when Ollama is not available.
 
 **PRD References:**
-- SS10 Mode D "AI Preview (`hsx ai`)" -- `hsx ai "explain WebDriver BiDi protocol"`
+- SS10 Mode D "AI Preview (`fetchium ai`)" -- `fetchium ai "explain WebDriver BiDi protocol"`
 - SS23 "Architecture" -- `Search Results -> QATBE -> Sandwich Layout Assembly -> Local LLM -> Citation Injection -> Output`
 - SS23 "Model Routing" -- Auto-select model based on query complexity
 - SS11 "CLI Interface Design" -- clap derive command definitions
 
 **Files to create/modify:**
 ```
-crates/hsx-cli/src/commands/ai.rs        -- The `hsx ai` command implementation
-crates/hsx-cli/src/cli.rs                -- Add AiCommand variant to clap enum
-crates/hsx-core/src/ai/pipeline.rs       -- Full AI preview pipeline (search -> QATBE -> sandwich -> LLM -> citations)
+crates/fetchium-cli/src/commands/ai.rs        -- The `fetchium ai` command implementation
+crates/fetchium-cli/src/cli.rs                -- Add AiCommand variant to clap enum
+crates/fetchium-core/src/ai/pipeline.rs       -- Full AI preview pipeline (search -> QATBE -> sandwich -> LLM -> citations)
 ```
 
 **Dependencies:**
@@ -659,7 +659,7 @@ use crate::ai::sandwich::{sandwich_layout, assemble_context};
 use crate::ai::prompt::{synthesis_system_prompt, factual_system_prompt};
 use crate::search::SearchOrchestrator;
 use crate::token::qatbe::QatbeExtractor;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 /// Result of the AI preview pipeline.
 #[derive(Debug)]
@@ -680,7 +680,7 @@ pub async fn run_ai_pipeline(
     config: &AiConfig,
     orchestrator: &SearchOrchestrator,
     extractor: &QatbeExtractor,
-) -> Result<AiPreviewResult, HsxError> {
+) -> Result<AiPreviewResult, FetchiumError> {
     // Step 1: Search
     let search_results = orchestrator.search(query).await?;
 
@@ -732,7 +732,7 @@ pub async fn run_ai_pipeline(
     let available_models = ollama.list_models().await?;
     let tier = route_model(query, ordered_sources.len());
     let model_name = select_model(&available_models, tier, model_override)
-        .ok_or_else(|| HsxError::AiUnavailable(
+        .ok_or_else(|| FetchiumError::AiUnavailable(
             "No models available in Ollama. Run `ollama pull llama3.2` first.".into()
         ))?;
 
@@ -882,10 +882,10 @@ pub async fn handle_ai_command(args: AiCommand, config: &Config) -> anyhow::Resu
 ```
 
 **Acceptance criteria:**
-- [ ] `hsx ai "what is Rust"` searches, extracts, assembles context, sends to Ollama, and prints a cited answer
-- [ ] `hsx ai "query" --model mistral:7b` uses the specified model regardless of routing
+- [ ] `fetchium ai "what is Rust"` searches, extracts, assembles context, sends to Ollama, and prints a cited answer
+- [ ] `fetchium ai "query" --model mistral:7b` uses the specified model regardless of routing
 - [ ] Streaming mode (default) prints tokens as they arrive from Ollama with no buffering delay
-- [ ] `hsx ai "query" --no-stream` waits for the full response before printing
+- [ ] `fetchium ai "query" --no-stream` waits for the full response before printing
 - [ ] When Ollama is not running, the command prints a fallback message with raw search results and a helpful tip to install Ollama
 - [ ] When Ollama is running but has no models, the command prints an error suggesting `ollama pull`
 - [ ] The `--budget` flag controls how many tokens of context are assembled
@@ -906,7 +906,7 @@ pub async fn handle_ai_command(args: AiCommand, config: &Config) -> anyhow::Resu
 ## Epic 4.2: Deep Research / AMRS
 
 > **PRD Sections:** SS8.8 (AMRS), SS10 Mode C (Deep Research)
-> **Crate:** `hsx-core` -- `src/research/`
+> **Crate:** `fetchium-core` -- `src/research/`
 > **Priority:** P1-P2 | **Tasks:** 2
 
 ### P4-E2-T1: AMRS Multi-Agent Architecture
@@ -927,7 +927,7 @@ Implement the Adaptive Multi-Agent Research Swarm (AMRS) as defined in PRD SS8.8
 
 **Files to create/modify:**
 ```
-crates/hsx-core/src/research/
+crates/fetchium-core/src/research/
   amrs/
     mod.rs              -- Module root, Coordinator
     agent.rs            -- Agent trait + AgentMessage enum
@@ -1040,7 +1040,7 @@ pub type AgentReceiver = mpsc::Receiver<AgentMessage>;
 // agent.rs
 use async_trait::async_trait;
 use crate::research::amrs::channel::*;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 /// Trait that all AMRS agents implement.
 #[async_trait]
@@ -1054,7 +1054,7 @@ pub trait Agent: Send + Sync {
         &self,
         rx: AgentReceiver,
         tx: AgentSender,
-    ) -> Result<(), HsxError>;
+    ) -> Result<(), FetchiumError>;
 }
 ```
 
@@ -1175,7 +1175,7 @@ use crate::research::amrs::agent::Agent;
 use crate::research::amrs::channel::*;
 use crate::research::amrs::decompose::*;
 use crate::resource::ResourceTier;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 pub mod agent;
 pub mod channel;
@@ -1247,7 +1247,7 @@ impl Coordinator {
     }
 
     /// Execute a full deep research session.
-    pub async fn run(&mut self, query: &str) -> Result<DeepResearchResult, HsxError> {
+    pub async fn run(&mut self, query: &str) -> Result<DeepResearchResult, FetchiumError> {
         let mut audit = Vec::new();
         let mut all_contradictions = Vec::new();
         let decomposition = decompose_query(query, self.config.max_depth);
@@ -1276,7 +1276,7 @@ impl Coordinator {
             search_tx.send(AgentMessage::SpawnSearch {
                 query: node.query.clone(),
                 depth: node.depth,
-            }).await.map_err(|e| HsxError::Internal(e.to_string()))?;
+            }).await.map_err(|e| FetchiumError::Internal(e.to_string()))?;
 
             // Spawn the agent as a tokio task
             tokio::spawn(async move {
@@ -1336,7 +1336,7 @@ use async_trait::async_trait;
 use crate::research::amrs::agent::{Agent, AgentType};
 use crate::research::amrs::channel::*;
 use crate::search::SearchOrchestrator;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 pub struct SearchAgent {
     orchestrator: SearchOrchestrator,
@@ -1386,7 +1386,7 @@ impl Agent for SearchAgent {
         &self,
         mut rx: AgentReceiver,
         tx: AgentSender,
-    ) -> Result<(), HsxError> {
+    ) -> Result<(), FetchiumError> {
         while let Some(msg) = rx.recv().await {
             match msg {
                 AgentMessage::SpawnSearch { query, depth } => {
@@ -1496,7 +1496,7 @@ impl VerifyAgent {
 
 ---
 
-### P4-E2-T2: `hsx deep` Command
+### P4-E2-T2: `fetchium deep` Command
 
 **ID:** `P4-E2-T2`
 **Status:** `TODO`
@@ -1504,18 +1504,18 @@ impl VerifyAgent {
 **Estimated effort:** 3-4 days
 
 **Description:**
-Build the `hsx deep` CLI command that executes the full AMRS pipeline and presents results as a structured deep research report. Support `--max-depth` for controlling multi-hop depth, evidence graph output, contradiction reports, audit trails, and per-agent progress bars using `indicatif`.
+Build the `fetchium deep` CLI command that executes the full AMRS pipeline and presents results as a structured deep research report. Support `--max-depth` for controlling multi-hop depth, evidence graph output, contradiction reports, audit trails, and per-agent progress bars using `indicatif`.
 
 **PRD References:**
-- SS10 Mode C "Deep Research Mode" -- `hsx deep "query" --max-depth 3`
+- SS10 Mode C "Deep Research Mode" -- `fetchium deep "query" --max-depth 3`
 - SS8.8 "AMRS" -- Full agent pipeline
 - SS8.7 "EGP" -- Evidence graph output
 - SS11 "CLI Interface Design" -- Command structure
 
 **Files to create/modify:**
 ```
-crates/hsx-cli/src/commands/deep.rs     -- The `hsx deep` command implementation
-crates/hsx-cli/src/cli.rs              -- Add DeepCommand variant to clap enum
+crates/fetchium-cli/src/commands/deep.rs     -- The `fetchium deep` command implementation
+crates/fetchium-cli/src/cli.rs              -- Add DeepCommand variant to clap enum
 ```
 
 **Dependencies:**
@@ -1658,7 +1658,7 @@ pub async fn handle_deep_command(args: DeepCommand, config: &Config) -> anyhow::
 ```
 
 **Acceptance criteria:**
-- [ ] `hsx deep "Compare Rust vs Go for microservices"` runs the full AMRS pipeline and outputs a structured report
+- [ ] `fetchium deep "Compare Rust vs Go for microservices"` runs the full AMRS pipeline and outputs a structured report
 - [ ] `--max-depth 1` limits research to a single hop; `--max-depth 5` allows 5 hops
 - [ ] Per-agent progress bars show real-time status (Search agent: searching..., Extract agent: extracting 5 URLs...)
 - [ ] `--evidence-graph` exports a JSON file with the full EGP graph (nodes, edges, hashes)
@@ -1679,7 +1679,7 @@ pub async fn handle_deep_command(args: DeepCommand, config: &Config) -> anyhow::
 ## Epic 4.3: Speculative Research Pipelining (SRP)
 
 > **PRD Section:** SS8.5 (Speculative Research Pipelining)
-> **Crate:** `hsx-core` -- `src/research/`
+> **Crate:** `fetchium-core` -- `src/research/`
 > **Priority:** P2 | **Tasks:** 1
 
 ### P4-E3-T1: SRP Streaming Pipeline
@@ -1699,7 +1699,7 @@ Implement Speculative Research Pipelining (SRP) per PRD SS8.5. Stream initial fi
 
 **Files to create/modify:**
 ```
-crates/hsx-core/src/research/
+crates/fetchium-core/src/research/
   srp.rs                 -- SRP pipeline: streaming findings with corrections
   srp_types.rs           -- SrpChunk, SrpEvent, SrpStream types
 ```
@@ -1769,7 +1769,7 @@ use tokio::time::{timeout, Duration, Instant};
 use crate::research::srp_types::*;
 use crate::search::SearchOrchestrator;
 use crate::extract::ContentExtractor;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 /// Run the SRP pipeline, emitting chunks through a channel.
 ///
@@ -1914,7 +1914,7 @@ fn find_contradiction(claim: &str, new_findings: &[String]) -> Option<String> {
 - [ ] `SrpEvent::Final` is emitted after all sources are processed and validated
 - [ ] Each chunk includes the source indices that support it and a confidence score
 - [ ] The pipeline completes within `max_wait_ms` even if some sources are slow
-- [ ] `--stream` flag on `hsx search` and `hsx research` enables SRP output
+- [ ] `--stream` flag on `fetchium search` and `fetchium research` enables SRP output
 - [ ] SRP chunks are printed incrementally to the terminal as `[INITIAL]`, `[UPDATE]`, `[CORRECTION]`, `[FINAL]`
 - [ ] `cargo test` passes; `cargo clippy` zero warnings
 
@@ -1923,14 +1923,14 @@ fn find_contradiction(claim: &str, new_findings: &[String]) -> Option<String> {
 - Channel backpressure: if the consumer is slow, the producer will block on `tx.send()`. Use `try_send()` with a fallback if needed.
 - Contradiction detection is approximate without an LLM. Focus on detectable patterns (number differences, date conflicts, negation). Accept false negatives.
 - The `max_wait_ms` timeout must use `tokio::time::timeout` to hard-limit the pipeline, otherwise a single slow URL can stall everything.
-- When integrating SRP into existing commands (`hsx search --stream`), the non-streaming code path must remain the default. SRP adds latency complexity that not all users want.
+- When integrating SRP into existing commands (`fetchium search --stream`), the non-streaming code path must remain the default. SRP adds latency complexity that not all users want.
 
 ---
 
 ## Epic 4.4: MCP Server
 
 > **PRD Section:** SS30 (MCP Server Mode)
-> **Crate:** `hsx-mcp`
+> **Crate:** `fetchium-mcp`
 > **Priority:** P1 | **Tasks:** 1
 
 ### P4-E4-T1: MCP Server with 5 Composite Tools
@@ -1950,8 +1950,8 @@ Build the MCP (Model Context Protocol) server that exposes Fetchium as a tool pr
 
 **Files to create/modify:**
 ```
-crates/hsx-mcp/
-  Cargo.toml              -- Dependencies: rmcp, serde_json, tokio, hsx-core
+crates/fetchium-mcp/
+  Cargo.toml              -- Dependencies: rmcp, serde_json, tokio, fetchium-core
   src/
     lib.rs                -- MCP server setup, transport selection
     tools.rs              -- Tool schema definitions (5 tools)
@@ -1967,16 +1967,16 @@ crates/hsx-mcp/
 
 **Step-by-step Rust implementation:**
 
-**Step 1: Set up Cargo.toml for hsx-mcp**
+**Step 1: Set up Cargo.toml for fetchium-mcp**
 
 ```toml
 [package]
-name = "hsx-mcp"
+name = "fetchium-mcp"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-hsx-core = { path = "../hsx-core" }
+fetchium-core = { path = "../fetchium-core" }
 rmcp = { version = "0.1", features = ["server", "transport-stdio", "transport-sse"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -2167,7 +2167,7 @@ use hsx_core::extract::ContentExtractor;
 use hsx_core::token::qatbe::QatbeExtractor;
 use hsx_core::research::ResearchPipeline;
 use hsx_core::cache::CacheManager;
-use hsx_core::error::HsxError;
+use hsx_core::error::FetchiumError;
 use serde_json::json;
 use std::sync::Arc;
 
@@ -2184,7 +2184,7 @@ pub struct McpAppState {
 pub async fn handle_search(
     input: SearchInput,
     state: &McpAppState,
-) -> Result<serde_json::Value, HsxError> {
+) -> Result<serde_json::Value, FetchiumError> {
     let budget = input.token_budget.unwrap_or(2000);
     let tier = input.tier.as_deref().unwrap_or("summary");
     let max_sources = input.max_sources.unwrap_or(10);
@@ -2238,7 +2238,7 @@ pub async fn handle_search(
 pub async fn handle_fetch(
     input: FetchInput,
     state: &McpAppState,
-) -> Result<serde_json::Value, HsxError> {
+) -> Result<serde_json::Value, FetchiumError> {
     let budget = input.token_budget.unwrap_or(3000);
     let query = input.query.as_deref().unwrap_or("");
 
@@ -2263,7 +2263,7 @@ pub async fn handle_fetch(
 pub async fn handle_research(
     input: ResearchInput,
     state: &McpAppState,
-) -> Result<serde_json::Value, HsxError> {
+) -> Result<serde_json::Value, FetchiumError> {
     let budget = input.token_budget.unwrap_or(4000);
     let depth = input.depth.as_deref().unwrap_or("standard");
 
@@ -2294,7 +2294,7 @@ pub async fn handle_research(
 pub async fn handle_estimate(
     input: EstimateInput,
     state: &McpAppState,
-) -> Result<serde_json::Value, HsxError> {
+) -> Result<serde_json::Value, FetchiumError> {
     // HEAD request + heuristic estimation without full fetch
     let estimate = state.extractor.estimate_tokens(&input.url).await?;
 
@@ -2311,10 +2311,10 @@ pub async fn handle_estimate(
 pub async fn handle_expand(
     input: ExpandInput,
     state: &McpAppState,
-) -> Result<serde_json::Value, HsxError> {
+) -> Result<serde_json::Value, FetchiumError> {
     // Look up previous result by ID in cache
     let cached = state.cache.get_by_result_id(&input.result_id).await
-        .ok_or_else(|| HsxError::NotFound(
+        .ok_or_else(|| FetchiumError::NotFound(
             format!("Result ID {} not found in cache. Results expire after the session.", input.result_id)
         ))?;
 
@@ -2424,8 +2424,8 @@ pub enum TransportType {
 ```
 
 **Acceptance criteria:**
-- [ ] `hsx serve --mcp` starts the MCP server on stdio transport
-- [ ] `hsx serve --mcp --transport sse --port 3001` starts on SSE transport
+- [ ] `fetchium serve --mcp` starts the MCP server on stdio transport
+- [ ] `fetchium serve --mcp --transport sse --port 3001` starts on SSE transport
 - [ ] `hypersearch_search` tool accepts a query, runs the full search pipeline, and returns token-efficient results with a `result_id`
 - [ ] `hypersearch_fetch` tool fetches a URL with optional query-aware extraction and respects `token_budget`
 - [ ] `hypersearch_research` tool runs the full research pipeline with citations and returns a report
@@ -2450,7 +2450,7 @@ pub enum TransportType {
 ## Epic 4.5: REST API
 
 > **PRD Section:** SS9 (AI-Native Agent Architecture, REST API Mode)
-> **Crate:** `hsx-api`
+> **Crate:** `fetchium-api`
 > **Priority:** P2 | **Tasks:** 1
 
 ### P4-E5-T1: REST API with axum
@@ -2465,13 +2465,13 @@ Build a REST API server using axum that exposes Fetchium functionality over HTTP
 
 **PRD References:**
 - SS9 "AI-Native Agent Architecture" -- REST API Mode (Interface Mode 3)
-- SS9 "REST API Mode" -- `hsx serve --api --port 3000`
+- SS9 "REST API Mode" -- `fetchium serve --api --port 3000`
 - SS9 POST `/api/search` example -- request/response schema
 
 **Files to create/modify:**
 ```
-crates/hsx-api/
-  Cargo.toml              -- Dependencies: axum, tower, tower-http, serde, hsx-core
+crates/fetchium-api/
+  Cargo.toml              -- Dependencies: axum, tower, tower-http, serde, fetchium-core
   src/
     lib.rs                -- Server setup, start function
     routes.rs             -- Route definitions
@@ -2492,12 +2492,12 @@ crates/hsx-api/
 
 ```toml
 [package]
-name = "hsx-api"
+name = "fetchium-api"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-hsx-core = { path = "../hsx-core" }
+fetchium-core = { path = "../fetchium-core" }
 axum = { version = "0.7", features = ["json", "macros"] }
 tower = { version = "0.4" }
 tower-http = { version = "0.5", features = ["cors", "trace", "limit"] }
@@ -2926,8 +2926,8 @@ pub async fn start_api_server(
 ```
 
 **Acceptance criteria:**
-- [ ] `hsx serve --api` starts the REST API on port 3000 (default)
-- [ ] `hsx serve --api --port 8080` starts on the specified port
+- [ ] `fetchium serve --api` starts the REST API on port 3000 (default)
+- [ ] `fetchium serve --api --port 8080` starts on the specified port
 - [ ] `GET /health` returns `{"status": "ok", "version": "..."}` with 200
 - [ ] `POST /api/search` with `{"query": "rust web framework"}` returns ranked search results with `result_id`
 - [ ] `POST /api/fetch` with `{"url": "...", "query": "...", "token_budget": 1000}` returns extracted content within budget
@@ -2955,10 +2955,10 @@ pub async fn start_api_server(
 Phase 3 (all complete)
 │
 ├─── P4-E1-T1 (Ollama integration)
-│    └─── P4-E1-T2 (hsx ai command)
+│    └─── P4-E1-T2 (fetchium ai command)
 │
 ├─── P4-E2-T1 (AMRS agents)
-│    └─── P4-E2-T2 (hsx deep command)
+│    └─── P4-E2-T2 (fetchium deep command)
 │
 ├─── P4-E3-T1 (SRP streaming) ← independent of E1/E2
 │
@@ -2997,11 +2997,11 @@ These can run simultaneously:
 ## Phase Completion Checklist
 
 - [ ] All 8 tasks marked `DONE`
-- [ ] `hsx ai "query"` produces cited AI answers with streaming
-- [ ] `hsx deep "query"` runs multi-agent research with evidence graphs
-- [ ] `hsx search --stream` delivers SRP incremental results
-- [ ] `hsx serve --mcp` works with Claude Code
-- [ ] `hsx serve --api` serves all 4 REST endpoints
+- [ ] `fetchium ai "query"` produces cited AI answers with streaming
+- [ ] `fetchium deep "query"` runs multi-agent research with evidence graphs
+- [ ] `fetchium search --stream` delivers SRP incremental results
+- [ ] `fetchium serve --mcp` works with Claude Code
+- [ ] `fetchium serve --api` serves all 4 REST endpoints
 - [ ] `cargo build --workspace` compiles with zero errors
 - [ ] `cargo test --workspace` passes all tests
 - [ ] `cargo clippy --workspace` produces zero warnings

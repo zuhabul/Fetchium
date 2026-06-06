@@ -1,6 +1,6 @@
 //! Topic subscriptions with SQLite-backed store.
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use dirs;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
@@ -42,7 +42,7 @@ pub struct SubscriptionStore {
 }
 
 impl SubscriptionStore {
-    pub fn new(db_path: &std::path::Path) -> HsxResult<Self> {
+    pub fn new(db_path: &std::path::Path) -> FetchiumResult<Self> {
         let conn = Connection::open(db_path)?;
         conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS subscriptions (
@@ -58,7 +58,12 @@ impl SubscriptionStore {
         Ok(Self { conn })
     }
 
-    pub fn add(&self, topic: &str, interval_secs: u64, notify: &NotifyMethod) -> HsxResult<String> {
+    pub fn add(
+        &self,
+        topic: &str,
+        interval_secs: u64,
+        notify: &NotifyMethod,
+    ) -> FetchiumResult<String> {
         let id = uuid::Uuid::new_v4().to_string();
         let now = chrono::Utc::now().to_rfc3339();
         let notify_json = serde_json::to_string(notify)?;
@@ -69,14 +74,14 @@ impl SubscriptionStore {
         Ok(id)
     }
 
-    pub fn remove(&self, id: &str) -> HsxResult<bool> {
+    pub fn remove(&self, id: &str) -> FetchiumResult<bool> {
         let n = self
             .conn
             .execute("DELETE FROM subscriptions WHERE id=?1", [id])?;
         Ok(n > 0)
     }
 
-    pub fn list(&self) -> HsxResult<Vec<Subscription>> {
+    pub fn list(&self) -> FetchiumResult<Vec<Subscription>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, topic, interval_secs, notify_json, last_checked_at, created_at, enabled
              FROM subscriptions ORDER BY created_at DESC",
@@ -111,7 +116,7 @@ impl SubscriptionStore {
         Ok(subs)
     }
 
-    pub fn mark_checked(&self, id: &str) -> HsxResult<()> {
+    pub fn mark_checked(&self, id: &str) -> FetchiumResult<()> {
         let now = chrono::Utc::now().to_rfc3339();
         self.conn.execute(
             "UPDATE subscriptions SET last_checked_at=?1 WHERE id=?2",
@@ -121,7 +126,7 @@ impl SubscriptionStore {
     }
 
     /// Return subscriptions that are due for a check.
-    pub fn due(&self) -> HsxResult<Vec<Subscription>> {
+    pub fn due(&self) -> FetchiumResult<Vec<Subscription>> {
         let all = self.list()?;
         let now = chrono::Utc::now();
         Ok(all
@@ -166,8 +171,8 @@ impl SubscriptionStore {
 }
 
 /// Parse an interval string like "30m", "1h", "7d" into seconds.
-pub fn parse_interval(s: &str) -> HsxResult<u64> {
-    let bad = || HsxError::Config(format!("invalid interval: '{s}'"));
+pub fn parse_interval(s: &str) -> FetchiumResult<u64> {
+    let bad = || FetchiumError::Config(format!("invalid interval: '{s}'"));
     if let Some(n) = s.strip_suffix('s') {
         Ok(n.parse::<u64>().map_err(|_| bad())?)
     } else if let Some(n) = s.strip_suffix('m') {

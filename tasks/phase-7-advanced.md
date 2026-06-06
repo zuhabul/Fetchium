@@ -29,20 +29,20 @@ Phase 7 implements the advanced features that differentiate Fetchium from a rese
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/plugin/mod.rs` | Plugin module root |
-| `crates/hsx-core/src/plugin/traits.rs` | Plugin trait definitions for all 6 types |
-| `crates/hsx-core/src/plugin/registry.rs` | Plugin registry |
-| `crates/hsx-core/src/plugin/loader.rs` | Dynamic library + WASM loader |
-| `crates/hsx-core/src/plugin/lifecycle.rs` | Init, start, stop, unload |
-| `crates/hsx-core/src/plugin/manifest.rs` | Plugin manifest (plugin.toml) parser |
-| `crates/hsx-cli/src/commands/plugin.rs` | CLI: install, list, create, remove |
+| `crates/fetchium-core/src/plugin/mod.rs` | Plugin module root |
+| `crates/fetchium-core/src/plugin/traits.rs` | Plugin trait definitions for all 6 types |
+| `crates/fetchium-core/src/plugin/registry.rs` | Plugin registry |
+| `crates/fetchium-core/src/plugin/loader.rs` | Dynamic library + WASM loader |
+| `crates/fetchium-core/src/plugin/lifecycle.rs` | Init, start, stop, unload |
+| `crates/fetchium-core/src/plugin/manifest.rs` | Plugin manifest (plugin.toml) parser |
+| `crates/fetchium-cli/src/commands/plugin.rs` | CLI: install, list, create, remove |
 
 #### Step-by-Step Implementation Guide
 
 **Step 1: Define plugin traits**
 
 ```rust
-// crates/hsx-core/src/plugin/traits.rs
+// crates/fetchium-core/src/plugin/traits.rs
 
 use async_trait::async_trait;
 
@@ -142,7 +142,7 @@ pub trait AiProviderPlugin: Plugin {
 **Step 2: Plugin registry and loader**
 
 ```rust
-// crates/hsx-core/src/plugin/registry.rs
+// crates/fetchium-core/src/plugin/registry.rs
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -220,7 +220,7 @@ impl PluginRegistry {
     }
 }
 
-// crates/hsx-core/src/plugin/manifest.rs
+// crates/fetchium-core/src/plugin/manifest.rs
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -238,7 +238,7 @@ pub struct PluginManifest {
 **Step 3: CLI commands**
 
 ```rust
-// crates/hsx-cli/src/commands/plugin.rs
+// crates/fetchium-cli/src/commands/plugin.rs
 use clap::Subcommand;
 
 #[derive(Subcommand)]
@@ -262,12 +262,12 @@ pub enum PluginCommand {
 
 #### Acceptance Criteria
 
-- [x] `hsx plugin create my-arxiv-backend --type backend` scaffolds a new plugin project
+- [x] `fetchium plugin create my-arxiv-backend --type backend` scaffolds a new plugin project
 - [x] Native plugins load via `libloading` on macOS/Linux/Windows
 - [x] WASM plugins load via `wasmtime` (feature-gated)
 - [x] Plugin manifest (`plugin.toml`) defines name, version, type, and config schema
-- [x] `hsx plugin list` shows installed plugins with status
-- [x] `hsx plugin install ./my-plugin` copies plugin to `~/.fetchium/plugins/`
+- [x] `fetchium plugin list` shows installed plugins with status
+- [x] `fetchium plugin install ./my-plugin` copies plugin to `~/.fetchium/plugins/`
 - [x] Backend plugins integrate with the search orchestrator
 - [x] Extractor plugins integrate with the CEP pipeline
 - [x] Plugins are isolated: a crashing plugin does not crash the host
@@ -298,17 +298,17 @@ pub enum PluginCommand {
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/privacy/mod.rs` | Privacy module root |
-| `crates/hsx-core/src/privacy/modes.rs` | Mode definitions and enforcement |
-| `crates/hsx-core/src/privacy/redact.rs` | PII redaction engine |
-| `crates/hsx-core/src/privacy/expiry.rs` | Auto-expiring research artifacts |
-| `crates/hsx-core/src/privacy/encryption.rs` | Cache encryption at rest |
-| `crates/hsx-core/src/privacy/tor.rs` | Tor SOCKS5 proxy integration |
+| `crates/fetchium-core/src/privacy/mod.rs` | Privacy module root |
+| `crates/fetchium-core/src/privacy/modes.rs` | Mode definitions and enforcement |
+| `crates/fetchium-core/src/privacy/redact.rs` | PII redaction engine |
+| `crates/fetchium-core/src/privacy/expiry.rs` | Auto-expiring research artifacts |
+| `crates/fetchium-core/src/privacy/encryption.rs` | Cache encryption at rest |
+| `crates/fetchium-core/src/privacy/tor.rs` | Tor SOCKS5 proxy integration |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/privacy/modes.rs
+// crates/fetchium-core/src/privacy/modes.rs
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PrivacyMode {
@@ -347,7 +347,7 @@ pub fn apply_mode(
     Ok(())
 }
 
-// crates/hsx-core/src/privacy/redact.rs
+// crates/fetchium-core/src/privacy/redact.rs
 
 /// PII patterns to detect and redact.
 const PII_PATTERNS: &[(&str, &str)] = &[
@@ -367,7 +367,7 @@ pub fn redact_pii(text: &str) -> String {
     result
 }
 
-// crates/hsx-core/src/privacy/encryption.rs
+// crates/fetchium-core/src/privacy/encryption.rs
 
 use aes_gcm::{Aes256Gcm, Key, Nonce};
 use aes_gcm::aead::{Aead, NewAead};
@@ -410,7 +410,7 @@ impl CacheEncryption {
     }
 }
 
-// crates/hsx-core/src/privacy/expiry.rs
+// crates/fetchium-core/src/privacy/expiry.rs
 
 /// Schedule auto-expiration of research artifacts.
 pub fn schedule_expiry(
@@ -445,12 +445,12 @@ pub fn purge_expired(db: &rusqlite::Connection) -> Result<usize, crate::Error> {
 
 #### Acceptance Criteria
 
-- [x] `hsx search "query" --private` leaves no traces (no cache, no history, no PIE updates)
-- [x] `hsx search "query" --tor` routes requests through Tor SOCKS5 proxy
-- [x] `hsx search "query" --air-gap` uses only local index (clear error if no local index)
-- [x] `hsx research "topic" --redact-pii` strips emails, phones, SSNs, IPs from output
-- [x] `hsx research "topic" --auto-expire 24h` schedules artifact deletion
-- [x] `hsx config set privacy.cache_encryption_key <passphrase>` enables encrypted cache
+- [x] `fetchium search "query" --private` leaves no traces (no cache, no history, no PIE updates)
+- [x] `fetchium search "query" --tor` routes requests through Tor SOCKS5 proxy
+- [x] `fetchium search "query" --air-gap` uses only local index (clear error if no local index)
+- [x] `fetchium research "topic" --redact-pii` strips emails, phones, SSNs, IPs from output
+- [x] `fetchium research "topic" --auto-expire 24h` schedules artifact deletion
+- [x] `fetchium config set privacy.cache_encryption_key <passphrase>` enables encrypted cache
 - [x] Encrypted cache data is unreadable without the passphrase
 - [x] `purge_expired()` runs on startup and cleans up expired artifacts
 - [x] Tor mode requires Tor service running locally (clear error message if not)
@@ -480,17 +480,17 @@ pub fn purge_expired(db: &rusqlite::Connection) -> Result<usize, crate::Error> {
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/collab/mod.rs` | Collaboration module |
-| `crates/hsx-core/src/collab/workspace.rs` | Workspace CRUD |
-| `crates/hsx-core/src/collab/branch.rs` | Research session branching |
-| `crates/hsx-core/src/collab/merge.rs` | Findings merging with dedup |
-| `crates/hsx-core/src/collab/sync.rs` | Filesystem/Git sync |
-| `crates/hsx-cli/src/commands/workspace.rs` | CLI commands |
+| `crates/fetchium-core/src/collab/mod.rs` | Collaboration module |
+| `crates/fetchium-core/src/collab/workspace.rs` | Workspace CRUD |
+| `crates/fetchium-core/src/collab/branch.rs` | Research session branching |
+| `crates/fetchium-core/src/collab/merge.rs` | Findings merging with dedup |
+| `crates/fetchium-core/src/collab/sync.rs` | Filesystem/Git sync |
+| `crates/fetchium-cli/src/commands/workspace.rs` | CLI commands |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/collab/workspace.rs
+// crates/fetchium-core/src/collab/workspace.rs
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Workspace {
@@ -532,7 +532,7 @@ impl Workspace {
     }
 }
 
-// crates/hsx-core/src/collab/branch.rs
+// crates/fetchium-core/src/collab/branch.rs
 
 /// Fork a research session to explore an alternative approach.
 pub fn fork_session(
@@ -563,7 +563,7 @@ pub fn fork_session(
     Ok(new_id)
 }
 
-// crates/hsx-core/src/collab/merge.rs
+// crates/fetchium-core/src/collab/merge.rs
 
 /// Merge findings from two research sessions with deduplication.
 pub fn merge_sessions(
@@ -598,12 +598,12 @@ pub fn merge_sessions(
 
 #### Acceptance Criteria
 
-- [x] `hsx workspace create "project-alpha"` creates a workspace directory
-- [x] `hsx research "topic" --workspace project-alpha` stores results in the workspace
-- [x] `hsx research fork <session-id> --name "alt-approach"` creates a branch
-- [x] `hsx research merge <session-a> <session-b> --deduplicate` combines findings
+- [x] `fetchium workspace create "project-alpha"` creates a workspace directory
+- [x] `fetchium research "topic" --workspace project-alpha` stores results in the workspace
+- [x] `fetchium research fork <session-id> --name "alt-approach"` creates a branch
+- [x] `fetchium research merge <session-a> <session-b> --deduplicate` combines findings
 - [x] Workspace manifest (`workspace.json`) tracks metadata and members
-- [x] Git-based sync: `hsx workspace sync` commits and pushes changes
+- [x] Git-based sync: `fetchium workspace sync` commits and pushes changes
 - [x] Merged sessions preserve citation integrity across sources
 
 #### Pitfalls
@@ -631,19 +631,19 @@ pub fn merge_sessions(
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/domains/mod.rs` | Domain mode module |
-| `crates/hsx-core/src/domains/academic.rs` | Academic mode config |
-| `crates/hsx-core/src/domains/code.rs` | Code intelligence mode |
-| `crates/hsx-core/src/domains/legal.rs` | Legal research mode |
-| `crates/hsx-core/src/domains/financial.rs` | Financial analysis mode |
-| `crates/hsx-core/src/domains/medical.rs` | Medical/scientific mode |
-| `crates/hsx-core/src/domains/security.rs` | Cybersecurity mode |
+| `crates/fetchium-core/src/domains/mod.rs` | Domain mode module |
+| `crates/fetchium-core/src/domains/academic.rs` | Academic mode config |
+| `crates/fetchium-core/src/domains/code.rs` | Code intelligence mode |
+| `crates/fetchium-core/src/domains/legal.rs` | Legal research mode |
+| `crates/fetchium-core/src/domains/financial.rs` | Financial analysis mode |
+| `crates/fetchium-core/src/domains/medical.rs` | Medical/scientific mode |
+| `crates/fetchium-core/src/domains/security.rs` | Cybersecurity mode |
 | `data/domain_configs/` | TOML config files per domain |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/domains/mod.rs
+// crates/fetchium-core/src/domains/mod.rs
 
 #[derive(Debug, Clone)]
 pub struct DomainMode {
@@ -686,7 +686,7 @@ pub fn get_mode(name: &str) -> Result<DomainMode, crate::Error> {
     }
 }
 
-// crates/hsx-core/src/domains/academic.rs
+// crates/fetchium-core/src/domains/academic.rs
 pub fn mode() -> DomainMode {
     DomainMode {
         name: "academic".into(),
@@ -716,7 +716,7 @@ pub fn mode() -> DomainMode {
     }
 }
 
-// crates/hsx-core/src/domains/security.rs
+// crates/fetchium-core/src/domains/security.rs
 pub fn mode() -> DomainMode {
     DomainMode {
         name: "security".into(),
@@ -748,12 +748,12 @@ pub fn mode() -> DomainMode {
 
 #### Acceptance Criteria
 
-- [x] `hsx research "topic" --mode academic` uses ArXiv/Scholar backends with citation-heavy ranking
-- [x] `hsx research "topic" --mode code` prioritizes GitHub/StackOverflow with code extraction
-- [x] `hsx research "topic" --mode security` prioritizes NVD/CVE with CVSS scoring
+- [x] `fetchium research "topic" --mode academic` uses ArXiv/Scholar backends with citation-heavy ranking
+- [x] `fetchium research "topic" --mode code` prioritizes GitHub/StackOverflow with code extraction
+- [x] `fetchium research "topic" --mode security` prioritizes NVD/CVE with CVSS scoring
 - [x] Each mode adjusts HyperFusion weights per its domain requirements
 - [x] Domain-specific output features (BibTeX for academic, CVSS for security) are enabled
-- [x] `hsx research --mode medical` enables evidence grading (I-V)
+- [x] `fetchium research --mode medical` enables evidence grading (I-V)
 - [x] Modes are extensible via TOML config files in `data/domain_configs/`
 
 #### Pitfalls
@@ -780,20 +780,20 @@ pub fn mode() -> DomainMode {
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/proactive/mod.rs` | Proactive intelligence module |
-| `crates/hsx-core/src/proactive/subscription.rs` | Topic subscriptions |
-| `crates/hsx-core/src/proactive/radar.rs` | Research radar |
-| `crates/hsx-core/src/proactive/digest.rs` | Intelligent digests |
-| `crates/hsx-core/src/proactive/prefetch.rs` | Predictive prefetching |
-| `crates/hsx-core/src/proactive/anomaly.rs` | Anomaly detection |
-| `crates/hsx-cli/src/commands/subscribe.rs` | Subscription CLI |
-| `crates/hsx-cli/src/commands/radar.rs` | Radar CLI |
-| `crates/hsx-cli/src/commands/digest.rs` | Digest CLI |
+| `crates/fetchium-core/src/proactive/mod.rs` | Proactive intelligence module |
+| `crates/fetchium-core/src/proactive/subscription.rs` | Topic subscriptions |
+| `crates/fetchium-core/src/proactive/radar.rs` | Research radar |
+| `crates/fetchium-core/src/proactive/digest.rs` | Intelligent digests |
+| `crates/fetchium-core/src/proactive/prefetch.rs` | Predictive prefetching |
+| `crates/fetchium-core/src/proactive/anomaly.rs` | Anomaly detection |
+| `crates/fetchium-cli/src/commands/subscribe.rs` | Subscription CLI |
+| `crates/fetchium-cli/src/commands/radar.rs` | Radar CLI |
+| `crates/fetchium-cli/src/commands/digest.rs` | Digest CLI |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/proactive/subscription.rs
+// crates/fetchium-core/src/proactive/subscription.rs
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Subscription {
@@ -846,7 +846,7 @@ pub async fn check_subscription(
     Ok(new_findings)
 }
 
-// crates/hsx-core/src/proactive/radar.rs
+// crates/fetchium-core/src/proactive/radar.rs
 
 /// Generate research suggestions based on user's history and patterns.
 pub async fn generate_radar(
@@ -884,10 +884,10 @@ pub async fn generate_radar(
 
 #### Acceptance Criteria
 
-- [x] `hsx subscribe "TypeScript breaking changes" --interval weekly` registers a subscription
-- [x] `hsx subscribe list` shows active subscriptions with next check time
-- [x] `hsx radar --limit 10` shows personalized research suggestions
-- [x] `hsx digest --period weekly --topics "rust,ai"` generates a digest of recent findings
+- [x] `fetchium subscribe "TypeScript breaking changes" --interval weekly` registers a subscription
+- [x] `fetchium subscribe list` shows active subscriptions with next check time
+- [x] `fetchium radar --limit 10` shows personalized research suggestions
+- [x] `fetchium digest --period weekly --topics "rust,ai"` generates a digest of recent findings
 - [x] Predictive prefetching pre-caches likely follow-up results
 - [x] Anomaly detection flags significant content changes on monitored URLs
 - [x] Webhook notifications send POST requests with structured JSON payloads
@@ -917,16 +917,16 @@ pub async fn generate_radar(
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/multimodal/mod.rs` | Multimodal module |
-| `crates/hsx-core/src/multimodal/ocr.rs` | OCR via Tesseract or vision model |
-| `crates/hsx-core/src/multimodal/video.rs` | YouTube transcript extraction |
-| `crates/hsx-core/src/multimodal/pdf.rs` | Enhanced PDF extraction |
-| `crates/hsx-core/src/multimodal/chart.rs` | Chart data extraction |
+| `crates/fetchium-core/src/multimodal/mod.rs` | Multimodal module |
+| `crates/fetchium-core/src/multimodal/ocr.rs` | OCR via Tesseract or vision model |
+| `crates/fetchium-core/src/multimodal/video.rs` | YouTube transcript extraction |
+| `crates/fetchium-core/src/multimodal/pdf.rs` | Enhanced PDF extraction |
+| `crates/fetchium-core/src/multimodal/chart.rs` | Chart data extraction |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/multimodal/video.rs
+// crates/fetchium-core/src/multimodal/video.rs
 
 /// Extract transcript from a YouTube video using the public transcript API.
 pub async fn extract_youtube_transcript(
@@ -983,7 +983,7 @@ fn extract_youtube_id(url: &str) -> Result<&str, crate::Error> {
         // Note: simplified; handle youtu.be short URLs too
 }
 
-// crates/hsx-core/src/multimodal/pdf.rs
+// crates/fetchium-core/src/multimodal/pdf.rs
 
 /// Extract text from PDF with layout awareness.
 pub fn extract_pdf(path: &std::path::Path) -> Result<PdfContent, crate::Error> {
@@ -1001,10 +1001,10 @@ pub fn extract_pdf(path: &std::path::Path) -> Result<PdfContent, crate::Error> {
 
 #### Acceptance Criteria
 
-- [x] `hsx fetch <youtube-url> --transcript` extracts video transcript with timestamps
-- [x] `hsx fetch <image-url> --ocr` extracts text from images (requires Tesseract)
-- [x] `hsx fetch <pdf-url>` extracts text from PDF files with layout preservation
-- [x] `hsx fetch <page> --multimodal` also extracts alt-text from images on the page
+- [x] `fetchium fetch <youtube-url> --transcript` extracts video transcript with timestamps
+- [x] `fetchium fetch <image-url> --ocr` extracts text from images (requires Tesseract)
+- [x] `fetchium fetch <pdf-url>` extracts text from PDF files with layout preservation
+- [x] `fetchium fetch <page> --multimodal` also extracts alt-text from images on the page
 - [x] YouTube transcript extraction works without API keys
 - [x] PDF metadata (title, author, page count) included in output
 
@@ -1033,15 +1033,15 @@ pub fn extract_pdf(path: &std::path::Path) -> Result<PdfContent, crate::Error> {
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/evolve/mod.rs` | Self-evolving module |
-| `crates/hsx-core/src/evolve/automl.rs` | HyperFusion weight auto-tuning |
-| `crates/hsx-core/src/evolve/retrain.rs` | CEP predictor retraining |
-| `crates/hsx-core/src/evolve/ab_test.rs` | A/B testing framework |
+| `crates/fetchium-core/src/evolve/mod.rs` | Self-evolving module |
+| `crates/fetchium-core/src/evolve/automl.rs` | HyperFusion weight auto-tuning |
+| `crates/fetchium-core/src/evolve/retrain.rs` | CEP predictor retraining |
+| `crates/fetchium-core/src/evolve/ab_test.rs` | A/B testing framework |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/evolve/automl.rs
+// crates/fetchium-core/src/evolve/automl.rs
 
 /// Auto-tune HyperFusion weights based on implicit user feedback.
 /// When a user clicks result #3 instead of #1, result #3 was more relevant.
@@ -1075,7 +1075,7 @@ pub fn optimize_weights(
     weights
 }
 
-// crates/hsx-core/src/evolve/ab_test.rs
+// crates/fetchium-core/src/evolve/ab_test.rs
 
 /// A/B testing framework for algorithm variants.
 pub struct AbTest {
@@ -1135,7 +1135,7 @@ impl AbTest {
 - [x] Adjusted weights persist across sessions in PIE storage
 - [x] CEP predictor retrains from accumulated extraction data periodically
 - [x] A/B tests can be defined for ranking algorithms, extraction methods, etc.
-- [x] `hsx config show ranking-weights` displays current (auto-tuned) weights
+- [x] `fetchium config show ranking-weights` displays current (auto-tuned) weights
 - [x] A/B test results include sample sizes and significance levels
 
 #### Pitfalls
@@ -1163,17 +1163,17 @@ impl AbTest {
 
 | File | Action |
 |------|--------|
-| `crates/hsx-cli/src/tui/mod.rs` | TUI module |
-| `crates/hsx-cli/src/tui/app.rs` | Application state |
-| `crates/hsx-cli/src/tui/views/search.rs` | Search panel |
-| `crates/hsx-cli/src/tui/views/results.rs` | Results list |
-| `crates/hsx-cli/src/tui/views/preview.rs` | Content preview |
-| `crates/hsx-cli/src/tui/views/evidence.rs` | Evidence graph viewer |
+| `crates/fetchium-cli/src/tui/mod.rs` | TUI module |
+| `crates/fetchium-cli/src/tui/app.rs` | Application state |
+| `crates/fetchium-cli/src/tui/views/search.rs` | Search panel |
+| `crates/fetchium-cli/src/tui/views/results.rs` | Results list |
+| `crates/fetchium-cli/src/tui/views/preview.rs` | Content preview |
+| `crates/fetchium-cli/src/tui/views/evidence.rs` | Evidence graph viewer |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-cli/src/tui/app.rs
+// crates/fetchium-cli/src/tui/app.rs
 use ratatui::prelude::*;
 use crossterm::event::{self, Event, KeyCode};
 
@@ -1276,7 +1276,7 @@ impl App {
 
 #### Acceptance Criteria
 
-- [x] `hsx tui` launches an interactive terminal UI
+- [x] `fetchium tui` launches an interactive terminal UI
 - [x] Search bar accepts input and triggers search on Enter
 - [x] Results panel shows ranked results with scores
 - [x] Preview panel shows extracted content for the selected result
@@ -1333,7 +1333,7 @@ class FetchiumRetriever(BaseRetriever):
     tier: str = "detailed"
     validate: bool = True
     max_sources: int = 10
-    hsx_binary: str = "hsx"  # or full path
+    hsx_binary: str = "fetchium"  # or full path
 
     def _get_relevant_documents(self, query: str) -> List[Document]:
         cmd = [
@@ -1385,7 +1385,7 @@ class FetchiumTool(BaseTool):
 
     def _run(self, query: str) -> str:
         cmd = [
-            "hsx", "agent-search", query,
+            "fetchium", "agent-search", query,
             "--budget", str(self.token_budget),
             "--tier", self.tier,
             "--format", "json",
@@ -1414,13 +1414,13 @@ class FetchiumTool(BaseTool):
 - [x] `FetchiumRetriever(token_budget=3000).invoke("query")` returns LangChain `Document` objects
 - [x] `pip install fetchium-crewai` installs the CrewAI adapter
 - [x] `FetchiumTool().run("query")` returns string output suitable for CrewAI agents
-- [x] Both adapters work via CLI subprocess (no network dependency beyond hsx binary)
-- [x] Both adapters also support REST API mode when `hsx serve --api` is running
-- [x] Error handling: clear messages when hsx binary is not found
+- [x] Both adapters work via CLI subprocess (no network dependency beyond fetchium binary)
+- [x] Both adapters also support REST API mode when `fetchium serve --api` is running
+- [x] Error handling: clear messages when fetchium binary is not found
 
 #### Pitfalls
 
-- **Binary path**: The `hsx` binary must be in PATH. Provide configuration for custom paths.
+- **Binary path**: The `fetchium` binary must be in PATH. Provide configuration for custom paths.
 - **Subprocess timeout**: Long research queries may exceed the default timeout. Make it configurable.
 - **REST vs CLI**: Subprocess invocation has ~200ms overhead per call. For production use, recommend REST API mode.
 
@@ -1435,7 +1435,7 @@ class FetchiumTool(BaseTool):
 | **ID** | `P7-E10-T1` |
 | **Status** | `TODO` |
 | **Priority** | P3 |
-| **Description** | Generate shell completions for bash, zsh, and fish using `clap_complete`. Add a `hsx completions` command that outputs the completion script. |
+| **Description** | Generate shell completions for bash, zsh, and fish using `clap_complete`. Add a `fetchium completions` command that outputs the completion script. |
 | **PRD Ref** | 42 Feature #224 (Shell completions), 48 (clap_complete) |
 | **Depends On** | `P0-E3` (CLI skeleton with clap) |
 
@@ -1443,13 +1443,13 @@ class FetchiumTool(BaseTool):
 
 | File | Action |
 |------|--------|
-| `crates/hsx-cli/src/commands/completions.rs` | Completions command |
-| `crates/hsx-cli/build.rs` | Generate completions at build time (optional) |
+| `crates/fetchium-cli/src/commands/completions.rs` | Completions command |
+| `crates/fetchium-cli/build.rs` | Generate completions at build time (optional) |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-cli/src/commands/completions.rs
+// crates/fetchium-cli/src/commands/completions.rs
 use clap::CommandFactory;
 use clap_complete::{Shell, generate};
 
@@ -1470,16 +1470,16 @@ pub struct CompletionsArgs {
 }
 
 // Usage:
-// hsx completions bash > ~/.bash_completion.d/hsx
-// hsx completions zsh > ~/.zsh/completions/_hsx
-// hsx completions fish > ~/.config/fish/completions/hsx.fish
+// fetchium completions bash > ~/.bash_completion.d/fetchium
+// fetchium completions zsh > ~/.zsh/completions/_hsx
+// fetchium completions fish > ~/.config/fish/completions/fetchium.fish
 ```
 
 #### Acceptance Criteria
 
-- [x] `hsx completions bash` outputs valid bash completion script
-- [x] `hsx completions zsh` outputs valid zsh completion script
-- [x] `hsx completions fish` outputs valid fish completion script
+- [x] `fetchium completions bash` outputs valid bash completion script
+- [x] `fetchium completions zsh` outputs valid zsh completion script
+- [x] `fetchium completions fish` outputs valid fish completion script
 - [x] Tab completion works for all commands: search, research, deep, fetch, etc.
 - [x] Tab completion works for flags: --format, --tier, --mode, etc.
 - [x] Enum values complete (e.g., --tier shows key_facts, summary, detailed, complete)

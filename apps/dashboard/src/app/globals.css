@@ -3,14 +3,59 @@
 @tailwind utilities;
 
 :root {
-  --background: #0a0b0f;
-  --foreground: #f0f4ff;
+  --app-bg: #f4f7fb;
+  --surface-base: #ffffff;
+  --surface-raised: #eef3fb;
+  --surface-elevated: #f8fbff;
+  --surface-hover: #e5edf8;
+  --border-subtle: rgba(148, 163, 184, 0.22);
+  --border-strong: rgba(148, 163, 184, 0.34);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-faint: #94a3b8;
+  --brand-soft: rgba(97, 114, 243, 0.12);
+  --brand-border: rgba(97, 114, 243, 0.24);
+  --brand-solid: #6172f3;
+  --brand-strong: #4e53e8;
+  --success-soft: rgba(16, 185, 129, 0.12);
+  --success-text: #047857;
+  --danger-text: #b91c1c;
+  --shadow-soft: 0 18px 60px rgba(15, 23, 42, 0.08);
+}
+
+.dark {
+  --app-bg: #0a0b0f;
+  --surface-base: #111318;
+  --surface-raised: #171b22;
+  --surface-elevated: #1c212a;
+  --surface-hover: #252b36;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text-primary: #f0f4ff;
+  --text-secondary: rgba(240, 244, 255, 0.78);
+  --text-muted: rgba(240, 244, 255, 0.5);
+  --text-faint: rgba(240, 244, 255, 0.3);
+  --brand-soft: rgba(97, 114, 243, 0.12);
+  --brand-border: rgba(97, 114, 243, 0.24);
+  --brand-solid: #8098f9;
+  --brand-strong: #6172f3;
+  --success-soft: rgba(16, 185, 129, 0.12);
+  --success-text: #34d399;
+  --danger-text: #f87171;
+  --shadow-soft: 0 24px 80px rgba(0, 0, 0, 0.35);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background:
+    radial-gradient(circle at top, rgba(97, 114, 243, 0.08), transparent 30%),
+    var(--app-bg);
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 .gradient-text {
@@ -18,4 +63,15 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.theme-card {
+  background: var(--surface-base);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-soft);
+}
+
+.theme-card-muted {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
 }

@@ -1,0 +1,12 @@
+[search]
+backends = ["serper", "exa", "tavily", "firecrawl", "reddit", "stackoverflow", "github", "hackernews", "wikipedia", "searxng"]
+timeout_secs = 10
+max_concurrent = 50
+serper_api_keys = ["e88feb18b71987dde4301947f050604b22bb9363", "a3e976d41ddc816f9ee9b995e1376f2a62a76f71"]
+exa_api_keys = ["eb4d14ea-602c-4a03-bf41-1c496f8bfb00", "612b2cba-1c37-42d3-8879-312ce1325511"]
+firecrawl_api_keys = ["fc-c3ed9e586f2e438f96653e98d3ddcac4", "fc-f11fe799c95845d39e18cbc1aedb2689", "fc-58bab42e9603435e85729f265cdc346d"]
+tavily_api_keys = ["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", "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"]
+
+[ai]
+ollama_host = "http://localhost:11434"
+default_model = "llama3.2"

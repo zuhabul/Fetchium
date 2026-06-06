@@ -1,24 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Check, Zap, Star, ArrowRight, Building2, Rocket, TrendingUp } from "lucide-react";
-
-/**
- * Pricing tiers — validated against market data (March 2026).
- *
- * Competitor benchmarks (verified):
- *  - Tavily:  $8.00/1K  (Project plan, $30/mo for 4K credits)
- *  - Exa:     $5.00/1K  (Neural search, pay-as-you-go)
- *  - SerpAPI: $15.00/1K (Developer plan, $75/mo for 5K searches)
- *  - Firecrawl Standard: $83/mo for 100K page scrapes ($0.83/1K)
- *  - Brave Search API: $5.00/1K
- *
- * Fetchium delivers a full pipeline (search + extract + rank + cite).
- * COGS with DDG HTML scraping + datacenter proxies: ~$0.10–0.15/1K.
- * Gross margin at $0.90/1K (Starter): ~83–89% — commercially viable.
- */
+import { motion } from "framer-motion";
+import { Check, Zap, Star, ArrowRight, Rocket, TrendingUp } from "lucide-react";
 
 interface Plan {
   id: string;
@@ -51,11 +35,11 @@ const plans: Plan[] = [
     description: "Explore the API, build a prototype, or run personal projects.",
     requestsLabel: "1,000 req / month",
     requestsMonthly: 1000,
-    rateLimit: "10 req / min",
+    rateLimit: "60 req / min",
     perThousand: null,
     features: [
       "1,000 API requests per month",
-      "All 11 search backends",
+      "All 17 search backends",
       "5-layer CEP content extraction",
       "HyperFusion 8-signal ranking",
       "Token budget management",
@@ -71,107 +55,76 @@ const plans: Plan[] = [
     id: "starter",
     name: "Starter",
     icon: Rocket,
-    monthlyPrice: 9,
-    annualPrice: 7,
-    period: "/ month",
-    description: "Indie developers and early-stage AI products shipping to users.",
-    requestsLabel: "10,000 req / month",
-    requestsMonthly: 10000,
-    rateLimit: "60 req / min",
-    perThousand: "$0.90",
+    monthlyPrice: null,
+    annualPrice: null,
+    period: "",
+    description: "First paid tier in the current API configuration.",
+    requestsLabel: "25,000 req / month",
+    requestsMonthly: 25000,
+    rateLimit: "200 req / min",
+    perThousand: null,
     features: [
-      "10,000 API requests per month",
+      "25,000 API requests per month",
       "Everything in Free",
       "YouTube intelligence API",
       "Social media research",
-      "Real-time content monitoring",
-      "Email support (72h SLA)",
+      "Async jobs + usage tracking",
+      "Admin key management",
       "Usage dashboard",
     ],
-    cta: "Get Starter",
-    href: (annual) =>
-      `https://app.fetchium.com/register?plan=starter&billing=${annual ? "annual" : "monthly"}`,
+    cta: "Contact Sales",
+    href: () => "/contact",
     highlight: false,
-    competitorNote: "vs Tavily: $30/mo for only 4,000 queries",
-  },
-  {
-    id: "growth",
-    name: "Growth",
-    icon: TrendingUp,
-    monthlyPrice: 29,
-    annualPrice: 23,
-    period: "/ month",
-    description: "Production AI apps and teams needing reliable, scalable retrieval.",
-    requestsLabel: "50,000 req / month",
-    requestsMonthly: 50000,
-    rateLimit: "300 req / min",
-    perThousand: "$0.58",
-    features: [
-      "50,000 API requests per month",
-      "Everything in Starter",
-      "Deep research pipeline (AMRS)",
-      "Cross-session learning (PIE)",
-      "Adversarial content shield",
-      "Priority email support (24h SLA)",
-      "Advanced analytics + export",
-      "Overage at $0.70 / 1K extra",
-    ],
-    cta: "Get Growth",
-    href: (annual) =>
-      `https://app.fetchium.com/register?plan=growth&billing=${annual ? "annual" : "monthly"}`,
-    highlight: true,
-    badge: "Most Popular",
-    competitorNote: "vs Firecrawl Standard: $83/mo for 100K pages (extraction only)",
+    competitorNote: "Current auth limits: 200 req/min and 25,000 req/month",
   },
   {
     id: "pro",
     name: "Pro",
-    icon: Star,
-    monthlyPrice: 79,
-    annualPrice: 63,
-    period: "/ month",
-    description: "High-volume production systems and data-intensive AI pipelines.",
-    requestsLabel: "200,000 req / month",
-    requestsMonthly: 200000,
-    rateLimit: "600 req / min",
-    perThousand: "$0.40",
+    icon: TrendingUp,
+    monthlyPrice: null,
+    annualPrice: null,
+    period: "",
+    description: "Higher-volume production usage in the current API configuration.",
+    requestsLabel: "250,000 req / month",
+    requestsMonthly: 250000,
+    rateLimit: "500 req / min",
+    perThousand: null,
     features: [
-      "200,000 API requests per month",
-      "Everything in Growth",
-      "Dedicated IP pool",
-      "99.9% uptime SLA",
-      "SOC 2 compliance docs",
-      "Priority support (4h SLA)",
-      "Slack integration",
-      "Overage at $0.50 / 1K extra",
+      "250,000 API requests per month",
+      "Everything in Starter",
+      "Deep research pipeline (AMRS)",
+      "Cross-session learning (PIE)",
+      "Adversarial content shield",
+      "Higher monthly quota",
+      "Higher per-minute limits",
+      "Best fit for production workloads",
     ],
-    cta: "Get Pro",
-    href: (annual) =>
-      `https://app.fetchium.com/register?plan=pro&billing=${annual ? "annual" : "monthly"}`,
-    highlight: false,
-    competitorNote: "vs SerpAPI: $500/mo for only 50K searches ($10/1K)",
+    cta: "Contact Sales",
+    href: () => "/contact",
+    highlight: true,
+    badge: "Most Popular",
+    competitorNote: "Current auth limits: 500 req/min and 250,000 req/month",
   },
   {
     id: "enterprise",
     name: "Enterprise",
-    icon: Building2,
+    icon: Star,
     monthlyPrice: null,
     annualPrice: null,
     period: "",
-    description: "Custom volume, dedicated infrastructure, compliance, and SLA guarantees.",
-    requestsLabel: "500K+ req / month",
+    description: "Custom volume and support for teams that need enterprise handling.",
+    requestsLabel: "Unlimited / custom",
     requestsMonthly: null,
-    rateLimit: "2,000+ req / min",
-    perThousand: "Custom",
+    rateLimit: "2,000 req / min",
+    perThousand: null,
     features: [
       "Unlimited API requests",
       "Everything in Pro",
-      "Dedicated infrastructure",
-      "Custom SLA (up to 99.99%)",
-      "SSO + team management",
-      "On-prem / self-hosted option",
-      "Dedicated Slack + Zoom support",
-      "Security review + BAA available",
+      "Custom commercial terms",
+      "Priority onboarding",
+      "Dedicated support channel",
+      "Deployment guidance",
+      "Security review on request",
     ],
     cta: "Contact Sales",
     href: () => "/contact",
@@ -195,13 +148,15 @@ const cardVariants = {
   },
 };
 
-function PriceDisplay({ plan, annual }: { plan: Plan; annual: boolean }) {
-  const price = annual ? plan.annualPrice : plan.monthlyPrice;
+function PriceDisplay({ plan }: { plan: Plan }) {
+  const price = plan.monthlyPrice;
 
   if (price === null) {
     return (
       <div className="flex items-end gap-1">
-        <span className="text-3xl font-bold tracking-tight text-slate-100">Custom</span>
+        <span className="text-3xl font-bold tracking-tight text-slate-100">
+          {plan.id === "starter" || plan.id === "pro" ? "Contact" : "Custom"}
+        </span>
       </div>
     );
   }
@@ -209,18 +164,9 @@ function PriceDisplay({ plan, annual }: { plan: Plan; annual: boolean }) {
   return (
     <div className="flex items-end gap-1">
       {price > 0 && <span className="text-lg font-medium text-slate-500 mb-1">$</span>}
-      <AnimatePresence mode="wait">
-        <motion.span
-          key={price}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.2 }}
-          className="text-3xl font-bold tracking-tight text-slate-100"
-        >
-          {price === 0 ? "Free" : price}
-        </motion.span>
-      </AnimatePresence>
+      <span className="text-3xl font-bold tracking-tight text-slate-100">
+        {price === 0 ? "Free" : price}
+      </span>
       {price > 0 && (
         <span className="mb-1 text-sm text-slate-500">{plan.period}</span>
       )}
@@ -229,8 +175,6 @@ function PriceDisplay({ plan, annual }: { plan: Plan; annual: boolean }) {
 }
 
 export default function Pricing() {
-  const [annual, setAnnual] = useState(false);
-
   return (
     <section id="pricing" className="relative overflow-hidden py-16 sm:py-28 px-4">
       <div className="pointer-events-none absolute inset-0">
@@ -246,49 +190,24 @@ export default function Pricing() {
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-500/25 bg-indigo-500/8 px-4 py-1.5 text-xs font-medium text-indigo-300">
-            <Zap className="h-3.5 w-3.5" strokeWidth={2.5} />
-            Transparent Pricing · No Hidden Fees
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-sm font-semibold text-indigo-200">
+            <Zap className="h-4 w-4" strokeWidth={2.5} />
+            Current API Tiers
           </div>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-slate-100">
-            The{" "}
-            <span className="gradient-text">cheapest full-pipeline</span>
-            <br className="hidden sm:block" /> search API on the market
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-slate-100">
+            Plans synced to the{" "}
+            <span className="gradient-text">current auth configuration</span>
           </h2>
-          <p className="mt-4 sm:mt-5 mx-auto max-w-2xl text-sm sm:text-lg text-slate-500">
-            Competitors charge $5–$15 per 1,000 queries for search only.
-            Fetchium delivers search + extraction + citations + ranking from{" "}
-            <span className="text-slate-300 font-semibold">$0.58 per 1,000</span> — on the Growth plan.
-            No credit card required to start.
+          <p className="mt-5 sm:mt-6 mx-auto max-w-2xl text-base sm:text-xl text-slate-400 leading-relaxed">
+            Free tier limits are sourced from the API auth layer. Paid plan names and
+            request ceilings below reflect the current codebase; contact sales for
+            commercial pricing details.
           </p>
-
-          {/* Billing toggle */}
-          <div className="mt-8 inline-flex items-center gap-2 rounded-xl border border-white/8 bg-white/3 p-1">
-            <button
-              onClick={() => setAnnual(false)}
-              className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 min-h-[44px] ${
-                !annual ? "bg-white/10 text-white shadow-sm" : "text-slate-500 hover:text-slate-300"
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setAnnual(true)}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 min-h-[44px] ${
-                annual ? "bg-white/10 text-white shadow-sm" : "text-slate-500 hover:text-slate-300"
-              }`}
-            >
-              Annual
-              <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold text-emerald-400">
-                −20%
-              </span>
-            </button>
-          </div>
         </motion.div>
 
-        {/* Plan cards — 5 column grid */}
+        {/* Plan cards */}
         <motion.div
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
@@ -331,13 +250,10 @@ export default function Pricing() {
                         className={`flex h-8 w-8 items-center justify-center rounded-lg ${
                           plan.highlight
                             ? "bg-indigo-500/20 shadow-[0_0_12px_rgba(99,102,241,0.3)]"
-                            : "bg-white/6 border border-white/8"
+                            : "bg-slate-800/60 border border-slate-700/50"
                         }`}
                       >
-                        <Icon
-                          className={`h-4 w-4 ${plan.highlight ? "text-indigo-300" : "text-slate-400"}`}
-                          strokeWidth={1.75}
-                        />
+                        <Icon className={`h-4 w-4 ${plan.highlight ? "text-indigo-300" : "text-slate-400"}`} strokeWidth={1.75} />
                       </div>
                       <span
                         className={`text-[13px] font-semibold ${
@@ -348,16 +264,9 @@ export default function Pricing() {
                       </span>
                     </div>
 
-                    <PriceDisplay plan={plan} annual={annual} />
+                    <PriceDisplay plan={plan} />
 
-                    {annual && plan.monthlyPrice !== null && plan.monthlyPrice > 0 && plan.annualPrice !== null && (
-                      <div className="mt-1 text-[11px] text-slate-600">
-                        Billed ${plan.annualPrice * 12}/yr — save $
-                        {(plan.monthlyPrice - plan.annualPrice) * 12}/yr
-                      </div>
-                    )}
-
-                    <p className="mt-2.5 text-[12px] leading-relaxed text-slate-500">
+                    <p className="mt-2.5 text-[12px] leading-relaxed text-slate-400">
                       {plan.description}
                     </p>
 
@@ -366,7 +275,7 @@ export default function Pricing() {
                       className={`mt-3.5 rounded-xl border px-4 py-2.5 ${
                         plan.highlight
                           ? "border-indigo-500/25 bg-indigo-500/8"
-                          : "border-white/6 bg-white/3"
+                          : "border-slate-700/50 bg-slate-900/50"
                       }`}
                     >
                       <div
@@ -377,8 +286,8 @@ export default function Pricing() {
                         {plan.requestsLabel}
                       </div>
                       <div className="mt-0.5 flex items-center justify-between">
-                        <span className="text-[11px] text-slate-600">{plan.rateLimit}</span>
-                        {plan.perThousand && plan.perThousand !== "Custom" && (
+                        <span className="text-[11px] text-slate-400">{plan.rateLimit}</span>
+                        {plan.perThousand && (
                           <span className="text-[11px] font-semibold text-emerald-400">
                             {plan.perThousand}/1K
                           </span>
@@ -410,9 +319,9 @@ export default function Pricing() {
 
                   {/* Competitor note */}
                   {plan.competitorNote && (
-                    <div className="mb-4 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2">
-                      <p className="text-[11px] text-slate-600 leading-snug">
-                        <span className="text-emerald-400 font-semibold">vs competitor: </span>
+                    <div className="mb-4 rounded-lg border border-slate-700/40 bg-slate-900/50 px-3 py-2">
+                      <p className="text-[11px] text-slate-400 leading-snug">
+                        <span className="text-emerald-400 font-semibold">source: </span>
                         {plan.competitorNote}
                       </p>
                     </div>
@@ -420,13 +329,11 @@ export default function Pricing() {
 
                   {/* CTA */}
                   <Link
-                    href={plan.href(annual)}
-                    target={plan.id === "enterprise" ? undefined : "_blank"}
-                    rel={plan.id === "enterprise" ? undefined : "noopener noreferrer"}
+                    href={plan.href(false)}
                     className={`group/btn flex items-center justify-center gap-2 rounded-xl py-3 text-[13px] font-semibold transition-all duration-200 min-h-[44px] ${
                       plan.highlight
                         ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)]"
-                        : "border border-white/10 bg-white/4 text-slate-300 hover:bg-white/8 hover:text-white"
+                        : "border border-slate-600/60 bg-slate-800/50 text-slate-200 hover:bg-slate-700/60 hover:text-white"
                     }`}
                   >
                     {plan.cta}
@@ -438,7 +345,7 @@ export default function Pricing() {
           })}
         </motion.div>
 
-        {/* Market comparison proof */}
+        {/* Plan note */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -450,36 +357,36 @@ export default function Pricing() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-5">
               <div className="flex-1">
                 <h3 className="text-sm sm:text-base font-semibold text-slate-200 mb-1">
-                  Price per 1,000 queries — full-pipeline comparison
+                  What is verified here
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Verified pricing as of March 2026. Fetchium delivers search + extraction + citations; others charge for search alone.
+                  This section is intentionally conservative. Request quotas, rate limits, and
+                  free-tier availability are taken from the current API auth code. If you need
+                  a signed commercial quote, use the contact flow.
                 </p>
               </div>
               <Link
-                href="/pricing"
+                href="/contact"
                 className="shrink-0 text-[12px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors"
               >
-                Full pricing details
+                Contact sales
                 <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { name: "Fetchium Growth", price: "$0.58", highlight: true, note: "search + extract + cite" },
-                { name: "Fetchium Starter", price: "$0.90", highlight: true, note: "full pipeline" },
-                { name: "Exa Neural", price: "$5.00", highlight: false, note: "search only" },
-                { name: "Tavily Project", price: "$7.50", highlight: false, note: "search + snippets" },
-                { name: "Brave Search", price: "$5.00", highlight: false, note: "search only" },
-                { name: "SerpAPI Dev", price: "$15.00", highlight: false, note: "Google SERP only" },
+                { name: "Free", price: "1,000/mo", highlight: true, note: "60 req/min" },
+                { name: "Starter", price: "25,000/mo", highlight: false, note: "200 req/min" },
+                { name: "Pro", price: "250,000/mo", highlight: false, note: "500 req/min" },
+                { name: "Enterprise", price: "Unlimited", highlight: false, note: "2,000 req/min" },
               ].map((item) => (
                 <div
                   key={item.name}
                   className={`rounded-xl p-3 text-center ${
                     item.highlight
                       ? "border border-emerald-500/25 bg-emerald-500/8"
-                      : "border border-white/6 bg-white/2"
+                      : "border border-slate-700/50 bg-slate-900/50"
                   }`}
                 >
                   <div
@@ -498,7 +405,7 @@ export default function Pricing() {
             </div>
 
             <p className="mt-4 text-[11px] text-slate-600 text-center">
-              Sources: Tavily pricing page (tavily.com/pricing), Exa pricing page (exa.ai/pricing), Brave Search API docs, SerpAPI pricing page — all verified March 2026.
+              Source: current API auth configuration in the Fetchium codebase.
             </p>
           </div>
         </motion.div>

@@ -23,13 +23,13 @@
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/Cargo.toml` | Add `ort` dependency under `[features] embeddings` |
-| `crates/hsx-core/src/embeddings/mod.rs` | New module root |
-| `crates/hsx-core/src/embeddings/model.rs` | ONNX model loader and session manager |
-| `crates/hsx-core/src/embeddings/embed.rs` | `embed()` and `embed_batch()` functions |
-| `crates/hsx-core/src/embeddings/cache.rs` | SQLite-backed embedding cache |
-| `crates/hsx-core/src/embeddings/download.rs` | Auto-download model on first use |
-| `crates/hsx-core/src/lib.rs` | Register `embeddings` module behind feature gate |
+| `crates/fetchium-core/Cargo.toml` | Add `ort` dependency under `[features] embeddings` |
+| `crates/fetchium-core/src/embeddings/mod.rs` | New module root |
+| `crates/fetchium-core/src/embeddings/model.rs` | ONNX model loader and session manager |
+| `crates/fetchium-core/src/embeddings/embed.rs` | `embed()` and `embed_batch()` functions |
+| `crates/fetchium-core/src/embeddings/cache.rs` | SQLite-backed embedding cache |
+| `crates/fetchium-core/src/embeddings/download.rs` | Auto-download model on first use |
+| `crates/fetchium-core/src/lib.rs` | Register `embeddings` module behind feature gate |
 | `models/` | Directory for downloaded ONNX model files |
 
 #### Step-by-Step Implementation Guide
@@ -37,7 +37,7 @@
 **Step 1: Add dependencies and feature gate**
 
 ```toml
-# crates/hsx-core/Cargo.toml
+# crates/fetchium-core/Cargo.toml
 [features]
 default = []
 embeddings = ["ort", "tokenizers"]
@@ -50,7 +50,7 @@ tokenizers = { version = "0.20", optional = true }
 **Step 2: Create the embedding model manager**
 
 ```rust
-// crates/hsx-core/src/embeddings/model.rs
+// crates/fetchium-core/src/embeddings/model.rs
 #[cfg(feature = "embeddings")]
 use ort::{Session, SessionBuilder, GraphOptimizationLevel};
 use std::path::PathBuf;
@@ -87,7 +87,7 @@ pub fn get_session() -> Result<&'static Session, crate::Error> {
 **Step 3: Implement embed() and embed_batch()**
 
 ```rust
-// crates/hsx-core/src/embeddings/embed.rs
+// crates/fetchium-core/src/embeddings/embed.rs
 use ndarray::{Array2, Axis};
 use tokenizers::Tokenizer;
 use std::sync::OnceLock;
@@ -193,7 +193,7 @@ pub fn embed_batch(texts: &[&str]) -> Result<Vec<Vec<f32>>, crate::Error> {
 **Step 4: Implement the embedding cache**
 
 ```rust
-// crates/hsx-core/src/embeddings/cache.rs
+// crates/fetchium-core/src/embeddings/cache.rs
 use rusqlite::Connection;
 use sha2::{Sha256, Digest};
 use std::sync::Mutex;
@@ -274,7 +274,7 @@ impl EmbeddingCache {
 **Step 5: Model auto-download**
 
 ```rust
-// crates/hsx-core/src/embeddings/download.rs
+// crates/fetchium-core/src/embeddings/download.rs
 use std::path::Path;
 
 const MODEL_URL: &str =
@@ -346,16 +346,16 @@ pub fn download_model(model_path: &Path) -> Result<(), crate::Error> {
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/ranking/hyperfusion.rs` | Replace stub semantic signal |
-| `crates/hsx-core/src/ranking/signals/semantic.rs` | New: real cosine similarity computation |
-| `crates/hsx-core/src/ranking/signals/mod.rs` | Register semantic signal |
+| `crates/fetchium-core/src/ranking/hyperfusion.rs` | Replace stub semantic signal |
+| `crates/fetchium-core/src/ranking/signals/semantic.rs` | New: real cosine similarity computation |
+| `crates/fetchium-core/src/ranking/signals/mod.rs` | Register semantic signal |
 
 #### Step-by-Step Implementation Guide
 
 **Step 1: Create the semantic signal module**
 
 ```rust
-// crates/hsx-core/src/ranking/signals/semantic.rs
+// crates/fetchium-core/src/ranking/signals/semantic.rs
 
 /// Compute cosine similarity between two pre-normalized vectors.
 /// Since embed() returns L2-normalized vectors, cosine = dot product.
@@ -417,7 +417,7 @@ impl SemanticSignal {
 **Step 2: Integrate into HyperFusion**
 
 ```rust
-// In crates/hsx-core/src/ranking/hyperfusion.rs
+// In crates/fetchium-core/src/ranking/hyperfusion.rs
 // Replace the stub semantic_score computation:
 
 pub fn rank_results(
@@ -480,7 +480,7 @@ pub fn rank_results(
 | **ID** | `P5-E1-T3` |
 | **Status** | `DONE` |
 | **Priority** | P2 |
-| **Description** | Build a local HNSW vector index for storing and searching document embeddings. Expose via `hsx index add`, `hsx index search`, and `hsx index build` CLI commands. Uses the `usearch` or `hnswlib-rs` crate for SIMD-accelerated nearest neighbor search. |
+| **Description** | Build a local HNSW vector index for storing and searching document embeddings. Expose via `fetchium index add`, `fetchium index search`, and `fetchium index build` CLI commands. Uses the `usearch` or `hnswlib-rs` crate for SIMD-accelerated nearest neighbor search. |
 | **PRD Ref** | 28 (Caching & Local Index), 21 (Cascade Retrieval), 48 (hnswlib-rs / usearch) |
 | **Depends On** | `P5-E1-T1` (embedding generation), `P1-E5` (BM25 tantivy index), `P1-E6` (SQLite cache) |
 
@@ -488,19 +488,19 @@ pub fn rank_results(
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/Cargo.toml` | Add `usearch` or `hnsw_rs` under `vector-search` feature |
-| `crates/hsx-core/src/index/mod.rs` | New module root |
-| `crates/hsx-core/src/index/vector.rs` | HNSW index wrapper |
-| `crates/hsx-core/src/index/hybrid.rs` | Hybrid BM25 + vector search |
-| `crates/hsx-core/src/index/document.rs` | Indexed document schema |
-| `crates/hsx-cli/src/commands/index.rs` | CLI subcommands: add, search, build, stats |
+| `crates/fetchium-core/Cargo.toml` | Add `usearch` or `hnsw_rs` under `vector-search` feature |
+| `crates/fetchium-core/src/index/mod.rs` | New module root |
+| `crates/fetchium-core/src/index/vector.rs` | HNSW index wrapper |
+| `crates/fetchium-core/src/index/hybrid.rs` | Hybrid BM25 + vector search |
+| `crates/fetchium-core/src/index/document.rs` | Indexed document schema |
+| `crates/fetchium-cli/src/commands/index.rs` | CLI subcommands: add, search, build, stats |
 
 #### Step-by-Step Implementation Guide
 
 **Step 1: Define the indexed document schema**
 
 ```rust
-// crates/hsx-core/src/index/document.rs
+// crates/fetchium-core/src/index/document.rs
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -519,7 +519,7 @@ pub struct IndexedDocument {
 **Step 2: HNSW vector index wrapper**
 
 ```rust
-// crates/hsx-core/src/index/vector.rs
+// crates/fetchium-core/src/index/vector.rs
 use std::path::Path;
 
 pub struct VectorIndex {
@@ -578,7 +578,7 @@ impl VectorIndex {
 **Step 3: Hybrid search combining BM25 + vector**
 
 ```rust
-// crates/hsx-core/src/index/hybrid.rs
+// crates/fetchium-core/src/index/hybrid.rs
 use std::collections::HashMap;
 
 pub struct HybridIndex {
@@ -634,7 +634,7 @@ impl HybridIndex {
 **Step 4: CLI commands**
 
 ```rust
-// crates/hsx-cli/src/commands/index.rs
+// crates/fetchium-cli/src/commands/index.rs
 use clap::Subcommand;
 
 #[derive(Subcommand)]
@@ -671,12 +671,12 @@ pub enum IndexCommand {
 
 #### Acceptance Criteria
 
-- [ ] `hsx index add <url>` fetches, extracts, embeds, and stores a document
-- [ ] `hsx index add <sitemap.xml>` crawls and indexes all URLs from the sitemap
-- [ ] `hsx index build` (re-)computes embeddings for all stored documents and builds the HNSW index
-- [ ] `hsx index search "query"` returns ranked results from the local index
-- [ ] `hsx index search "query" --mode hybrid` fuses BM25 + vector results via RRF
-- [ ] `hsx index stats` shows document count, index size, embedding coverage
+- [ ] `fetchium index add <url>` fetches, extracts, embeds, and stores a document
+- [ ] `fetchium index add <sitemap.xml>` crawls and indexes all URLs from the sitemap
+- [ ] `fetchium index build` (re-)computes embeddings for all stored documents and builds the HNSW index
+- [ ] `fetchium index search "query"` returns ranked results from the local index
+- [ ] `fetchium index search "query" --mode hybrid` fuses BM25 + vector results via RRF
+- [ ] `fetchium index stats` shows document count, index size, embedding coverage
 - [ ] Vector search of 10,000 documents returns in < 20ms
 - [ ] Index persists across sessions (stored at `~/.fetchium/index/`)
 - [ ] Duplicate URLs detected by content hash and skipped
@@ -684,7 +684,7 @@ pub enum IndexCommand {
 #### Pitfalls
 
 - **HNSW index size**: Each 384-dim f32 vector is 1.5KB. 100K documents = ~150MB index file. Monitor disk usage and warn users.
-- **Re-indexing**: When `hsx index build` runs, existing documents without embeddings need to be embedded. Use batching (Step 3 of embed.rs) to avoid OOM.
+- **Re-indexing**: When `fetchium index build` runs, existing documents without embeddings need to be embedded. Use batching (Step 3 of embed.rs) to avoid OOM.
 - **Stale index**: If the HNSW index is built but new documents are added later, the index is stale. Either rebuild incrementally or mark it as stale and auto-rebuild.
 - **Platform-specific SIMD**: `usearch` uses SIMD intrinsics that may not be available on all platforms. Test on x86_64 and aarch64.
 
@@ -705,14 +705,14 @@ pub enum IndexCommand {
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/query/hyde.rs` | HyDE implementation |
-| `crates/hsx-core/src/query/mod.rs` | Register HyDE module |
-| `crates/hsx-core/src/query/intent.rs` | Add ambiguity detection threshold |
+| `crates/fetchium-core/src/query/hyde.rs` | HyDE implementation |
+| `crates/fetchium-core/src/query/mod.rs` | Register HyDE module |
+| `crates/fetchium-core/src/query/intent.rs` | Add ambiguity detection threshold |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/query/hyde.rs
+// crates/fetchium-core/src/query/hyde.rs
 
 const HYDE_PROMPT_TEMPLATE: &str = r#"Write a short, factual paragraph that would be a perfect answer to this question. Do not include any preamble or meta-commentary. Just write the answer directly.
 
@@ -808,12 +808,12 @@ pub async fn smart_embed(
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/extraction/qatbe.rs` | Upgrade Stage 3 scoring |
+| `crates/fetchium-core/src/extraction/qatbe.rs` | Upgrade Stage 3 scoring |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// In crates/hsx-core/src/extraction/qatbe.rs — upgrade the rank_segments function
+// In crates/fetchium-core/src/extraction/qatbe.rs — upgrade the rank_segments function
 
 use crate::ranking::signals::semantic::SemanticSignal;
 
@@ -878,12 +878,12 @@ pub fn rank_segments(
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/extraction/qadd.rs` | Add Step 3 semantic pruning |
+| `crates/fetchium-core/src/extraction/qadd.rs` | Add Step 3 semantic pruning |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// In crates/hsx-core/src/extraction/qadd.rs
+// In crates/fetchium-core/src/extraction/qadd.rs
 
 /// Step 3: Semantic embedding pruning.
 /// Embed each surviving DOM node text and the query.
@@ -981,16 +981,16 @@ pub fn distill(
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/extraction/cep_predictor.rs` | ML predictor implementation |
-| `crates/hsx-core/src/extraction/cep_features.rs` | Feature extraction from URLs |
-| `crates/hsx-core/src/extraction/cep.rs` | Integrate predictor into CEP cascade |
+| `crates/fetchium-core/src/extraction/cep_predictor.rs` | ML predictor implementation |
+| `crates/fetchium-core/src/extraction/cep_features.rs` | Feature extraction from URLs |
+| `crates/fetchium-core/src/extraction/cep.rs` | Integrate predictor into CEP cascade |
 | `data/spa_domains.txt` | Known SPA domain list |
 | `data/cep_training_data.csv` | Initial training data (manual labels) |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/extraction/cep_features.rs
+// crates/fetchium-core/src/extraction/cep_features.rs
 
 /// Features extracted from a URL for CEP layer prediction.
 #[derive(Debug, Clone)]
@@ -1128,15 +1128,15 @@ pub fn predict_layer(features: &CepFeatures) -> u8 {
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/pds/tiers.rs` | Add detailed and complete tier generation |
-| `crates/hsx-core/src/pds/expansion.rs` | Tier expansion API |
-| `crates/hsx-core/src/pds/cache.rs` | SQLite-backed tier cache |
-| `crates/hsx-cli/src/commands/expand.rs` | CLI `hsx expand <result_id> --tier detailed` |
+| `crates/fetchium-core/src/pds/tiers.rs` | Add detailed and complete tier generation |
+| `crates/fetchium-core/src/pds/expansion.rs` | Tier expansion API |
+| `crates/fetchium-core/src/pds/cache.rs` | SQLite-backed tier cache |
+| `crates/fetchium-cli/src/commands/expand.rs` | CLI `fetchium expand <result_id> --tier detailed` |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/pds/tiers.rs
+// crates/fetchium-core/src/pds/tiers.rs
 
 /// Generate all 4 PDS tiers from extracted content.
 /// Called once at extraction time; all tiers cached.
@@ -1228,7 +1228,7 @@ fn generate_key_facts(
 **Tier Expansion API:**
 
 ```rust
-// crates/hsx-core/src/pds/expansion.rs
+// crates/fetchium-core/src/pds/expansion.rs
 
 /// Expand a previous result to a higher detail tier without re-fetching.
 /// Uses the cached tier data keyed by result_id.
@@ -1254,9 +1254,9 @@ pub async fn expand_tier(
 #### Acceptance Criteria
 
 - [ ] All 4 tiers generated at extraction time and cached in SQLite
-- [ ] `hsx agent-search "query" --tier key_facts` returns ~200 tokens
-- [ ] `hsx agent-search "query" --tier detailed` returns ~5000 tokens
-- [ ] `hsx agent-search "query" --tier complete` returns all extracted content
+- [ ] `fetchium agent-search "query" --tier key_facts` returns ~200 tokens
+- [ ] `fetchium agent-search "query" --tier detailed` returns ~5000 tokens
+- [ ] `fetchium agent-search "query" --tier complete` returns all extracted content
 - [ ] Tier expansion via `expand_tier(result_id, "detailed")` returns cached tier instantly (< 5ms)
 - [ ] Result IDs are UUIDs persisted across requests within cache TTL
 - [ ] PDS cache eviction respects configured max_size
@@ -1279,7 +1279,7 @@ pub async fn expand_tier(
 | **ID** | `P5-E5-T1` |
 | **Status** | `DONE` |
 | **Priority** | P2 |
-| **Description** | Implement `hsx compare "A vs B vs C"` that researches each item in parallel, extracts comparison dimensions, and generates a structured comparison table with per-cell citations. |
+| **Description** | Implement `fetchium compare "A vs B vs C"` that researches each item in parallel, extracts comparison dimensions, and generates a structured comparison table with per-cell citations. |
 | **PRD Ref** | 10 (Mode F: Compare Mode) |
 | **Depends On** | `P3-E3` (research mode), `P2-E3` (parallel orchestrator) |
 
@@ -1287,16 +1287,16 @@ pub async fn expand_tier(
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/compare/mod.rs` | Comparison engine |
-| `crates/hsx-core/src/compare/parser.rs` | Parse "A vs B vs C" queries |
-| `crates/hsx-core/src/compare/dimension.rs` | Extract comparison dimensions |
-| `crates/hsx-core/src/compare/table.rs` | Generate comparison table |
-| `crates/hsx-cli/src/commands/compare.rs` | CLI command |
+| `crates/fetchium-core/src/compare/mod.rs` | Comparison engine |
+| `crates/fetchium-core/src/compare/parser.rs` | Parse "A vs B vs C" queries |
+| `crates/fetchium-core/src/compare/dimension.rs` | Extract comparison dimensions |
+| `crates/fetchium-core/src/compare/table.rs` | Generate comparison table |
+| `crates/fetchium-cli/src/commands/compare.rs` | CLI command |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/compare/parser.rs
+// crates/fetchium-core/src/compare/parser.rs
 
 /// Parse a comparison query into individual items.
 pub fn parse_comparison_query(query: &str) -> ComparisonQuery {
@@ -1320,7 +1320,7 @@ pub fn parse_comparison_query(query: &str) -> ComparisonQuery {
     }
 }
 
-// crates/hsx-core/src/compare/mod.rs
+// crates/fetchium-core/src/compare/mod.rs
 
 /// Run comparison research for multiple items.
 pub async fn compare(
@@ -1357,7 +1357,7 @@ pub async fn compare(
 
 #### Acceptance Criteria
 
-- [ ] `hsx compare "React vs Vue vs Svelte"` produces a comparison table
+- [ ] `fetchium compare "React vs Vue vs Svelte"` produces a comparison table
 - [ ] Each cell in the table has a citation reference
 - [ ] Items are researched in parallel (visible in `--profile` output)
 - [ ] Output formats: markdown table, JSON array of dimension objects, segments
@@ -1378,7 +1378,7 @@ pub async fn compare(
 | **ID** | `P5-E5-T2` |
 | **Status** | `DONE` |
 | **Priority** | P2 |
-| **Description** | Implement `hsx monitor <url>` for content-hash-based change detection with diff output and optional notifications. Supports interval-based polling and query-based monitoring. |
+| **Description** | Implement `fetchium monitor <url>` for content-hash-based change detection with diff output and optional notifications. Supports interval-based polling and query-based monitoring. |
 | **PRD Ref** | 10 (Mode G: Monitor Mode) |
 | **Depends On** | `P1-E1` (HTTP fetch), `P1-E6` (SQLite cache for snapshots) |
 
@@ -1386,16 +1386,16 @@ pub async fn compare(
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/monitor/mod.rs` | Monitor engine |
-| `crates/hsx-core/src/monitor/snapshot.rs` | Content snapshot + hash storage |
-| `crates/hsx-core/src/monitor/diff.rs` | Content diff computation |
-| `crates/hsx-core/src/monitor/scheduler.rs` | Polling scheduler |
-| `crates/hsx-cli/src/commands/monitor.rs` | CLI command |
+| `crates/fetchium-core/src/monitor/mod.rs` | Monitor engine |
+| `crates/fetchium-core/src/monitor/snapshot.rs` | Content snapshot + hash storage |
+| `crates/fetchium-core/src/monitor/diff.rs` | Content diff computation |
+| `crates/fetchium-core/src/monitor/scheduler.rs` | Polling scheduler |
+| `crates/fetchium-cli/src/commands/monitor.rs` | CLI command |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/monitor/snapshot.rs
+// crates/fetchium-core/src/monitor/snapshot.rs
 
 pub struct SnapshotStore {
     conn: rusqlite::Connection,
@@ -1444,7 +1444,7 @@ impl SnapshotStore {
     }
 }
 
-// crates/hsx-core/src/monitor/diff.rs
+// crates/fetchium-core/src/monitor/diff.rs
 
 /// Compute a human-readable diff between two content versions.
 pub fn compute_diff(old: &str, new: &str) -> ContentDiff {
@@ -1478,12 +1478,12 @@ pub fn compute_diff(old: &str, new: &str) -> ContentDiff {
 
 #### Acceptance Criteria
 
-- [ ] `hsx monitor <url> --interval 1h` registers a URL for periodic checking
-- [ ] `hsx monitor <url> --diff` shows changes since last snapshot
+- [ ] `fetchium monitor <url> --interval 1h` registers a URL for periodic checking
+- [ ] `fetchium monitor <url> --diff` shows changes since last snapshot
 - [ ] Content hash based change detection (SHA-256)
 - [ ] Human-readable diff output with additions/deletions highlighted
-- [ ] `hsx monitor list` shows all monitored URLs with last-check time
-- [ ] `hsx monitor remove <url>` stops monitoring
+- [ ] `fetchium monitor list` shows all monitored URLs with last-check time
+- [ ] `fetchium monitor remove <url>` stops monitoring
 - [ ] Snapshots persist in SQLite across sessions
 - [ ] `--notify webhook` sends POST request on change detection
 
@@ -1512,14 +1512,14 @@ pub fn compute_diff(old: &str, new: &str) -> ContentDiff {
 
 | File | Action |
 |------|--------|
-| `crates/hsx-core/src/export/pandoc.rs` | Pandoc subprocess invocation |
-| `crates/hsx-core/src/export/bibtex.rs` | BibTeX citation export |
-| `crates/hsx-core/src/export/mod.rs` | Register new export formats |
+| `crates/fetchium-core/src/export/pandoc.rs` | Pandoc subprocess invocation |
+| `crates/fetchium-core/src/export/bibtex.rs` | BibTeX citation export |
+| `crates/fetchium-core/src/export/mod.rs` | Register new export formats |
 
 #### Step-by-Step Implementation Guide
 
 ```rust
-// crates/hsx-core/src/export/pandoc.rs
+// crates/fetchium-core/src/export/pandoc.rs
 use std::process::Command;
 use tempfile::NamedTempFile;
 use std::io::Write;
@@ -1605,7 +1605,7 @@ pub fn export_docx(
     Ok(())
 }
 
-// crates/hsx-core/src/export/bibtex.rs
+// crates/fetchium-core/src/export/bibtex.rs
 
 /// Generate BibTeX entries from sources.
 pub fn generate_bibtex(sources: &[crate::types::Source]) -> String {
@@ -1635,9 +1635,9 @@ pub fn generate_bibtex(sources: &[crate::types::Source]) -> String {
 
 #### Acceptance Criteria
 
-- [ ] `hsx research "topic" --format pdf --output report.pdf` generates a PDF with title, TOC, and citations
-- [ ] `hsx research "topic" --format docx --output report.docx` generates a Word document
-- [ ] `hsx research "topic" --format bibtex --output refs.bib` generates valid BibTeX entries
+- [ ] `fetchium research "topic" --format pdf --output report.pdf` generates a PDF with title, TOC, and citations
+- [ ] `fetchium research "topic" --format docx --output report.docx` generates a Word document
+- [ ] `fetchium research "topic" --format bibtex --output refs.bib` generates valid BibTeX entries
 - [ ] Clear error message when Pandoc is not installed (with install link)
 - [ ] PDF includes table of contents when research report has headings
 - [ ] BibTeX entries have proper keys, URLs, titles, and access dates

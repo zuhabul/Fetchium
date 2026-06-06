@@ -1,26 +1,26 @@
 //! OCR text extraction via Tesseract CLI (PRD §34).
 
 use super::{ContentType, MultimodalContent, MultimodalSegment};
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use std::process::Command;
 
 /// Run Tesseract OCR on an image file.
 ///
 /// Requires `tesseract` to be installed and in PATH.
-pub fn ocr_image_file(path: &std::path::Path, lang: &str) -> HsxResult<MultimodalContent> {
+pub fn ocr_image_file(path: &std::path::Path, lang: &str) -> FetchiumResult<MultimodalContent> {
     let lang = if lang.is_empty() { "eng" } else { lang };
 
     let output = Command::new("tesseract")
         .args([path.to_str().unwrap_or(""), "stdout", "-l", lang])
         .output()
         .map_err(|e| {
-            HsxError::Extraction(format!(
+            FetchiumError::Extraction(format!(
                 "Tesseract not available (install tesseract-ocr): {e}"
             ))
         })?;
 
     if !output.status.success() {
-        return Err(HsxError::Extraction(
+        return Err(FetchiumError::Extraction(
             String::from_utf8_lossy(&output.stderr).into_owned(),
         ));
     }

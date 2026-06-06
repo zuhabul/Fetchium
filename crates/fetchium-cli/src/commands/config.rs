@@ -1,9 +1,9 @@
 //! `fetchium config` — configuration management.
 
 use crate::cli::{ConfigAction, ConfigArgs};
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 
-pub async fn run(args: ConfigArgs, config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(args: ConfigArgs, config: &FetchiumConfig) -> anyhow::Result<()> {
     match args.action {
         ConfigAction::Show => {
             let toml_str = toml::to_string_pretty(config)?;
@@ -25,17 +25,17 @@ pub async fn run(args: ConfigArgs, config: &HsxConfig) -> anyhow::Result<()> {
         ConfigAction::Set { key, value } => {
             let mut toml_val = toml::Value::try_from(config)?;
             set_key(&mut toml_val, &key, &value)?;
-            let new_config: HsxConfig = toml::from_str(&toml::to_string(&toml_val)?)?;
+            let new_config: FetchiumConfig = toml::from_str(&toml::to_string(&toml_val)?)?;
             new_config.save()?;
             println!("Config set: {key} = {value}");
         }
         ConfigAction::Reset => {
-            let default_config = HsxConfig::default();
+            let default_config = FetchiumConfig::default();
             default_config.save()?;
             println!("Config reset to defaults");
         }
         ConfigAction::Edit => {
-            let config_path = HsxConfig::config_file_path();
+            let config_path = FetchiumConfig::config_file_path();
             let editor = std::env::var("EDITOR").unwrap_or_else(|_| "vim".into());
             std::process::Command::new(editor)
                 .arg(&config_path)

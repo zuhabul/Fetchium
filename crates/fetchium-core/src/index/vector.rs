@@ -8,7 +8,7 @@
 //! Uses SIMD-accelerated approximate nearest neighbour search with cosine distance.
 //! Index parameters follow PRD §21: M=16, ef_construction=128, ef_search=64.
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use std::path::Path;
 use usearch::{Index, IndexOptions, MetricKind, ScalarKind};
 
@@ -20,7 +20,7 @@ pub struct VectorIndex {
 
 impl VectorIndex {
     /// Create a new empty index for vectors of `dimension` dimensions.
-    pub fn new(dimension: usize) -> Result<Self, HsxError> {
+    pub fn new(dimension: usize) -> Result<Self, FetchiumError> {
         let options = IndexOptions {
             dimensions: dimension,
             metric: MetricKind::Cos,
@@ -31,46 +31,46 @@ impl VectorIndex {
             multi: false,
         };
         let index = Index::new(&options)
-            .map_err(|e| HsxError::Internal(format!("Failed to create HNSW index: {e}")))?;
+            .map_err(|e| FetchiumError::Internal(format!("Failed to create HNSW index: {e}")))?;
         Ok(Self { index, dimension })
     }
 
     /// Load index from disk, or create a new empty one if the file doesn't exist.
-    pub fn load_or_new(path: &Path, dimension: usize) -> Result<Self, HsxError> {
+    pub fn load_or_new(path: &Path, dimension: usize) -> Result<Self, FetchiumError> {
         let idx = Self::new(dimension)?;
         if path.exists() {
             let path_str = path
                 .to_str()
-                .ok_or_else(|| HsxError::Internal("Invalid path string".into()))?;
+                .ok_or_else(|| FetchiumError::Internal("Invalid path string".into()))?;
             idx.index
                 .load(path_str)
-                .map_err(|e| HsxError::Internal(format!("Failed to load HNSW index: {e}")))?;
+                .map_err(|e| FetchiumError::Internal(format!("Failed to load HNSW index: {e}")))?;
         }
         Ok(idx)
     }
 
     /// Persist the index to disk.
-    pub fn save(&self, path: &Path) -> Result<(), HsxError> {
+    pub fn save(&self, path: &Path) -> Result<(), FetchiumError> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
         let path_str = path
             .to_str()
-            .ok_or_else(|| HsxError::Internal("Invalid path string".into()))?;
+            .ok_or_else(|| FetchiumError::Internal("Invalid path string".into()))?;
         self.index
             .save(path_str)
-            .map_err(|e| HsxError::Internal(format!("Failed to save HNSW index: {e}")))
+            .map_err(|e| FetchiumError::Internal(format!("Failed to save HNSW index: {e}")))
     }
 
     /// Reserve capacity for `n` additional vectors.
-    pub fn reserve(&self, n: usize) -> Result<(), HsxError> {
+    pub fn reserve(&self, n: usize) -> Result<(), FetchiumError> {
         self.index
             .reserve(n)
-            .map_err(|e| HsxError::Internal(format!("Failed to reserve index capacity: {e}")))
+            .map_err(|e| FetchiumError::Internal(format!("Failed to reserve index capacity: {e}")))
     }
 
     /// Add a document vector with the given numeric `id`.
-    pub fn add(&self, id: u64, vector: &[f32]) -> Result<(), HsxError> {
+    pub fn add(&self, id: u64, vector: &[f32]) -> Result<(), FetchiumError> {
         assert_eq!(
             vector.len(),
             self.dimension,
@@ -80,15 +80,15 @@ impl VectorIndex {
         );
         self.index
             .add(id, vector)
-            .map_err(|e| HsxError::Internal(format!("Failed to add vector to index: {e}")))
+            .map_err(|e| FetchiumError::Internal(format!("Failed to add vector to index: {e}")))
     }
 
     /// Search for the `k` nearest neighbours. Returns `(id, distance)` pairs.
-    pub fn search(&self, query_vector: &[f32], k: usize) -> Result<Vec<(u64, f32)>, HsxError> {
+    pub fn search(&self, query_vector: &[f32], k: usize) -> Result<Vec<(u64, f32)>, FetchiumError> {
         let results = self
             .index
             .search(query_vector, k)
-            .map_err(|e| HsxError::Internal(format!("HNSW search failed: {e}")))?;
+            .map_err(|e| FetchiumError::Internal(format!("HNSW search failed: {e}")))?;
         Ok(results.keys.into_iter().zip(results.distances).collect())
     }
 

@@ -1,7 +1,7 @@
 //! `fetchium index` — manage the local document index.
 
 use anyhow::{Context, Result};
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::extract::pipeline;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::index::document::IndexedDocument;
@@ -10,7 +10,7 @@ use fetchium_core::token::qatbe::extract_with_budget;
 
 use crate::cli::{Format, IndexAction, IndexArgs};
 
-pub async fn run(args: IndexArgs, config: &HsxConfig, format: Format) -> Result<()> {
+pub async fn run(args: IndexArgs, config: &FetchiumConfig, format: Format) -> Result<()> {
     let data_dir = config.data_dir();
     std::fs::create_dir_all(&data_dir)?;
     let db_path = data_dir.join("index.db");

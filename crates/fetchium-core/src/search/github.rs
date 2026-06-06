@@ -5,7 +5,7 @@
 //!
 //! GitHub's API requires a `User-Agent` header and recommends an `Accept` header.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::http::HttpClient;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
@@ -79,7 +79,7 @@ impl SearchBackend for GithubBackend {
         BackendId::Github
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         let per_page = max_results.min(30);
         let url = format!(
             "{GITHUB_API}?q={}&sort=stars&order=desc&per_page={per_page}",

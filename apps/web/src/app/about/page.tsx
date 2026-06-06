@@ -6,32 +6,32 @@ import Footer from "@/components/Footer";
 export const metadata: Metadata = {
   title: "About Fetchium — The Search API That Thinks",
   description:
-    "Fetchium is building the information layer for the AI age. 17 novel algorithms, 11+ backends, built in Rust. Learn about our mission, team, and roadmap.",
+    "Fetchium is building the information layer for the AI age. 17 novel algorithms, 17 backends, built in Rust. Learn about our mission, team, and roadmap.",
 };
 
 const values = [
   {
     title: "Technically honest",
-    desc: "We only claim what we can prove. Every benchmark on this site is reproducible. Every price comparison links to the source.",
+    desc: "We aim to keep public product claims tied to current code, docs, and verifiable configuration.",
   },
   {
     title: "Privacy by default",
-    desc: "Zero telemetry unless you opt in. Full self-hosting with complete feature parity. Your queries are yours.",
+    desc: "Zero telemetry unless you opt in. Your queries are yours.",
   },
   {
     title: "Open infrastructure",
-    desc: "Self-hostable. Standards-based (MCP, REST, CLI). No lock-in. If you want to run Fetchium on your own servers tomorrow, you can.",
+    desc: "Standards-based (MCP, REST, CLI). Designed to be easy to integrate without locking your application to a proprietary workflow.",
   },
   {
     title: "Built to last",
-    desc: "Written in Rust. 563+ tests. Zero warnings policy. Production-grade resilience with circuit breakers, retries, and graceful degradation.",
+    desc: "Written in Rust. 1,100+ tests. Zero warnings policy. Production-grade resilience with circuit breakers, retries, and graceful degradation.",
   },
 ];
 
 const techStack = [
   { name: "fetchium-core", desc: "All 17 algorithms: search orchestration, CEP extraction, HyperFusion ranking, QATBE, AMRS, PIE, intelligence", lang: "Rust" },
   { name: "fetchium-cli", desc: "26-command CLI: search, research, compare, doctor, provider, export, and more", lang: "Rust" },
-  { name: "fetchium-mcp", desc: "JSON-RPC 2.0 stdio MCP server with 5 tools for Claude Desktop, Cursor, and any MCP client", lang: "Rust" },
+  { name: "fetchium-mcp", desc: "JSON-RPC 2.0 MCP server with 12 tools for Claude Desktop, Cursor, and other MCP clients", lang: "Rust" },
   { name: "fetchium-api", desc: "axum 0.7 REST API server with PostgreSQL, authentication, and rate limiting", lang: "Rust" },
   { name: "apps/web", desc: "Marketing site and documentation hub", lang: "Next.js 15" },
   { name: "apps/dashboard", desc: "API key management, usage analytics, playground", lang: "Next.js 15" },
@@ -65,7 +65,7 @@ export default function AboutPage() {
               is a hard engineering problem that most teams shouldn&apos;t have to solve themselves.
             </p>
             <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-2xl">
-              Fetchium is the API that solves it. 17 novel algorithms, 11+ backends, built in Rust.
+              Fetchium is the API that solves it. 17 novel algorithms, 17 backends, built in Rust.
               From individual developers building their first RAG prototype to teams running production
               AI pipelines — one API handles every retrieval workload.
             </p>
@@ -90,8 +90,8 @@ export default function AboutPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
                 { v: "17", l: "Novel algorithms", sub: "CEP, QATBE, AMRS, PIE, RAR..." },
-                { v: "563+", l: "Tests passing", sub: "Zero failures, zero warnings" },
-                { v: "11+", l: "Search backends", sub: "Federated in one call" },
+                { v: "1,100+", l: "Tests passing", sub: "Zero failures, zero warnings" },
+                { v: "17+", l: "Search backends", sub: "Federated in one call" },
                 { v: "26", l: "CLI commands", sub: "Complete developer toolset" },
               ].map((s) => (
                 <div key={s.l} className="rounded-xl border border-white/6 bg-white/[0.02] p-4 text-center">

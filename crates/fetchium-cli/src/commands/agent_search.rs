@@ -6,7 +6,7 @@
 use crate::cli::{AgentSearchArgs, Tier};
 use fetchium_core::{
     cache::{fetch_key, qatbe_key, search_key, MemoryCache},
-    config::HsxConfig,
+    config::FetchiumConfig,
     extract::pipeline,
     http::client::HttpClient,
     output::format_agent_json,
@@ -39,7 +39,7 @@ fn extract_domain(url_str: &str) -> String {
         .unwrap_or_else(|_| "unknown".to_string())
 }
 
-pub async fn run(args: AgentSearchArgs, config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(args: AgentSearchArgs, config: &FetchiumConfig) -> anyhow::Result<()> {
     let start = Instant::now();
     let pds_tier = to_pds_tier(args.tier);
 
@@ -59,7 +59,7 @@ pub async fn run(args: AgentSearchArgs, config: &HsxConfig) -> anyhow::Result<()
     let cache = MemoryCache::from_config(&config.cache);
 
     // Step 1: Search
-    let orch_config = OrchestratorConfig::from_hsx_config(config, args.max_results);
+    let orch_config = OrchestratorConfig::from_fetchium_config(config, args.max_results);
     let orchestrator = SearchOrchestrator::new(http_client.clone(), orch_config);
 
     let cache_key = search_key(&args.query, "all", args.max_results);
@@ -204,7 +204,7 @@ pub async fn run(args: AgentSearchArgs, config: &HsxConfig) -> anyhow::Result<()
             0.0
         },
         duration_ms,
-        resource_tier: HsxConfig::detect_resource_tier(),
+        resource_tier: FetchiumConfig::detect_resource_tier(),
         timestamp: chrono::Utc::now().to_rfc3339(),
         result_id: format!("as-{}", uuid::Uuid::new_v4()),
         content_hashes: std::collections::HashMap::new(),
