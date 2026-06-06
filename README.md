@@ -135,19 +135,29 @@ search/ → extract/ (CEP + QADD) → token/ (QATBE/SCS) → rank/ (HyperFusion)
 > Requires [Rust 1.75+](https://rustup.rs) for the Cargo/source methods.
 
 ```bash
-# With Cargo (recommended)
-cargo install --git https://github.com/zuhabul/Fetchium fetchium-cli
+# Shell installer (Linux + macOS — all architectures)
+curl -sSf https://install.fetchium.com | sh
 
-# Or build from source
+# Cargo
+cargo install fetchium-cli
+
+# npm / npx
+npm install -g fetchium-cli
+npx fetchium-cli --help
+
+# Homebrew
+brew install zuhabul/fetchium/fetchium
+
+# Python adapters
+pip install fetchium-langchain   # LangChain retriever
+pip install fetchium-crewai      # CrewAI tool
+
+# Build from source
 git clone https://github.com/zuhabul/Fetchium && cd Fetchium
 cargo build -p fetchium-cli --release
-
-# Or grab the Linux x86-64 prebuilt binary
-curl -fsSL https://github.com/zuhabul/Fetchium/releases/latest/download/fetchium-linux-x64.tar.gz | tar xz
 ```
 
-Then run `fetchium doctor` to check optional tools. (crates.io / npm / Homebrew distribution is wired
-through the release pipeline and will be enabled as those registries are configured.)
+Then run `fetchium doctor` to check optional tools.
 
 ## Quick start
 

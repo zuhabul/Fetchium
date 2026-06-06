@@ -196,33 +196,34 @@ sh scripts/setup-dev.sh   # installs commit-msg and pre-commit git hooks
 
 | Channel | Install command | Status |
 |---------|----------------|--------|
-| Cargo (git) | `cargo install --git https://github.com/zuhabul/Fetchium fetchium-cli` | ✅ Works today |
-| From source | `cargo build -p fetchium-cli --release` | ✅ Works today |
-| GitHub Releases | `fetchium-linux-x64.tar.gz` (Linux x86-64) | ✅ Available |
-| crates.io | `cargo install fetchium-cli` | ⏳ Pending publish (release pipeline) |
-| npm / npx | `npm install -g fetchium-cli` / `npx fetchium --help` | ⏳ Not yet published |
-| Homebrew | `brew install zuhabul/tap/fetchium` | ⏳ Tap not yet created |
-
-> The release pipeline (release-please + `release.yml`) is configured to publish to these channels;
-> they activate once the registry names/secrets are set up. Update this table as each goes live.
+| Cargo (git) | `cargo install --git https://github.com/zuhabul/Fetchium fetchium-cli` | ✅ Works |
+| From source | `cargo build -p fetchium-cli --release` | ✅ Works |
+| GitHub Releases | `curl -sSf https://install.fetchium.com \| sh` | ✅ All 5 platforms |
+| crates.io | `cargo install fetchium-cli` | ✅ Published v1.0.0 |
+| npm / npx | `npm install -g fetchium-cli` / `npx fetchium-cli --help` | ✅ Published v1.0.0 |
+| Homebrew | `brew install zuhabul/fetchium/fetchium` | ✅ Tap live |
+| PyPI (LangChain) | `pip install fetchium-langchain` | ✅ Published v1.0.0 |
+| PyPI (CrewAI) | `pip install fetchium-crewai` | ✅ Published v1.0.0 |
 
 ### Required GitHub Secrets
 
-These must be set in the repository Settings → Secrets → Actions:
+All secrets are set in repository Settings → Secrets → Actions:
 
-| Secret | Purpose |
-|--------|---------|
-| `NPM_TOKEN` | Publish to npmjs.com — generate at npmjs.com → Access Tokens |
-| `HOMEBREW_TAP_TOKEN` | Push to `zuhabul/homebrew-fetchium` repo — GitHub PAT with `repo` scope |
-| `CARGO_REGISTRY_TOKEN` | Publish to crates.io (optional) — generate at crates.io |
+| Secret | Purpose | Status |
+|--------|---------|--------|
+| `NPM_TOKEN` | Publish to npmjs.com | ✅ Set |
+| `HOMEBREW_TAP_TOKEN` | Push to `zuhabul/homebrew-fetchium` | ✅ Set |
+| `CARGO_REGISTRY_TOKEN` | Publish to crates.io | ✅ Set |
+| `PYPI_API_TOKEN` | Publish Python adapters to PyPI | ✅ Set |
 
 ### One-time setup checklist
 
-- [ ] Create GitHub repository `zuhabul/homebrew-fetchium` with a `Formula/` directory
-- [ ] Add `NPM_TOKEN` secret (npmjs.com → Access Tokens → Granular token for `fetchium`)
-- [ ] Add `HOMEBREW_TAP_TOKEN` secret (GitHub PAT with `repo` scope on `zuhabul/homebrew-fetchium`)
-- [ ] Enable GitHub Pages for rustdoc (repo Settings → Pages → Source: GitHub Actions)
-- [ ] First release: merge a `Release PR` created by release-please, or push a `v1.0.0` tag manually
+- [x] Create GitHub repository `zuhabul/homebrew-fetchium` with a `Formula/` directory
+- [x] Add `NPM_TOKEN` secret
+- [x] Add `HOMEBREW_TAP_TOKEN` secret (GitHub PAT with `repo` scope on `zuhabul/homebrew-fetchium`)
+- [x] Add `CARGO_REGISTRY_TOKEN` secret
+- [x] Add `PYPI_API_TOKEN` secret
+- [x] First release: v1.0.0 published to all channels
 
 ## Global Infrastructure SSOT
 - Canonical infrastructure source: `/home/echo/INFRASTRUCTURE_SOURCE_OF_TRUTH.md`
