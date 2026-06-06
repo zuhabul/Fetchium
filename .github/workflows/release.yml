@@ -173,31 +173,37 @@ jobs:
 
       - name: Sync version into npm package
         shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
         run: |
-          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
-          VERSION="${TAG#v}"
-          # Update package.json version to match release
+          if ! [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.\-]+)?$ ]]; then
+            echo "Refusing unsafe tag: $RELEASE_TAG" >&2; exit 1
+          fi
+          VERSION="${RELEASE_TAG#v}"
           cd packages/npm
-          node -e "
+          VERSION="$VERSION" node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.version = '${VERSION}';
+            pkg.version = process.env.VERSION;
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
           echo "npm package version set to ${VERSION}"
 
       - name: Publish to npm
         shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
-          VERSION="${TAG#v}"
-          if npm view "fetchium-cli@${VERSION}" version 2>/dev/null | grep -q "${VERSION}"; then
+          if ! [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.\-]+)?$ ]]; then
+            echo "Refusing unsafe tag: $RELEASE_TAG" >&2; exit 1
+          fi
+          VERSION="${RELEASE_TAG#v}"
+          if npm view "fetchium-cli@${VERSION}" version 2>/dev/null | grep -qx "${VERSION}"; then
             echo "fetchium-cli@${VERSION} already on npm — skipping"
           else
             cd packages/npm && npm publish --access public
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-python-adapters:
     name: Publish Python adapters
@@ -223,17 +229,24 @@ jobs:
 
       - name: Sync version into adapter package
         shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+          PACKAGE_DIR: ${{ matrix.package_dir }}
         run: |
-          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
-          VERSION="${TAG#v}"
-          sed -i "s/^version = \"[^\"]*\"/version = \"${VERSION}\"/" "${{ matrix.package_dir }}/pyproject.toml"
-          echo "adapter version set to ${VERSION} for ${{ matrix.package_dir }}/pyproject.toml"
+          if ! [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.\-]+)?$ ]]; then
+            echo "Refusing unsafe tag: $RELEASE_TAG" >&2; exit 1
+          fi
+          VERSION="${RELEASE_TAG#v}"
+          sed -i "s/^version = \"[^\"]*\"/version = \"${VERSION}\"/" "${PACKAGE_DIR}/pyproject.toml"
+          echo "adapter version set to ${VERSION} for ${PACKAGE_DIR}/pyproject.toml"
 
       - name: Build adapter package
+        env:
+          PACKAGE_DIR: ${{ matrix.package_dir }}
         run: |
           python -m pip install --upgrade pip build twine
-          python -m build ${{ matrix.package_dir }}
-          python -m twine check ${{ matrix.package_dir }}/dist/*
+          python -m build "$PACKAGE_DIR"
+          python -m twine check "$PACKAGE_DIR"/dist/*
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -261,66 +274,68 @@ jobs:
         with:
           key: publish-crates
 
+      - name: Validate tag
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+        run: |
+          if ! [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.\-]+)?$ ]]; then
+            echo "Refusing unsafe tag: $RELEASE_TAG" >&2; exit 1
+          fi
+          echo "RELEASE_VERSION=${RELEASE_TAG#v}" >> "$GITHUB_ENV"
+
       - name: Publish fetchium-core
         shell: bash
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
-          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
-          VERSION="${TAG#v}"
-          if curl -sf -H "User-Agent: fetchium-ci/1.0" "https://crates.io/api/v1/crates/fetchium-core/${VERSION}" >/dev/null 2>&1; then
-            echo "fetchium-core ${VERSION} already on crates.io — skipping"
+          if curl -sf -H "User-Agent: fetchium-ci/1.0" "https://crates.io/api/v1/crates/fetchium-core/${RELEASE_VERSION}" >/dev/null 2>&1; then
+            echo "fetchium-core ${RELEASE_VERSION} already on crates.io — skipping"
           else
             cargo publish -p fetchium-core
           fi
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
       - name: Wait for index propagation (core → mcp)
         run: sleep 60
 
       - name: Publish fetchium-mcp
         shell: bash
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
-          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
-          VERSION="${TAG#v}"
-          if curl -sf -H "User-Agent: fetchium-ci/1.0" "https://crates.io/api/v1/crates/fetchium-mcp/${VERSION}" >/dev/null 2>&1; then
-            echo "fetchium-mcp ${VERSION} already on crates.io — skipping"
+          if curl -sf -H "User-Agent: fetchium-ci/1.0" "https://crates.io/api/v1/crates/fetchium-mcp/${RELEASE_VERSION}" >/dev/null 2>&1; then
+            echo "fetchium-mcp ${RELEASE_VERSION} already on crates.io — skipping"
           else
             cargo publish -p fetchium-mcp
           fi
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
       - name: Wait for index propagation (mcp → api)
         run: sleep 60
 
       - name: Publish fetchium-api
         shell: bash
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
-          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
-          VERSION="${TAG#v}"
-          if curl -sf -H "User-Agent: fetchium-ci/1.0" "https://crates.io/api/v1/crates/fetchium-api/${VERSION}" >/dev/null 2>&1; then
-            echo "fetchium-api ${VERSION} already on crates.io — skipping"
+          if curl -sf -H "User-Agent: fetchium-ci/1.0" "https://crates.io/api/v1/crates/fetchium-api/${RELEASE_VERSION}" >/dev/null 2>&1; then
+            echo "fetchium-api ${RELEASE_VERSION} already on crates.io — skipping"
           else
             cargo publish -p fetchium-api
           fi
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
       - name: Wait for index propagation (api → cli)
         run: sleep 60
 
       - name: Publish fetchium-cli
         shell: bash
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
-          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
-          VERSION="${TAG#v}"
-          if curl -sf -H "User-Agent: fetchium-ci/1.0" "https://crates.io/api/v1/crates/fetchium-cli/${VERSION}" >/dev/null 2>&1; then
-            echo "fetchium-cli ${VERSION} already on crates.io — skipping"
+          if curl -sf -H "User-Agent: fetchium-ci/1.0" "https://crates.io/api/v1/crates/fetchium-cli/${RELEASE_VERSION}" >/dev/null 2>&1; then
+            echo "fetchium-cli ${RELEASE_VERSION} already on crates.io — skipping"
           else
             cargo publish -p fetchium-cli
           fi
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
   # ─────────────────────────────────────────────────────────────
   # 4. Update Homebrew tap formula
@@ -341,9 +356,14 @@ jobs:
 
       - name: Compute SHA256s and generate formula
         shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
         run: |
-          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
-          VERSION="${TAG#v}"
+          if ! [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.\-]+)?$ ]]; then
+            echo "Refusing unsafe tag: $RELEASE_TAG" >&2; exit 1
+          fi
+          VERSION="${RELEASE_TAG#v}"
+          TAG="$RELEASE_TAG"
           BASE_URL="https://github.com/zuhabul/Fetchium/releases/download/${TAG}"
 
           SHA_LINUX_X64=$(cat artifacts/fetchium-linux-x64.tar.gz.sha256)
@@ -404,7 +424,7 @@ jobs:
           destination_folder: Formula
           user_email: "github-actions[bot]@users.noreply.github.com"
           user_name: "github-actions[bot]"
-          commit_message: "chore: update fetchium to ${{ github.event.release.tag_name || github.event.inputs.tag }}"
+          commit_message: "chore: update fetchium formula"
 
   # ─────────────────────────────────────────────────────────────
   # 5. Post-release summary
@@ -416,10 +436,10 @@ jobs:
     if: always()
     steps:
       - name: Summary
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
         run: |
-          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
-          VERSION="${TAG#v}"
-          echo "## Release ${TAG} Distribution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## Release ${RELEASE_TAG} Distribution Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Channel | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
