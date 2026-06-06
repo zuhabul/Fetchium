@@ -3,6 +3,7 @@
 use crate::admin::rbac::{require, AdminAuth, Permission};
 use crate::middleware::AppState;
 use axum::{extract::State, Json};
+#[cfg(unix)]
 use libc;
 use parking_lot::Mutex;
 use std::sync::OnceLock;
