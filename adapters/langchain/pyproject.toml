@@ -30,9 +30,9 @@ rest = ["requests>=2.31"]
 dev = ["pytest>=8", "pytest-asyncio>=0.23"]
 
 [project.urls]
-Homepage = "https://github.com/zuhabul/fetchium"
-Repository = "https://github.com/zuhabul/fetchium"
-Issues = "https://github.com/zuhabul/fetchium/issues"
+Homepage = "https://github.com/zuhabul/Fetchium"
+Repository = "https://github.com/zuhabul/Fetchium"
+Issues = "https://github.com/zuhabul/Fetchium/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["fetchium_langchain"]
