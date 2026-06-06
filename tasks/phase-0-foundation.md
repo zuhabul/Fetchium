@@ -972,9 +972,9 @@ npm/
   "license": "MIT OR Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fetchium/fetchium"
+    "url": "https://github.com/zuhabul/Fetchium"
   },
-  "homepage": "https://github.com/fetchium/fetchium",
+  "homepage": "https://github.com/zuhabul/Fetchium",
   "bin": {
     "fetchium": "bin/fetchium.js",
     "hyper": "bin/hyper.js"
@@ -1200,7 +1200,7 @@ if (!fs.existsSync(binaryPath)) {
   console.error("  cargo install fetchium");
   console.error("");
   console.error("Or download from GitHub Releases:");
-  console.error("  https://github.com/fetchium/fetchium/releases");
+  console.error("  https://github.com/zuhabul/Fetchium/releases");
   process.exit(1);
 }
 
@@ -1249,7 +1249,7 @@ fetchium fetch https://example.com
 fetchium doctor
 ```
 
-See [GitHub](https://github.com/fetchium/fetchium) for full documentation.
+See [GitHub](https://github.com/zuhabul/Fetchium) for full documentation.
 ```
 
 **Step 6: Test the npm package structure locally**

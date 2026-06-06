@@ -2270,7 +2270,7 @@ if (!target) {
 const pkg = require("../package.json");
 const version = pkg.version;
 const ext = process.platform === "win32" ? "zip" : "tar.gz";
-const url = `https://github.com/fetchium/fetchium/releases/download/v${version}/fetchium-${target}.${ext}`;
+const url = `https://github.com/zuhabul/Fetchium/releases/download/v${version}/fetchium-${target}.${ext}`;
 
 const binDir = path.join(__dirname, "..", "bin");
 fs.mkdirSync(binDir, { recursive: true });

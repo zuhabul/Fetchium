@@ -39,35 +39,13 @@ Fetchium is an open-source, Rust-native AI search engine that **finds, fetches, 
 
 ## Installation
 
-### npm (recommended — works everywhere Node is installed)
+### With Cargo (recommended)
+
+Install the latest from the repository (Rust 1.75+):
 
 ```bash
-npm install -g fetchium
+cargo install --git https://github.com/zuhabul/Fetchium fetchium-cli
 fetchium --version
-```
-
-### npx (no install required)
-
-```bash
-npx fetchium search "quantum computing breakthroughs 2025"
-```
-
-### Shell installer (Linux / macOS)
-
-```bash
-curl -sSf https://install.fetchium.com | sh
-```
-
-### cargo-binstall
-
-```bash
-cargo binstall fetchium
-```
-
-### Homebrew
-
-```bash
-brew install zuhabul/tap/fetchium
 ```
 
 ### Build from source
@@ -78,6 +56,19 @@ cd Fetchium
 cargo build -p fetchium-cli --release
 ./target/release/fetchium --version
 ```
+
+### Prebuilt binary (Linux x86-64)
+
+Download from the [latest release](https://github.com/zuhabul/Fetchium/releases/latest):
+
+```bash
+curl -fsSL https://github.com/zuhabul/Fetchium/releases/latest/download/fetchium-linux-x64.tar.gz | tar xz
+sudo mv fetchium /usr/local/bin/
+fetchium --version
+```
+
+> **More install channels coming.** Publishing to crates.io, npm, and Homebrew is wired
+> through the automated release pipeline and will be enabled as those registries are set up.
 
 ---
 

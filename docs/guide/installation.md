@@ -24,7 +24,7 @@ fetchium --version
 
 ## Pre-built Binaries
 
-Download the latest release from [GitHub Releases](https://github.com/fetchium/fetchium/releases).
+Download the latest release from [GitHub Releases](https://github.com/zuhabul/Fetchium/releases).
 
 | Platform | File |
 |----------|------|
@@ -36,7 +36,7 @@ Download the latest release from [GitHub Releases](https://github.com/fetchium/f
 
 ```bash
 # Example: macOS ARM64
-curl -fsSL https://github.com/fetchium/fetchium/releases/latest/download/fetchium-aarch64-apple-darwin.tar.gz | tar xz
+curl -fsSL https://github.com/zuhabul/Fetchium/releases/latest/download/fetchium-aarch64-apple-darwin.tar.gz | tar xz
 sudo mv fetchium /usr/local/bin/
 fetchium --version
 ```
