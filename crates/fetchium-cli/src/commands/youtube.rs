@@ -953,6 +953,12 @@ fn open_in_browser(url: &str) {
     let _ = std::process::Command::new("open").arg(url).spawn();
     #[cfg(target_os = "linux")]
     let _ = std::process::Command::new("xdg-open").arg(url).spawn();
+    #[cfg(target_os = "windows")]
+    let _ = std::process::Command::new("cmd")
+        .args(["/C", "start", "", url])
+        .spawn();
+    #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
+    let _ = url;
 }
 
 fn copy_to_clipboard(text: &str) -> Result<()> {
@@ -1001,8 +1007,24 @@ fn copy_to_clipboard(text: &str) -> Result<()> {
         }
         anyhow::bail!("No clipboard utility found");
     }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    anyhow::bail!("Clipboard not supported on this platform")
+    #[cfg(target_os = "windows")]
+    {
+        use std::io::Write;
+        let mut child = std::process::Command::new("cmd")
+            .args(["/C", "clip"])
+            .stdin(std::process::Stdio::piped())
+            .spawn()?;
+        if let Some(stdin) = child.stdin.as_mut() {
+            stdin.write_all(text.as_bytes())?;
+        }
+        let _ = child.wait();
+        return Ok(());
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
+    {
+        let _ = text;
+        anyhow::bail!("Clipboard not supported on this platform")
+    }
 }
 
 fn print_compact_search_table(result: &fetchium_core::youtube::types::YouTubePipelineResult) {
