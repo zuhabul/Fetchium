@@ -1476,9 +1476,22 @@ async fn auth_gemini_oauth(config: &FetchiumConfig) -> anyhow::Result<()> {
         .arg(verification_url)
         .spawn();
     #[cfg(target_os = "windows")]
-    let _ = std::process::Command::new("cmd")
-        .args(["/C", "start", "", verification_url])
-        .spawn();
+    {
+        // Guard against cmd.exe metacharacter injection before `cmd /C start`.
+        let safe = (verification_url.starts_with("http://")
+            || verification_url.starts_with("https://"))
+            && !verification_url.bytes().any(|b| {
+                matches!(
+                    b,
+                    b'&' | b'|' | b'^' | b'<' | b'>' | b'"' | b'%' | b'\n' | b'\r'
+                )
+            });
+        if safe {
+            let _ = std::process::Command::new("cmd")
+                .args(["/C", "start", "", verification_url])
+                .spawn();
+        }
+    }
     #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
     let _ = verification_url;
 

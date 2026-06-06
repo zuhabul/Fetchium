@@ -954,11 +954,27 @@ fn open_in_browser(url: &str) {
     #[cfg(target_os = "linux")]
     let _ = std::process::Command::new("xdg-open").arg(url).spawn();
     #[cfg(target_os = "windows")]
-    let _ = std::process::Command::new("cmd")
-        .args(["/C", "start", "", url])
-        .spawn();
+    if is_shell_safe_url(url) {
+        let _ = std::process::Command::new("cmd")
+            .args(["/C", "start", "", url])
+            .spawn();
+    }
     #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
     let _ = url;
+}
+
+/// Conservative guard before handing a URL to the Windows shell (`cmd /C start`):
+/// require an http(s) URL and reject any `cmd.exe` metacharacters to prevent
+/// command injection.
+#[cfg(target_os = "windows")]
+fn is_shell_safe_url(url: &str) -> bool {
+    (url.starts_with("http://") || url.starts_with("https://"))
+        && !url.bytes().any(|b| {
+            matches!(
+                b,
+                b'&' | b'|' | b'^' | b'<' | b'>' | b'"' | b'%' | b'\n' | b'\r'
+            )
+        })
 }
 
 fn copy_to_clipboard(text: &str) -> Result<()> {
