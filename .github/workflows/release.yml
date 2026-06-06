@@ -47,9 +47,9 @@ jobs:
             cross: false
 
           - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
+            os: ubuntu-24.04-arm
             artifact: fetchium-linux-arm64
-            cross: true
+            cross: false
 
           - target: x86_64-apple-darwin
             os: macos-14
@@ -81,7 +81,7 @@ jobs:
 
       - name: Install cross (ARM Linux only)
         if: matrix.cross
-        run: cargo install cross --locked
+        run: cargo install cross --git https://github.com/cross-rs/cross
 
       - name: Build release binary
         shell: bash
