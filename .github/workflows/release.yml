@@ -187,7 +187,15 @@ jobs:
           echo "npm package version set to ${VERSION}"
 
       - name: Publish to npm
-        run: cd packages/npm && npm publish --access public
+        shell: bash
+        run: |
+          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
+          VERSION="${TAG#v}"
+          if npm view "fetchium-cli@${VERSION}" version 2>/dev/null | grep -q "${VERSION}"; then
+            echo "fetchium-cli@${VERSION} already on npm — skipping"
+          else
+            cd packages/npm && npm publish --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -254,7 +262,15 @@ jobs:
           key: publish-crates
 
       - name: Publish fetchium-core
-        run: cargo publish -p fetchium-core
+        shell: bash
+        run: |
+          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
+          VERSION="${TAG#v}"
+          if curl -sf -H "User-Agent: fetchium-ci/1.0" "https://crates.io/api/v1/crates/fetchium-core/${VERSION}" >/dev/null 2>&1; then
+            echo "fetchium-core ${VERSION} already on crates.io — skipping"
+          else
+            cargo publish -p fetchium-core
+          fi
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
@@ -262,7 +278,15 @@ jobs:
         run: sleep 60
 
       - name: Publish fetchium-mcp
-        run: cargo publish -p fetchium-mcp
+        shell: bash
+        run: |
+          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
+          VERSION="${TAG#v}"
+          if curl -sf -H "User-Agent: fetchium-ci/1.0" "https://crates.io/api/v1/crates/fetchium-mcp/${VERSION}" >/dev/null 2>&1; then
+            echo "fetchium-mcp ${VERSION} already on crates.io — skipping"
+          else
+            cargo publish -p fetchium-mcp
+          fi
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
@@ -270,7 +294,15 @@ jobs:
         run: sleep 60
 
       - name: Publish fetchium-api
-        run: cargo publish -p fetchium-api
+        shell: bash
+        run: |
+          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
+          VERSION="${TAG#v}"
+          if curl -sf -H "User-Agent: fetchium-ci/1.0" "https://crates.io/api/v1/crates/fetchium-api/${VERSION}" >/dev/null 2>&1; then
+            echo "fetchium-api ${VERSION} already on crates.io — skipping"
+          else
+            cargo publish -p fetchium-api
+          fi
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
@@ -278,7 +310,15 @@ jobs:
         run: sleep 60
 
       - name: Publish fetchium-cli
-        run: cargo publish -p fetchium-cli
+        shell: bash
+        run: |
+          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
+          VERSION="${TAG#v}"
+          if curl -sf -H "User-Agent: fetchium-ci/1.0" "https://crates.io/api/v1/crates/fetchium-cli/${VERSION}" >/dev/null 2>&1; then
+            echo "fetchium-cli ${VERSION} already on crates.io — skipping"
+          else
+            cargo publish -p fetchium-cli
+          fi
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 

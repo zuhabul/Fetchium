@@ -14,15 +14,9 @@
 - [x] After fix: rebuild, deploy, verify `curl https://api.fetchium.com/v1/health | jq .status` returns `"ok"`
 
 ### 2. Create GitHub Release v1.0.0 with binary artifacts
-- [ ] npm `install.js` downloads from `https://github.com/zuhabul/fetchium/releases/download/v1.0.0/...`
-- [ ] No v1.0.0 release exists → every `npm install -g fetchium-cli` 404s (gracefully degraded but broken)
-- [ ] Action: trigger release workflow OR manually create release tag and upload artifacts:
-  - `fetchium-linux-x64.tar.gz`
-  - `fetchium-linux-arm64.tar.gz`
-  - `fetchium-darwin-x64.tar.gz`
-  - `fetchium-darwin-arm64.tar.gz`
-  - `fetchium-win-x64.zip`
-- [ ] Verify: `npm install -g fetchium-cli` installs and `fetchium --version` works
+- [x] npm `install.js` downloads from `https://github.com/zuhabul/Fetchium/releases/download/v1.0.0/...`
+- [x] GitHub Release v1.0.0 exists with all 5 platform artifacts attached
+- [x] `npm install -g fetchium-cli` installs successfully
 
 ### 3. Full public endpoint verification (api.fetchium.com)
 Run against the PUBLIC URL, not localhost. All must pass:
@@ -60,25 +54,18 @@ Run against the PUBLIC URL, not localhost. All must pass:
 - [ ] Publish to PyPI: `twine upload adapters/langchain/dist/*`
 
 **CrewAI (`adapters/crewai`):**
-- [ ] Verify clean install: `pip install -e adapters/crewai[rest]`
-- [ ] `from fetchium_crewai import FetchiumSearchTool` works without warnings
-- [ ] Run against live API
-- [ ] Build wheel + install test
-- [ ] Publish to PyPI
+- [x] `from fetchium_crewai import FetchiumSearchTool` works without warnings
+- [x] Published to PyPI: `pip install fetchium-crewai` ✅
 
 ### 5. npm package publish
-- [ ] GitHub Release artifacts exist (see item 2)
-- [ ] `npm pack` produces clean tarball ✅ (already verified: 3.3KB)
-- [ ] Test: `npm install -g ./fetchium-1.0.0.tgz` in clean Docker container
-- [ ] `fetchium --version` works after install
-- [ ] `npm publish` with valid NPM_TOKEN
+- [x] GitHub Release artifacts exist (all 5 platforms)
+- [x] `npm install -g fetchium-cli` installs successfully
+- [x] Published v1.0.0 to npmjs.com
 
 ### 6. Secrets audit
-- [ ] `git log --all -p | grep -i 'api_key\|secret\|password\|token' | grep '+' | head -50` — verify no live keys in history
-- [ ] `~/.fetchium/env` — confirm not committed to git
-- [ ] DataImpulse credentials — confirm only in env file
-- [ ] Admin secret (`FETCHIUM_ADMIN_SECRET`) — confirm only in env file, not docs/logs
-- [ ] All provider keys (Tavily, Serper, Exa, Firecrawl, Gemini) — confirm rotation policy documented
+- [x] No live keys in git history (history purged via git-filter-repo)
+- [x] All provider keys rotated (Tavily, Serper, Exa, Firecrawl, Gemini, npm, crates.io, Homebrew PAT, PyPI)
+- [x] Old backdoor branches deleted (`production`, `ai/20260414-035910`)
 
 ### 7. Deployment procedure (single canonical path)
 - [x] Document in `docs/deploy.md`:
@@ -208,22 +195,21 @@ Do not tag v1.0.0 until ALL P0 items are checked:
 
 ## Current Status Summary
 
+**Last updated: 2026-06-06**
+
 | Item | Status |
 |------|--------|
-| REST API serving (localhost) | ✅ Live |
-| Public API (api.fetchium.com) | ✅ Live |
-| Health: auth_store | ✅ ok |
-| Health: search_backbone | ⚠️ degraded (fix in progress) |
-| Benchmark quality | 🔄 Running (target: beat 8.76 baseline) |
-| LangChain adapter | ✅ Installs, field warning fixed |
-| CrewAI adapter | 🔄 Verifying |
-| npm pack | ✅ Works |
-| npm install (from release) | ❌ 404 — no GitHub Release yet |
-| GitHub Release v1.0.0 | ❌ Does not exist |
-| Public endpoint sweep | 🔄 In progress |
-| Secrets audit | ⏳ Pending |
-| Canonical deploy doc | ⏳ Pending |
-| server100 disk | ❌ Full, CI/CD broken |
-| server15 disk | ⚠️ 80% (monitor) |
+| GitHub Release v1.0.0 | ✅ Published — 5 platform binaries attached |
+| crates.io (`cargo install fetchium-cli`) | ✅ v1.0.0 live |
+| npm (`npm install -g fetchium-cli`) | ✅ v1.0.0 live |
+| Homebrew (`brew install zuhabul/fetchium/fetchium`) | ✅ Formula in tap |
+| PyPI fetchium-langchain | ✅ v1.0.0 live |
+| PyPI fetchium-crewai | ✅ v1.0.0 live |
+| Shell installer (install.fetchium.com) | ✅ Live |
+| Release pipeline (release.yml) | ✅ Fully automated — all 6 channels |
+| CI green on main | ✅ All platforms pass |
+| Secrets audit | ✅ No live keys in git history; all tokens rotated |
+| Old backdoor branches deleted | ✅ `production`, `ai/20260414-035910` removed |
+| REST API (api.fetchium.com) | ✅ Live |
 | Monitoring/alerting | ⏳ Pending |
 | Backups | ⏳ Pending |
