@@ -16,6 +16,9 @@ Rust-native search, extraction, ranking, and synthesis — delivered as a CLI, a
 [![CI](https://github.com/zuhabul/Fetchium/actions/workflows/ci.yml/badge.svg)](https://github.com/zuhabul/Fetchium/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75%2B-orange.svg?logo=rust)](https://www.rust-lang.org)
+[![Crates.io](https://img.shields.io/crates/v/fetchium-cli.svg)](https://crates.io/crates/fetchium-cli)
+[![npm](https://img.shields.io/npm/v/fetchium-cli.svg)](https://www.npmjs.com/package/fetchium-cli)
+[![Downloads](https://img.shields.io/crates/d/fetchium-cli.svg)](https://crates.io/crates/fetchium-cli)
 
 [Install](#installation) · [Architecture & innovations](#architecture--innovations) · [Quick start](#quick-start) · [For AI agents](#for-ai-agents) · [Docs](docs/)
 
