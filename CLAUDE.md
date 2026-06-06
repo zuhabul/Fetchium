@@ -200,7 +200,7 @@ sh scripts/setup-dev.sh   # installs commit-msg and pre-commit git hooks
 | From source | `cargo build -p fetchium-cli --release` | ✅ Works today |
 | GitHub Releases | `fetchium-linux-x64.tar.gz` (Linux x86-64) | ✅ Available |
 | crates.io | `cargo install fetchium-cli` | ⏳ Pending publish (release pipeline) |
-| npm / npx | TBD — the `fetchium` name is taken; use a scoped name (e.g. `@zuhabul/fetchium`) | ⏳ Not yet published |
+| npm / npx | `npm install -g fetchium-cli` / `npx fetchium --help` | ⏳ Not yet published |
 | Homebrew | `brew install zuhabul/tap/fetchium` | ⏳ Tap not yet created |
 
 > The release pipeline (release-please + `release.yml`) is configured to publish to these channels;
