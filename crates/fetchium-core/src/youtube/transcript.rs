@@ -1148,10 +1148,7 @@ mod tests {
     fn extract_innertube_api_key_basic() {
         let html = r#"<script>var _yt_cfg = {"INNERTUBE_API_KEY":"***REMOVED***"};</script>"#;
         let key = extract_innertube_api_key(html);
-        assert_eq!(
-            key.as_deref(),
-            Some("***REMOVED***")
-        );
+        assert_eq!(key.as_deref(), Some("***REMOVED***"));
     }
 
     #[test]
