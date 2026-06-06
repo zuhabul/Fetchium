@@ -195,6 +195,7 @@ fn read_total_mem_kb() -> Option<u64> {
     None
 }
 
+#[cfg(unix)]
 fn read_disk_usage(path: &str) -> Option<(f64, f64)> {
     use std::ffi::CString;
     let c_path = CString::new(path).ok()?;
@@ -206,6 +207,13 @@ fn read_disk_usage(path: &str) -> Option<(f64, f64)> {
     let total = stat.f_blocks as f64 * stat.f_frsize as f64 / 1e9;
     let free = stat.f_bfree as f64 * stat.f_frsize as f64 / 1e9;
     Some((total - free, total))
+}
+
+#[cfg(not(unix))]
+fn read_disk_usage(_path: &str) -> Option<(f64, f64)> {
+    // `statvfs` is Unix-only and there is no portable std API for disk usage yet.
+    // On non-Unix platforms we report no data; callers fall back to defaults.
+    None
 }
 
 /// GET /internal/admin/system/logs?service=fetchium-api&lines=200

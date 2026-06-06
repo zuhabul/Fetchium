@@ -296,6 +296,8 @@ mod tests {
     fn chrome_binary_in_has_correct_subdir() {
         let root = Path::new("/tmp/chromium");
         let binary = chrome_binary_in(root);
+        // The resolved binary path is always under the extraction root.
+        assert!(binary.starts_with(root));
         // On Linux, path must contain chrome-linux64
         #[cfg(target_os = "linux")]
         assert!(binary.to_string_lossy().contains("chrome-linux64"));

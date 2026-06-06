@@ -165,7 +165,7 @@ impl LatencyPredictor {
             .iter()
             .map(|b| (b.clone(), self.predict(b)))
             .collect();
-        ranked.sort_by(|a, b| a.1.cmp(&b.1));
+        ranked.sort_by_key(|a| a.1);
         ranked.into_iter().map(|(b, _)| b).collect()
     }
 

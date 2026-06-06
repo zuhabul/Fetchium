@@ -568,19 +568,15 @@ fn setup_one(config: &FetchiumConfig, kind: ProviderKind) -> anyhow::Result<()> 
                 false
             }
         }
-        ProviderKind::OpenAi => {
-            if codex_auth_available() {
-                println!(
-                    "  {} OpenAI Codex CLI session detected (ChatGPT subscription).",
-                    "★".yellow().bold()
-                );
-                println!("    No API key needed — Fetchium will use your Codex session.");
-                println!("    To use an API key instead, enter it below.");
-                println!();
-                true
-            } else {
-                false
-            }
+        ProviderKind::OpenAi if codex_auth_available() => {
+            println!(
+                "  {} OpenAI Codex CLI session detected (ChatGPT subscription).",
+                "★".yellow().bold()
+            );
+            println!("    No API key needed — Fetchium will use your Codex session.");
+            println!("    To use an API key instead, enter it below.");
+            println!();
+            true
         }
         _ => false,
     };
