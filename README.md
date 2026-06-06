@@ -162,14 +162,37 @@ Then run `fetchium doctor` to check optional tools.
 ## Quick start
 
 ```bash
-fetchium search "best rust async runtimes"          # federated web search
+# ── Core retrieval ────────────────────────────────────────────────────────────
+fetchium search "best rust async runtimes"           # federated web search (17+ backends)
 fetchium fetch https://example.com                   # fetch + clean extraction (CEP)
-fetchium summarize https://example.com               # summarize a URL or text
-fetchium compare "rust vs go vs python"              # structured comparison
 fetchium research "impact of LLMs on engineering"    # multi-step cited report (AMRS)
-fetchium ai "what causes the northern lights?"       # grounded answer (needs an AI provider)
-fetchium reddit search "mechanical keyboards"        # platform retrieval (reddit/hn/youtube/…)
-fetchium serve                                        # start the REST API
+fetchium compare "rust vs go vs python"              # structured side-by-side comparison
+fetchium summarize https://example.com               # AI summarization of a URL or text
+fetchium ai "what causes the northern lights?"       # grounded answer (needs AI provider)
+fetchium deep "history of Byzantine Empire"          # deep multi-agent research (Mode E)
+
+# ── YouTube intelligence ──────────────────────────────────────────────────────
+fetchium youtube search "rust programming tutorial"  # search YouTube
+fetchium youtube analyze https://youtube.com/watch?v=dQw4w9WgXcQ  # analyze video
+fetchium youtube transcript https://youtube.com/watch?v=dQw4w9WgXcQ  # extract transcript
+fetchium transcribe https://youtube.com/watch?v=dQw4w9WgXcQ  # transcribe any audio/video
+
+# ── Social media intelligence ─────────────────────────────────────────────────
+fetchium social "AI regulation news"                 # unified search across all platforms
+fetchium reddit search "mechanical keyboards"        # Reddit posts + sentiment
+fetchium twitter search "Rust lang"                  # X/Twitter (via Nitter)
+fetchium hackernews search "open source tools"       # Hacker News
+fetchium tiktok search "programming tips"            # TikTok trends
+
+# ── Productivity / monitoring ─────────────────────────────────────────────────
+fetchium monitor https://example.com                 # watch URL for content changes
+fetchium digest "AI weekly"                          # generate a research digest
+fetchium radar                                       # personalized research radar from history
+
+# ── API / server ──────────────────────────────────────────────────────────────
+fetchium serve                                       # start REST API (port 3000)
+fetchium serve --mode mcp                            # start MCP server (stdio)
+fetchium tui                                         # interactive terminal UI
 ```
 
 Full command reference: [docs/guide/commands.md](docs/guide/commands.md).
