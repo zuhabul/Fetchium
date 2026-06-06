@@ -15,14 +15,14 @@
 
 ### 2. Create GitHub Release v1.0.0 with binary artifacts
 - [ ] npm `install.js` downloads from `https://github.com/zuhabul/fetchium/releases/download/v1.0.0/...`
-- [ ] No v1.0.0 release exists → every `npm install -g fetchium` 404s (gracefully degraded but broken)
+- [ ] No v1.0.0 release exists → every `npm install -g fetchium-cli` 404s (gracefully degraded but broken)
 - [ ] Action: trigger release workflow OR manually create release tag and upload artifacts:
   - `fetchium-linux-x64.tar.gz`
   - `fetchium-linux-arm64.tar.gz`
   - `fetchium-darwin-x64.tar.gz`
   - `fetchium-darwin-arm64.tar.gz`
   - `fetchium-win-x64.zip`
-- [ ] Verify: `npm install -g fetchium` installs and `fetchium --version` works
+- [ ] Verify: `npm install -g fetchium-cli` installs and `fetchium --version` works
 
 ### 3. Full public endpoint verification (api.fetchium.com)
 Run against the PUBLIC URL, not localhost. All must pass:
