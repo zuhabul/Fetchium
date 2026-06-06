@@ -91,7 +91,7 @@ Example:
 ```bash
 curl -X POST http://localhost:3000/v1/search \
   -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer fetchium_YOUR_API_KEY' \
+  -H 'Authorization: Bearer <your-api-key>' \
   -d '{"query": "Rust ownership", "max_results": 5}'
 ```
 

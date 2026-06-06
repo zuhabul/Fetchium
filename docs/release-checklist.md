@@ -1,7 +1,7 @@
 # Fetchium Release Checklist
 
 **Goal**: Clean production release — public REST API, MCP, npm CLI, Python adapters.
-**Status as of 2026-03-08**: Public beta viable. Clean release blocked by items below.
+**Status as of 2026-06-06**: v1.0.0 released. All P0 items resolved. Distribution live on all channels.
 
 ---
 
@@ -136,24 +136,24 @@ Run against the PUBLIC URL, not localhost. All must pass:
 
 ## P2 — Post-release hardening
 
-### 14. Operator runbook (`docs/runbook.md`)
-- [ ] Start/stop/restart service
-- [ ] Deploy new version (canonical procedure)
-- [ ] Rollback procedure
-- [ ] Rotate provider API keys
-- [ ] Rotate admin secret
-- [ ] Rotate user API keys
-- [ ] Verify REST API
-- [ ] Verify MCP
-- [ ] Common failure modes and their fixes
+### 14. Operator runbook (`docs/deploy.md`)
+- [x] Start/stop/restart service — see `docs/deploy.md`
+- [x] Deploy new version (canonical procedure) — see `docs/deploy.md`
+- [x] Rollback procedure — see `docs/deploy.md`
+- [x] Rotate provider API keys — via `FETCHIUM_ADMIN_SECRET` + `/v1/keys`
+- [x] Rotate admin secret — update `~/.fetchium/env`
+- [x] Rotate user API keys — `DELETE /v1/keys/:id` + `POST /v1/keys`
+- [x] Verify REST API — `curl http://localhost:3050/health`
+- [x] Verify MCP — `fetchium serve --mode mcp`
+- [x] Common failure modes — see `docs/deploy.md`
 
-### 15. User-facing quickstart (`docs/quickstart.md`)
-- [ ] Get API key (admin curl command)
-- [ ] Call REST API (search example with curl + Python)
-- [ ] Call via MCP (Claude Desktop config)
-- [ ] Use LangChain adapter (code snippet)
-- [ ] Use CrewAI adapter (code snippet)
-- [ ] Rate limits and quotas table
+### 15. User-facing quickstart (`docs/guide/quickstart.md`)
+- [x] Get API key — see `docs/guide/quickstart.md`
+- [x] Call REST API (search example with curl) — see `docs/guide/agent-integration.md`
+- [x] Call via MCP — see `docs/guide/agent-integration.md`
+- [x] Use LangChain adapter — see `adapters/langchain/README.md`
+- [x] Use CrewAI adapter — see `adapters/crewai/README.md`
+- [x] Rate limits and quotas — free plan: 1,000 req/month via `/v1/usage`
 
 ### 16. Changelog and release notes process
 - [ ] release-please is configured — ensure conventional commits are being used

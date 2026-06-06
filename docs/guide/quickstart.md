@@ -19,7 +19,7 @@ cargo build --release -p fetchium-cli
 
 **macOS via Homebrew** (when formula is available):
 ```bash
-brew install fetchium
+brew install zuhabul/fetchium/fetchium
 ```
 
 ## 2. Your First Search

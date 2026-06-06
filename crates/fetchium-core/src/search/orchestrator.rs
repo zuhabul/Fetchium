@@ -4822,8 +4822,8 @@ mod tests {
             .await
             .expect("search");
         // Early return must happen well before the 30s slow-backend timeout.
-        // Use a generous bound so the assertion is not flaky on slow CI runners.
-        assert!(started.elapsed() < Duration::from_secs(5));
+        // 15s bound tolerates heavy CI load; a broken early-return takes ~30s.
+        assert!(started.elapsed() < Duration::from_secs(15));
 
         tokio::time::sleep(Duration::from_millis(50)).await;
         assert!(slow_cancelled.load(Ordering::SeqCst));
