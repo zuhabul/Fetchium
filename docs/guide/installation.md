@@ -1,45 +1,41 @@
 # Installation
 
-Fetchium (`fetchium`) is available via npm, Cargo, or as a pre-built binary.
+Fetchium (`fetchium`) installs via Cargo, from source, or as a prebuilt binary.
+All Cargo/source methods require [Rust 1.75+](https://rustup.rs).
 
-## npm (Recommended)
-
-The easiest way to install on any platform:
+## With Cargo (recommended)
 
 ```bash
-npm install -g fetchium
+cargo install --git https://github.com/zuhabul/Fetchium fetchium-cli
 fetchium --version
 ```
 
-This downloads a pre-built binary for your platform (Linux x64/ARM64, macOS x64/ARM64, Windows x64).
-
-## Cargo
-
-Install from crates.io (requires Rust 1.75+):
+## From source
 
 ```bash
-cargo install fetchium-cli
-fetchium --version
+git clone https://github.com/zuhabul/Fetchium
+cd Fetchium
+cargo build -p fetchium-cli --release
+./target/release/fetchium --version
 ```
 
-## Pre-built Binaries
+## Prebuilt binary (Linux x86-64)
 
-Download the latest release from [GitHub Releases](https://github.com/zuhabul/Fetchium/releases).
+Download the latest from [GitHub Releases](https://github.com/zuhabul/Fetchium/releases/latest):
 
 | Platform | File |
 |----------|------|
-| Linux x64 | `fetchium-x86_64-unknown-linux-gnu.tar.gz` |
-| Linux ARM64 | `fetchium-aarch64-unknown-linux-gnu.tar.gz` |
-| macOS x64 | `fetchium-x86_64-apple-darwin.tar.gz` |
-| macOS ARM64 | `fetchium-aarch64-apple-darwin.tar.gz` |
-| Windows x64 | `fetchium-x86_64-pc-windows-msvc.zip` |
+| Linux x86-64 | `fetchium-linux-x64.tar.gz` |
 
 ```bash
-# Example: macOS ARM64
-curl -fsSL https://github.com/zuhabul/Fetchium/releases/latest/download/fetchium-aarch64-apple-darwin.tar.gz | tar xz
+curl -fsSL https://github.com/zuhabul/Fetchium/releases/latest/download/fetchium-linux-x64.tar.gz | tar xz
 sudo mv fetchium /usr/local/bin/
 fetchium --version
 ```
+
+> Additional prebuilt targets (macOS, Windows, ARM) and registry distribution (crates.io, npm,
+> Homebrew) are produced by the release pipeline and will be published as they are enabled. Until
+> then, use Cargo or build from source on those platforms.
 
 ## Optional Dependencies
 
