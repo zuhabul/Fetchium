@@ -44,9 +44,26 @@ It runs as a single Rust binary with no required runtime dependencies and expose
 - **Agent-native** — MCP + REST + LangChain/CrewAI adapters, not an afterthought.
 - **Resilient** — per-backend circuit breakers and bulkheads keep one slow/broken source from sinking a query.
 
+### How it compares
+
+|  | Naive retrieval (raw HTML → LLM) | **Fetchium** |
+|--|--|--|
+| **Extraction** | dump full HTML, hope the model copes | adaptive 5-layer **CEP** cascade + **QADD** DOM distillation |
+| **Token cost** | pays for nav, ads, scripts, boilerplate | query-aware **QATBE/SCS** packing into a fixed budget |
+| **Ranking** | first result / single relevance score | **HyperFusion** — 8 fused signals (relevance, trust, recency, diversity…) |
+| **Trust** | unattributed text | evidence validation + **source citations** |
+| **Depth control** | all-or-nothing | **PDS** tiers: `key_facts` → `summary` → `detailed` → `complete` |
+| **Research** | one query, one shot | **AMRS** swarm: decompose → search → synthesize → verify |
+| **Reliability** | one bad source breaks the run | circuit breakers + bulkheads + SimHash dedup |
+| **Agent access** | bespoke glue per agent | native **MCP** + REST + LangChain/CrewAI adapters |
+
 ---
 
 ## Architecture & innovations
+
+<div align="center">
+  <img src="docs/assets/architecture.svg" alt="Fetchium architecture: interfaces (CLI, REST, MCP) feeding the fetchium-core engine pipeline — search, CEP extraction, token budgeting, HyperFusion ranking, validation, citation, packaging — with an adaptive layer (AMRS, PIE, RAR, cache, resilience)" width="100%">
+</div>
 
 Fetchium's engine (`fetchium-core`) is a pipeline of purpose-built components. The novel pieces:
 
