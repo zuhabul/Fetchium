@@ -58,7 +58,17 @@ impl ConfidenceCalibrator {
         contradictions: Vec<Contradiction>,
         consensus: Vec<ClaimConsensus>,
     ) -> ValidationResult {
-        let confidence = self.calibrate(&layer_results);
+        let mut confidence = self.calibrate(&layer_results);
+        if layer_results.iter().any(|lr| {
+            lr.issues.iter().any(|issue| {
+                matches!(
+                    issue.code.as_str(),
+                    "V4_INSUFFICIENT_HIGH_STAKES_EVIDENCE" | "V4_LOW_SOURCE_DIVERSITY"
+                )
+            })
+        }) {
+            confidence = confidence.min(0.35);
+        }
         let passed = layer_results.iter().all(|lr| lr.passed);
         ValidationResult {
             layers_run: layer_results.iter().map(|lr| lr.layer).collect(),
@@ -144,5 +154,24 @@ mod tests {
         assert!(result.passed);
         assert!(result.confidence > 0.0);
         assert_eq!(result.mode, ValidationMode::Standard);
+    }
+
+    #[test]
+    fn high_stakes_evidence_failure_caps_confidence() {
+        let cal = ConfidenceCalibrator::default();
+        let lr = LayerResult {
+            layer: ValidationLayerId::V4CrossSource,
+            passed: false,
+            score: 0.6,
+            issues: vec![ValidationIssue {
+                severity: IssueSeverity::Error,
+                code: "V4_INSUFFICIENT_HIGH_STAKES_EVIDENCE".into(),
+                message: "Need more independent sources".into(),
+                source_url: None,
+            }],
+            duration_ms: 1,
+        };
+        let result = cal.build_result(ValidationMode::Standard, vec![lr], vec![], vec![]);
+        assert!(result.confidence <= 0.35);
     }
 }

@@ -290,7 +290,7 @@ pub fn generate_learning_path(videos: &[VideoAnalysis]) -> Vec<LearningStep> {
         .collect();
 
     // Sort by difficulty level
-    steps.sort_by(|a, b| a.difficulty.cmp(&b.difficulty));
+    steps.sort_by_key(|a| a.difficulty);
 
     // Assign order
     for (i, step) in steps.iter_mut().enumerate() {

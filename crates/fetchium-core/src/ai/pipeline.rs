@@ -5,8 +5,8 @@ use crate::ai::provider_client::chat_with_fallback;
 use crate::ai::sandwich::{assemble_context, sandwich_layout};
 use crate::ai::setup::{format_setup_guide, DeviceSpec};
 use crate::ai::types::{AiConfig, AiPreviewResult, ChatMessage, RankedSource};
-use crate::config::HsxConfig;
-use crate::error::HsxError;
+use crate::config::FetchiumConfig;
+use crate::error::FetchiumError;
 use crate::extract::pipeline::extract;
 use crate::http::client::HttpClient;
 use crate::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
@@ -33,14 +33,14 @@ pub async fn run_ai_pipeline(
     streaming: bool,
     fast: bool,
     ai_config: &AiConfig,
-    hsx_config: &HsxConfig,
+    fetchium_config: &FetchiumConfig,
     http_client: &HttpClient,
-) -> Result<AiPreviewResult, HsxError> {
+) -> Result<AiPreviewResult, FetchiumError> {
     let wall_start = Instant::now();
 
     // Step 1: Search
     let search_start = Instant::now();
-    let orch_config = OrchestratorConfig::from_hsx_config(hsx_config, max_sources as u32);
+    let orch_config = OrchestratorConfig::from_fetchium_config(fetchium_config, max_sources as u32);
     let orchestrator = SearchOrchestrator::new(http_client.clone(), orch_config);
     let mut search_results = orchestrator.search(query, Some(max_sources as u32)).await?;
     let quality = crate::rank::quality::assess_quality(&search_results, query);

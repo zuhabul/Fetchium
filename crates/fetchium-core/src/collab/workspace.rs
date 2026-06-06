@@ -1,6 +1,6 @@
 //! Workspace CRUD (PRD §37).
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,7 +21,7 @@ pub enum SyncMethod {
 
 impl Workspace {
     /// Create a new workspace directory at `path`.
-    pub fn create(name: &str, path: &std::path::Path) -> Result<Self, HsxError> {
+    pub fn create(name: &str, path: &std::path::Path) -> Result<Self, FetchiumError> {
         let ws = Self {
             id: uuid::Uuid::new_v4().to_string(),
             name: name.to_string(),
@@ -41,13 +41,13 @@ impl Workspace {
     }
 
     /// Load a workspace from a directory.
-    pub fn load(path: &std::path::Path) -> Result<Self, HsxError> {
+    pub fn load(path: &std::path::Path) -> Result<Self, FetchiumError> {
         let content = std::fs::read_to_string(path.join("workspace.json"))?;
         Ok(serde_json::from_str(&content)?)
     }
 
     /// List all workspaces in `base_dir`.
-    pub fn list(base_dir: &std::path::Path) -> Result<Vec<Self>, HsxError> {
+    pub fn list(base_dir: &std::path::Path) -> Result<Vec<Self>, FetchiumError> {
         if !base_dir.exists() {
             return Ok(vec![]);
         }

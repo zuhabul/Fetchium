@@ -1,14 +1,17 @@
 //! Workspace filesystem sync (PRD §37).
 
 use crate::collab::workspace::SyncMethod;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use std::path::Path;
 
 /// Sync a workspace to its configured destination.
 ///
 /// For `Local` sync: copies changed files to the shared directory.
 /// For `Git` sync: calls `git add -A && git commit && git push`.
-pub fn sync_workspace(workspace_path: &Path, method: &SyncMethod) -> Result<SyncReport, HsxError> {
+pub fn sync_workspace(
+    workspace_path: &Path,
+    method: &SyncMethod,
+) -> Result<SyncReport, FetchiumError> {
     match method {
         SyncMethod::Local { shared_dir } => sync_local(workspace_path, shared_dir),
         SyncMethod::Git { remote_url } => sync_git(workspace_path, remote_url),
@@ -22,7 +25,7 @@ pub struct SyncReport {
     pub message: String,
 }
 
-fn sync_local(src: &Path, dst: &Path) -> Result<SyncReport, HsxError> {
+fn sync_local(src: &Path, dst: &Path) -> Result<SyncReport, FetchiumError> {
     std::fs::create_dir_all(dst)?;
     let count = copy_changed(src, dst)?;
     Ok(SyncReport {
@@ -32,7 +35,7 @@ fn sync_local(src: &Path, dst: &Path) -> Result<SyncReport, HsxError> {
     })
 }
 
-fn sync_git(workspace_path: &Path, remote_url: &str) -> Result<SyncReport, HsxError> {
+fn sync_git(workspace_path: &Path, remote_url: &str) -> Result<SyncReport, FetchiumError> {
     let git_dir = workspace_path.join(".git");
     if !git_dir.exists() {
         run_git(workspace_path, &["init"])?;
@@ -56,18 +59,21 @@ fn sync_git(workspace_path: &Path, remote_url: &str) -> Result<SyncReport, HsxEr
     })
 }
 
-fn run_git(dir: &Path, args: &[&str]) -> Result<(), HsxError> {
+fn run_git(dir: &Path, args: &[&str]) -> Result<(), FetchiumError> {
     let status = std::process::Command::new("git")
         .args(args)
         .current_dir(dir)
         .status()?;
     if !status.success() {
-        return Err(HsxError::Config(format!("git {} failed", args.join(" "))));
+        return Err(FetchiumError::Config(format!(
+            "git {} failed",
+            args.join(" ")
+        )));
     }
     Ok(())
 }
 
-fn copy_changed(src: &Path, dst: &Path) -> Result<usize, HsxError> {
+fn copy_changed(src: &Path, dst: &Path) -> Result<usize, FetchiumError> {
     let mut count = 0;
     for entry in std::fs::read_dir(src)? {
         let entry = entry?;

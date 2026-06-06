@@ -115,6 +115,18 @@ fn intent_affinity(intent: &QueryIntent, backend: &BackendId) -> f64 {
             BackendId::Reddit => 0.40,
             _ => 0.30,
         },
+        QueryIntent::HowTo => match backend {
+            BackendId::StackOverflow => 0.95,
+            BackendId::Github => 0.80,
+            BackendId::DuckDuckGo => 0.80,
+            BackendId::Google => 0.75,
+            BackendId::Brave => 0.70,
+            BackendId::Bing => 0.65,
+            BackendId::Wikipedia => 0.15,
+            BackendId::Arxiv => 0.10,
+            BackendId::Reddit => 0.35,
+            _ => 0.40,
+        },
         QueryIntent::CurrentEvents => match backend {
             BackendId::HackerNews => 0.90,
             BackendId::Reddit => 0.85,
@@ -129,11 +141,15 @@ fn intent_affinity(intent: &QueryIntent, backend: &BackendId) -> f64 {
             _ => 0.30,
         },
         QueryIntent::Comparison => match backend {
-            BackendId::Wikipedia => 0.80,
-            BackendId::DuckDuckGo => 0.75,
-            BackendId::Google => 0.70,
-            BackendId::Reddit => 0.65,
-            BackendId::StackOverflow => 0.60,
+            BackendId::DuckDuckGo => 0.85,
+            BackendId::Google => 0.80,
+            BackendId::Brave => 0.75,
+            BackendId::Bing => 0.70,
+            BackendId::StackOverflow => 0.68,
+            BackendId::Wikipedia => 0.60,
+            BackendId::Reddit => 0.20,
+            BackendId::HackerNews => 0.20,
+            BackendId::Arxiv => 0.05,
             _ => 0.40,
         },
         QueryIntent::Factual => match backend {
@@ -175,6 +191,20 @@ fn intent_affinity(intent: &QueryIntent, backend: &BackendId) -> f64 {
             BackendId::Arxiv => 0.15,
             _ => 0.50,
         },
+        QueryIntent::Casual => match backend {
+            BackendId::DuckDuckGo => 0.85,
+            BackendId::Google => 0.85,
+            BackendId::Brave => 0.80,
+            BackendId::Bing => 0.75,
+            BackendId::Reddit => 0.70,
+            BackendId::Wikipedia => 0.30,
+            BackendId::HackerNews => 0.20,
+            BackendId::StackOverflow => 0.10,
+            BackendId::Github => 0.05,
+            BackendId::Arxiv => 0.05,
+            BackendId::GoogleScholar => 0.05,
+            _ => 0.40,
+        },
         _ => match backend {
             BackendId::DuckDuckGo => 0.70,
             BackendId::Google => 0.70,
@@ -197,11 +227,34 @@ fn intent_backend_allowed(intent: &QueryIntent, backend: &BackendId) -> bool {
             backend,
             BackendId::StackOverflow | BackendId::Github | BackendId::Arxiv
         ),
-        QueryIntent::Factual | QueryIntent::Informational | QueryIntent::Verification => {
+        QueryIntent::Factual | QueryIntent::Informational => {
+            // ArXiv returns papers for ANY search term — flooding non-academic queries
+            // with irrelevant results. Only allow ArXiv for Academic/Verification intents.
+            !matches!(
+                backend,
+                BackendId::StackOverflow | BackendId::Github | BackendId::Arxiv
+            )
+        }
+        QueryIntent::Verification => {
             !matches!(backend, BackendId::StackOverflow | BackendId::Github)
         }
+        QueryIntent::HowTo => !matches!(backend, BackendId::Arxiv | BackendId::GoogleScholar),
+        QueryIntent::Comparison => !matches!(
+            backend,
+            BackendId::Arxiv | BackendId::GoogleScholar | BackendId::Reddit | BackendId::HackerNews
+        ),
         QueryIntent::Academic | QueryIntent::Data => !matches!(backend, BackendId::Reddit),
         QueryIntent::Opinion => !matches!(backend, BackendId::Arxiv),
+        QueryIntent::Casual => {
+            // Casual queries should never hit specialist backends
+            !matches!(
+                backend,
+                BackendId::StackOverflow
+                    | BackendId::Github
+                    | BackendId::Arxiv
+                    | BackendId::GoogleScholar
+            )
+        }
         _ => true,
     }
 }
@@ -289,6 +342,7 @@ impl AdaptiveBackendSelector {
             let reliable: &[BackendId] = match intent {
                 QueryIntent::CurrentEvents => &[BackendId::DuckDuckGo, BackendId::HackerNews],
                 QueryIntent::Code => &[BackendId::StackOverflow, BackendId::DuckDuckGo],
+                QueryIntent::HowTo => &[BackendId::StackOverflow, BackendId::DuckDuckGo],
                 QueryIntent::Academic | QueryIntent::Data => {
                     &[BackendId::Arxiv, BackendId::Wikipedia]
                 }

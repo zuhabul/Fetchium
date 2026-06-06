@@ -2,7 +2,7 @@
 ## "The only API that searches, extracts, ranks, and reasons — all in one request"
 
 > **Positioning**: Fetchium is to Firecrawl what a Formula 1 car is to a bicycle.
-> Firecrawl scrapes one URL. Fetchium searches 11+ sources simultaneously, extracts
+> Firecrawl scrapes one URL. Fetchium searches 17+ sources simultaneously, extracts
 > with 5-layer CEP, ranks with 8-signal HyperFusion, learns across sessions, monitors
 > changes over time, and returns structured AI-native results with citations and evidence graphs.
 
@@ -25,7 +25,7 @@
 ### Fetchium Differentiators (what we have RIGHT NOW)
 | Feature | Fetchium | Firecrawl | Advantage |
 |---------|-------------|-----------|-----------|
-| **Multi-engine search** | 11+ backends federated | 0 (scrape-only) | **100x more data** |
+| **Multi-engine search** | 17 backends federated | 0 (scrape-only) | **100x more data** |
 | **5-layer CEP extraction** | CSS→readability→headless→PDF→OCR | 1 mode | **5x reliability** |
 | **HyperFusion ranking** | 8-signal (BM25+semantic+temporal+authority+evidence+diversity+depth+consensus) | None | **AI-native ranking** |
 | **QATBE token budget** | BM25-scored segment extraction | Raw markdown dump | **10x more efficient** |
@@ -59,7 +59,7 @@
 - **OmniSearch** (omnidirectional search)
 - **SearchForge** (industrial-grade)
 
-**Recommendation**: Keep **Fetchium** — it's distinctive and the `hsx` CLI is already shipped.
+**Recommendation**: Keep **Fetchium** — it's distinctive and the `fetchium` CLI is already shipped.
 Public API brand: `api.fetchium.com`
 
 ### Core Value Propositions
@@ -75,7 +75,7 @@ Public API brand: `api.fetchium.com`
 | **Enterprise AI teams** | Data privacy, compliance | Self-hosted + privacy modes | $1k-10k/month |
 | **Research platforms** | Deep multi-source research | AMRS agent swarm | $200-2k/month |
 | **SaaS builders** | Web data in their apps | SDK + dashboard | $50-500/month |
-| **Competitive intel** | Monitor competitor pages | `hsx monitor` | $100-500/month |
+| **Competitive intel** | Monitor competitor pages | `fetchium monitor` | $100-500/month |
 
 ---
 
@@ -92,10 +92,10 @@ Fetchium/                          # Root monorepo
 ├── turbo.json                         # Turborepo build pipeline (NEW)
 │
 ├── crates/                            # Rust crates (existing, KEEP)
-│   ├── hsx-core/                      # Core engine (existing)
-│   ├── hsx-api/                       # REST API server via axum (EXPAND)
-│   ├── hsx-cli/                       # CLI binary (existing)
-│   └── hsx-mcp/                       # MCP server (existing)
+│   ├── fetchium-core/                      # Core engine (existing)
+│   ├── fetchium-api/                       # REST API server via axum (EXPAND)
+│   ├── fetchium-cli/                       # CLI binary (existing)
+│   └── fetchium-mcp/                       # MCP server (existing)
 │
 ├── apps/                              # Web applications (NEW)
 │   ├── web/                           # Landing page + marketing
@@ -211,7 +211,7 @@ DELETE /v1/keys/:id       # Revoke key
 ---
 
 ### PHASE A: API PRODUCTION-READY (Weeks 1-3)
-**Goal**: Make hsx-api expose the core engine as a production REST API with auth
+**Goal**: Make fetchium-api expose the core engine as a production REST API with auth
 
 #### A1: Auth & API Key System
 - [ ] PostgreSQL schema: `users`, `api_keys`, `usage_logs`
@@ -240,7 +240,7 @@ DELETE /v1/keys/:id       # Revoke key
 
 #### A4: Database
 - [ ] Add PostgreSQL to Docker Compose
-- [ ] Add `sqlx` to hsx-api Cargo.toml
+- [ ] Add `sqlx` to fetchium-api Cargo.toml
 - [ ] Migration system (`sqlx migrate`)
 - [ ] Connection pool (max 20 connections)
 
@@ -326,13 +326,13 @@ DELETE /v1/keys/:id       # Revoke key
 // Usage example
 import { Fetchium } from '@fetchium/sdk'
 
-const hsx = new Fetchium({ apiKey: 'hsx_...' })
+const fetchium = new Fetchium({ apiKey: 'hsx_...' })
 
 // Simple search
-const results = await hsx.search('rust async programming')
+const results = await fetchium.search('rust async programming')
 
 // Powerful search with all features
-const results = await hsx.search({
+const results = await fetchium.search({
   query: 'rust async programming',
   backends: ['auto'],
   maxResults: 10,
@@ -342,16 +342,16 @@ const results = await hsx.search({
 })
 
 // Scrape single URL
-const page = await hsx.scrape('https://example.com')
+const page = await fetchium.scrape('https://example.com')
 
 // Research mode (multi-agent)
-const report = await hsx.research({
+const report = await fetchium.research({
   query: 'climate change solutions 2025',
   depth: 'deep'  // quick | standard | deep
 })
 
 // Monitor page for changes
-const monitor = await hsx.monitor('https://example.com/pricing')
+const monitor = await fetchium.monitor('https://example.com/pricing')
 ```
 
 #### D1: SDK Tasks
@@ -370,14 +370,14 @@ const monitor = await hsx.monitor('https://example.com/pricing')
 ```python
 from fetchium import Fetchium
 
-hsx = Fetchium(api_key="hsx_...")
+fetchium = Fetchium(api_key="hsx_...")
 
 # Sync
-results = hsx.search("rust async programming")
+results = fetchium.search("rust async programming")
 
 # Async
-async with Fetchium(api_key="hsx_...") as hsx:
-    results = await hsx.search("rust async programming")
+async with Fetchium(api_key="hsx_...") as fetchium:
+    results = await fetchium.search("rust async programming")
 ```
 
 #### E1: SDK Tasks
@@ -410,8 +410,8 @@ async with Fetchium(api_key="hsx_...") as hsx:
 ```yaml
 # infra/docker-compose.prod.yml
 services:
-  hsx-api:       # Rust axum API (port 8000)
-  hsx-worker:    # Background job processor
+  fetchium-api:       # Rust axum API (port 8000)
+  fetchium-worker:    # Background job processor
   postgres:      # User data, API keys, usage logs
   redis:         # Cache, rate limiting, job queue
   searxng:       # Self-hosted search (port 4040)
@@ -536,8 +536,8 @@ services:
 
 ### This Week (Foundation)
 - [x] Self-hosted SearXNG deployed (localhost:4040) — DONE
-- [ ] hsx-api: add PostgreSQL + sqlx + auth middleware
-- [ ] hsx-api: implement /v1/search, /v1/scrape, /v1/health endpoints
+- [ ] fetchium-api: add PostgreSQL + sqlx + auth middleware
+- [ ] fetchium-api: implement /v1/search, /v1/scrape, /v1/health endpoints
 - [ ] Create `apps/web` Next.js project
 - [ ] Create `apps/dashboard` Next.js project
 - [ ] Add `pnpm-workspace.yaml` and `turbo.json`
@@ -601,21 +601,21 @@ services:
 | **Search backends** | 18 (9 HTTP + 9 headless) |
 | **AI providers** | 7 (Anthropic, OpenAI, Gemini, Ollama, OpenRouter, GeminiCli, Antigravity) |
 | **Clippy warnings** | 2 (minor unused imports) |
-| **hsx-api status** | Scaffolding only — needs routes/auth/DB |
-| **hsx-mcp status** | Scaffolding only — needs tool definitions |
+| **fetchium-api status** | Scaffolding only — needs routes/auth/DB |
+| **fetchium-mcp status** | Scaffolding only — needs tool definitions |
 
 ### What's 100% done
 - All 17 novel algorithms (HyperFusion, QATBE, CEP, SCS, SRP, RAR, EGP, AMRS, PDS, QADD, PIE, ToTR, CRP, EDF, SGT, CCE, ACS)
 - All 20 novel systems (circuit breaker, bulkhead, SPRE, QFD, ABS, RQE, TDR, RCE, QXE, SSE, STP, RDO, QCE, LP, EGB, ATB, CLQB, AXE, resilience, telemetry)
 - 26 CLI commands
-- Search across 11+ backends (SearXNG self-hosted is now primary)
+- Search across 17 backends (SearXNG self-hosted is now primary)
 - Extraction pipeline (5-layer CEP)
 - AI synthesis with 7 providers + fallback chains
 - YouTube intelligence + Social intelligence
 - Privacy, cache, plugin, collab systems
 
 ### What needs building for commercial launch
-- **hsx-api**: Auth + PostgreSQL + routes + rate limiting (2 weeks)
+- **fetchium-api**: Auth + PostgreSQL + routes + rate limiting (2 weeks)
 - **apps/web**: Landing page (1 week)
 - **apps/dashboard**: User dashboard + Stripe (2 weeks)
 - **packages/sdk-js**: TypeScript SDK (3 days)
@@ -626,14 +626,14 @@ services:
 
 ## 10. TECHNICAL DEBT TO RESOLVE BEFORE LAUNCH
 
-### hsx-api (currently stub)
+### fetchium-api (currently stub)
 - [ ] Implement actual HTTP server routes (axum handlers exist as stubs)
 - [ ] Add database layer (sqlx + PostgreSQL)
 - [ ] Add authentication middleware
 - [ ] Add rate limiting (Redis)
 - [ ] Add OpenAPI spec generation (utoipa)
 
-### hsx-core
+### fetchium-core
 - [ ] Expand token budget (QATBE) to work with API context
 - [ ] Stabilize PIE SQLite path for production
 - [ ] Test full CEP pipeline under load
@@ -651,7 +651,7 @@ services:
 
 | Metric | Fetchium | Firecrawl | Tavily | Exa |
 |--------|-------------|-----------|--------|-----|
-| Search backends | 11+ | 0 | 1 (proprietary) | 1 (semantic) |
+| Search backends | 17+ | 0 | 1 (proprietary) | 1 (semantic) |
 | Extraction layers | 5 (CEP) | 1 | 1 | 1 |
 | Ranking algorithm | HyperFusion (8 signals) | None | Built-in | Semantic only |
 | Cross-session learning | PIE (SQLite) | None | None | None |

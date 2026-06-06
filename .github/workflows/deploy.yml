@@ -1,0 +1,42 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [production]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-production:
+    name: Deploy production stack
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/production'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate deploy secrets
+        run: |
+          test -n "${{ secrets.FETCHIUM_DEPLOY_HOST }}"
+          test -n "${{ secrets.FETCHIUM_DEPLOY_USER }}"
+          test -n "${{ secrets.FETCHIUM_DEPLOY_SSH_KEY }}"
+
+      - name: Install SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.FETCHIUM_DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.FETCHIUM_DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Sync repository to target host
+        run: |
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude 'target' \
+            ./ "${{ secrets.FETCHIUM_DEPLOY_USER }}@${{ secrets.FETCHIUM_DEPLOY_HOST }}:${{ secrets.FETCHIUM_DEPLOY_PATH }}"
+
+      - name: Deploy stack
+        run: |
+          ssh "${{ secrets.FETCHIUM_DEPLOY_USER }}@${{ secrets.FETCHIUM_DEPLOY_HOST }}" \
+            "cd '${{ secrets.FETCHIUM_DEPLOY_PATH }}' && chmod +x scripts/deploy.sh && ./scripts/deploy.sh"

@@ -11,7 +11,7 @@
 //! **Tier 3 – Nitter RSS** (unreliable; many instances now require whitelist)
 //!   - Skipped when body contains whitelist-error strings
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::client::HttpClient;
 use crate::social::twitter::types::*;
 use std::time::Duration;
@@ -29,7 +29,7 @@ pub async fn search_tweets(
     max: usize,
     config: &TwitterPipelineConfig,
     http: &HttpClient,
-) -> HsxResult<Vec<Tweet>> {
+) -> FetchiumResult<Vec<Tweet>> {
     // ── Tier 0: Local SearXNG (fastest, most reliable when available) ───
     if let Some(ref searxng_url) = config.searxng_url {
         let tweets = search_via_searxng(query, max, searxng_url, http, config.timeout_secs).await;
@@ -442,7 +442,7 @@ fn truncate_text_safe(s: &str, max: usize) -> String {
 ///
 /// xcancel.com is indexed by search engines and returns real tweet content.
 /// Falls back to broader x.com/twitter.com search if nitter returns nothing.
-async fn search_via_ddg(query: &str, max: usize, http: &HttpClient) -> HsxResult<Vec<Tweet>> {
+async fn search_via_ddg(query: &str, max: usize, http: &HttpClient) -> FetchiumResult<Vec<Tweet>> {
     // Try xcancel.com (nitter mirror) first — best indexed nitter instance
     let ddg_query = format!("site:xcancel.com {query}");
     let form: &[(&str, &str)] = &[("q", &ddg_query), ("b", ""), ("kl", "en-us")];
@@ -459,15 +459,15 @@ async fn search_via_ddg(query: &str, max: usize, http: &HttpClient) -> HsxResult
             .await
     })
     .await
-    .map_err(|_| HsxError::OperationTimeout {
+    .map_err(|_| FetchiumError::OperationTimeout {
         operation: "ddg_twitter_search".into(),
         timeout_ms: 12_000,
         suggestion: "Try again or check network".into(),
     })?
-    .map_err(HsxError::Network)?;
+    .map_err(FetchiumError::Network)?;
 
     let status = resp_result.status().as_u16();
-    let body: String = resp_result.text().await.map_err(HsxError::Network)?;
+    let body: String = resp_result.text().await.map_err(FetchiumError::Network)?;
 
     if status >= 400 || body.len() < 200 {
         return Ok(Vec::new());
@@ -674,7 +674,7 @@ async fn search_nitter_rss(
 pub async fn fetch_trends(
     config: &TwitterPipelineConfig,
     http: &HttpClient,
-) -> HsxResult<Vec<TwitterTrend>> {
+) -> FetchiumResult<Vec<TwitterTrend>> {
     for instance in &config.nitter_instances {
         // Try /about and / for trending sidebar
         for path in &["/", "/about"] {

@@ -5,17 +5,17 @@ use predicates::prelude::*;
 
 #[test]
 fn cli_version_prints_version_string() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .arg("--version")
         .assert()
         .success()
-        .stdout(predicate::str::contains("hsx"));
+        .stdout(predicate::str::contains("fetchium"));
 }
 
 #[test]
 fn cli_help_shows_main_commands() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .arg("--help")
         .assert()
@@ -27,7 +27,7 @@ fn cli_help_shows_main_commands() {
 
 #[test]
 fn cli_no_args_shows_error_or_help() {
-    let output = Command::cargo_bin("hsx").unwrap().output().unwrap();
+    let output = Command::cargo_bin("fetchium").unwrap().output().unwrap();
     // Should either fail with a helpful message, or succeed with usage info
     let combined = format!(
         "{}{}",
@@ -35,7 +35,7 @@ fn cli_no_args_shows_error_or_help() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert!(
-        combined.contains("Usage") || combined.contains("USAGE") || combined.contains("hsx")
+        combined.contains("Usage") || combined.contains("USAGE") || combined.contains("fetchium")
             || combined.contains("search"),
         "No-args invocation should show usage or help"
     );
@@ -43,7 +43,7 @@ fn cli_no_args_shows_error_or_help() {
 
 #[test]
 fn cli_doctor_runs_without_crash() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .arg("doctor")
         .assert()
@@ -52,7 +52,7 @@ fn cli_doctor_runs_without_crash() {
 
 #[test]
 fn cli_unknown_subcommand_shows_error() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .arg("this-command-does-not-exist")
         .assert()
@@ -66,7 +66,7 @@ fn cli_unknown_subcommand_shows_error() {
 
 #[test]
 fn cli_fetch_invalid_url_shows_error() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .args(["fetch", "not-a-valid-url"])
         .assert()
@@ -80,7 +80,7 @@ fn cli_fetch_invalid_url_shows_error() {
 
 #[test]
 fn cli_search_help_shows_flags() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .args(["search", "--help"])
         .assert()

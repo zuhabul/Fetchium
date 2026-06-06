@@ -2,14 +2,14 @@
 
 use crate::cli::DeepArgs;
 use console::style;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::research::amrs::{AmrsConfig, Coordinator};
 use fetchium_core::resource;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::Duration;
 
-pub async fn run(args: DeepArgs, config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(args: DeepArgs, config: &FetchiumConfig) -> anyhow::Result<()> {
     let http_client = HttpClient::new(config)?;
 
     // Set up progress spinner

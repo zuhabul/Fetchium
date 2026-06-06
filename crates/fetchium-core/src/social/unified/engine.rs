@@ -2,8 +2,8 @@
 //!
 //! Runs all platform pipelines in parallel and fuses results.
 
-use crate::config::HsxConfig;
-use crate::error::HsxResult;
+use crate::config::FetchiumConfig;
+use crate::error::FetchiumResult;
 use crate::http::client::HttpClient;
 use crate::social::{
     facebook::{pipeline as fb_pipeline, types::FacebookPipelineConfig},
@@ -20,12 +20,12 @@ use std::time::Instant;
 
 /// Unified social research pipeline runner.
 pub struct SocialPipelineRunner<'a> {
-    pub config: &'a HsxConfig,
+    pub config: &'a FetchiumConfig,
     pub http: &'a HttpClient,
 }
 
 impl<'a> SocialPipelineRunner<'a> {
-    pub fn new(config: &'a HsxConfig, http: &'a HttpClient) -> Self {
+    pub fn new(config: &'a FetchiumConfig, http: &'a HttpClient) -> Self {
         Self { config, http }
     }
 
@@ -33,7 +33,7 @@ impl<'a> SocialPipelineRunner<'a> {
     pub async fn run(
         &self,
         pipeline_config: &SocialPipelineConfig,
-    ) -> HsxResult<SocialResearchResult> {
+    ) -> FetchiumResult<SocialResearchResult> {
         run_social_pipeline(pipeline_config, self.config, self.http).await
     }
 }
@@ -43,9 +43,9 @@ impl<'a> SocialPipelineRunner<'a> {
 /// All platform fetches run in parallel via `tokio::join!`.
 pub async fn run_social_pipeline(
     cfg: &SocialPipelineConfig,
-    hsx_cfg: &HsxConfig,
+    fetchium_cfg: &FetchiumConfig,
     http: &HttpClient,
-) -> HsxResult<SocialResearchResult> {
+) -> FetchiumResult<SocialResearchResult> {
     let started = Instant::now();
     let query = &cfg.query;
     let max = cfg.max_posts_per_platform;
@@ -65,10 +65,10 @@ pub async fn run_social_pipeline(
                     query: query.clone(),
                     max_tweets: max,
                     fetch_trends: cfg.include_trends,
-                    searxng_url: hsx_cfg.search.searxng_url.clone(),
+                    searxng_url: fetchium_cfg.search.searxng_url.clone(),
                     ..Default::default()
                 };
-                Some(twitter_pipeline::run_twitter_pipeline(&cfg_tw, hsx_cfg, http).await)
+                Some(twitter_pipeline::run_twitter_pipeline(&cfg_tw, fetchium_cfg, http).await)
             } else {
                 None
             }
@@ -80,7 +80,7 @@ pub async fn run_social_pipeline(
                     max_posts: max,
                     ..Default::default()
                 };
-                Some(reddit_pipeline::run_reddit_pipeline(&cfg_rd, hsx_cfg, http).await)
+                Some(reddit_pipeline::run_reddit_pipeline(&cfg_rd, fetchium_cfg, http).await)
             } else {
                 None
             }
@@ -93,7 +93,7 @@ pub async fn run_social_pipeline(
                     fetch_trends: cfg.include_trends,
                     ..Default::default()
                 };
-                Some(tiktok_pipeline::run_tiktok_pipeline(&cfg_tt, hsx_cfg, http).await)
+                Some(tiktok_pipeline::run_tiktok_pipeline(&cfg_tt, fetchium_cfg, http).await)
             } else {
                 None
             }
@@ -115,7 +115,7 @@ pub async fn run_social_pipeline(
                     fact_check: false,
                     ..Default::default()
                 };
-                Some(yt_pipeline::run_youtube_pipeline(&cfg_yt, hsx_cfg, http).await)
+                Some(yt_pipeline::run_youtube_pipeline(&cfg_yt, fetchium_cfg, http).await)
             } else {
                 None
             }
@@ -127,7 +127,7 @@ pub async fn run_social_pipeline(
                     max_results: max,
                     graph_api_token: None,
                     timeout_secs: cfg.timeout_secs,
-                    searxng_url: hsx_cfg.search.searxng_url.clone(),
+                    searxng_url: fetchium_cfg.search.searxng_url.clone(),
                 };
                 Some(fb_pipeline::run_facebook_pipeline(&cfg_fb, http).await)
             } else {

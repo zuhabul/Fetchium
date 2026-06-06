@@ -7,7 +7,7 @@
 use rusqlite::Connection;
 use std::sync::Mutex;
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use crate::intelligence::enable_wal;
 
 pub struct FailurePatternMemory {
@@ -15,7 +15,7 @@ pub struct FailurePatternMemory {
 }
 
 impl FailurePatternMemory {
-    pub fn new(db_path: &std::path::Path) -> Result<Self, HsxError> {
+    pub fn new(db_path: &std::path::Path) -> Result<Self, FetchiumError> {
         let conn = Connection::open(db_path)?;
         enable_wal(&conn)?;
         conn.execute_batch(
@@ -48,7 +48,7 @@ impl FailurePatternMemory {
         success: bool,
         error: Option<&str>,
         duration_ms: u64,
-    ) -> Result<(), HsxError> {
+    ) -> Result<(), FetchiumError> {
         let conn = self.conn.lock().unwrap();
         if success {
             conn.execute(
@@ -76,7 +76,7 @@ impl FailurePatternMemory {
     ///
     /// Returns `(recommended_layer, confidence)`.
     /// Default if no history: layer 2, confidence 0.5.
-    pub fn recommend_layer(&self, domain: &str) -> Result<(u8, f64), HsxError> {
+    pub fn recommend_layer(&self, domain: &str) -> Result<(u8, f64), FetchiumError> {
         let conn = self.conn.lock().unwrap();
 
         let mut stmt = conn.prepare(
@@ -110,7 +110,7 @@ impl FailurePatternMemory {
     }
 
     /// Total number of distinct failure patterns recorded.
-    pub fn pattern_count(&self) -> Result<u64, HsxError> {
+    pub fn pattern_count(&self) -> Result<u64, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let n: i64 = conn.query_row("SELECT COUNT(*) FROM extraction_failures", [], |row| {
             row.get(0)
@@ -119,7 +119,7 @@ impl FailurePatternMemory {
     }
 
     /// Reset all failure/success patterns.
-    pub fn reset(&self) -> Result<(), HsxError> {
+    pub fn reset(&self) -> Result<(), FetchiumError> {
         let conn = self.conn.lock().unwrap();
         conn.execute_batch(
             "DELETE FROM extraction_successes;

@@ -15,7 +15,7 @@
 //! Facebook aggressively blocks scrapers: CAPTCHA, bot-detection, and
 //! login walls. DDG + Open Graph is the most reliable free approach.
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::client::HttpClient;
 use crate::social::facebook::types::*;
 use serde_json::Value;
@@ -27,7 +27,7 @@ pub async fn search_posts(
     query: &str,
     config: &FacebookPipelineConfig,
     http: &HttpClient,
-) -> HsxResult<(Vec<FacebookPost>, Vec<FacebookPage>, FacebookDataSource)> {
+) -> FetchiumResult<(Vec<FacebookPost>, Vec<FacebookPage>, FacebookDataSource)> {
     // Try Graph API first if token is available
     if let Some(ref token) = config.graph_api_token {
         if let Ok(result) =
@@ -104,7 +104,7 @@ async fn search_graph_api(
     token: &str,
     http: &HttpClient,
     timeout_secs: u64,
-) -> HsxResult<(Vec<FacebookPost>, Vec<FacebookPage>)> {
+) -> FetchiumResult<(Vec<FacebookPost>, Vec<FacebookPage>)> {
     let encoded: String = url::form_urlencoded::byte_serialize(query.as_bytes()).collect();
     let url = format!(
         "https://graph.facebook.com/v20.0/search?q={encoded}&type=page&fields=id,name,fan_count,about,category,link&limit={max}&access_token={token}"
@@ -112,11 +112,11 @@ async fn search_graph_api(
 
     let body = tokio::time::timeout(Duration::from_secs(timeout_secs), http.fetch_text(&url))
         .await
-        .map_err(|_| HsxError::Internal("Graph API timeout".into()))?
-        .map_err(|e| HsxError::Search(e.to_string()))?;
+        .map_err(|_| FetchiumError::Internal("Graph API timeout".into()))?
+        .map_err(|e| FetchiumError::Search(e.to_string()))?;
 
     let v: Value = serde_json::from_str(&body)
-        .map_err(|e| HsxError::Internal(format!("Graph API JSON: {e}")))?;
+        .map_err(|e| FetchiumError::Internal(format!("Graph API JSON: {e}")))?;
 
     let items = match v["data"].as_array() {
         Some(a) => a,
@@ -533,7 +533,7 @@ fn extract_page_url(url: &str) -> String {
 pub async fn fetch_trends(
     config: &FacebookPipelineConfig,
     http: &HttpClient,
-) -> HsxResult<Vec<FacebookTrend>> {
+) -> FetchiumResult<Vec<FacebookTrend>> {
     // Search for "trending" on Facebook via DDG
     let url = "https://html.duckduckgo.com/html/?q=site%3Afacebook.com+trending";
     let body = match tokio::time::timeout(

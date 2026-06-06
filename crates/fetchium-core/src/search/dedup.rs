@@ -134,6 +134,35 @@ pub fn normalize_url(url: &str) -> String {
             // Strip fragment
             parsed.set_fragment(None);
 
+            // ArXiv version normalization: /abs/2301.12345v3 → /abs/2301.12345
+            // Ensures different versions of the same paper are deduped as one URL.
+            if parsed.host_str().unwrap_or("").ends_with("arxiv.org") {
+                let path = parsed.path().to_owned();
+                // Match /abs/NNNN.NNNNvN or /pdf/NNNN.NNNNvN.pdf patterns
+                let normalized_path = {
+                    // Strip trailing version like v1, v2, v12
+                    let p = if let Some(stripped) = path.strip_suffix(".pdf") {
+                        stripped
+                    } else {
+                        &path
+                    };
+                    // Remove vN suffix from the paper ID
+                    if let Some(v_pos) = p.rfind('v') {
+                        let after_v = &p[v_pos + 1..];
+                        if !after_v.is_empty() && after_v.chars().all(|c| c.is_ascii_digit()) {
+                            p[..v_pos].to_owned()
+                        } else {
+                            p.to_owned()
+                        }
+                    } else {
+                        p.to_owned()
+                    }
+                };
+                // Also normalize /pdf/ → /abs/ so PDF and abstract links dedup
+                let normalized_path = normalized_path.replace("/pdf/", "/abs/");
+                parsed.set_path(&normalized_path);
+            }
+
             // Filter out tracking query parameters
             let filtered: Vec<(String, String)> = parsed
                 .query_pairs()

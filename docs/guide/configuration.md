@@ -46,7 +46,7 @@ max_page_size = 5242880
 max_redirects = 5
 
 # User agent string
-user_agent = "Fetchium/0.1 (https://github.com/fetchium/fetchium)"
+user_agent = "Fetchium/0.1 (https://github.com/zuhabul/Fetchium)"
 
 [ai]
 # Ollama server address (default: http://localhost:11434)

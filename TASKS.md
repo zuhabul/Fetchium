@@ -144,7 +144,7 @@ Phase 8 (Production) ← parallel with ALL phases
 
 ## Critical Path (MVP)
 
-The minimum path to a **working product** (`hsx search` + `hsx fetch` for agents):
+The minimum path to a **working product** (`fetchium search` + `fetchium fetch` for agents):
 
 ```
 P0-E1-T1 (workspace) → P0-E1-T2 (types) → P0-E1-T3 (config) → P0-E3-T1 (CLI) →
@@ -229,7 +229,7 @@ fetchium/
 │   ├── ci.yml
 │   └── release.yml
 ├── crates/
-│   ├── hsx-core/                 # Core library (all algorithms, search, extract, rank, etc.)
+│   ├── fetchium-core/                 # Core library (all algorithms, search, extract, rank, etc.)
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs
@@ -254,7 +254,7 @@ fetchium/
 │   │       ├── privacy/          # Privacy modes (§36)
 │   │       ├── collab/           # Collaborative research (§37)
 │   │       └── domain/           # Domain-specific modes (§38)
-│   ├── hsx-cli/                  # CLI binary
+│   ├── fetchium-cli/                  # CLI binary
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── main.rs
@@ -262,13 +262,13 @@ fetchium/
 │   │       ├── commands/         # One file per command
 │   │       ├── output.rs         # Terminal formatting
 │   │       └── tui/              # Interactive TUI (ratatui)
-│   ├── hsx-mcp/                  # MCP server (§30)
+│   ├── fetchium-mcp/                  # MCP server (§30)
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs
 │   │       ├── tools.rs
 │   │       └── handlers.rs
-│   └── hsx-api/                  # REST API server (§9)
+│   └── fetchium-api/                  # REST API server (§9)
 │       ├── Cargo.toml
 │       └── src/
 │           ├── lib.rs

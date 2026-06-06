@@ -1,9 +1,9 @@
 //! `fetchium cache` — cache management.
 
 use crate::cli::{CacheAction, CacheArgs};
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 
-pub async fn run(args: CacheArgs, config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(args: CacheArgs, config: &FetchiumConfig) -> anyhow::Result<()> {
     match args.action {
         CacheAction::Stats => {
             println!("Cache statistics:");

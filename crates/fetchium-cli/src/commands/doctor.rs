@@ -6,10 +6,10 @@ use fetchium_core::ai::setup::{
     format_setup_guide, recommend_models, DeviceSpec, RecommendCategory,
 };
 use fetchium_core::ai::{check_provider, AiConfig, ProviderStatus};
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use sysinfo::System;
 
-pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(config: &FetchiumConfig) -> anyhow::Result<()> {
     println!("{}", "Fetchium Doctor".bold().cyan());
     println!("{}", "=".repeat(50));
     println!();
@@ -41,7 +41,7 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
     );
 
     // ---- Resource Tier ----
-    let tier = HsxConfig::detect_resource_tier();
+    let tier = FetchiumConfig::detect_resource_tier();
     let tier_detail = match tier {
         fetchium_core::types::ResourceTier::Minimal => "Minimal (< 4 GB RAM)",
         fetchium_core::types::ResourceTier::Standard => "Standard (4-16 GB RAM)",
@@ -70,7 +70,7 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
         ),
     );
 
-    let config_path = HsxConfig::config_file_path();
+    let config_path = FetchiumConfig::config_file_path();
     let config_exists = config_path.exists();
     check(
         "Config file",
@@ -162,7 +162,7 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
     // ---- AI Providers ----
     println!("{}", "AI Providers".bold());
 
-    let ai_config = AiConfig::from_hsx_config(config);
+    let ai_config = AiConfig::from_fetchium_config(config);
     let providers_cfg = &config.ai.providers;
     let chain = providers_cfg.resolved_chain();
 

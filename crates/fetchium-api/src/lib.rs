@@ -7,18 +7,21 @@
 //! | Method | Path              | Auth            | Description                    |
 //! |--------|-------------------|-----------------|--------------------------------|
 //! | GET    | /health           | public          | Health check                   |
-//! | POST   | /v1/search        | Bearer hsx_xxx  | Multi-backend web search       |
-//! | POST   | /v1/scrape        | Bearer hsx_xxx  | URL fetch + content extraction |
-//! | POST   | /v1/research      | Bearer hsx_xxx  | Full research pipeline         |
-//! | GET    | /v1/usage         | Bearer hsx_xxx  | Usage statistics               |
+//! | POST   | /v1/search        | Bearer fetchium_xxx | Multi-backend web search   |
+//! | POST   | /v1/scrape        | Bearer fetchium_xxx | URL fetch + extraction     |
+//! | POST   | /v1/research      | Bearer fetchium_xxx | Full research pipeline     |
+//! | GET    | /v1/usage         | Bearer fetchium_xxx | Usage statistics           |
 //! | POST   | /v1/keys          | X-Admin-Secret  | Create API key (admin)         |
 //! | GET    | /v1/keys          | X-Admin-Secret  | List API keys (admin)          |
 //! | DELETE | /v1/keys/:id      | X-Admin-Secret  | Revoke API key (admin)         |
 
+pub mod admin;
 pub mod auth;
 pub mod handlers;
 pub mod handlers_auth;
+pub mod handlers_proxy;
 pub mod middleware;
+pub mod route_registry;
 pub mod routes;
 pub mod types;
 
@@ -35,7 +38,7 @@ use tower_http::cors::{AllowHeaders, AllowMethods, AllowOrigin, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::timeout::TimeoutLayer;
-use tower_http::trace::TraceLayer;
+use tower_http::trace::{DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 
 /// Configuration for the REST API server.
 #[derive(Debug, Clone)]
@@ -62,8 +65,10 @@ impl Default for ApiServerConfig {
                 "https://api.fetchium.com".into(),
                 "https://app.ogroshor.com".into(),
                 "https://admin.ogroshor.com".into(),
+                "https://admin.fetchium.com".into(),
                 "http://localhost:3200".into(),
                 "http://localhost:3100".into(),
+                "http://localhost:3300".into(),
             ],
         }
     }
@@ -78,10 +83,16 @@ impl Default for ApiServerConfig {
 /// - Request ID: `X-Request-Id` injected on every response
 pub async fn start_api_server(
     server_config: ApiServerConfig,
-    hsx_config: fetchium_core::config::HsxConfig,
+    fetchium_config: fetchium_core::config::FetchiumConfig,
 ) -> anyhow::Result<()> {
     let auth_db = AuthDb::open(&server_config.data_dir.join("auth.db"))?;
-    let app_state = AppState::new(hsx_config, auth_db)?;
+    let admin_db = admin::db::AdminDb::open(&server_config.data_dir.join("admin.db"))
+        .map(Some)
+        .unwrap_or_else(|e| {
+            tracing::warn!("admin.db failed to open (admin panel disabled): {e}");
+            None
+        });
+    let app_state = AppState::new(fetchium_config, auth_db, admin_db)?;
 
     // ── CORS: restrict to known dashboard origins ─────────────────────────────
     let allowed: Vec<HeaderValue> = server_config
@@ -119,7 +130,12 @@ pub async fn start_api_server(
         .layer(RequestBodyLimitLayer::new(1024 * 1024))
         // Kill requests that take longer than 60 s
         .layer(TimeoutLayer::new(Duration::from_secs(60)))
-        .layer(TraceLayer::new_for_http());
+        .layer(
+            TraceLayer::new_for_http()
+                .on_request(DefaultOnRequest::new().level(tracing::Level::INFO))
+                .on_response(DefaultOnResponse::new().level(tracing::Level::INFO))
+                .on_failure(DefaultOnFailure::new().level(tracing::Level::ERROR)),
+        );
 
     let addr = format!("{}:{}", server_config.host, server_config.port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;

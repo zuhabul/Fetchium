@@ -17,8 +17,8 @@ pub mod synthesize_agent;
 pub mod verify_agent;
 
 use crate::citation::evidence_graph::{EvidenceGraph, EvidenceGraphBuilder};
-use crate::config::HsxConfig;
-use crate::error::HsxError;
+use crate::config::FetchiumConfig;
+use crate::error::FetchiumError;
 use crate::http::client::HttpClient;
 use crate::types::ResourceTier;
 use std::time::Duration;
@@ -105,15 +105,19 @@ pub struct DeepResearchResult {
 pub struct Coordinator {
     config: AmrsConfig,
     http_client: HttpClient,
-    hsx_config: HsxConfig,
+    fetchium_config: FetchiumConfig,
 }
 
 impl Coordinator {
-    pub fn new(config: AmrsConfig, http_client: HttpClient, hsx_config: HsxConfig) -> Self {
+    pub fn new(
+        config: AmrsConfig,
+        http_client: HttpClient,
+        fetchium_config: FetchiumConfig,
+    ) -> Self {
         Self {
             config,
             http_client,
-            hsx_config,
+            fetchium_config,
         }
     }
 
@@ -126,11 +130,11 @@ impl Coordinator {
     /// 4. VerifyAgent cross-validates sources and finds contradictions
     /// 5. SynthesizeAgent builds the final report + evidence graph
     /// 6. Optional: enhance report with AI synthesis
-    pub async fn run(&mut self, query: &str) -> Result<DeepResearchResult, HsxError> {
+    pub async fn run(&mut self, query: &str) -> Result<DeepResearchResult, FetchiumError> {
         let global_timeout = Duration::from_secs(self.config.timeout_secs);
         match tokio::time::timeout(global_timeout, self.run_inner(query)).await {
             Ok(result) => result,
-            Err(_) => Err(HsxError::OperationTimeout {
+            Err(_) => Err(FetchiumError::OperationTimeout {
                 operation: "deep research".into(),
                 timeout_ms: self.config.timeout_secs * 1000,
                 suggestion: format!(
@@ -142,7 +146,7 @@ impl Coordinator {
     }
 
     /// Inner implementation wrapped by the global timeout.
-    async fn run_inner(&mut self, query: &str) -> Result<DeepResearchResult, HsxError> {
+    async fn run_inner(&mut self, query: &str) -> Result<DeepResearchResult, FetchiumError> {
         let phase_timeout = Duration::from_secs(self.config.timeout_secs / 2);
         let mut audit: Vec<AuditEntry> = Vec::new();
         let decomposition = decompose_query(query, self.config.max_depth);
@@ -168,7 +172,7 @@ impl Coordinator {
         for node in &search_nodes {
             let (agent_tx, agent_rx) = mpsc::channel::<AgentMessage>(self.config.channel_buffer);
             let coordinator_tx = coord_tx.clone();
-            let agent = SearchAgent::new(self.http_client.clone(), self.hsx_config.clone());
+            let agent = SearchAgent::new(self.http_client.clone(), self.fetchium_config.clone());
 
             agent_tx
                 .send(AgentMessage::SpawnSearch {
@@ -176,7 +180,7 @@ impl Coordinator {
                     depth: node.depth,
                 })
                 .await
-                .map_err(|e| HsxError::Internal(e.to_string()))?;
+                .map_err(|e| FetchiumError::Internal(e.to_string()))?;
             agent_tx.send(AgentMessage::Shutdown).await.ok();
 
             tokio::spawn(async move {
@@ -238,7 +242,7 @@ impl Coordinator {
                 query: query.to_string(),
             })
             .await
-            .map_err(|e| HsxError::Internal(e.to_string()))?;
+            .map_err(|e| FetchiumError::Internal(e.to_string()))?;
         agent_tx2.send(AgentMessage::Shutdown).await.ok();
 
         let extract_agent = ExtractAgent::new(self.http_client.clone());
@@ -282,7 +286,7 @@ impl Coordinator {
                 query: query.to_string(),
             })
             .await
-            .map_err(|e| HsxError::Internal(e.to_string()))?;
+            .map_err(|e| FetchiumError::Internal(e.to_string()))?;
         agent_tx3.send(AgentMessage::Shutdown).await.ok();
 
         let verify_agent = VerifyAgent::new();
@@ -339,7 +343,7 @@ impl Coordinator {
                 query: query.to_string(),
             })
             .await
-            .map_err(|e| HsxError::Internal(e.to_string()))?;
+            .map_err(|e| FetchiumError::Internal(e.to_string()))?;
         agent_tx4.send(AgentMessage::Shutdown).await.ok();
 
         let synth_agent = SynthesizeAgent::new();
@@ -420,7 +424,7 @@ impl Coordinator {
             return String::new();
         }
 
-        let ai_config = AiConfig::from_hsx_config(&self.hsx_config);
+        let ai_config = AiConfig::from_fetchium_config(&self.fetchium_config);
         if ai_config.providers.fallback_chain.is_empty() && ai_config.default_model.is_none() {
             return String::new();
         }

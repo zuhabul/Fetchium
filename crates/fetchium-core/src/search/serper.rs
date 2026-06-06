@@ -4,21 +4,14 @@
 //! Also queries Scholar and News endpoints for diverse source types.
 //! API key required: set `SERPER_API_KEY` env var or `search.serper_api_key` in config.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::http::HttpClient;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
+use chrono::Datelike;
+use serde::Deserialize;
 use tracing::debug;
-
-#[derive(Debug, Serialize)]
-struct SerperRequest<'a> {
-    q: &'a str,
-    num: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    tbs: Option<&'a str>,
-}
 
 #[derive(Debug, Deserialize)]
 struct SerperSearchResponse {
@@ -72,165 +65,158 @@ struct SerperNews {
     source: Option<String>,
 }
 
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 /// Serper search backend — queries Google Search, Scholar, and News in parallel.
 pub struct SerperBackend {
     http: HttpClient,
-    api_key: String,
+    api_keys: Vec<String>,
+    current_key_index: AtomicUsize,
 }
 
 impl SerperBackend {
-    pub fn new(http: HttpClient, api_key: String) -> Self {
-        Self { http, api_key }
+    pub fn new(http: HttpClient, api_keys: Vec<String>) -> Self {
+        Self {
+            http,
+            api_keys,
+            current_key_index: AtomicUsize::new(0),
+        }
     }
 
-    async fn search_organic(
+    fn get_key(&self) -> &str {
+        if self.api_keys.is_empty() {
+            return "";
+        }
+        let idx = self.current_key_index.load(Ordering::Relaxed) % self.api_keys.len();
+        &self.api_keys[idx]
+    }
+
+    fn rotate_key(&self) {
+        if !self.api_keys.is_empty() {
+            self.current_key_index.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    async fn search_with_rotation(
         &self,
+        endpoint: &str,
         query: &str,
-        max_results: u32,
+        num: u32,
         tbs: Option<&str>,
     ) -> Vec<ResultItem> {
-        let request = SerperRequest {
-            q: query,
-            num: max_results.min(10),
-            tbs,
-        };
-        let body = match serde_json::to_string(&request) {
-            Ok(b) => b,
-            Err(_) => return vec![],
-        };
+        let num_keys = self.api_keys.len().max(1);
 
-        let response = self
-            .http
-            .post_json_with_header(
-                "https://google.serper.dev/search",
-                &body,
-                "X-API-KEY",
-                &self.api_key,
-            )
-            .await;
+        for _ in 0..num_keys {
+            let api_key = self.get_key();
+            let is_scholar = endpoint.contains("/scholar");
+            let _is_news = endpoint.contains("/news");
 
-        match response {
-            Ok(text) => {
-                let parsed: SerperSearchResponse = match serde_json::from_str(&text) {
-                    Ok(p) => p,
-                    Err(_) => return vec![],
-                };
+            let mut body_json = serde_json::json!({
+                "q": query,
+                "num": num,
+            });
 
-                parsed
-                    .organic
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, r)| ResultItem {
-                        title: r.title,
-                        url: r.link,
-                        snippet: r.snippet,
-                        rank: r.position.unwrap_or((i + 1) as u32),
-                        backend: BackendId::Serper,
-                        score: None,
-                        published_date: r.date,
-                    })
-                    .collect()
+            if let Some(tbs_val) = tbs {
+                if !is_scholar {
+                    body_json["tbs"] = serde_json::Value::String(tbs_val.to_string());
+                } else if tbs_val.starts_with("qdr:y") {
+                    // Scholar uses as_ylo for year filtering
+                    let current_year = chrono::Utc::now().year();
+                    body_json["as_ylo"] = serde_json::Value::String((current_year - 1).to_string());
+                }
             }
-            Err(_) => vec![],
-        }
-    }
 
-    async fn search_scholar(&self, query: &str) -> Vec<ResultItem> {
-        let request = SerperRequest {
-            q: query,
-            num: 5,
-            tbs: None,
-        };
-        let body = match serde_json::to_string(&request) {
-            Ok(b) => b,
-            Err(_) => return vec![],
-        };
+            let body = body_json.to_string();
 
-        let response = self
-            .http
-            .post_json_with_header(
-                "https://google.serper.dev/scholar",
-                &body,
-                "X-API-KEY",
-                &self.api_key,
-            )
-            .await;
+            let response = self
+                .http
+                .post_json_with_header(endpoint, &body, "X-API-KEY", api_key)
+                .await;
 
-        match response {
-            Ok(text) => {
-                let parsed: SerperScholarResponse = match serde_json::from_str(&text) {
-                    Ok(p) => p,
-                    Err(_) => return vec![],
-                };
-
-                parsed
-                    .organic
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, r)| ResultItem {
-                        title: r.title,
-                        url: r.link,
-                        snippet: r.snippet,
-                        rank: (i + 1) as u32,
-                        backend: BackendId::Serper,
-                        score: None,
-                        published_date: r.year.map(|y| format!("{y}-01-01")),
-                    })
-                    .collect()
+            match response {
+                Ok(text) => {
+                    if endpoint.contains("/scholar") {
+                        let parsed: SerperScholarResponse = match serde_json::from_str(&text) {
+                            Ok(p) => p,
+                            Err(_) => return vec![],
+                        };
+                        return parsed
+                            .organic
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, r)| ResultItem {
+                                title: r.title,
+                                url: r.link,
+                                snippet: r.snippet,
+                                rank: (i + 1) as u32,
+                                backend: BackendId::Serper,
+                                score: None,
+                                published_date: r.year.map(|y| format!("{y}-01-01")),
+                            })
+                            .collect();
+                    } else if endpoint.contains("/news") {
+                        let parsed: SerperNewsResponse = match serde_json::from_str(&text) {
+                            Ok(p) => p,
+                            Err(_) => return vec![],
+                        };
+                        return parsed
+                            .news
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, r)| ResultItem {
+                                title: r.title,
+                                url: r.link,
+                                snippet: if let Some(ref src) = r.source {
+                                    format!("[{}] {}", src, r.snippet)
+                                } else {
+                                    r.snippet
+                                },
+                                rank: (i + 1) as u32,
+                                backend: BackendId::Serper,
+                                score: None,
+                                published_date: r.date,
+                            })
+                            .collect();
+                    } else {
+                        let parsed: SerperSearchResponse = match serde_json::from_str(&text) {
+                            Ok(p) => p,
+                            Err(_) => return vec![],
+                        };
+                        return parsed
+                            .organic
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, r)| ResultItem {
+                                title: r.title,
+                                url: r.link,
+                                snippet: r.snippet,
+                                rank: r.position.unwrap_or((i + 1) as u32),
+                                backend: BackendId::Serper,
+                                score: None,
+                                published_date: r.date,
+                            })
+                            .collect();
+                    }
+                }
+                Err(e) => {
+                    if let crate::error::FetchiumError::Structured(ref se) = e {
+                        if se.message.contains("400")
+                            || se.message.contains("credits")
+                            || se.message.contains("429")
+                        {
+                            tracing::warn!(
+                                "Serper key exhausted or limited, rotating... Error: {}",
+                                se.message
+                            );
+                            self.rotate_key();
+                            continue;
+                        }
+                    }
+                    return vec![];
+                }
             }
-            Err(_) => vec![],
         }
-    }
-
-    async fn search_news(&self, query: &str) -> Vec<ResultItem> {
-        let request = SerperRequest {
-            q: query,
-            num: 5,
-            tbs: None,
-        };
-        let body = match serde_json::to_string(&request) {
-            Ok(b) => b,
-            Err(_) => return vec![],
-        };
-
-        let response = self
-            .http
-            .post_json_with_header(
-                "https://google.serper.dev/news",
-                &body,
-                "X-API-KEY",
-                &self.api_key,
-            )
-            .await;
-
-        match response {
-            Ok(text) => {
-                let parsed: SerperNewsResponse = match serde_json::from_str(&text) {
-                    Ok(p) => p,
-                    Err(_) => return vec![],
-                };
-
-                parsed
-                    .news
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, r)| ResultItem {
-                        title: r.title,
-                        url: r.link,
-                        snippet: if let Some(ref src) = r.source {
-                            format!("[{}] {}", src, r.snippet)
-                        } else {
-                            r.snippet
-                        },
-                        rank: (i + 1) as u32,
-                        backend: BackendId::Serper,
-                        score: None,
-                        published_date: r.date,
-                    })
-                    .collect()
-            }
-            Err(_) => vec![],
-        }
+        vec![]
     }
 }
 
@@ -252,11 +238,11 @@ impl SearchBackend for SerperBackend {
         BackendId::Serper
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         let (organic, scholar, news) = tokio::join!(
-            self.search_organic(query, max_results, None),
-            self.search_scholar(query),
-            self.search_news(query),
+            self.search_with_rotation("https://google.serper.dev/search", query, max_results, None),
+            self.search_with_rotation("https://google.serper.dev/scholar", query, 5, None),
+            self.search_with_rotation("https://google.serper.dev/news", query, 5, None),
         );
 
         let mut results = organic;
@@ -276,12 +262,12 @@ impl SearchBackend for SerperBackend {
         query: &str,
         max_results: u32,
         ctx: &SearchContext,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let tbs = Self::time_range_to_tbs(ctx.time_range);
         let (organic, scholar, news) = tokio::join!(
-            self.search_organic(query, max_results, tbs),
-            self.search_scholar(query),
-            self.search_news(query),
+            self.search_with_rotation("https://google.serper.dev/search", query, max_results, tbs),
+            self.search_with_rotation("https://google.serper.dev/scholar", query, 5, None),
+            self.search_with_rotation("https://google.serper.dev/news", query, 5, None),
         );
 
         let mut results = organic;

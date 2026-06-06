@@ -80,7 +80,7 @@ No existing tool — Tavily, Exa, Perplexity, Firecrawl, Crawl4AI, Jina, SearXNG
 | 8 | **Adaptive Multi-Agent Research Swarm (AMRS)** | Dynamic sub-agent spawning: Search Agent + Extract Agent + Verify Agent + Synthesize Agent | No tool uses multi-agent collaboration for research |
 | 9 | **Progressive Detail Streaming (PDS)** | Multi-tier output: 200-token summary → 1K compressed → 5K detailed → full — without re-fetching | You get everything or nothing everywhere else |
 | 10 | **Query-Aware DOM Distillation (QADD)** | Reduce DOM to only query-relevant nodes BEFORE extraction, combining D2Snap + BM25 | All extractors process the entire DOM regardless of query |
-| 11 | **Persistent Intelligence Engine (PIE)** | Cross-session knowledge graph that learns source trust, failure patterns, query predictions, and concept mappings over time | Every tool treats every query as isolated — zero learning |
+| 17 | **Persistent Intelligence Engine (PIE)** | Cross-session knowledge graph that learns source trust, failure patterns, query predictions, and concept mappings over time | Every tool treats every query as isolated — zero learning |
 | 12 | **Tree-of-Thoughts Research (ToTR)** | Parallel reasoning paths with branch pruning, cross-path synthesis, and self-debate for complex research questions | No tool explores multiple reasoning strategies simultaneously |
 | 13 | **Contradiction Resolution Protocol (CRP)** | When sources disagree, automatically investigate: check dates, authority, context, spawn investigation agent, return weighted synthesis | Tools flag contradictions at best — none resolve them |
 | 14 | **Evidence Decay Function (EDF)** | Claims have domain-calibrated half-lives — AI news decays in days, math decays in years — auto-flag stale evidence | No tool models temporal reliability of information |
@@ -108,27 +108,27 @@ No existing tool — Tavily, Exa, Perplexity, Firecrawl, Crawl4AI, Jina, SearXNG
 
 ```bash
 # For humans
-hsx search "query"                    # Blazing fast search
-hsx research "query"                  # Structured research report
-hsx deep "query"                      # Agentic deep research
-hsx ai "query"                        # AI synthesis with local model
-hsx fetch <url>                       # Extract any webpage
-hsx view <url>                        # Clean readable view
+fetchium search "query"                    # Blazing fast search
+fetchium research "query"                  # Structured research report
+fetchium deep "query"                      # Agentic deep research
+fetchium ai "query"                        # AI synthesis with local model
+fetchium fetch <url>                       # Extract any webpage
+fetchium view <url>                        # Clean readable view
 
 # For AI agents
-hsx agent-search "query" --budget 2000 --schema schema.json
-hsx agent-fetch <url> --query "what I need" --budget 1500 --tier compressed
-hsx agent-research "query" --budget 4000 --framework langchain
-hsx serve --mcp                       # Start as MCP server
-hsx serve --api                       # Start as REST API
+fetchium agent-search "query" --budget 2000 --schema schema.json
+fetchium agent-fetch <url> --query "what I need" --budget 1500 --tier compressed
+fetchium agent-research "query" --budget 4000 --framework langchain
+fetchium serve --mcp                       # Start as MCP server
+fetchium serve --api                       # Start as REST API
 
 # Both
-hsx compare "A vs B"                  # Comparison research
-hsx monitor <url>                     # Change detection
-hsx export <url> --format md,json     # Multi-format export
+fetchium compare "A vs B"                  # Comparison research
+fetchium monitor <url>                     # Change detection
+fetchium export <url> --format md,json     # Multi-format export
 ```
 
-Works with: `npm` | `pnpm` | `bun` — Aliases: `hsx` | `hyper`
+Works with: `npm` | `pnpm` | `bun` — Aliases: `fetchium` | `hyper`
 
 ---
 
@@ -433,10 +433,10 @@ Stage 4: BUDGET (Token Packing)
 **API**:
 ```bash
 # CLI
-hsx agent-fetch https://example.com --query "pricing plans" --budget 1500
+fetchium agent-fetch https://example.com --query "pricing plans" --budget 1500
 
 # Programmatic
-const result = await hsx.fetch({
+const result = await fetchium.fetch({
   url: 'https://example.com',
   query: 'pricing plans',
   tokenBudget: 1500,
@@ -588,7 +588,7 @@ Output (streaming):
 **For agents**: SRP provides a streaming API where the agent receives chunks in order of confidence, allowing it to stop consuming when it has sufficient context:
 
 ```typescript
-const stream = hsx.researchStream({
+const stream = fetchium.researchStream({
   query: "...",
   onChunk: (chunk) => {
     // chunk.confidence > threshold? stop consuming
@@ -680,7 +680,7 @@ interface EvidenceEdge {
 **Verification**: Any claim can be traced back to its source, with the exact supporting quote, and the content hash proves the source contained that quote at fetch time.
 
 ```bash
-hsx deep "query" --evidence-graph
+fetchium deep "query" --evidence-graph
 # Outputs: research report + evidence_graph.json with full provenance
 ```
 
@@ -742,15 +742,15 @@ All 4 tiers are cached. Agent requests any tier instantly:
 
 ```bash
 # CLI
-hsx agent-search "query" --tier key_facts     # 200 tokens
-hsx agent-search "query" --tier summary       # 1,000 tokens
-hsx agent-search "query" --tier detailed      # 5,000 tokens
-hsx agent-search "query" --tier complete      # everything
+fetchium agent-search "query" --tier key_facts     # 200 tokens
+fetchium agent-search "query" --tier summary       # 1,000 tokens
+fetchium agent-search "query" --tier detailed      # 5,000 tokens
+fetchium agent-search "query" --tier complete      # everything
 
 # API
-const facts = await hsx.search({ query: "...", tier: "key_facts" });
+const facts = await fetchium.search({ query: "...", tier: "key_facts" });
 // Not enough? Get more detail without re-searching:
-const detailed = await hsx.expandTier(facts.resultId, "detailed");
+const detailed = await fetchium.expandTier(facts.resultId, "detailed");
 ```
 
 ---
@@ -1090,22 +1090,22 @@ Fetchium is **agent-first**: every API, output format, and pipeline stage is des
 ### 1. CLI Mode (for humans)
 
 ```bash
-hsx search "query"          # Human-readable output
-hsx research "query"        # Markdown report
+fetchium search "query"          # Human-readable output
+fetchium research "query"        # Markdown report
 ```
 
 ### 2. Agent CLI Mode (for scripts/agents)
 
 ```bash
-hsx agent-search "query" --budget 2000 --format json --tier summary
-hsx agent-fetch <url> --query "context" --budget 1500 --format segments
-hsx agent-research "query" --budget 4000 --schema output.json --strict-evidence
+fetchium agent-search "query" --budget 2000 --format json --tier summary
+fetchium agent-fetch <url> --query "context" --budget 1500 --format segments
+fetchium agent-research "query" --budget 4000 --schema output.json --strict-evidence
 ```
 
 ### 3. REST API Mode (for any language)
 
 ```bash
-hsx serve --api --port 3000
+fetchium serve --api --port 3000
 ```
 
 ```http
@@ -1122,7 +1122,7 @@ POST /api/search
 ### 4. MCP Server Mode (for Claude, Claude Code, any MCP client)
 
 ```bash
-hsx serve --mcp
+fetchium serve --mcp
 ```
 
 Exposes composite MCP tools (see §30).
@@ -1157,7 +1157,7 @@ const searchTool = new FetchiumTool({ tier: 'detailed' });
 Agents can estimate token cost before committing to a fetch:
 
 ```bash
-hsx agent-fetch <url> --estimate
+fetchium agent-fetch <url> --estimate
 # Output: { "estimated_tokens": 12340, "estimated_relevant_tokens": 1850, "extraction_layer": 1 }
 ```
 
@@ -1165,19 +1165,19 @@ hsx agent-fetch <url> --estimate
 
 ## 10. Modes of Operation
 
-### Mode A: Search Mode (`hsx search`) — Blazing Fast
+### Mode A: Search Mode (`fetchium search`) — Blazing Fast
 
 **Purpose**: Instant, high-precision results. <1s cached, <3s uncached.
 
 ```bash
-hsx search "best rust web framework 2026"
-hsx search "playwright vs puppeteer memory" --max-sources 20 --ai
-hsx search "kubernetes pod eviction" --fast
+fetchium search "best rust web framework 2026"
+fetchium search "playwright vs puppeteer memory" --max-sources 20 --ai
+fetchium search "kubernetes pod eviction" --fast
 ```
 
 **Agent variant**:
 ```bash
-hsx agent-search "query" --budget 2000 --tier key_facts --format json
+fetchium agent-search "query" --budget 2000 --tier key_facts --format json
 ```
 
 **Behavior**:
@@ -1219,18 +1219,18 @@ Sources: [1] https://... [2] https://...
 
 ---
 
-### Mode B: Research Mode (`hsx research`) — Structured Analysis
+### Mode B: Research Mode (`fetchium research`) — Structured Analysis
 
 **Purpose**: Multi-source analysis with evidence mapping, citations, and RAR self-correction.
 
 ```bash
-hsx research "GDPR implications for AI training data" --citations apa
-hsx research "compare bun vs deno vs node 2026" --output report.md
+fetchium research "GDPR implications for AI training data" --citations apa
+fetchium research "compare bun vs deno vs node 2026" --output report.md
 ```
 
 **Agent variant**:
 ```bash
-hsx agent-research "query" --budget 4000 --tier detailed --schema schema.json
+fetchium agent-research "query" --budget 4000 --tier detailed --schema schema.json
 ```
 
 **Behavior**:
@@ -1248,13 +1248,13 @@ hsx agent-research "query" --budget 4000 --tier detailed --schema schema.json
 
 ---
 
-### Mode C: Deep Research Mode (`hsx deep`) — Agentic Investigation
+### Mode C: Deep Research Mode (`fetchium deep`) — Agentic Investigation
 
 **Purpose**: Multi-hop research with AMRS, RAR self-correction, and EGP evidence graphs.
 
 ```bash
-hsx deep "Compare Puppeteer vs Playwright vs Crawlee at scale"
-hsx deep "AI regulation: US vs EU vs China 2026" --max-depth 3
+fetchium deep "Compare Puppeteer vs Playwright vs Crawlee at scale"
+fetchium deep "AI regulation: US vs EU vs China 2026" --max-depth 3
 ```
 
 **Deep mode uses all novel algorithms**:
@@ -1277,11 +1277,11 @@ hsx deep "AI regulation: US vs EU vs China 2026" --max-depth 3
 
 ---
 
-### Mode D: AI Preview (`hsx ai`) — Local LLM Synthesis
+### Mode D: AI Preview (`fetchium ai`) — Local LLM Synthesis
 
 ```bash
-hsx ai "explain WebDriver BiDi protocol"
-hsx ai "what's new in TypeScript 6.0" --model ollama:llama3.2
+fetchium ai "explain WebDriver BiDi protocol"
+fetchium ai "what's new in TypeScript 6.0" --model ollama:llama3.2
 ```
 
 **Uses**: Search pipeline → QATBE extraction → context assembly with sandwich layout (best results at start/end to avoid lost-in-the-middle) → local LLM synthesis → citation injection.
@@ -1293,17 +1293,17 @@ hsx ai "what's new in TypeScript 6.0" --model ollama:llama3.2
 ### Mode E: Fetch / View / Scrape — Web as Files
 
 ```bash
-hsx fetch https://example.com                              # Clean extraction
-hsx fetch https://example.com --query "pricing" --budget 1000  # QATBE
-hsx view https://example.com                               # Terminal readable
-hsx scrape https://example.com/spa --scroll                # JS + infinite scroll
-hsx export https://example.com --format md,json            # Multi-format
+fetchium fetch https://example.com                              # Clean extraction
+fetchium fetch https://example.com --query "pricing" --budget 1000  # QATBE
+fetchium view https://example.com                               # Terminal readable
+fetchium scrape https://example.com/spa --scroll                # JS + infinite scroll
+fetchium export https://example.com --format md,json            # Multi-format
 ```
 
 **Agent variant**:
 ```bash
-hsx agent-fetch <url> --query "what I need" --budget 1500 --format segments
-hsx agent-fetch <url> --estimate     # Token estimation without fetching
+fetchium agent-fetch <url> --query "what I need" --budget 1500 --format segments
+fetchium agent-fetch <url> --estimate     # Token estimation without fetching
 ```
 
 ---
@@ -1311,7 +1311,7 @@ hsx agent-fetch <url> --estimate     # Token estimation without fetching
 ### Mode F: Compare Mode — Side-by-Side
 
 ```bash
-hsx compare "React vs Vue vs Svelte 2026"
+fetchium compare "React vs Vue vs Svelte 2026"
 ```
 
 Researches each item in parallel → merges into comparison table with per-dimension citations.
@@ -1321,8 +1321,8 @@ Researches each item in parallel → merges into comparison table with per-dimen
 ### Mode G: Monitor Mode — Change Detection
 
 ```bash
-hsx monitor https://github.com/user/repo/releases --interval 1h --diff
-hsx monitor "kubernetes CVE" --interval 6h --notify
+fetchium monitor https://github.com/user/repo/releases --interval 1h --diff
+fetchium monitor "kubernetes CVE" --interval 6h --notify
 ```
 
 Content-hash-based change detection with diff output and optional notifications.
@@ -1332,9 +1332,9 @@ Content-hash-based change detection with diff output and optional notifications.
 ### Mode H: Index Mode — Local Knowledge Base
 
 ```bash
-hsx index add https://docs.example.com/sitemap.xml
-hsx index build
-hsx index search "authentication patterns"
+fetchium index add https://docs.example.com/sitemap.xml
+fetchium index build
+fetchium index search "authentication patterns"
 ```
 
 Local hybrid index (BM25 + vector) with late chunking for superior embeddings.
@@ -1345,7 +1345,7 @@ Local hybrid index (BM25 + vector) with late chunking for superior embeddings.
 
 ### Binary Names
 
-- **Primary**: `hsx`
+- **Primary**: `fetchium`
 - **Alias**: `hyper`
 
 ### Package Manager Support
@@ -1602,7 +1602,7 @@ bun add -g fetchium
 
 # The npm package contains:
 # - postinstall script that downloads platform-specific binary
-# - bin stubs (hsx, hyper) that invoke the native binary
+# - bin stubs (fetchium, hyper) that invoke the native binary
 # - Supports: linux-x64, linux-arm64, darwin-x64, darwin-arm64, win-x64
 ```
 
@@ -1649,7 +1649,7 @@ interface ResourceProfile {
 - **Network Adaptation**: Adjust timeouts and fetch strategy based on measured bandwidth
 
 ```bash
-hsx doctor
+fetchium doctor
 # CPU: Apple M2 Pro (12 cores) — 23% usage
 # RAM: 32GB total, 18GB free — 44%
 # GPU: Metal 16GB
@@ -1833,17 +1833,17 @@ The single most important feature for AI agent consumption. Full specification i
 
 ```bash
 # Fetch with query awareness and token budget
-hsx agent-fetch https://example.com \
+fetchium agent-fetch https://example.com \
   --query "pricing for enterprise plan" \
   --budget 1500 \
   --format segments
 
 # Pre-fetch estimation
-hsx agent-fetch https://example.com --estimate
+fetchium agent-fetch https://example.com --estimate
 # → { "total_tokens": 12340, "relevant_to_query": 1850, "extraction_layer": 1 }
 
 # Batch fetch with budget across multiple URLs
-hsx agent-fetch urls.txt --query "security best practices" --budget 5000 --deduplicate
+fetchium agent-fetch urls.txt --query "security best practices" --budget 5000 --deduplicate
 ```
 
 ### Programmatic API
@@ -1955,9 +1955,9 @@ After V4 (cross-source validation), RAR reflection kicks in:
 ### Token Budget System
 
 ```bash
-hsx agent-search "query" --budget 2000     # Fit into ~2K tokens
-hsx agent-fetch <url> --budget 1500        # Extract ~1.5K tokens of relevant content
-hsx research "query" --budget auto         # Auto-size based on AI model context
+fetchium agent-search "query" --budget 2000     # Fit into ~2K tokens
+fetchium agent-fetch <url> --budget 1500        # Extract ~1.5K tokens of relevant content
+fetchium research "query" --budget auto         # Auto-size based on AI model context
 ```
 
 ---
@@ -2084,7 +2084,7 @@ Full spec in §8.7. Graph-based evidence linking with:
 ### Strict Evidence Mode
 
 ```bash
-hsx research "query" --strict-evidence
+fetchium research "query" --strict-evidence
 ```
 Every factual statement must cite a source. Uncitable claims marked `[unverified]`. Citation links validated against actual source content.
 
@@ -2157,7 +2157,7 @@ See §30 for full MCP server specification.
 ### Multi-Format Export
 
 ```bash
-hsx research "query" --format md,json,csv --output ./results/
+fetchium research "query" --format md,json,csv --output ./results/
 ```
 
 ---
@@ -2177,10 +2177,10 @@ Full spec in §8.9. 4 tiers pre-computed at extraction time:
 
 ```typescript
 // Get summary first (cheap)
-const summary = await hsx.agentSearch({ query: "...", tier: "key_facts" });
+const summary = await fetchium.agentSearch({ query: "...", tier: "key_facts" });
 
 // Need more? Expand without re-fetching
-const detailed = await hsx.expandTier(summary.resultId, "detailed");
+const detailed = await fetchium.expandTier(summary.resultId, "detailed");
 ```
 
 ---
@@ -2216,17 +2216,17 @@ Cache query pattern → result mappings. When a similar query (>0.9 cosine simil
 
 | Type | Purpose | Example |
 |------|---------|---------|
-| **Backend** | Search sources | `hsx-plugin-arxiv`, `hsx-plugin-pubmed` |
-| **Extractor** | Content extraction | `hsx-plugin-youtube-transcript`, `hsx-plugin-pdf-ocr` |
-| **Ranker** | Ranking algorithms | `hsx-plugin-academic-ranker` |
-| **Formatter** | Output formats | `hsx-plugin-latex`, `hsx-plugin-notion` |
-| **Validator** | Quality checks | `hsx-plugin-factcheck`, `hsx-plugin-bias-detector` |
-| **AI Provider** | Model integrations | `hsx-plugin-groq`, `hsx-plugin-together` |
+| **Backend** | Search sources | `fetchium-plugin-arxiv`, `fetchium-plugin-pubmed` |
+| **Extractor** | Content extraction | `fetchium-plugin-youtube-transcript`, `fetchium-plugin-pdf-ocr` |
+| **Ranker** | Ranking algorithms | `fetchium-plugin-academic-ranker` |
+| **Formatter** | Output formats | `fetchium-plugin-latex`, `fetchium-plugin-notion` |
+| **Validator** | Quality checks | `fetchium-plugin-factcheck`, `fetchium-plugin-bias-detector` |
+| **AI Provider** | Model integrations | `fetchium-plugin-groq`, `fetchium-plugin-together` |
 
 ```bash
-hsx plugin install hsx-plugin-arxiv
-hsx plugin list
-hsx plugin create my-plugin
+fetchium plugin install fetchium-plugin-arxiv
+fetchium plugin list
+fetchium plugin create my-plugin
 ```
 
 ---
@@ -2240,8 +2240,8 @@ Expose Fetchium as a Model Context Protocol server for Claude, Claude Code, and 
 ### Starting the Server
 
 ```bash
-hsx serve --mcp                           # stdio transport
-hsx serve --mcp --transport sse --port 3001  # SSE transport
+fetchium serve --mcp                           # stdio transport
+fetchium serve --mcp --transport http --port 3001  # HTTP JSON-RPC transport
 ```
 
 ### MCP Tools Exposed
@@ -2250,7 +2250,7 @@ hsx serve --mcp --transport sse --port 3001  # SSE transport
 // COMPOSITE TOOLS (full pipeline, single call)
 tools: [
   {
-    name: "hypersearch_search",
+    name: "fetchium_search",
     description: "Search the web and return token-efficient results",
     inputSchema: {
       query: string,
@@ -2261,7 +2261,7 @@ tools: [
     }
   },
   {
-    name: "hypersearch_fetch",
+    name: "fetchium_fetch",
     description: "Fetch a URL with query-aware extraction",
     inputSchema: {
       url: string,
@@ -2271,7 +2271,7 @@ tools: [
     }
   },
   {
-    name: "hypersearch_research",
+    name: "fetchium_research",
     description: "Conduct multi-source research with citations",
     inputSchema: {
       query: string,
@@ -2282,12 +2282,12 @@ tools: [
     }
   },
   {
-    name: "hypersearch_estimate",
+    name: "fetchium_estimate",
     description: "Estimate token cost before fetching",
     inputSchema: { url: string }
   },
   {
-    name: "hypersearch_expand",
+    name: "fetchium_expand",
     description: "Get more detail on previous results without re-fetching",
     inputSchema: { result_id: string, tier: string }
   }
@@ -2352,10 +2352,10 @@ All persistent data stored in local SQLite (encrypted at rest):
 ### CLI
 
 ```bash
-hsx intelligence stats          # Show learning stats
-hsx intelligence reset           # Reset all learned data
-hsx intelligence export          # Export for backup/sharing
-hsx intelligence suggest         # Get query suggestions based on patterns
+fetchium intelligence stats          # Show learning stats
+fetchium intelligence reset           # Reset all learned data
+fetchium intelligence export          # Export for backup/sharing
+fetchium intelligence suggest         # Get query suggestions based on patterns
 ```
 
 ### How It Compounds
@@ -2427,7 +2427,7 @@ For controversial or subjective topics, spawn two reasoning agents:
 - **Judge Agent**: Weighs both sides, produces balanced synthesis
 
 ```bash
-hsx deep "is cryptocurrency a good investment" --self-debate
+fetchium deep "is cryptocurrency a good investment" --self-debate
 # Output includes: FOR arguments [sources], AGAINST arguments [sources], balanced synthesis
 ```
 
@@ -2441,19 +2441,19 @@ hsx deep "is cryptocurrency a good investment" --self-debate
 
 ```bash
 # Subscribe to topics
-hsx subscribe "TypeScript breaking changes" --notify webhook --digest weekly
-hsx subscribe "kubernetes CVE" --notify email --threshold critical
-hsx subscribe "competitor:acme-corp" --digest daily
+fetchium subscribe "TypeScript breaking changes" --notify webhook --digest weekly
+fetchium subscribe "kubernetes CVE" --notify email --threshold critical
+fetchium subscribe "competitor:acme-corp" --digest daily
 
 # Research radar — suggests new relevant findings based on your history
-hsx radar --limit 10
+fetchium radar --limit 10
 # Based on your research patterns:
 # 1. [NEW] Bun v2.0 released with Node.js full compat — 3h ago
 # 2. [UPDATE] React Server Components best practices updated — 12h ago
 # 3. [PAPER] New RAG technique outperforms RAPTOR by 15% — 1d ago
 
 # Intelligent digest
-hsx digest --period weekly --topics "rust,webassembly,ai-agents"
+fetchium digest --period weekly --topics "rust,webassembly,ai-agents"
 ```
 
 ### 33.2 Predictive Prefetching
@@ -2466,7 +2466,7 @@ Based on QPM (Query Prediction Model):
 ### 33.3 Anomaly Detection
 
 ```bash
-hsx monitor "OpenAI API pricing" --anomaly-detect
+fetchium monitor "OpenAI API pricing" --anomaly-detect
 # Alert: "OpenAI pricing page changed significantly (87% content diff) — 2h ago"
 ```
 
@@ -2489,17 +2489,17 @@ hsx monitor "OpenAI API pricing" --anomaly-detect
 ### CLI
 
 ```bash
-hsx fetch https://example.com --multimodal     # Extract images, videos, charts too
-hsx view https://youtube.com/watch?v=... --transcript  # Video transcript
-hsx fetch image.png --ocr                       # OCR text from image
-hsx fetch chart.png --extract-data              # Chart → JSON data points
+fetchium fetch https://example.com --multimodal     # Extract images, videos, charts too
+fetchium view https://youtube.com/watch?v=... --transcript  # Video transcript
+fetchium fetch image.png --ocr                       # OCR text from image
+fetchium fetch chart.png --extract-data              # Chart → JSON data points
 ```
 
 ### 34.2 Multimodal Search
 
 ```bash
-hsx search "architecture diagram microservices" --include-images
-hsx search "kubernetes tutorial" --include-videos
+fetchium search "architecture diagram microservices" --include-images
+fetchium search "kubernetes tutorial" --include-videos
 ```
 
 ---
@@ -2546,9 +2546,9 @@ hsx search "kubernetes tutorial" --include-videos
 ### CLI
 
 ```bash
-hsx search "query" --trust-verify           # Enable ACS for all results
-hsx fetch https://example.com --check-ai    # Check if content is AI-generated
-hsx research "topic" --human-sources-only   # Prefer human-written content
+fetchium search "query" --trust-verify           # Enable ACS for all results
+fetchium fetch https://example.com --check-ai    # Check if content is AI-generated
+fetchium research "topic" --human-sources-only   # Prefer human-written content
 ```
 
 ---
@@ -2567,17 +2567,17 @@ hsx research "topic" --human-sources-only   # Prefer human-written content
 ### CLI
 
 ```bash
-hsx search "query" --private           # No traces left
-hsx search "query" --tor               # Route through Tor
-hsx search "query" --air-gap           # Local index only
-hsx research "topic" --redact-pii      # Strip PII from output
-hsx config set privacy.auto-expire 7d  # Auto-delete research after 7 days
+fetchium search "query" --private           # No traces left
+fetchium search "query" --tor               # Route through Tor
+fetchium search "query" --air-gap           # Local index only
+fetchium research "topic" --redact-pii      # Strip PII from output
+fetchium config set privacy.auto-expire 7d  # Auto-delete research after 7 days
 ```
 
 ### 36.2 Self-Destructing Research
 
 ```bash
-hsx research "sensitive topic" --auto-expire 24h
+fetchium research "sensitive topic" --auto-expire 24h
 # Research artifact auto-deleted after 24 hours
 # Evidence graph and cache entries purged
 ```
@@ -2598,16 +2598,16 @@ For the most sensitive use cases, Fetchium can be configured so that:
 
 ```bash
 # Create shared workspace
-hsx workspace create "project-alpha" --invite user@example.com
+fetchium workspace create "project-alpha" --invite user@example.com
 
 # Collaborative research — results shared automatically
-hsx research "topic" --workspace project-alpha
+fetchium research "topic" --workspace project-alpha
 
 # Fork a research session
-hsx research fork session-abc --name "alternative-approach"
+fetchium research fork session-abc --name "alternative-approach"
 
 # Merge findings from multiple researchers
-hsx research merge session-abc session-def --deduplicate
+fetchium research merge session-abc session-def --deduplicate
 ```
 
 ### 37.2 Shared Features
@@ -2635,12 +2635,12 @@ Shared workspaces sync via:
 ### Pre-Configured Modes
 
 ```bash
-hsx research "topic" --mode academic    # Academic mode
-hsx research "topic" --mode code        # Code intelligence
-hsx research "topic" --mode legal       # Legal research
-hsx research "topic" --mode financial   # Financial analysis
-hsx research "topic" --mode medical     # Medical/scientific
-hsx research "topic" --mode security    # Cybersecurity
+fetchium research "topic" --mode academic    # Academic mode
+fetchium research "topic" --mode code        # Code intelligence
+fetchium research "topic" --mode legal       # Legal research
+fetchium research "topic" --mode financial   # Financial analysis
+fetchium research "topic" --mode medical     # Medical/scientific
+fetchium research "topic" --mode security    # Cybersecurity
 ```
 
 | Mode | Backends Prioritized | Ranking Adjustments | Special Features |
@@ -2986,7 +2986,7 @@ With user consent, anonymized signals improve the global model:
 
 ### System & Developer (211-230)
 
-211. `hsx doctor` system check
+211. `fetchium doctor` system check
 212. Plugin system (npm-based)
 213. Custom ranking rules DSL
 214. Scoring explainability
@@ -3287,16 +3287,16 @@ Primary fetch fails →
 
 ### MVP (Weeks 1-6)
 
-- [ ] Project scaffolding (Cargo workspace: `hsx-core`, `hsx-cli`, `hsx-mcp`, `hsx-api`)
-- [ ] `hsx search` with DuckDuckGo backend (reqwest)
-- [ ] `hsx fetch` / `hsx view` with HTTP + scraper/lol_html (CEP Layer 1-2)
+- [ ] Project scaffolding (Cargo workspace: `fetchium-core`, `fetchium-cli`, `fetchium-mcp`, `fetchium-api`)
+- [ ] `fetchium search` with DuckDuckGo backend (reqwest)
+- [ ] `fetchium fetch` / `fetchium view` with HTTP + scraper/lol_html (CEP Layer 1-2)
 - [ ] Basic QATBE (query + budget for fetch)
 - [ ] Basic SCS (paragraphs, tables, code blocks)
 - [ ] PDS tier 0-1 (key_facts, summary)
 - [ ] BM25 ranking (tantivy)
 - [ ] Memory LRU cache (moka)
 - [ ] Resource profiling (sysinfo crate)
-- [ ] `hsx doctor`
+- [ ] `fetchium doctor`
 - [ ] npm/pnpm/bun packaging (platform-specific pre-built binaries)
 - [ ] `agent-search` and `agent-fetch` commands
 - [ ] JSON segments output format (serde_json / simd-json)
@@ -3312,9 +3312,9 @@ Primary fetch fails →
 - [ ] Full QATBE with QADD
 - [ ] Full SCS (all 14 segment types)
 - [ ] PDS all 4 tiers
-- [ ] `hsx research` with evidence mapping
+- [ ] `fetchium research` with evidence mapping
 - [ ] Validation layers V1-V3
-- [ ] `hsx ai` with Ollama (HTTP API) + llama-cpp-rs
+- [ ] `fetchium ai` with Ollama (HTTP API) + llama-cpp-rs
 - [ ] Semantic search (ONNX embeddings via ort)
 - [ ] Citation system (6 styles)
 - [ ] SQLite disk cache (rusqlite)
@@ -3326,14 +3326,14 @@ Primary fetch fails →
 
 ### V1.5 (Weeks 15-22)
 
-- [ ] `hsx deep` with AMRS (tokio task spawning + channels)
+- [ ] `fetchium deep` with AMRS (tokio task spawning + channels)
 - [ ] RAR self-correction loop
 - [ ] EGP evidence graphs
 - [ ] SRP speculative pipelining
 - [ ] Cross-source validation (V4-V6)
 - [ ] HyDE query expansion
 - [ ] Cascade retrieval (Matryoshka embeddings)
-- [ ] `hsx compare` and `hsx monitor`
+- [ ] `fetchium compare` and `fetchium monitor`
 - [ ] Plugin system (dynamic loading via libloading or WASM via wasmtime)
 - [ ] CrewAI adapter
 - [ ] Strict evidence mode
@@ -3434,7 +3434,7 @@ The npm package is a thin wrapper that downloads the correct platform binary:
 {
   "name": "fetchium",
   "version": "1.0.0",
-  "bin": { "hsx": "bin/hsx", "hyper": "bin/hyper" },
+  "bin": { "fetchium": "bin/fetchium", "hyper": "bin/hyper" },
   "scripts": { "postinstall": "node scripts/install-binary.js" },
   "optionalDependencies": {
     "@fetchium/linux-x64": "1.0.0",

@@ -474,7 +474,7 @@ pub struct ServeArgs {
     #[arg(short, long, default_value = "3050")]
     pub port: u16,
 
-    /// Transport for MCP server (stdio or sse)
+    /// Transport for MCP server (stdio or http)
     #[arg(long, default_value = "stdio")]
     pub transport: McpTransport,
 }
@@ -483,7 +483,8 @@ pub struct ServeArgs {
 #[derive(Debug, Clone, Copy, PartialEq, ValueEnum)]
 pub enum McpTransport {
     Stdio,
-    Sse,
+    #[value(alias = "sse")]
+    Http,
 }
 
 // ─── Value Enums ─────────────────────────────────────────────────

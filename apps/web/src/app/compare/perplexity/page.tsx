@@ -26,7 +26,6 @@ const rows = [
   { feature: "Token budget control", f: "yes", p: "no", note: "Perplexity controls what goes into its context; you control Fetchium's token budget" },
   { feature: "Evidence graphs + source citations", f: "yes", p: "partial", note: "Perplexity includes citations; Fetchium adds structured evidence graphs" },
   { feature: "Multi-source federation", f: "yes", p: "partial", note: "Perplexity searches the web; exact backends and federation depth are opaque" },
-  { feature: "Self-hostable", f: "yes", p: "no", note: "Fetchium runs on any Docker host; Perplexity is cloud-only" },
   { feature: "MCP protocol support", f: "yes", p: "no" },
   { feature: "Free tier", f: "yes", p: "no", note: "Perplexity API has no free tier; requires paid account. Fetchium: 1K/mo free." },
   { feature: "Response includes reasoning", f: "no", p: "yes", note: "Perplexity Sonar Reasoning models include chain-of-thought; Fetchium is retrieval-only" },

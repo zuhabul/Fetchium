@@ -1,6 +1,6 @@
 //! Predictive prefetching — pre-cache likely follow-up queries (PRD §33).
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
@@ -59,7 +59,10 @@ impl PrefetchQueue {
 /// Heuristically generates likely follow-up queries:
 /// - Adds "tutorial" and "examples" variants for informational queries.
 /// - Adds "vs <top_result>" for comparison queries.
-pub fn generate_candidates(query: &str, result_titles: &[String]) -> HsxResult<Vec<(String, f64)>> {
+pub fn generate_candidates(
+    query: &str,
+    result_titles: &[String],
+) -> FetchiumResult<Vec<(String, f64)>> {
     let mut candidates: Vec<(String, f64)> = Vec::new();
     let q = query.trim().to_ascii_lowercase();
 

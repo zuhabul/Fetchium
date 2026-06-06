@@ -109,5 +109,5 @@ cat ~/.fetchium/config.toml
 
 ## Getting Help
 
-- GitHub Issues: https://github.com/fetchium/fetchium/issues
-- Discussions: https://github.com/fetchium/fetchium/discussions
+- GitHub Issues: https://github.com/zuhabul/Fetchium/issues
+- Discussions: https://github.com/zuhabul/Fetchium/discussions

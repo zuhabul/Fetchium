@@ -50,7 +50,7 @@ export default function TermsPage() {
 
             <section>
               <h2 className="text-lg font-semibold text-slate-200 mb-3">4. Billing and Refunds</h2>
-              <p>Paid plans are billed monthly or annually in advance. Usage is capped at your plan limit; you will not be charged overage unless you opt into the overage feature. Refunds are available within 14 days of an initial subscription purchase. No refunds for usage already consumed.</p>
+              <p>Commercial billing terms, if any, are governed by the applicable order form or written agreement. Usage is capped at the limits associated with your plan or contract.</p>
             </section>
 
             <section>
@@ -61,7 +61,7 @@ export default function TermsPage() {
 
             <section>
               <h2 className="text-lg font-semibold text-slate-200 mb-3">6. Availability and SLA</h2>
-              <p>Free and Starter plans have no uptime SLA. Growth plan targets 99.9% uptime. Pro and Enterprise plans have contractual SLAs. We will use commercially reasonable efforts to maintain availability for all plans.</p>
+              <p>Availability commitments and any service-level obligations are only provided when expressly stated in a written commercial agreement.</p>
             </section>
 
             <section>

@@ -146,7 +146,7 @@ fn apply_summary(text: &str, segments: &[Segment]) -> PdsResult {
         .filter(|s| s.seg_type != SegmentType::Heading)
         .collect();
 
-    for seg in headings.into_iter().chain(body.into_iter()) {
+    for seg in headings.into_iter().chain(body) {
         if tracker.is_exhausted() {
             break;
         }

@@ -4,7 +4,7 @@
 //! Returns clean markdown content ready for LLM consumption.
 //! API key required: set `FIRECRAWL_API_KEY` env var or `search.firecrawl_api_key` in config.
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::HttpClient;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
@@ -38,15 +38,36 @@ struct FirecrawlResult {
     markdown: Option<String>,
 }
 
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 /// Firecrawl search+scrape backend — returns full markdown content.
 pub struct FirecrawlBackend {
     http: HttpClient,
-    api_key: String,
+    api_keys: Vec<String>,
+    current_key_index: AtomicUsize,
 }
 
 impl FirecrawlBackend {
-    pub fn new(http: HttpClient, api_key: String) -> Self {
-        Self { http, api_key }
+    pub fn new(http: HttpClient, api_keys: Vec<String>) -> Self {
+        Self {
+            http,
+            api_keys,
+            current_key_index: AtomicUsize::new(0),
+        }
+    }
+
+    fn get_key(&self) -> &str {
+        if self.api_keys.is_empty() {
+            return "";
+        }
+        let idx = self.current_key_index.load(Ordering::Relaxed) % self.api_keys.len();
+        &self.api_keys[idx]
+    }
+
+    fn rotate_key(&self) {
+        if !self.api_keys.is_empty() {
+            self.current_key_index.fetch_add(1, Ordering::Relaxed);
+        }
     }
 }
 
@@ -56,66 +77,98 @@ impl SearchBackend for FirecrawlBackend {
         BackendId::Firecrawl
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
-        let request = FirecrawlSearchRequest {
-            query,
-            limit: max_results.min(5),
-        };
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
+        let mut last_err = None;
+        let num_keys = self.api_keys.len().max(1);
 
-        let body = serde_json::to_string(&request)
-            .map_err(|e| HsxError::Search(format!("Firecrawl serialization: {e}")))?;
+        for _ in 0..num_keys {
+            let api_key = self.get_key();
+            let request = FirecrawlSearchRequest {
+                query,
+                limit: max_results.min(5),
+            };
 
-        let auth_value = format!("Bearer {}", self.api_key);
-        let response = self
-            .http
-            .post_json_with_header(
-                "https://api.firecrawl.dev/v1/search",
-                &body,
-                "Authorization",
-                &auth_value,
-            )
-            .await?;
+            let body = serde_json::to_string(&request)
+                .map_err(|e| FetchiumError::Search(format!("Firecrawl serialization: {e}")))?;
 
-        let parsed: FirecrawlSearchResponse = serde_json::from_str(&response)
-            .map_err(|e| HsxError::Search(format!("Firecrawl parse: {e}")))?;
+            let auth_value = format!("Bearer {}", api_key);
+            let result = self
+                .http
+                .post_json_with_header(
+                    "https://api.firecrawl.dev/v1/search",
+                    &body,
+                    "Authorization",
+                    &auth_value,
+                )
+                .await;
 
-        debug!(
-            "Firecrawl: {} results (success={})",
-            parsed.data.len(),
-            parsed.success
-        );
+            match result {
+                Ok(response) => {
+                    let parsed: FirecrawlSearchResponse = serde_json::from_str(&response)
+                        .map_err(|e| FetchiumError::Search(format!("Firecrawl parse: {e}")))?;
 
-        let results = parsed
-            .data
-            .into_iter()
-            .enumerate()
-            .filter(|(_, r)| !r.url.is_empty())
-            .map(|(i, r)| {
-                // Use markdown content as rich snippet (truncated)
-                let snippet = if let Some(ref md) = r.markdown {
-                    let chars: String = md.chars().take(1500).collect();
-                    if md.len() > 1500 {
-                        format!("{chars}...")
-                    } else {
-                        chars
-                    }
-                } else {
-                    r.description.unwrap_or_default()
-                };
+                    debug!(
+                        "Firecrawl: {} results (success={})",
+                        parsed.data.len(),
+                        parsed.success
+                    );
 
-                ResultItem {
-                    title: r.title.unwrap_or_else(|| "Untitled".into()),
-                    url: r.url,
-                    snippet,
-                    rank: (i + 1) as u32,
-                    backend: BackendId::Firecrawl,
-                    score: None,
-                    published_date: None,
+                    let results = parsed
+                        .data
+                        .into_iter()
+                        .enumerate()
+                        .filter(|(_, r)| !r.url.is_empty())
+                        .map(|(i, r)| {
+                            let snippet = if let Some(ref md) = r.markdown {
+                                let chars: String = md.chars().take(1500).collect();
+                                if md.len() > 1500 {
+                                    format!("{chars}...")
+                                } else {
+                                    chars
+                                }
+                            } else {
+                                r.description.unwrap_or_default()
+                            };
+
+                            ResultItem {
+                                title: r.title.unwrap_or_else(|| "Untitled".into()),
+                                url: r.url,
+                                snippet,
+                                rank: (i + 1) as u32,
+                                backend: BackendId::Firecrawl,
+                                score: None,
+                                published_date: None,
+                            }
+                        })
+                        .collect();
+
+                    return Ok(results);
                 }
-            })
-            .collect();
+                Err(e) => {
+                    if let FetchiumError::Structured(ref se) = e {
+                        if se.message.contains("401")
+                            || se.message.contains("402")
+                            || se.message.contains("429")
+                            || se.message.contains("limit")
+                            || se.message.contains("credits")
+                        {
+                            tracing::warn!(
+                                "Firecrawl key exhausted or limited, rotating... Error: {}",
+                                se.message
+                            );
+                            self.rotate_key();
+                            last_err = Some(e);
+                            continue;
+                        }
+                    }
+                    return Err(e);
+                }
+            }
+        }
 
-        Ok(results)
+        Err(last_err.unwrap_or(FetchiumError::Search(
+            "Firecrawl: All keys exhausted".into(),
+        )))
     }
 }
 

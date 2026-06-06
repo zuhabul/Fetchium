@@ -1,7 +1,7 @@
 //! Ollama HTTP client — list models, chat completion, streaming (PRD §23).
 
 use crate::ai::types::{AiConfig, ChatMessage, OllamaChatChunk, OllamaModel};
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use futures::StreamExt;
 use serde::Deserialize;
 
@@ -32,7 +32,7 @@ impl OllamaClient {
     }
 
     /// List all locally available models from Ollama's `/api/tags`.
-    pub async fn list_models(&self) -> Result<Vec<OllamaModel>, HsxError> {
+    pub async fn list_models(&self) -> Result<Vec<OllamaModel>, FetchiumError> {
         #[derive(Deserialize)]
         struct TagsResponse {
             models: Vec<OllamaModel>,
@@ -43,10 +43,10 @@ impl OllamaClient {
             .get(format!("{}/api/tags", self.base_url))
             .send()
             .await
-            .map_err(|e| HsxError::AiUnavailable(format!("Ollama unreachable: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Ollama unreachable: {e}")))?;
 
         let tags: TagsResponse = resp.json().await.map_err(|e| {
-            HsxError::AiUnavailable(format!("Invalid Ollama /api/tags response: {e}"))
+            FetchiumError::AiUnavailable(format!("Invalid Ollama /api/tags response: {e}"))
         })?;
 
         Ok(tags.models)
@@ -58,7 +58,7 @@ impl OllamaClient {
         model: &str,
         messages: &[ChatMessage],
         temperature: f32,
-    ) -> Result<String, HsxError> {
+    ) -> Result<String, FetchiumError> {
         let body = serde_json::json!({
             "model": model,
             "messages": messages,
@@ -72,12 +72,12 @@ impl OllamaClient {
             .json(&body)
             .send()
             .await
-            .map_err(|e| HsxError::AiUnavailable(format!("Ollama chat failed: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Ollama chat failed: {e}")))?;
 
         let chunk: OllamaChatChunk = resp
             .json()
             .await
-            .map_err(|e| HsxError::AiUnavailable(format!("Invalid chat response: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Invalid chat response: {e}")))?;
 
         Ok(chunk.message.content)
     }
@@ -91,7 +91,7 @@ impl OllamaClient {
         messages: &[ChatMessage],
         temperature: f32,
         mut on_chunk: F,
-    ) -> Result<String, HsxError>
+    ) -> Result<String, FetchiumError>
     where
         F: FnMut(&str),
     {
@@ -108,7 +108,7 @@ impl OllamaClient {
             .json(&body)
             .send()
             .await
-            .map_err(|e| HsxError::AiUnavailable(format!("Ollama stream failed: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Ollama stream failed: {e}")))?;
 
         let mut full_response = String::new();
         let mut stream = resp.bytes_stream();
@@ -117,7 +117,7 @@ impl OllamaClient {
         let mut buffer = Vec::new();
         while let Some(chunk_result) = stream.next().await {
             let bytes = chunk_result
-                .map_err(|e| HsxError::AiUnavailable(format!("Stream read error: {e}")))?;
+                .map_err(|e| FetchiumError::AiUnavailable(format!("Stream read error: {e}")))?;
             buffer.extend_from_slice(&bytes);
 
             // Process all complete lines in the buffer.

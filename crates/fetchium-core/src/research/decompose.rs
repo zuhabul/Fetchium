@@ -97,7 +97,7 @@ mod tests {
     #[test]
     fn simple_query_no_decomposition() {
         let subs = decompose_query("what is Rust");
-        assert!(subs.len() >= 1);
+        assert!(!subs.is_empty());
         assert!(subs
             .iter()
             .any(|q| q.contains("Rust") || q.contains("rust")));

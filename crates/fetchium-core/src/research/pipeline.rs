@@ -3,8 +3,8 @@
 use crate::citation::evidence_graph::EvidenceGraphBuilder;
 use crate::citation::formatter::CitationFormatter;
 use crate::citation::types::SourceMeta;
-use crate::config::HsxConfig;
-use crate::error::HsxError;
+use crate::config::FetchiumConfig;
+use crate::error::FetchiumError;
 use crate::extract::pipeline::extract;
 use crate::http::client::HttpClient;
 use crate::research::decompose::decompose_query;
@@ -186,12 +186,12 @@ impl ResearchPipeline {
         sources: &[SourceMeta],
         citations: &[crate::citation::types::FormattedCitation],
         extracted_texts: &[String],
-        hsx_config: &HsxConfig,
+        fetchium_config: &FetchiumConfig,
         thinking: bool,
     ) -> String {
         use crate::ai::types::{AiConfig, ChatMessage};
 
-        let mut ai_config = AiConfig::from_hsx_config(hsx_config);
+        let mut ai_config = AiConfig::from_fetchium_config(fetchium_config);
         ai_config.thinking = thinking;
         if ai_config.providers.fallback_chain.is_empty() && ai_config.default_model.is_none() {
             return String::new();
@@ -292,9 +292,9 @@ impl ResearchPipeline {
     /// This implementation wires the complete pipeline end-to-end.
     pub async fn execute(
         config: &ResearchConfig,
-        hsx_config: &HsxConfig,
+        fetchium_config: &FetchiumConfig,
         http_client: &HttpClient,
-    ) -> Result<ResearchReport, HsxError> {
+    ) -> Result<ResearchReport, FetchiumError> {
         let start = Instant::now();
 
         // ── FAST PATH ──────────────────────────────────────────────────────
@@ -302,7 +302,7 @@ impl ResearchPipeline {
         // URL fetching entirely. Produces results from search snippets only,
         // achieving Exa-like speed (~2-3s) with no third-party dependencies.
         if !config.ai_synthesis {
-            return Self::execute_fast(config, hsx_config, http_client, start).await;
+            return Self::execute_fast(config, fetchium_config, http_client, start).await;
         }
 
         // Step 1: Decompose query into perspective-aware sub-queries
@@ -310,7 +310,8 @@ impl ResearchPipeline {
 
         // Step 2: Parallel Dispatch — search ALL sub-queries concurrently
         let search_budget = (config.max_sources as u32) * 3;
-        let mut orch_config = OrchestratorConfig::from_hsx_config(hsx_config, search_budget);
+        let mut orch_config =
+            OrchestratorConfig::from_fetchium_config(fetchium_config, search_budget);
         orch_config.max_total_results = search_budget;
         let orchestrator =
             std::sync::Arc::new(SearchOrchestrator::new(http_client.clone(), orch_config));
@@ -454,7 +455,7 @@ impl ResearchPipeline {
             let metas_owned = snippet_metas.clone();
             let citations_owned = snippet_citations.clone();
             let texts_owned = snippet_texts.clone();
-            let hsx_owned = hsx_config.clone();
+            let fetchium_owned = fetchium_config.clone();
             let thinking = config.thinking;
             Some(tokio::spawn(async move {
                 Self::synthesize_with_ai(
@@ -462,7 +463,7 @@ impl ResearchPipeline {
                     &metas_owned,
                     &citations_owned,
                     &texts_owned,
-                    &hsx_owned,
+                    &fetchium_owned,
                     thinking,
                 )
                 .await
@@ -655,7 +656,7 @@ impl ResearchPipeline {
         let l3 = temporal.validate(&v3_inputs, &config.query);
 
         let cross = CrossSourceVerifier::new();
-        let l4 = cross.verify(&v4_inputs);
+        let l4 = cross.verify_with_query(&v4_inputs, &config.query);
 
         let l5 = ExtractionValidator::validate(&v5_inputs);
 
@@ -793,15 +794,16 @@ impl ResearchPipeline {
     /// Used when `ai_synthesis = false` (via `--no-ai` flag).
     async fn execute_fast(
         config: &ResearchConfig,
-        hsx_config: &HsxConfig,
+        fetchium_config: &FetchiumConfig,
         http_client: &HttpClient,
         start: Instant,
-    ) -> Result<ResearchReport, HsxError> {
+    ) -> Result<ResearchReport, FetchiumError> {
         let sub_queries = decompose_query(&config.query);
 
         // Search with tight timeout for speed, larger budget for diversity
         let fast_budget = (config.max_sources as u32) * 3;
-        let mut orch_config = OrchestratorConfig::from_hsx_config(hsx_config, fast_budget);
+        let mut orch_config =
+            OrchestratorConfig::from_fetchium_config(fetchium_config, fast_budget);
         orch_config.max_total_results = fast_budget;
         orch_config.backend_timeout = std::time::Duration::from_secs(5);
         let orchestrator =
@@ -1031,15 +1033,16 @@ mod tests {
     use crate::research::ResearchConfig;
 
     #[tokio::test]
+    #[ignore = "requires network-backed search providers"]
     async fn pipeline_executes_without_error() {
         let config = ResearchConfig {
             query: "what is Rust".into(),
             thinking: false,
             ..Default::default()
         };
-        let hsx = crate::config::HsxConfig::default();
-        let http = crate::http::client::HttpClient::new(&hsx).unwrap();
-        let report = ResearchPipeline::execute(&config, &hsx, &http)
+        let fetchium_config = crate::config::FetchiumConfig::default();
+        let http = crate::http::client::HttpClient::new(&fetchium_config).unwrap();
+        let report = ResearchPipeline::execute(&config, &fetchium_config, &http)
             .await
             .unwrap();
         assert_eq!(report.query, "what is Rust");
@@ -1047,6 +1050,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires network-backed search providers"]
     async fn pipeline_builds_egp_when_requested() {
         let config = ResearchConfig {
             query: "Rust vs Go".into(),
@@ -1054,9 +1058,9 @@ mod tests {
             thinking: false,
             ..Default::default()
         };
-        let hsx = crate::config::HsxConfig::default();
-        let http = crate::http::client::HttpClient::new(&hsx).unwrap();
-        let report = ResearchPipeline::execute(&config, &hsx, &http)
+        let fetchium_config = crate::config::FetchiumConfig::default();
+        let http = crate::http::client::HttpClient::new(&fetchium_config).unwrap();
+        let report = ResearchPipeline::execute(&config, &fetchium_config, &http)
             .await
             .unwrap();
         assert!(report.evidence_graph.is_some());

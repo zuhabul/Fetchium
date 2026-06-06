@@ -18,8 +18,11 @@ export default function SocialApiReference() {
         <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
         <tbody>
           <tr><td><code>POST</code></td><td><code>/v1/social/research</code></td><td>Cross-platform unified research</td></tr>
+          <tr><td><code>POST</code></td><td><code>/v1/social/research/jobs</code></td><td>Async unified social research</td></tr>
           <tr><td><code>POST</code></td><td><code>/v1/social/reddit</code></td><td>Reddit-only search pipeline</td></tr>
+          <tr><td><code>POST</code></td><td><code>/v1/social/reddit/jobs</code></td><td>Async Reddit search</td></tr>
           <tr><td><code>POST</code></td><td><code>/v1/social/hackernews</code></td><td>Hacker News story search</td></tr>
+          <tr><td><code>POST</code></td><td><code>/v1/social/hackernews/jobs</code></td><td>Async Hacker News search</td></tr>
         </tbody>
       </table>
 
@@ -34,8 +37,13 @@ export default function SocialApiReference() {
         </tbody>
       </table>
 
+      <p>
+        Supported platform names are <code>twitter</code>, <code>reddit</code>, <code>tiktok</code>,{" "}
+        <code>hackernews</code> (or <code>hn</code>), and <code>youtube</code>.
+      </p>
+
       <CodeBlock language="bash" filename="social-research.sh" code={`curl -X POST https://api.fetchium.com/v1/social/research \\
-  -H "Authorization: Bearer fetchium_your_key" \\
+  -H "Authorization: Bearer $FETCHIUM_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "query": "best rust web framework",
@@ -59,29 +67,44 @@ export default function SocialApiReference() {
 
       <h2>Representative response shape</h2>
       <CodeBlock language="json" filename="social-response.json" code={`{
-  "query": "best rust web framework",
-  "platform_results": {
-    "reddit": {
-      "platform": "reddit",
-      "posts": [],
-      "trends": [],
-      "stats": { "posts_analyzed": 20 }
-    }
+  "meta": {
+    "request_id": "93e8761f-8b1a-4f30-bf7c-7bc16584224c",
+    "status": "ok",
+    "endpoint": "/v1/social/research",
+    "duration_ms": 1432,
+    "query": "best rust web framework",
+    "tokens_used": 0
   },
-  "cross_platform_trends": [],
-  "top_posts": [],
-  "content_ideas": [],
-  "summary": "Analysed posts across selected platforms...",
-  "duration_ms": 1432
+  "data": {
+    "platform_results": {
+      "reddit": {
+        "platform": "reddit",
+        "posts": [],
+        "trends": [],
+        "stats": { "posts_analyzed": 20 }
+      }
+    },
+    "cross_platform_trends": [],
+    "top_posts": [],
+    "content_ideas": [],
+    "summary": "Analysed posts across selected platforms...",
+    "duration_ms": 1432
+  }
 }`} />
+
+      <p>
+        The Reddit and Hacker News endpoints also return <code>meta</code> plus a route-specific{" "}
+        <code>data</code> payload. Use the matching <code>/jobs</code> endpoint when you want queueing
+        semantics instead of waiting for the request to finish inline.
+      </p>
 
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/api/youtube", title: "YouTube API", desc: "Video intelligence endpoints" },
-          { href: "/docs/api/search", title: "Search API", desc: "General web search" },
-          { href: "/docs/sdk/mcp", title: "MCP Protocol", desc: "Tool integration" },
-          { href: "/docs/api/usage", title: "Usage API", desc: "Quota monitoring" },
+          { href: "https://docs.fetchium.com/api/youtube", title: "YouTube API", desc: "Video intelligence endpoints" },
+          { href: "https://docs.fetchium.com/api/async-jobs", title: "Async Jobs", desc: "Queue social research and polling" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "General web search" },
+          { href: "https://docs.fetchium.com/sdk/mcp", title: "MCP Protocol", desc: "Tool integration" },
         ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

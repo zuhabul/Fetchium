@@ -57,7 +57,7 @@ Fetchium is a Cargo workspace with 4 crates:
 | `fetchium-mcp` | MCP server (Phase 4) — exposes fetchium-core as Model Context Protocol tools |
 | `fetchium-api` | REST API server via axum (Phase 4) |
 
-**Data flow:** `CLI command → HsxConfig → fetchium-core pipeline → formatted output`
+**Data flow:** `CLI command → FetchiumConfig → fetchium-core pipeline → formatted output`
 
 The CLI (`fetchium-cli/src/main.rs`) parses args, loads config, then dispatches to one file per command in `crates/fetchium-cli/src/commands/`. Each command calls into `fetchium-core` modules.
 
@@ -66,10 +66,10 @@ The CLI (`fetchium-cli/src/main.rs`) parses args, loads config, then dispatches 
 Most modules are currently stubs awaiting Phase 1+ implementation. Implemented:
 
 - `types.rs` — All shared data types (PRD §43): `AgentSearchResult`, `SearchResult`, `ResultItem`, `Segment`, `Finding`, `Source`, `EvidenceGraph`, `CepLayer`, `PdsTier`, `ResourceTier`, `BackendId`, etc.
-- `error.rs` — `HsxError`, `StructuredError`, `ErrorKind` (19 variants), `HsxResult<T>`
-- `config.rs` — `HsxConfig` loaded from `~/.fetchium/config.toml` with env var overrides; includes `detect_resource_tier()` and `data_dir()`
+- `error.rs` — `FetchiumError`, `StructuredError`, `ErrorKind` (19 variants), `FetchiumResult<T>`
+- `config.rs` — `FetchiumConfig` loaded from `~/.fetchium/config.toml` with env var overrides; includes `detect_resource_tier()` and `data_dir()`
 - `http/client.rs` — `HttpClient` stub (reqwest with pooling/retries)
-- `resource/mod.rs` — `detect_tier()` delegating to `HsxConfig::detect_resource_tier()`
+- `resource/mod.rs` — `detect_tier()` delegating to `FetchiumConfig::detect_resource_tier()`
 
 Planned modules follow this pipeline order:
 ```
@@ -203,7 +203,7 @@ sh scripts/setup-dev.sh   # installs commit-msg and pre-commit git hooks
 | Channel | Install command | Updated automatically |
 |---------|----------------|----------------------|
 | GitHub Releases | Direct download | ✅ On every release |
-| Shell installer | `curl -sSf https://install.fetchium.dev \| sh` | ✅ Points to latest |
+| Shell installer | `curl -sSf https://install.fetchium.com \| sh` | ✅ Points to latest |
 | npm | `npm install -g fetchium` | ✅ Via npm publish |
 | npx | `npx fetchium` | ✅ Via npm publish |
 | Homebrew | `brew install zuhabul/tap/fetchium` | ✅ Via tap PR |
@@ -226,3 +226,8 @@ These must be set in the repository Settings → Secrets → Actions:
 - [ ] Add `HOMEBREW_TAP_TOKEN` secret (GitHub PAT with `repo` scope on `zuhabul/homebrew-fetchium`)
 - [ ] Enable GitHub Pages for rustdoc (repo Settings → Pages → Source: GitHub Actions)
 - [ ] First release: merge a `Release PR` created by release-please, or push a `v1.0.0` tag manually
+
+## Global Infrastructure SSOT
+- Canonical infrastructure source: `/home/echo/INFRASTRUCTURE_SOURCE_OF_TRUTH.md`
+- Endpoint registry (machine-friendly): `/home/echo/INFRASTRUCTURE_ENDPOINTS.tsv`
+- Before infra changes: read SSOT, apply changes, then update SSOT + endpoint registry in same task.

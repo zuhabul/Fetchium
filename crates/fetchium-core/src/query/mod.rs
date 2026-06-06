@@ -3,12 +3,15 @@
 //! - `hyde.rs` — Hypothetical Document Embeddings for ambiguous queries
 //! - `fingerprint.rs` — Query Fingerprinting and Deduplication (QFD)
 
+pub mod autoprompt;
 pub mod complexity;
 pub mod crosslingual;
 pub mod expansion;
 pub mod fingerprint;
 pub mod hyde;
+pub mod locale;
 
+pub use autoprompt::{autoprompt, AutopromptResult};
 pub use complexity::{
     estimate_complexity, suggest_intent, ComplexityAssessment, ComplexityConfig, ComplexityLevel,
 };

@@ -1,6 +1,6 @@
 //! Verify Agent — cross-source contradiction detection and confidence scoring (PRD §8.8).
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use crate::research::amrs::agent::Agent;
 use crate::research::amrs::channel::{
     AgentMessage, AgentReceiver, AgentSender, AgentType, AmrsContradiction, AmrsFinding, AmrsSource,
@@ -145,7 +145,7 @@ impl Agent for VerifyAgent {
         AgentType::Verify
     }
 
-    async fn run(&self, mut rx: AgentReceiver, tx: AgentSender) -> Result<(), HsxError> {
+    async fn run(&self, mut rx: AgentReceiver, tx: AgentSender) -> Result<(), FetchiumError> {
         while let Some(msg) = rx.recv().await {
             match msg {
                 AgentMessage::SpawnVerify { sources, query } => {

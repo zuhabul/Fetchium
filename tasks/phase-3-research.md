@@ -15,7 +15,7 @@ Phase 3 transforms Fetchium from a multi-engine search tool into a validated res
 2. **RAR Self-Correction** -- Reflection-Augmented Research loop inspired by Self-RAG and CRAG that detects and auto-corrects bad retrievals at 5 reflection checkpoints (PRD SS8.6)
 3. **Citation System (6 styles)** -- APA, MLA, Chicago, IEEE, BibTeX, and inline citation formatters with strict evidence mode (PRD SS24)
 4. **Evidence Graph Protocol (EGP)** -- Graph-based evidence linking with claim provenance, SHA-256 content hashes, contradiction edges, and cryptographic verification (PRD SS8.7, SS24)
-5. **Research Mode** -- `hsx research` and `hsx agent-research` commands for structured multi-source analysis (PRD SS10 Mode B, SS9)
+5. **Research Mode** -- `fetchium research` and `fetchium agent-research` commands for structured multi-source analysis (PRD SS10 Mode B, SS9)
 
 ---
 
@@ -40,7 +40,7 @@ All of the following must be `DONE` before starting any Phase 3 task:
 ## Epic 3.1: 6-Layer Validation + RAR Self-Correction
 
 > **PRD Sections:** SS19 (Validation & Reliability Layer), SS8.6 (Reflection-Augmented Research)
-> **Crate:** `hsx-core` -- `src/validate/`
+> **Crate:** `fetchium-core` -- `src/validate/`
 > **Priority:** P1 | **Tasks:** 6
 
 ### P3-E1-T1: Cross-Source Verification (V4)
@@ -62,9 +62,9 @@ Build cross-source verification (V4 in the 6-layer pipeline). Compares claims ac
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/validate/mod.rs          -- Module root, re-exports
-crates/hsx-core/src/validate/types.rs        -- All validation types
-crates/hsx-core/src/validate/cross_source.rs -- V4 engine
+crates/fetchium-core/src/validate/mod.rs          -- Module root, re-exports
+crates/fetchium-core/src/validate/types.rs        -- All validation types
+crates/fetchium-core/src/validate/cross_source.rs -- V4 engine
 ```
 
 **Dependencies:** P2-E4 (HyperFusion), P1-E5-T1 (BM25), P0-E1-T2 (Types)
@@ -409,7 +409,7 @@ Build the temporal/freshness validation layer (V3). Checks published dates, dete
 - SS19 "V3: Freshness Validation -- Published date, staleness, cache freshness"
 - SS21 "Temporal: Exponential decay with intent-calibrated half-life"
 
-**Files to create:** `crates/hsx-core/src/validate/temporal.rs`
+**Files to create:** `crates/fetchium-core/src/validate/temporal.rs`
 
 **Dependencies:** P3-E1-T1 (types)
 
@@ -560,7 +560,7 @@ Build authority scoring as part of V1 (Source Validation). Assigns a trust score
 - SS19 "V1: Source Validation -- Reachability, SSL, domain reputation, redirect analysis"
 - SS21 "Authority: Domain scoring + citation chain analysis"
 
-**Files to create:** `crates/hsx-core/src/validate/authority.rs`
+**Files to create:** `crates/fetchium-core/src/validate/authority.rs`
 
 **Dependencies:** P3-E1-T1 (types), P1-E1-T1 (HTTP client)
 
@@ -717,9 +717,9 @@ Build the remaining validation layers: V2 (content validation -- relevance, lang
 **Files to create:**
 
 ```
-crates/hsx-core/src/validate/content.rs     -- V2
-crates/hsx-core/src/validate/extraction.rs  -- V5
-crates/hsx-core/src/validate/output.rs      -- V6
+crates/fetchium-core/src/validate/content.rs     -- V2
+crates/fetchium-core/src/validate/extraction.rs  -- V5
+crates/fetchium-core/src/validate/output.rs      -- V6
 ```
 
 **Dependencies:** P3-E1-T1 (types), P1-E5-T1 (BM25 for relevance)
@@ -941,7 +941,7 @@ Build the confidence calibration module that aggregates scores from all 6 valida
 - SS19 "6-Layer Validation" aggregate confidence
 - SS42 Feature 10: "Consensus scoring"
 
-**Files to create:** `crates/hsx-core/src/validate/calibration.rs`
+**Files to create:** `crates/fetchium-core/src/validate/calibration.rs`
 
 **Dependencies:** P3-E1-T1 through T4
 
@@ -1076,7 +1076,7 @@ Build the Reflection-Augmented Research (RAR) self-correction loop. After V4 val
 - SS8.6 "Reflection tokens: R1 [NEED_MORE], R2 [RELEVANT], R3 [SUFFICIENT], R4 [SUPPORTED], R5 [CONSISTENT]"
 - SS19 "RAR Integration -- After V4, RAR reflection kicks in"
 
-**Files to create:** `crates/hsx-core/src/validate/rar.rs`
+**Files to create:** `crates/fetchium-core/src/validate/rar.rs`
 
 **Dependencies:** P3-E1-T1 (types), P3-E1-T1 (cross-source), P3-E1-T2 (temporal), P1-E5-T1 (BM25)
 
@@ -1376,7 +1376,7 @@ mod tests {
 ## Epic 3.2: Citation System + Evidence Graph Protocol
 
 > **PRD Sections:** SS24 (Citation & Evidence System), SS8.7 (Evidence Graph Protocol)
-> **Crate:** `hsx-core` -- `src/citation/`
+> **Crate:** `fetchium-core` -- `src/citation/`
 > **Priority:** P1 | **Tasks:** 3
 
 ### P3-E2-T1: Citation Formatters (6 styles)
@@ -1397,9 +1397,9 @@ Implement 6 citation formatters: APA, MLA, Chicago, IEEE, BibTeX, and inline `[N
 **Files to create/modify:**
 
 ```
-crates/hsx-core/src/citation/mod.rs       -- Module root
-crates/hsx-core/src/citation/types.rs     -- Citation types
-crates/hsx-core/src/citation/formatter.rs -- 6 formatters
+crates/fetchium-core/src/citation/mod.rs       -- Module root
+crates/fetchium-core/src/citation/types.rs     -- Citation types
+crates/fetchium-core/src/citation/formatter.rs -- 6 formatters
 ```
 
 **Dependencies:** P0-E1-T2 (Types), P1-E7-T1 (Output formatters)
@@ -1671,7 +1671,7 @@ Implement the Evidence Graph Protocol -- a graph-based evidence linking system w
 **Files to create:**
 
 ```
-crates/hsx-core/src/citation/evidence_graph.rs -- EGP implementation
+crates/fetchium-core/src/citation/evidence_graph.rs -- EGP implementation
 ```
 
 **Dependencies:** P3-E2-T1 (citation types), P3-E1-T1 (validation types for Contradiction)
@@ -1944,7 +1944,7 @@ Build the evidence chain tracker that connects citations to EGP nodes, enabling 
 
 - SS24 "Strict Evidence Mode -- Every factual statement must cite a source. Uncitable claims marked [unverified]."
 
-**Files to create:** `crates/hsx-core/src/citation/evidence_tracker.rs`
+**Files to create:** `crates/fetchium-core/src/citation/evidence_tracker.rs`
 
 **Dependencies:** P3-E2-T1 (citations), P3-E2-T2 (EGP)
 
@@ -2113,7 +2113,7 @@ mod tests {
 ## Epic 3.3: Research Mode + Agent Research
 
 > **PRD Sections:** SS10 Mode B (Research Mode), SS9 (Agent Architecture), SS11 (CLI)
-> **Crate:** `hsx-core` -- `src/research/`, `hsx-cli` -- `src/commands/`
+> **Crate:** `fetchium-core` -- `src/research/`, `fetchium-cli` -- `src/commands/`
 > **Priority:** P1 | **Tasks:** 3
 
 ### P3-E3-T1: Multi-Source Research Pipeline
@@ -2124,7 +2124,7 @@ mod tests {
 **Estimated effort:** 4-5 days
 
 **Description:**
-Build the research pipeline orchestrator that chains together: query decomposition, parallel multi-backend search, CEP extraction, QATBE budgeting, RAR reflection loop, HyperFusion ranking, cross-source validation, EGP evidence mapping, and citation injection. This is the core engine behind both `hsx research` and `hsx agent-research`.
+Build the research pipeline orchestrator that chains together: query decomposition, parallel multi-backend search, CEP extraction, QATBE budgeting, RAR reflection loop, HyperFusion ranking, cross-source validation, EGP evidence mapping, and citation injection. This is the core engine behind both `fetchium research` and `fetchium agent-research`.
 
 **PRD References:**
 
@@ -2134,9 +2134,9 @@ Build the research pipeline orchestrator that chains together: query decompositi
 **Files to create:**
 
 ```
-crates/hsx-core/src/research/mod.rs       -- Module root
-crates/hsx-core/src/research/pipeline.rs  -- Research pipeline orchestrator
-crates/hsx-core/src/research/decompose.rs -- Query decomposition
+crates/fetchium-core/src/research/mod.rs       -- Module root
+crates/fetchium-core/src/research/pipeline.rs  -- Research pipeline orchestrator
+crates/fetchium-core/src/research/decompose.rs -- Query decomposition
 ```
 
 **Dependencies:** All P3-E1 (validation + RAR), all P3-E2 (citations + EGP), P2-E3 (search orchestrator), P2-E4 (HyperFusion)
@@ -2257,7 +2257,7 @@ use crate::validate::cross_source::CrossSourceVerifier;
 use crate::citation::formatter::CitationFormatter;
 use crate::citation::evidence_graph::EvidenceGraphBuilder;
 use crate::citation::evidence_tracker::EvidenceTracker;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 pub struct ResearchPipeline;
 
@@ -2280,7 +2280,7 @@ impl ResearchPipeline {
         // orchestrator: &SearchOrchestrator,
         // extractor: &QatbeExtractor,
         // ranker: &HyperFusionRanker,
-    ) -> Result<ResearchReport, HsxError> {
+    ) -> Result<ResearchReport, FetchiumError> {
         let start = std::time::Instant::now();
 
         // Step 1: Decompose query
@@ -2383,18 +2383,18 @@ mod tests {
 **Estimated effort:** 2-3 days
 
 **Description:**
-Build the `hsx research` CLI command that wraps the research pipeline with human-friendly markdown output. Supports `--citations`, `--validate`, `--strict-evidence`, `--evidence-graph`, `--output`, and `--format` flags.
+Build the `fetchium research` CLI command that wraps the research pipeline with human-friendly markdown output. Supports `--citations`, `--validate`, `--strict-evidence`, `--evidence-graph`, `--output`, and `--format` flags.
 
 **PRD References:**
 
-- SS10 Mode B: `hsx research "GDPR implications for AI training data" --citations apa`
+- SS10 Mode B: `fetchium research "GDPR implications for AI training data" --citations apa`
 - SS11 CLI flags: `--citations`, `--validate`, `--evidence-graph`, `--output`, `--format`
 
 **Files to create/modify:**
 
 ```
-crates/hsx-cli/src/commands/research.rs  -- research command
-crates/hsx-cli/src/cli.rs               -- Add ResearchCommand to clap enum
+crates/fetchium-cli/src/commands/research.rs  -- research command
+crates/fetchium-cli/src/cli.rs               -- Add ResearchCommand to clap enum
 ```
 
 **Dependencies:** P3-E3-T1 (pipeline)
@@ -2449,7 +2449,7 @@ use crate::research::pipeline::ResearchPipeline;
 use crate::research::ResearchConfig;
 
 impl ResearchCommand {
-    pub async fn run(&self) -> Result<(), HsxError> {
+    pub async fn run(&self) -> Result<(), FetchiumError> {
         let config = ResearchConfig {
             query: self.query.clone(),
             max_sources: self.max_sources,
@@ -2522,7 +2522,7 @@ impl ResearchCommand {
 
 **Acceptance criteria:**
 
-- [ ] `hsx research "query"` executes the pipeline and prints markdown report to stdout
+- [ ] `fetchium research "query"` executes the pipeline and prints markdown report to stdout
 - [ ] `--citations apa` uses APA citation style throughout
 - [ ] `--output report.md` writes to file instead of stdout
 - [ ] `--evidence-graph` writes `evidence_graph.json` alongside the report
@@ -2541,18 +2541,18 @@ impl ResearchCommand {
 **Estimated effort:** 2 days
 
 **Description:**
-Build the `hsx agent-research` command that wraps the same research pipeline but outputs structured JSON for consumption by AI agents. Supports `--budget`, `--tier`, `--schema`, and `--framework` flags.
+Build the `fetchium agent-research` command that wraps the same research pipeline but outputs structured JSON for consumption by AI agents. Supports `--budget`, `--tier`, `--schema`, and `--framework` flags.
 
 **PRD References:**
 
-- SS9: `hsx agent-research "query" --budget 4000 --schema output.json --strict-evidence`
+- SS9: `fetchium agent-research "query" --budget 4000 --schema output.json --strict-evidence`
 - SS43: `AgentSearchResult` data model
 
 **Files to create/modify:**
 
 ```
-crates/hsx-cli/src/commands/agent_research.rs  -- agent-research command
-crates/hsx-cli/src/cli.rs                     -- Add AgentResearchCommand
+crates/fetchium-cli/src/commands/agent_research.rs  -- agent-research command
+crates/fetchium-cli/src/cli.rs                     -- Add AgentResearchCommand
 ```
 
 **Dependencies:** P3-E3-T1 (pipeline), P1-E3-T4 (PDS tiers)
@@ -2640,7 +2640,7 @@ pub struct AgentSource {
 }
 
 impl AgentResearchCommand {
-    pub async fn run(&self) -> Result<(), HsxError> {
+    pub async fn run(&self) -> Result<(), FetchiumError> {
         let config = ResearchConfig {
             query: self.query.clone(),
             max_sources: self.max_sources,
@@ -2681,7 +2681,7 @@ impl AgentResearchCommand {
 
 **Acceptance criteria:**
 
-- [ ] `hsx agent-research "query"` outputs valid JSON to stdout
+- [ ] `fetchium agent-research "query"` outputs valid JSON to stdout
 - [ ] JSON matches `AgentSearchResult` structure from PRD SS43
 - [ ] `--budget 4000` limits total output tokens
 - [ ] `--tier summary` adjusts detail level
@@ -2724,7 +2724,7 @@ mod tests {
 
 After all tasks are complete, update the module roots:
 
-**`crates/hsx-core/src/validate/mod.rs`:**
+**`crates/fetchium-core/src/validate/mod.rs`:**
 
 ```rust
 pub mod types;
@@ -2745,7 +2745,7 @@ pub use calibration::ConfidenceCalibrator;
 pub use rar::{RarEngine, RarConfig, RarState};
 ```
 
-**`crates/hsx-core/src/citation/mod.rs`:**
+**`crates/fetchium-core/src/citation/mod.rs`:**
 
 ```rust
 pub mod types;
@@ -2759,7 +2759,7 @@ pub use evidence_graph::{EvidenceGraph, EvidenceGraphBuilder};
 pub use evidence_tracker::EvidenceTracker;
 ```
 
-**`crates/hsx-core/src/research/mod.rs`:**
+**`crates/fetchium-core/src/research/mod.rs`:**
 
 ```rust
 pub mod pipeline;
@@ -2784,8 +2784,8 @@ pub use pipeline::ResearchPipeline;
 | P3-E2-T2 (EGP)                    | P3-E2-T1           | Evidence graph builder   |
 | P3-E2-T3 (Evidence tracker)       | P3-E2-T1, P3-E2-T2 | Strict evidence mode     |
 | P3-E3-T1 (Pipeline)               | All E1, all E2     | Research orchestrator    |
-| P3-E3-T2 (research cmd)           | P3-E3-T1           | `hsx research` CLI       |
-| P3-E3-T3 (agent-research)         | P3-E3-T1           | `hsx agent-research` CLI |
+| P3-E3-T2 (research cmd)           | P3-E3-T1           | `fetchium research` CLI       |
+| P3-E3-T3 (agent-research)         | P3-E3-T1           | `fetchium agent-research` CLI |
 
 ## Parallelization Guide
 
@@ -2818,8 +2818,8 @@ P3-E1-T6 (RAR)                  |
 | Unit        | RAR checkpoints       | Mock state with controlled scores -> verify actions            |
 | Unit        | Query decomposition   | Known complex queries -> expected sub-questions                |
 | Integration | Full pipeline         | Mock search backend (wiremock) -> verify report structure      |
-| E2E         | `hsx research`        | `assert_cmd` -> verify stdout is valid markdown with citations |
-| E2E         | `hsx agent-research`  | `assert_cmd` -> verify stdout is valid JSON matching schema    |
+| E2E         | `fetchium research`        | `assert_cmd` -> verify stdout is valid markdown with citations |
+| E2E         | `fetchium agent-research`  | `assert_cmd` -> verify stdout is valid JSON matching schema    |
 | Snapshot    | Report output         | `insta` snapshots for known queries with mock data             |
 
 ---

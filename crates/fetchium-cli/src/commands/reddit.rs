@@ -3,12 +3,12 @@
 use crate::cli::{Format, RedditArgs};
 use anyhow::Result;
 use colored::Colorize;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use std::time::Instant;
 
 /// Run the `fetchium reddit` subcommand.
-pub async fn run(args: RedditArgs, config: &HsxConfig, format: Format) -> Result<()> {
+pub async fn run(args: RedditArgs, config: &FetchiumConfig, format: Format) -> Result<()> {
     let start = Instant::now();
     let http = HttpClient::new(config)?;
 
