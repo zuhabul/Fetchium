@@ -52,15 +52,15 @@ handles.push(tokio::spawn(async move {
 
 ## Adding a Plugin
 
-Implement the `HsxPlugin` trait from `crates/fetchium-core/src/plugin/traits.rs`:
+Implement the `Plugin` trait from `crates/fetchium-core/src/plugin/traits.rs`:
 
 ```rust
-use hsx_core::plugin::traits::{HsxPlugin, PluginContext, PluginResult};
+use fetchium_core::plugin::traits::{Plugin, PluginContext, PluginResult};
 
 pub struct MyPlugin;
 
 #[async_trait::async_trait]
-impl HsxPlugin for MyPlugin {
+impl Plugin for MyPlugin {
     fn name(&self) -> &str { "my-plugin" }
     fn version(&self) -> &str { "0.1.0" }
     fn description(&self) -> &str { "Does something useful" }
