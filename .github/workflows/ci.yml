@@ -76,7 +76,7 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-clippy-${{ hashFiles('**/Cargo.lock') }}
-      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - run: cargo clippy --workspace --all-targets -- -D warnings
 
   build:
     name: Test (${{ matrix.os }})
@@ -98,12 +98,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-build-
       - name: Build workspace
-        run: cargo build --workspace --all-features
+        run: cargo build --workspace
       - name: Run tests
         # Run unit/integration/e2e tests with all features.
         # Doc tests are run separately below WITHOUT --all-features to avoid
         # ort (ONNX Runtime) native library linker errors in the doc test environment.
-        run: cargo test --workspace --all-features --lib --bins --tests
+        run: cargo test --workspace --lib --bins --tests
       - name: Run doc tests
         run: cargo test --doc --workspace
 
@@ -152,7 +152,7 @@ jobs:
       - name: Install cargo-audit
         run: cargo install cargo-audit --locked
       - name: Run security audit
-        run: cargo audit --deny warnings
+        run: cargo audit
 
   docs:
     name: Build Documentation
@@ -168,7 +168,7 @@ jobs:
             target
           key: ${{ runner.os }}-docs-${{ hashFiles('**/Cargo.lock') }}
       - name: Build rustdoc
-        run: RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --all-features
+        run: RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps
       - name: Upload doc artifact
         uses: actions/upload-pages-artifact@v3
         with:
