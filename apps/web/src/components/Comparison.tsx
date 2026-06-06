@@ -4,23 +4,6 @@ import { motion } from "framer-motion";
 import { Check, X, Minus, Zap, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-/**
- * Latency data sources (independent benchmarks, 2025):
- *  - Exa: 1.180s avg (50-query test, dev.to benchmark)
- *  - Tavily: 1.885s avg (50-query test, dev.to benchmark)
- *  - SerpAPI: 2.972s avg (50-query test, dev.to benchmark)
- *  - Perplexity: 3–5s (LLM inference + search combined)
- *  - Firecrawl: extraction-focused, not a pure search API
- *  - Fetchium: ~500ms P50 for search-only (parallel Rust tokio dispatch)
- *
- * Pricing data (verified March 2026 from each provider's pricing page):
- *  - Tavily: $8.00/1K (basic search credit rate)
- *  - Exa: $5.00/1K (neural search)
- *  - SerpAPI: $15.00/1K (developer plan)
- *  - Firecrawl: ~$0.83/1K (Standard plan, extraction only)
- *  - Fetchium: $0.58/1K (Growth plan, full pipeline)
- */
-
 type Status = "yes" | "no" | "partial";
 
 interface Feature {
@@ -29,7 +12,7 @@ interface Feature {
 }
 
 const features: Feature[] = [
-  { label: "Multi-source federation", description: "11+ simultaneous backends" },
+  { label: "Multi-source federation", description: "17+ simultaneous backends" },
   { label: "Token budget control (QATBE)" },
   { label: "5-layer content extraction (CEP)" },
   { label: "8-signal neural ranking" },
@@ -39,10 +22,10 @@ const features: Feature[] = [
   { label: "YouTube & social search" },
   { label: "Real-time monitoring + diffs" },
   { label: "MCP protocol support" },
-  { label: "Self-hostable" },
+  { label: "Independent backend mix" },
   { label: "Free tier (renewing)" },
-  { label: "Search P50 latency", description: "Independent benchmark, 2025" },
-  { label: "Price per 1K queries", description: "Entry-tier, verified Mar 2026" },
+  { label: "Plan-based rate limits", description: "From current API auth configuration" },
+  { label: "Free tier available", description: "1,000 requests/month in current API auth configuration" },
 ];
 
 interface Tool {
@@ -60,7 +43,7 @@ const tools: Tool[] = [
     highlight: true,
     data: [
       "yes", "yes", "yes", "yes", "yes", "yes", "yes",
-      "yes", "yes", "yes", "yes", "yes", "~500ms", "$0.58",
+      "yes", "yes", "yes", "yes", "yes", "60-2000/min", "yes",
     ],
   },
   {
@@ -70,7 +53,7 @@ const tools: Tool[] = [
     compareHref: "/compare/tavily",
     data: [
       "partial", "no", "no", "partial", "partial", "no", "partial",
-      "no", "no", "no", "no", "yes", "~1.9s", "$8.00",
+      "no", "no", "no", "no", "yes", "varies", "yes",
     ],
   },
   {
@@ -80,7 +63,7 @@ const tools: Tool[] = [
     compareHref: "/compare/exa",
     data: [
       "no", "no", "no", "partial", "no", "no", "no",
-      "no", "no", "partial", "no", "yes", "~1.2s", "$5.00",
+      "no", "no", "partial", "no", "yes", "varies", "yes",
     ],
   },
   {
@@ -90,7 +73,7 @@ const tools: Tool[] = [
     compareHref: "/compare/serpapi",
     data: [
       "no", "no", "no", "no", "no", "no", "no",
-      "no", "no", "no", "no", "yes", "~3.0s", "$15.00",
+      "no", "no", "no", "no", "yes", "varies", "yes",
     ],
   },
   {
@@ -100,7 +83,7 @@ const tools: Tool[] = [
     compareHref: "/compare/firecrawl",
     data: [
       "no", "no", "partial", "no", "no", "no", "no",
-      "no", "partial", "no", "yes", "yes", "N/A¹", "$0.83",
+      "no", "partial", "no", "no", "yes", "varies", "yes",
     ],
   },
 ];
@@ -109,8 +92,8 @@ function StatusCell({ value }: { value: Status | string }) {
   if (value === "yes") {
     return (
       <div className="flex items-center justify-center">
-        <div className="flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-emerald-500/12 shadow-[0_0_8px_rgba(16,185,129,0.15)]">
-          <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-emerald-400" strokeWidth={2.5} />
+        <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-emerald-500/15 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+          <Check className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-emerald-400" strokeWidth={2.5} />
         </div>
       </div>
     );
@@ -118,20 +101,20 @@ function StatusCell({ value }: { value: Status | string }) {
   if (value === "no") {
     return (
       <div className="flex items-center justify-center">
-        <X className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-700" />
+        <X className="h-4 w-4 sm:h-5 sm:w-5 text-slate-500" />
       </div>
     );
   }
   if (value === "partial") {
     return (
       <div className="flex items-center justify-center">
-        <Minus className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-500/70" />
+        <Minus className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500/70" />
       </div>
     );
   }
   return (
     <div className="flex items-center justify-center">
-      <span className="rounded-md border border-white/8 bg-white/4 px-1.5 sm:px-2 py-0.5 font-mono text-[10px] sm:text-[11px] text-slate-400">
+      <span className="rounded-md border border-slate-700 bg-slate-900/60 px-2 sm:px-2.5 py-0.5 font-mono text-[12px] sm:text-[13px] text-slate-300">
         {value}
       </span>
     </div>
@@ -153,18 +136,18 @@ export default function Comparison() {
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-500/25 bg-indigo-500/8 px-3 sm:px-4 py-1.5 text-xs font-medium text-indigo-300">
-            <Zap className="h-3.5 w-3.5" strokeWidth={2.5} />
-            Verified Comparison · March 2026
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-sm font-semibold text-indigo-200">
+            <Zap className="h-4 w-4" strokeWidth={2.5} />
+            Capability Comparison
           </div>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-slate-100">
-            More features.{" "}
-            <span className="gradient-text">Fraction of the price.</span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-100">
+            Fetchium capability{" "}
+            <span className="gradient-text">shape at a glance.</span>
           </h2>
-          <p className="mt-4 sm:mt-5 mx-auto max-w-2xl text-sm sm:text-lg text-slate-500">
-            Fetchium is the only API combining search federation, neural ranking,
-            full content extraction, and cross-session AI learning.
-            All at a lower per-query cost than any competitor.
+          <p className="mt-5 sm:mt-6 mx-auto max-w-2xl text-base sm:text-xl text-slate-300 leading-relaxed">
+            This view focuses on first-party Fetchium capabilities and broad product-shape
+            differences. It intentionally avoids hard benchmark and pricing claims for
+            third-party services that can change independently of this repo.
           </p>
         </motion.div>
 
@@ -175,17 +158,17 @@ export default function Comparison() {
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           className="relative"
         >
-          <div className="sm:hidden text-center text-[11px] text-slate-600 mb-2 flex items-center justify-center gap-1.5">
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="sm:hidden text-center text-[13px] text-slate-300 mb-3 flex items-center justify-center gap-1.5">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
             </svg>
             Scroll horizontally to compare
           </div>
-          <div className="overflow-x-auto rounded-2xl border border-[rgba(99,102,241,0.12)] shadow-[0_24px_64px_rgba(0,0,0,0.5)] -mx-4 sm:mx-0">
-            <table className="w-full border-collapse text-xs sm:text-sm min-w-[560px]">
+          <div className="overflow-x-auto rounded-2xl border border-slate-800 shadow-[0_24px_80px_rgba(0,0,0,0.6)] -mx-4 sm:mx-0">
+            <table className="w-full border-collapse text-sm sm:text-base min-w-[560px]">
               <thead>
-                <tr className="border-b border-white/6">
-                  <th className="w-48 sm:w-60 py-3 sm:py-5 px-3 sm:px-6 text-left text-[11px] sm:text-[13px] font-medium text-slate-600">
+                <tr className="border-b border-slate-800">
+                  <th className="w-48 sm:w-60 py-3 sm:py-5 px-3 sm:px-6 text-left text-[13px] sm:text-[15px] font-semibold text-slate-300">
                     Feature
                   </th>
                   {tools.map((tool) => (
@@ -198,29 +181,29 @@ export default function Comparison() {
                       }`}
                     >
                       {tool.highlight && (
-                        <div className="mb-1 sm:mb-2 flex items-center justify-center">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-500 to-violet-600 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-white shadow-[0_0_12px_rgba(99,102,241,0.4)]">
-                            <Zap className="h-2 w-2 sm:h-2.5 sm:w-2.5" strokeWidth={3} />
+                        <div className="mb-2 flex items-center justify-center">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-500 to-violet-600 px-2.5 py-1 text-[10px] sm:text-[11px] font-bold text-white shadow-[0_0_12px_rgba(99,102,241,0.4)]">
+                            <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3" strokeWidth={3} />
                             Best Value
                           </span>
                         </div>
                       )}
                       <div
-                        className={`text-[11px] sm:text-[13px] font-semibold ${
-                          tool.highlight ? "text-indigo-300" : "text-slate-500"
+                        className={`text-[13px] sm:text-[15px] font-bold ${
+                          tool.highlight ? "text-indigo-300" : "text-slate-200"
                         }`}
                       >
                         {tool.name}
                       </div>
-                      <div className="mt-0.5 text-[10px] sm:text-[11px] font-normal text-slate-600 hidden sm:block">
+                      <div className="mt-1 text-[11px] sm:text-[13px] font-medium text-slate-400 hidden sm:block">
                         {tool.tagline}
                       </div>
                       {tool.compareHref && (
                         <Link
                           href={tool.compareHref}
-                          className="mt-1 hidden sm:inline-flex items-center gap-0.5 text-[10px] text-indigo-500 hover:text-indigo-400 transition-colors"
+                          className="mt-1.5 hidden sm:inline-flex items-center gap-1 text-[11px] sm:text-[12px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
                         >
-                          vs Fetchium <ArrowRight className="h-2.5 w-2.5" />
+                          vs Fetchium <ArrowRight className="h-3 w-3" />
                         </Link>
                       )}
                     </th>
@@ -236,14 +219,14 @@ export default function Comparison() {
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
                     transition={{ delay: fi * 0.03, duration: 0.3 }}
-                    className={`border-b border-white/4 last:border-0 transition-colors hover:bg-white/[0.015] ${
-                      fi % 2 === 0 ? "bg-transparent" : "bg-white/[0.01]"
+                    className={`border-b border-slate-800 last:border-0 transition-colors hover:bg-slate-900/40 ${
+                      fi % 2 === 0 ? "bg-transparent" : "bg-slate-900/20"
                     }`}
                   >
                     <td className="py-3 sm:py-4 px-3 sm:px-6">
-                      <div className="text-[11px] sm:text-[13px] text-slate-300">{feature.label}</div>
+                      <div className="text-[13px] sm:text-[15px] font-semibold text-slate-200">{feature.label}</div>
                       {feature.description && (
-                        <div className="mt-0.5 text-[10px] sm:text-[11px] text-slate-600">
+                        <div className="mt-1 text-[12px] sm:text-[13px] text-slate-400">
                           {feature.description}
                         </div>
                       )}
@@ -274,29 +257,29 @@ export default function Comparison() {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="mt-4 sm:mt-5 space-y-2"
         >
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-[11px] sm:text-[12px] text-slate-600">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-[13px] sm:text-[14px] text-slate-300">
             <div className="flex items-center gap-2">
               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/12">
-                <Check className="h-3 w-3 text-emerald-400" strokeWidth={2.5} />
+                <Check className="h-3.5 w-3.5 text-emerald-400" strokeWidth={2.5} />
               </div>
               Full support
             </div>
             <div className="flex items-center gap-2">
-              <Minus className="h-3.5 w-3.5 text-amber-500/70" />
+              <Minus className="h-4 w-4 text-amber-500/70" />
               Partial support
             </div>
             <div className="flex items-center gap-2">
-              <X className="h-3.5 w-3.5 text-slate-700" />
+              <X className="h-4 w-4 text-slate-500" />
               Not available
             </div>
           </div>
-          <p className="text-center text-[10px] text-slate-700">
-            ¹ Firecrawl is extraction-only (no search); latency N/A for search comparison.
-            Latency figures from independent 50-query benchmark (dev.to, 2025). Pricing verified from each provider&apos;s public pricing page, March 2026.
+          <p className="text-center text-[12px] sm:text-[13px] text-slate-400 leading-relaxed">
+            Fetchium values in this table are tied to the current codebase and auth
+            configuration. Non-Fetchium entries are shown as broad capability comparisons only.
           </p>
         </motion.div>
 
-        {/* Factual value callout */}
+        {/* Fetchium callout */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -307,20 +290,20 @@ export default function Comparison() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-8">
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-10">
               <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-emerald-400">9×</div>
-                <div className="text-[12px] sm:text-[13px] text-slate-500 mt-0.5">cheaper than Tavily</div>
-                <div className="text-[10px] text-slate-700">$0.90 vs $8.00 per 1K</div>
+                <div className="text-3xl sm:text-4xl font-bold text-emerald-400">17+</div>
+                <div className="text-[14px] sm:text-[15px] text-slate-300 mt-1 font-medium">federated backends</div>
+                <div className="text-[12px] sm:text-[13px] text-slate-400">single-query fanout</div>
               </div>
-              <div className="hidden sm:block w-px h-10 bg-white/10" />
+              <div className="hidden sm:block w-px h-10 bg-slate-800" />
               <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-indigo-300">16×</div>
-                <div className="text-[12px] sm:text-[13px] text-slate-500 mt-0.5">cheaper than SerpAPI</div>
-                <div className="text-[10px] text-slate-700">$0.90 vs $15.00 per 1K</div>
+                <div className="text-3xl sm:text-4xl font-bold text-indigo-300">17</div>
+                <div className="text-[14px] sm:text-[15px] text-slate-300 mt-1 font-medium">algorithms</div>
+                <div className="text-[12px] sm:text-[13px] text-slate-400">ranking, extraction, validation</div>
               </div>
-              <div className="hidden sm:block w-px h-10 bg-white/10" />
-              <p className="text-[12px] sm:text-[13px] text-slate-400 max-w-xs text-center sm:text-left">
-                <span className="font-semibold text-slate-200">Full pipeline</span> — search + extraction + citations + ranking.
-                Competitors charge search-only rates for a fraction of the features.
+              <div className="hidden sm:block w-px h-10 bg-slate-800" />
+              <p className="text-[14px] sm:text-[15px] text-slate-300 max-w-xs text-center sm:text-left leading-relaxed">
+                <span className="font-bold text-slate-100">Full pipeline</span> means search,
+                extraction, ranking, citations, and research workflows in one product surface.
               </p>
             </div>
             <div className="flex flex-col gap-2 shrink-0">
@@ -332,7 +315,7 @@ export default function Comparison() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/8 bg-white/3 px-3 py-2 text-[12px] text-slate-400 hover:text-slate-200 hover:bg-white/6 transition-all"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-900/40 px-4 py-2.5 text-[14px] font-semibold text-slate-300 hover:text-slate-100 hover:bg-slate-800/60 hover:border-slate-600/60 transition-all"
                 >
                   {item.label}
                   <ArrowRight className="h-3 w-3" />

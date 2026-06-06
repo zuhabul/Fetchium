@@ -42,7 +42,7 @@ pub mod bing;
 pub mod google;
 pub mod scholar;
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::rank::fusion::QueryIntent;
 use crate::types::{BackendId, ResultItem};
 use async_trait::async_trait;
@@ -56,11 +56,17 @@ pub enum TimeRange {
     Year,
 }
 
-/// Context passed to backends for intent-aware, time-filtered searches.
+/// Context passed to backends for intent-aware, locale-targeted searches.
 #[derive(Debug, Clone)]
 pub struct SearchContext {
     pub intent: QueryIntent,
     pub time_range: Option<TimeRange>,
+    /// ISO 3166-1 alpha-2 country code for residential proxy targeting.
+    /// `None` = default/US routing. Set from query locale detection.
+    pub locale: Option<String>,
+    /// Query language hint for backends that support language targeting.
+    /// Uses lightweight query-language detection, not geo inference.
+    pub language: Option<String>,
 }
 
 /// Trait implemented by every search backend.
@@ -86,7 +92,7 @@ pub trait SearchBackend: Send + Sync {
     /// - Return partial results on soft failures (not full errors)
     /// - Return `Err` only for hard failures (network down, auth broken, etc.)
     /// - Never panic
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>>;
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>>;
 
     /// Execute a search with intent and time range context.
     ///
@@ -97,7 +103,7 @@ pub trait SearchBackend: Send + Sync {
         query: &str,
         max_results: u32,
         _ctx: &SearchContext,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         self.search(query, max_results).await
     }
 }

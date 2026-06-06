@@ -1,6 +1,6 @@
 //! Twitter oEmbed API — fetch tweet data via X's public endpoint (no auth needed).
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use crate::http::client::HttpClient;
 use crate::social::twitter::types::{Tweet, TwitterUser};
 use serde::Deserialize;
@@ -15,7 +15,7 @@ struct OEmbedResponse {
 
 /// Fetch tweet data via X's public oEmbed endpoint.
 /// GET https://publish.twitter.com/oembed?url=https://x.com/user/status/123
-pub async fn fetch_oembed(tweet_url: &str, http: &HttpClient) -> Result<Tweet, HsxError> {
+pub async fn fetch_oembed(tweet_url: &str, http: &HttpClient) -> Result<Tweet, FetchiumError> {
     let oembed_url = format!(
         "https://publish.twitter.com/oembed?url={}&omit_script=true",
         urlencoding_encode(tweet_url)
@@ -23,7 +23,7 @@ pub async fn fetch_oembed(tweet_url: &str, http: &HttpClient) -> Result<Tweet, H
 
     let response = http.fetch_text(&oembed_url).await?;
     let oembed: OEmbedResponse = serde_json::from_str(&response)
-        .map_err(|e| HsxError::Extraction(format!("oEmbed parse error: {e}")))?;
+        .map_err(|e| FetchiumError::Extraction(format!("oEmbed parse error: {e}")))?;
 
     // Parse tweet text from the HTML response
     let text = extract_text_from_oembed_html(&oembed.html);

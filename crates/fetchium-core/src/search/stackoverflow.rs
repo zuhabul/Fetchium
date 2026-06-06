@@ -6,8 +6,8 @@
 //! StackExchange returns gzip-compressed responses by default; reqwest handles
 //! decompression automatically when built with the `gzip` feature.
 
-use crate::error::HsxError;
-use crate::error::HsxResult;
+use crate::error::FetchiumError;
+use crate::error::FetchiumResult;
 use crate::http::HttpClient;
 use crate::search::SearchBackend;
 use crate::types::{BackendId, ResultItem};
@@ -94,7 +94,7 @@ impl SearchBackend for StackOverflowBackend {
         BackendId::StackOverflow
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         let now = now_ms();
         let cooldown_until = SO_COOLDOWN_UNTIL_MS.load(Ordering::Relaxed);
         if now < cooldown_until {
@@ -132,13 +132,13 @@ impl SearchBackend for StackOverflowBackend {
             if status.as_u16() == 429 || body.contains("throttle_violation") {
                 let until = now_ms() + SO_COOLDOWN_SECS * 1000;
                 SO_COOLDOWN_UNTIL_MS.store(until, Ordering::Relaxed);
-                return Err(HsxError::Search(format!(
+                return Err(FetchiumError::Search(format!(
                     "StackOverflow rate-limited (HTTP {status}) — cooling down for {}s",
                     SO_COOLDOWN_SECS
                 )));
             }
             if status.is_server_error() {
-                return Err(HsxError::Search(format!(
+                return Err(FetchiumError::Search(format!(
                     "StackOverflow upstream server error: HTTP {status}"
                 )));
             }

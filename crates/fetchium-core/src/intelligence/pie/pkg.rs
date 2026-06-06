@@ -7,7 +7,7 @@
 use rusqlite::Connection;
 use std::sync::Mutex;
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use crate::intelligence::enable_wal;
 
 /// A node in the personal knowledge graph.
@@ -35,7 +35,7 @@ pub struct PersonalKnowledgeGraph {
 }
 
 impl PersonalKnowledgeGraph {
-    pub fn new(db_path: &std::path::Path) -> Result<Self, HsxError> {
+    pub fn new(db_path: &std::path::Path) -> Result<Self, FetchiumError> {
         let conn = Connection::open(db_path)?;
         enable_wal(&conn)?;
         conn.execute_batch(
@@ -69,7 +69,7 @@ impl PersonalKnowledgeGraph {
         name: &str,
         entity_type: &str,
         source_url: &str,
-    ) -> Result<u64, HsxError> {
+    ) -> Result<u64, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
             "INSERT INTO entities (name, type, source_url)
@@ -92,7 +92,7 @@ impl PersonalKnowledgeGraph {
         entity_b: &str,
         relation: &str,
         weight: f64,
-    ) -> Result<(), HsxError> {
+    ) -> Result<(), FetchiumError> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
             "INSERT INTO relationships (entity_a, entity_b, relation, weight)
@@ -110,7 +110,7 @@ impl PersonalKnowledgeGraph {
         &self,
         entity: &str,
         limit: usize,
-    ) -> Result<Vec<(String, String, f64)>, HsxError> {
+    ) -> Result<Vec<(String, String, f64)>, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT entity_b, relation, weight FROM relationships WHERE entity_a = ?1
@@ -133,7 +133,7 @@ impl PersonalKnowledgeGraph {
     }
 
     /// Top entities by frequency.
-    pub fn top_entities(&self, limit: usize) -> Result<Vec<Entity>, HsxError> {
+    pub fn top_entities(&self, limit: usize) -> Result<Vec<Entity>, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT id, name, type, frequency, first_seen, last_seen
@@ -158,21 +158,21 @@ impl PersonalKnowledgeGraph {
     }
 
     /// Total entity count.
-    pub fn entity_count(&self) -> Result<u64, HsxError> {
+    pub fn entity_count(&self) -> Result<u64, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let n: i64 = conn.query_row("SELECT COUNT(*) FROM entities", [], |row| row.get(0))?;
         Ok(n as u64)
     }
 
     /// Total relationship count.
-    pub fn relationship_count(&self) -> Result<u64, HsxError> {
+    pub fn relationship_count(&self) -> Result<u64, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let n: i64 = conn.query_row("SELECT COUNT(*) FROM relationships", [], |row| row.get(0))?;
         Ok(n as u64)
     }
 
     /// Reset all knowledge graph data.
-    pub fn reset(&self) -> Result<(), HsxError> {
+    pub fn reset(&self) -> Result<(), FetchiumError> {
         let conn = self.conn.lock().unwrap();
         conn.execute_batch(
             "DELETE FROM entities;

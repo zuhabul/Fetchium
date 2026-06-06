@@ -3,13 +3,13 @@
 use crate::cli::{Format, HackernewsArgs};
 use anyhow::Result;
 use colored::Colorize;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::social::hackernews;
 use std::time::Instant;
 
 /// Run the `fetchium hackernews` subcommand.
-pub async fn run(args: HackernewsArgs, config: &HsxConfig, format: Format) -> Result<()> {
+pub async fn run(args: HackernewsArgs, config: &FetchiumConfig, format: Format) -> Result<()> {
     let start = Instant::now();
     let http = HttpClient::new(config)?;
 

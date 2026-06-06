@@ -8,7 +8,7 @@ pub mod legal;
 pub mod medical;
 pub mod security;
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 
 /// A pre-configured intelligence mode for a specific research domain.
 #[derive(Debug, Clone)]
@@ -55,7 +55,7 @@ pub enum SpecialFeature {
 }
 
 /// Retrieve a domain mode by name (case-insensitive).
-pub fn get_mode(name: &str) -> Result<DomainMode, HsxError> {
+pub fn get_mode(name: &str) -> Result<DomainMode, FetchiumError> {
     match name.to_lowercase().trim() {
         "academic" | "research" => Ok(academic::mode()),
         "code" | "dev" | "programming" => Ok(code::mode()),
@@ -63,7 +63,7 @@ pub fn get_mode(name: &str) -> Result<DomainMode, HsxError> {
         "financial" | "finance" | "economics" => Ok(financial::mode()),
         "medical" | "medicine" | "health" | "science" => Ok(medical::mode()),
         "security" | "cybersecurity" | "infosec" => Ok(security::mode()),
-        other => Err(HsxError::Config(format!(
+        other => Err(FetchiumError::Config(format!(
             "Unknown domain mode '{}'. Valid: academic, code, legal, financial, medical, security",
             other
         ))),

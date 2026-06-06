@@ -8,7 +8,7 @@
 use rusqlite::Connection;
 use std::sync::Mutex;
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use crate::intelligence::{enable_wal, sha256_hex};
 
 pub struct QueryPredictionModel {
@@ -16,7 +16,7 @@ pub struct QueryPredictionModel {
 }
 
 impl QueryPredictionModel {
-    pub fn new(db_path: &std::path::Path) -> Result<Self, HsxError> {
+    pub fn new(db_path: &std::path::Path) -> Result<Self, FetchiumError> {
         let conn = Connection::open(db_path)?;
         enable_wal(&conn)?;
         conn.execute_batch(
@@ -53,7 +53,7 @@ impl QueryPredictionModel {
         query: &str,
         topic: &str,
         follow_up_of: Option<&str>,
-    ) -> Result<(), HsxError> {
+    ) -> Result<(), FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let hash = sha256_hex(query);
 
@@ -88,7 +88,7 @@ impl QueryPredictionModel {
         &self,
         current_topic: &str,
         limit: usize,
-    ) -> Result<Vec<String>, HsxError> {
+    ) -> Result<Vec<String>, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT follow_up_query FROM follow_up_patterns
@@ -106,7 +106,7 @@ impl QueryPredictionModel {
     }
 
     /// Most frequently queried topics.
-    pub fn top_topics(&self, limit: usize) -> Result<Vec<(String, u64)>, HsxError> {
+    pub fn top_topics(&self, limit: usize) -> Result<Vec<(String, u64)>, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT topic, count FROM topic_frequency
@@ -123,14 +123,14 @@ impl QueryPredictionModel {
     }
 
     /// Total queries recorded.
-    pub fn query_count(&self) -> Result<u64, HsxError> {
+    pub fn query_count(&self) -> Result<u64, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let n: i64 = conn.query_row("SELECT COUNT(*) FROM query_history", [], |row| row.get(0))?;
         Ok(n as u64)
     }
 
     /// Reset all query prediction data.
-    pub fn reset(&self) -> Result<(), HsxError> {
+    pub fn reset(&self) -> Result<(), FetchiumError> {
         let conn = self.conn.lock().unwrap();
         conn.execute_batch(
             "DELETE FROM query_history;

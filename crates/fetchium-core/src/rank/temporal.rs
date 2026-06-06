@@ -52,6 +52,7 @@ fn half_life_for_intent(intent: &QueryIntent) -> f64 {
         QueryIntent::DeepAnalysis => 180.0,
         QueryIntent::Opinion => 30.0,
         QueryIntent::Informational => 365.0, // definitions don't age quickly
+        QueryIntent::Casual => 180.0,        // everyday info has moderate shelf life
     }
 }
 

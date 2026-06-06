@@ -25,7 +25,7 @@
 
 <br/>
 
-[**Install**](#installation) · [**Quick Start**](#quick-start) · [**Fetch Modes**](#7-fetch-modes) · [**AI Setup**](#ai-provider-setup) · [**API**](#api) · [**Config**](#configuration) · [**Docs**](https://docs.fetchium.dev) · [**Discord**](https://discord.gg/fetchium)
+[**Install**](#installation) · [**Quick Start**](#quick-start) · [**Fetch Modes**](#7-fetch-modes) · [**AI Setup**](#ai-provider-setup) · [**API**](#api) · [**Config**](#configuration) · [**Docs**](https://docs.fetchium.com) · [**Discord**](https://discord.gg/fetchium)
 
 <br/>
 
@@ -39,35 +39,13 @@ Fetchium is an open-source, Rust-native AI search engine that **finds, fetches, 
 
 ## Installation
 
-### npm (recommended — works everywhere Node is installed)
+### With Cargo (recommended)
+
+Install the latest from the repository (Rust 1.75+):
 
 ```bash
-npm install -g fetchium
+cargo install --git https://github.com/zuhabul/Fetchium fetchium-cli
 fetchium --version
-```
-
-### npx (no install required)
-
-```bash
-npx fetchium search "quantum computing breakthroughs 2025"
-```
-
-### Shell installer (Linux / macOS)
-
-```bash
-curl -sSf https://install.fetchium.dev | sh
-```
-
-### cargo-binstall
-
-```bash
-cargo binstall fetchium
-```
-
-### Homebrew
-
-```bash
-brew install zuhabul/tap/fetchium
 ```
 
 ### Build from source
@@ -78,6 +56,19 @@ cd Fetchium
 cargo build -p fetchium-cli --release
 ./target/release/fetchium --version
 ```
+
+### Prebuilt binary (Linux x86-64)
+
+Download from the [latest release](https://github.com/zuhabul/Fetchium/releases/latest):
+
+```bash
+curl -fsSL https://github.com/zuhabul/Fetchium/releases/latest/download/fetchium-linux-x64.tar.gz | tar xz
+sudo mv fetchium /usr/local/bin/
+fetchium --version
+```
+
+> **More install channels coming.** Publishing to crates.io, npm, and Homebrew is wired
+> through the automated release pipeline and will be enabled as those registries are set up.
 
 ---
 
@@ -390,7 +381,7 @@ Fetchium federates across these backends and merges results with HyperFusion ran
 
 Backend selection is automatic via **ABS (Adaptive Backend Selector)** — a UCB1 multi-armed bandit that routes queries to optimal backends based on query intent, historical success rates, and backend health. Academic queries prefer ArXiv + Scholar; code queries prefer GitHub + StackOverflow; SearXNG is always included as a meta-search aggregator.
 
-**Premium backends are optional** — Fetchium works great standalone with 11 free backends. Premium backends add extra coverage when API keys are configured.
+**Premium backends are optional** — Fetchium works great standalone with 17 free backends. Premium backends add extra coverage when API keys are configured.
 
 ---
 
@@ -1032,7 +1023,7 @@ at your option.
 
 <div align="center">
 
-**[Docs](https://docs.fetchium.dev)** · **[Discord](https://discord.gg/fetchium)** · **[Twitter / X](https://x.com/fetchiumdev)** · **[GitHub](https://github.com/zuhabul/Fetchium)**
+**[Docs](https://docs.fetchium.com)** · **[Discord](https://discord.gg/fetchium)** · **[Twitter / X](https://x.com/fetchiumdev)** · **[GitHub](https://github.com/zuhabul/Fetchium)**
 
 Built with Rust. No tracking. No telemetry. Your queries stay on your machine.
 

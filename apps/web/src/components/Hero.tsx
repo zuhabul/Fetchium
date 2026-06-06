@@ -6,27 +6,19 @@ import dynamic from "next/dynamic";
 
 const NeuralCanvas = dynamic(() => import("./NeuralCanvas"), { ssr: false });
 
-// Similar character counts (6–8) keep width variation imperceptible
+/* ─── Word Rotator ────────────────────────────────────────────────────────── */
 const WORDS = ["thinks.", "learns.", "reasons.", "adapts.", "ranks."];
 
-/**
- * Slot-machine word rotator.
- *
- * mode="popLayout" pops the exiting word out of flow, so the container
- * width is always the CURRENT word's natural width — no fixed spacer,
- * no artificial gap. Height stays locked via overflow:hidden on the parent.
- */
 function WordRotator() {
   const [idx, setIdx] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setIdx(i => (i + 1) % WORDS.length), 2400);
     return () => clearInterval(t);
   }, []);
-
   return (
     <span
-      className="relative inline-block overflow-hidden"
-      style={{ height: "1.15em", verticalAlign: "bottom" }}
+      className="relative inline-block"
+      style={{ height: "1.15em", verticalAlign: "baseline", clipPath: "inset(0)" }}
     >
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
@@ -44,207 +36,409 @@ function WordRotator() {
   );
 }
 
-const STATS = [
-  { value: "17",     label: "Novel algorithms" },
-  { value: "11+",    label: "Search backends"  },
-  { value: "563+",   label: "Tests passing"    },
-  { value: "~500ms", label: "P50 search latency" },
+/* ─── SVG Flow Diagram — no box, just floating nodes ─────────────────────── */
+const SOURCES = [
+  { label: "DuckDuckGo", color: "#f06292" },
+  { label: "Brave Search", color: "#fb8c00" },
+  { label: "Bing",        color: "#4fc3f7" },
+  { label: "Kagi",        color: "#a78bfa" },
+  { label: "YouTube",     color: "#ff5252" },
+  { label: "Arxiv",       color: "#66bb6a" },
+  { label: "+5 more…",   color: "#546e7a" },
 ];
 
-const RESPONSE_LINES = [
-  { k: '"query"',       v: '"best async rust patterns"'         },
-  { k: '"latency_ms"',  v: "487"                                 },
-  { k: '"results"',     v: "[ 11 sources × top 30 results ]"    },
-  { k: '"ranked"',      v: "[ HyperFusion 8-signal score ]"     },
-  { k: '"content"',     v: '"4 096 tokens extracted + cleaned"' },
-  { k: '"citations"',   v: "8  (APA · IEEE · BibTeX)"           },
-  { k: '"evidence"',    v: "{ nodes: 14, edges: 22 }"           },
+const OUTPUTS = [
+  { label: "Ranked Results",     color: "#818cf8", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
+  { label: "Extracted Content",  color: "#34d399", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
+  { label: "Auto Citations",     color: "#f59e0b", icon: "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" },
+  { label: "Evidence Graph",     color: "#e879f9", icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" },
 ];
 
-function ApiDemo() {
+// SVG coordinate system: viewBox="0 0 560 360"
+// Sources: left side (node circles at x≈55, y spread from 40 to 320)
+// Center orb: (280, 180)
+// Outputs: right side (x≈505, y spread from 80 to 280)
+const SRC_X = 60;
+const CTR_X = 280;
+const CTR_Y = 180;
+const OUT_X = 500;
+
+const srcY = [40, 85, 130, 180, 230, 275, 320];
+const outY = [85, 145, 215, 275];
+
+function FlowDiagram() {
   return (
-    <div className="glass rounded-2xl border border-indigo-500/15 overflow-hidden w-full max-w-xl mx-auto text-left mb-14">
-      {/* Title bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06] bg-white/[0.015]">
-        <div className="flex gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
-          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
-        </div>
-        <span className="text-[11px] text-slate-500 font-mono">POST /v1/search → 200 OK</span>
-        <span className="text-[11px] text-emerald-400 font-mono font-semibold">~500ms</span>
-      </div>
+    <motion.div
+      className="relative mx-auto w-full max-w-[520px] xl:max-w-[580px] select-none"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1, delay: 0.4 }}
+    >
+      <svg
+        viewBox="0 0 560 360"
+        className="w-full h-auto"
+        style={{ overflow: "visible" }}
+        aria-hidden="true"
+      >
+        <defs>
+          {/* Animated dash for source → center paths */}
+          <style>{`
+            @keyframes flowIn {
+              from { stroke-dashoffset: 200; }
+              to   { stroke-dashoffset: 0; }
+            }
+            @keyframes flowOut {
+              from { stroke-dashoffset: 200; }
+              to   { stroke-dashoffset: 0; }
+            }
+            @keyframes orbPulse {
+              0%, 100% { opacity: 0.5; r: 38px; }
+              50%       { opacity: 0.15; r: 52px; }
+            }
+            @keyframes dotFlow {
+              0%   { offset-distance: 0%;   opacity: 0; }
+              5%   { opacity: 1; }
+              90%  { opacity: 1; }
+              100% { offset-distance: 100%; opacity: 0; }
+            }
+            @media (prefers-reduced-motion: reduce) {
+              * {
+                animation: none !important;
+                transition: none !important;
+              }
+            }
+          `}</style>
 
-      {/* Response lines */}
-      <div className="p-3 sm:p-4 space-y-1 font-mono text-[11px] sm:text-[12px] leading-relaxed">
-        <div className="text-slate-600">{"{"}</div>
-        {RESPONSE_LINES.map((line, i) => (
-          <div key={i} className="flex items-baseline gap-1 pl-3 sm:pl-4 min-w-0">
-            <span className="token-key shrink-0">{line.k}:</span>
-            <span className="token-string truncate">{line.v}</span>
-            {i < RESPONSE_LINES.length - 1 && <span className="token-punctuation shrink-0">,</span>}
-          </div>
+          {/* Radial glow filter for center orb */}
+          <filter id="orbGlow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="8" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          <filter id="nodeGlow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+
+        {/* ── Source → Center paths ── */}
+        {SOURCES.map((src, i) => {
+          const sy = srcY[i];
+          const cpx = CTR_X - 60;
+          const d = `M ${SRC_X} ${sy} C ${cpx} ${sy} ${cpx} ${CTR_Y} ${CTR_X} ${CTR_Y}`;
+          const dur = 2.2 + i * 0.3;
+          return (
+            <g key={`src-path-${i}`}>
+              {/* Base dim path */}
+              <path d={d} fill="none" stroke={src.color} strokeWidth="1" strokeOpacity="0.15" />
+              {/* Animated flowing path */}
+              <path
+                d={d}
+                fill="none"
+                stroke={src.color}
+                strokeWidth="1.5"
+                strokeOpacity="0.42"
+                strokeDasharray="10 150"
+                style={{
+                  animation: `flowIn ${dur + 0.5}s linear infinite`,
+                  animationDelay: `${i * 0.4}s`,
+                }}
+              />
+            </g>
+          );
+        })}
+
+        {/* ── Center → Output paths ── */}
+        {OUTPUTS.map((out, i) => {
+          const oy = outY[i];
+          const cpx = CTR_X + 60;
+          const d = `M ${CTR_X} ${CTR_Y} C ${cpx} ${CTR_Y} ${cpx} ${oy} ${OUT_X} ${oy}`;
+          const dur = 2.0 + i * 0.25;
+          return (
+            <g key={`out-path-${i}`}>
+              <path d={d} fill="none" stroke={out.color} strokeWidth="1" strokeOpacity="0.15" />
+              <path
+                d={d}
+                fill="none"
+                stroke={out.color}
+                strokeWidth="1.5"
+                strokeOpacity="0.42"
+                strokeDasharray="10 150"
+                style={{
+                  animation: `flowOut ${dur + 0.5}s linear infinite`,
+                  animationDelay: `${0.8 + i * 0.35}s`,
+                }}
+              />
+            </g>
+          );
+        })}
+
+        {/* ── Center orb ── */}
+        {/* Outer pulse ring */}
+        <circle
+          cx={CTR_X} cy={CTR_Y} r="52"
+          fill="none"
+          stroke="rgba(99,102,241,0.18)"
+          strokeWidth="1"
+          style={{ animation: "orbPulse 3s ease-in-out infinite" }}
+        />
+        {/* Mid ring */}
+        <circle
+          cx={CTR_X} cy={CTR_Y} r="40"
+          fill="rgba(99,102,241,0.08)"
+          stroke="rgba(99,102,241,0.30)"
+          strokeWidth="1"
+          filter="url(#orbGlow)"
+        />
+        {/* Inner solid */}
+        <circle
+          cx={CTR_X} cy={CTR_Y} r="30"
+          fill="rgba(99,102,241,0.18)"
+          stroke="rgba(99,102,241,0.60)"
+          strokeWidth="1.5"
+        />
+        {/* "F" label */}
+        <text
+          x={CTR_X} y={CTR_Y - 6}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="#a5b4fc"
+          fontSize="16"
+          fontWeight="800"
+          fontFamily="system-ui, sans-serif"
+        >
+          F
+        </text>
+        <text
+          x={CTR_X} y={CTR_Y + 10}
+          textAnchor="middle"
+          fill="#6366f1"
+          fontSize="7"
+          fontWeight="600"
+          fontFamily="system-ui, sans-serif"
+          letterSpacing="1"
+        >
+          FETCHIUM
+        </text>
+
+        {/* ── Source nodes ── */}
+        {SOURCES.map((src, i) => (
+          <g key={`src-node-${i}`} filter="url(#nodeGlow)">
+            <circle cx={SRC_X} cy={srcY[i]} r="5" fill={src.color} fillOpacity="0.8" />
+            <text
+              x={SRC_X - 12}
+              y={srcY[i]}
+              textAnchor="end"
+              dominantBaseline="middle"
+              fill={src.color}
+              fontSize="11"
+              fontWeight="600"
+              fontFamily="system-ui, sans-serif"
+              fillOpacity="0.9"
+            >
+              {src.label}
+            </text>
+          </g>
         ))}
-        <div className="text-slate-600">{"}"}</div>
-      </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between px-4 py-2 border-t border-white/[0.04] bg-white/[0.01]">
-        <span className="text-[10px] text-slate-600 font-mono">11 backends · 30 results · 4 096 tokens · ~500ms P50</span>
-        <Link href="/docs/api" className="text-[10px] text-indigo-400 hover:text-indigo-300 font-mono transition-colors">
-          API docs →
-        </Link>
-      </div>
-    </div>
+        {/* ── Output nodes ── */}
+        {OUTPUTS.map((out, i) => (
+          <g key={`out-node-${i}`}>
+            <circle cx={OUT_X} cy={outY[i]} r="5" fill={out.color} fillOpacity="0.8" />
+            <text
+              x={OUT_X + 12}
+              y={outY[i]}
+              textAnchor="start"
+              dominantBaseline="middle"
+              fill={out.color}
+              fontSize="11"
+              fontWeight="600"
+              fontFamily="system-ui, sans-serif"
+              fillOpacity="0.9"
+            >
+              {out.label}
+            </text>
+          </g>
+        ))}
+
+        {/* ── Stats below orb ── */}
+        <text x={CTR_X} y={CTR_Y + 54} textAnchor="middle" fill="#475569" fontSize="9" fontFamily="system-ui, sans-serif">
+          17 algorithms · 12 MCP tools
+        </text>
+      </svg>
+    </motion.div>
   );
 }
 
+/* ─── Hero ────────────────────────────────────────────────────────────────── */
 export default function Hero() {
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+    <section className="relative flex min-h-[92svh] flex-col items-center justify-center overflow-hidden lg:min-h-screen">
       <div className="absolute inset-0"><NeuralCanvas /></div>
 
       {/* Atmosphere glows */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-600/10 blur-[130px] rounded-full" />
-        <div className="absolute top-1/3 left-1/4 w-[350px] h-[350px] bg-violet-700/8 blur-[90px] rounded-full" />
-        <div className="absolute top-1/3 right-1/4 w-[280px] h-[280px] bg-indigo-500/8 blur-[80px] rounded-full" />
+        <div className="absolute top-0 left-1/2 h-[520px] w-[900px] -translate-x-1/2 rounded-full"
+          style={{ background: "radial-gradient(ellipse, rgba(99,102,241,0.09) 0%, transparent 72%)", filter: "blur(48px)" }}
+        />
+        <div className="absolute top-1/3 left-[15%] h-[320px] w-[320px] rounded-full"
+          style={{ background: "radial-gradient(ellipse, rgba(14,165,233,0.06) 0%, transparent 74%)", filter: "blur(62px)" }}
+        />
+        <div className="absolute top-1/3 right-[10%] h-[280px] w-[280px] rounded-full"
+          style={{ background: "radial-gradient(ellipse, rgba(99,102,241,0.06) 0%, transparent 74%)", filter: "blur(56px)" }}
+        />
       </div>
 
-      {/* Grid */}
+      {/* Subtle grid */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(99,102,241,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.035) 1px,transparent 1px)",
-          backgroundSize: "72px 72px",
+            "linear-gradient(rgba(148,163,184,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,0.03) 1px,transparent 1px)",
+          backgroundSize: "84px 84px",
         }}
       />
 
       {/*
-        w-full is CRITICAL: prevents flex-col + items-center from sizing this
-        div to its intrinsic content width, which would cause overflow on mobile.
+        Hero is full-viewport-width.
+        Left column: slightly more padding than before (lg:pl-12 xl:pl-20).
+        Other sections use max-w-7xl → content starts ~104px from edge.
+        Hero at 1440px: ~1376px content. Clear visual difference.
       */}
-      <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 text-center pt-24 sm:pt-32 pb-16">
+      <div className="relative z-10 w-full pb-16 pt-24 sm:pt-28">
+        <div className="flex flex-col gap-12 lg:flex-row lg:items-center lg:gap-4 xl:gap-8">
 
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-indigo-500/25 bg-indigo-500/8 text-indigo-300 text-xs mb-6 sm:mb-8 cursor-default"
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="hidden sm:inline">Open Beta · 17 novel algorithms · 11+ backends · Free forever — no credit card</span>
-          <span className="sm:hidden">Open Beta · Free to start</span>
-        </motion.div>
+          {/* ── LEFT: copy + CTAs + stats ─────────────────────────────────────
+              Extra left padding so text aligns with navbar logo.
+              xl:pl-20 = slightly more breathing room than before (was pl-14).
+          ─────────────────────────────────────────────────────────────────── */}
+          <div className="w-full shrink-0 px-5 text-center sm:px-8 lg:w-[48%] lg:pl-12 lg:pr-8 lg:text-left xl:w-[46%] xl:pl-20 xl:pr-12 2xl:pl-28">
 
-        {/* ── Headline ─────────────────────────────────────────────────────────
-            The h1 has a FIXED layout — "The search API that" is static text.
-            WordRotator uses overflow:hidden + fixed height so the h1 height
-            never changes between animation frames. Zero layout shift.
-        ──────────────────────────────────────────────────────────────────── */}
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.1 }}
-          className="text-[2.6rem] sm:text-5xl md:text-6xl lg:text-[72px] font-bold tracking-tight leading-[1.12] mb-5"
-        >
-          <span className="gradient-text">The search API</span>
-          <br />
-          <span className="text-slate-200">that </span>
-          <WordRotator />
-        </motion.h1>
-
-        {/* Sub */}
-        <motion.p
-          initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-          className="text-base sm:text-xl text-slate-400 max-w-2xl mx-auto mb-8 leading-relaxed"
-        >
-          Stop stitching together scrapers, rankers, and extractors.
-          One call returns search + extracted content + citations — ready to drop
-          into your RAG pipeline or AI agent. Cheaper than any competitor.
-        </motion.p>
-
-        {/* CTAs */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-3 justify-center mb-12"
-        >
-          <Link
-            href="https://app.fetchium.com/register"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white font-semibold text-sm transition-all duration-200 shadow-[0_0_30px_rgba(99,102,241,0.3)] hover:shadow-[0_0_50px_rgba(99,102,241,0.5)] min-h-[48px]"
-          >
-            Get API Key — Free
-            <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </Link>
-          <Link
-            href="/docs"
-            className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl glass text-slate-200 font-semibold text-sm transition-all duration-200 hover:border-indigo-500/35 hover:bg-indigo-500/5 min-h-[48px]"
-          >
-            <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            View Docs
-          </Link>
-          <Link
-            href="https://app.fetchium.com/playground"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden sm:inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-white/10 text-slate-400 font-semibold text-sm transition-all duration-200 hover:border-indigo-500/30 hover:text-slate-200 min-h-[48px]"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Try Playground
-          </Link>
-        </motion.div>
-
-        {/* API demo */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-        >
-          <ApiDemo />
-        </motion.div>
-
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4"
-        >
-          {STATS.map((s, i) => (
+            {/* Badge */}
             <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.55 + i * 0.07 }}
-              className="glass-card rounded-xl px-4 py-4 sm:py-5 text-center"
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55 }}
+              className="mb-6 inline-flex cursor-default items-center gap-2 rounded-full px-3.5 py-2 text-sm sm:mb-7"
+              style={{ border: "1px solid rgba(99,102,241,0.32)", background: "rgba(99,102,241,0.10)", color: "#c7d2fe" }}
             >
-              <div className="text-xl sm:text-2xl font-bold gradient-text">{s.value}</div>
-              <div className="text-[11px] sm:text-xs text-slate-500 mt-1">{s.label}</div>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#34d399", boxShadow: "0 0 6px #34d399" }} />
+              <span className="hidden sm:inline">Open Beta · 17 algorithms · 12 MCP tools · 1,000 free requests/month</span>
+              <span className="sm:hidden">Open Beta · Free to start</span>
             </motion.div>
-          ))}
-        </motion.div>
+
+            {/* Headline */}
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.1 }}
+              className="text-[2.6rem] sm:text-5xl md:text-6xl lg:text-[58px] xl:text-[66px] font-bold tracking-tight leading-[1.1] mb-5"
+            >
+              <span className="gradient-text">The search API</span>
+              <br />
+              <span style={{ color: "#e2e8f0" }}>that </span>
+              <WordRotator />
+            </motion.h1>
+
+            {/* Sub */}
+            <motion.p
+              initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+              className="text-lg sm:text-xl leading-relaxed mb-8"
+              style={{ color: "#94a3b8" }}
+            >
+              One API call returns{" "}
+              <span style={{ color: "#e2e8f0", fontWeight: 600 }}>search</span>
+              {" "}+{" "}
+              <span style={{ color: "#e2e8f0", fontWeight: 600 }}>extracted content</span>
+              {" "}+{" "}
+              <span style={{ color: "#e2e8f0", fontWeight: 600 }}>citations</span>
+              {" "}— drop it into your RAG pipeline or AI agent. No scrapers, no plumbing.
+            </motion.p>
+
+            {/* CTAs */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-10"
+            >
+              <Link
+                href="https://app.fetchium.com/register"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl text-white font-bold text-base transition-all duration-200 min-h-[52px]"
+                style={{ background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)", boxShadow: "0 0 32px rgba(99,102,241,0.35)" }}
+              >
+                Get API Key — Free
+                <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+              <Link
+                href="https://docs.fetchium.com"
+                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl font-bold text-base transition-all duration-200 min-h-[52px]"
+                style={{ border: "1px solid rgba(99,102,241,0.28)", background: "rgba(99,102,241,0.06)", color: "#c7d2fe" }}
+              >
+                <svg className="w-5 h-5" style={{ color: "#818cf8" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                View Docs
+              </Link>
+            </motion.div>
+
+            {/* Stats */}
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="grid grid-cols-2 gap-3"
+            >
+              {[
+                { value: "17",     label: "Novel algorithms" },
+                { value: "17+",    label: "Search backends"  },
+                { value: "1,100+",   label: "Tests passing"    },
+                { value: "12",     label: "MCP tools"        },
+              ].map((s, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5 + i * 0.07 }}
+                  className="rounded-xl px-3 py-3.5 text-center"
+                  style={{ border: "1px solid rgba(99,102,241,0.18)", background: "rgba(99,102,241,0.05)" }}
+                >
+                  <div className="text-xl sm:text-2xl font-bold gradient-text">{s.value}</div>
+                  <div className="text-[12px] sm:text-[13px] font-medium mt-1" style={{ color: "#64748b" }}>{s.label}</div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* ── RIGHT: SVG flow diagram — no box ──────────────────────────────
+              Pure floating nodes + animated connection lines on the canvas.
+              Communicates "11 sources → Fetchium core → structured output"
+              without any panel or container.
+          ─────────────────────────────────────────────────────────────────── */}
+          <div className="w-full min-w-0 px-6 sm:px-8 lg:w-[52%] lg:pl-2 lg:pr-10 xl:w-[50%] xl:pr-16 2xl:pr-24">
+            <FlowDiagram />
+          </div>
+
+        </div>
       </div>
 
       {/* Bottom fade */}
-      <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-[#06070d] to-transparent pointer-events-none" />
+      <div
+        className="absolute bottom-0 inset-x-0 h-48 pointer-events-none"
+        style={{ background: "linear-gradient(to top, #06070d, transparent)" }}
+      />
 
       {/* Scroll hint */}
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }}
-        className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-slate-600"
+        className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+        style={{ color: "#334155" }}
       >
         <motion.div
           animate={{ y: [0, 8, 0] }} transition={{ duration: 2, repeat: Infinity }}
-          className="w-5 h-8 rounded-full border border-slate-700 flex items-start justify-center pt-1.5"
+          className="w-5 h-8 rounded-full flex items-start justify-center pt-1.5"
+          style={{ border: "1px solid #1e2a3a" }}
         >
-          <div className="w-1 h-2 rounded-full bg-slate-500" />
+          <div className="w-1 h-2 rounded-full" style={{ background: "#475569" }} />
         </motion.div>
       </motion.div>
     </section>

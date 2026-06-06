@@ -1,7 +1,7 @@
 //! Search Agent — dispatches queries to the search orchestrator (PRD §8.8).
 
-use crate::config::HsxConfig;
-use crate::error::HsxError;
+use crate::config::FetchiumConfig;
+use crate::error::FetchiumError;
 use crate::http::client::HttpClient;
 use crate::research::amrs::agent::Agent;
 use crate::research::amrs::channel::{AgentMessage, AgentReceiver, AgentSender, AgentType};
@@ -14,14 +14,14 @@ use std::time::Duration;
 /// Executes search queries and discovers multi-hop follow-ups.
 pub struct SearchAgent {
     http_client: HttpClient,
-    hsx_config: HsxConfig,
+    fetchium_config: FetchiumConfig,
 }
 
 impl SearchAgent {
-    pub fn new(http_client: HttpClient, hsx_config: HsxConfig) -> Self {
+    pub fn new(http_client: HttpClient, fetchium_config: FetchiumConfig) -> Self {
         Self {
             http_client,
-            hsx_config,
+            fetchium_config,
         }
     }
 
@@ -53,7 +53,7 @@ impl Agent for SearchAgent {
         AgentType::Search
     }
 
-    async fn run(&self, mut rx: AgentReceiver, tx: AgentSender) -> Result<(), HsxError> {
+    async fn run(&self, mut rx: AgentReceiver, tx: AgentSender) -> Result<(), FetchiumError> {
         while let Some(msg) = rx.recv().await {
             match msg {
                 AgentMessage::SpawnSearch { query, depth } => {
@@ -69,7 +69,8 @@ impl Agent for SearchAgent {
                         break; // coordinator gone
                     }
 
-                    let orch_config = OrchestratorConfig::from_hsx_config(&self.hsx_config, 10);
+                    let orch_config =
+                        OrchestratorConfig::from_fetchium_config(&self.fetchium_config, 10);
                     let orchestrator =
                         SearchOrchestrator::new(self.http_client.clone(), orch_config);
 

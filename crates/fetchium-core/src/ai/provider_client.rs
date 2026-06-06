@@ -15,7 +15,7 @@ use crate::ai::credentials::{
 use crate::ai::ollama::OllamaClient;
 use crate::ai::providers::{ProviderKind, ProvidersConfig};
 use crate::ai::types::AiConfig;
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use futures::StreamExt;
 use serde::Deserialize;
 
@@ -45,16 +45,16 @@ pub async fn chat_with_fallback(
     providers: &ProvidersConfig,
     streaming: bool,
     on_token: &mut dyn FnMut(&str),
-) -> Result<ChatResult, HsxError> {
+) -> Result<ChatResult, FetchiumError> {
     let chain = providers.resolved_chain();
 
     if chain.is_empty() {
-        return Err(HsxError::AiUnavailable(
+        return Err(FetchiumError::AiUnavailable(
             "No AI providers configured. Run `fetchium provider setup` to get started.".into(),
         ));
     }
 
-    let mut last_error: Option<HsxError> = None;
+    let mut last_error: Option<FetchiumError> = None;
 
     let chain_len = chain.len();
     for (idx, kind) in chain.iter().enumerate() {
@@ -83,8 +83,9 @@ pub async fn chat_with_fallback(
         }
     }
 
-    Err(last_error
-        .unwrap_or_else(|| HsxError::AiUnavailable("All configured AI providers failed.".into())))
+    Err(last_error.unwrap_or_else(|| {
+        FetchiumError::AiUnavailable("All configured AI providers failed.".into())
+    }))
 }
 
 /// Attempt a single provider and return its `ChatResult` on success.
@@ -96,7 +97,7 @@ async fn call_provider(
     providers: &ProvidersConfig,
     streaming: bool,
     on_token: &mut dyn FnMut(&str),
-) -> Result<ChatResult, HsxError> {
+) -> Result<ChatResult, FetchiumError> {
     let entry = providers.entry(kind);
     let model = model_override
         .map(|s| s.to_string())
@@ -107,7 +108,7 @@ async fn call_provider(
 
         ProviderKind::OpenAi => {
             // Priority: 1) config/env API key  2) auth store API key  3) OpenAI Codex CLI OAuth session
-            let auth_store_key_openai = crate::ai::credentials::hsx_auth_get("openai")
+            let auth_store_key_openai = crate::ai::credentials::fetchium_auth_get("openai")
                 .and_then(|a| a.api_key().map(|s| s.to_string()));
             let key = if let Some(k) = entry
                 .resolve_api_key("OPENAI_API_KEY")
@@ -118,7 +119,7 @@ async fn call_provider(
                 tracing::info!("Using OpenAI Codex CLI OAuth session (ChatGPT subscription)");
                 tok
             } else {
-                return Err(HsxError::AiUnavailable(
+                return Err(FetchiumError::AiUnavailable(
                     "OpenAI: no API key or Codex CLI session found.\n  \
                      Options:\n  \
                      • Set OPENAI_API_KEY env var\n  \
@@ -139,7 +140,7 @@ async fn call_provider(
 
         ProviderKind::Anthropic => {
             // Priority: 1) config/env API key  2) auth store API key  3) Claude Code OAuth subscription
-            let auth_store_key_anthropic = crate::ai::credentials::hsx_auth_get("anthropic")
+            let auth_store_key_anthropic = crate::ai::credentials::fetchium_auth_get("anthropic")
                 .and_then(|a| a.api_key().map(|s| s.to_string()));
             let (token, use_oauth) = if let Some(k) = entry
                 .resolve_api_key("ANTHROPIC_API_KEY")
@@ -153,7 +154,7 @@ async fn call_provider(
                 );
                 (creds.access_token, true)
             } else {
-                return Err(HsxError::AiUnavailable(
+                return Err(FetchiumError::AiUnavailable(
                     "Anthropic: no API key or Claude Code session found.\n  \
                      Options:\n  \
                      • Set ANTHROPIC_API_KEY env var\n  \
@@ -193,7 +194,7 @@ async fn call_provider(
                         call_gemini_oauth(&fresh_token, &model, messages, ai_config, streaming, on_token).await
                     }
                     None => {
-                        Err(HsxError::AiUnavailable(
+                        Err(FetchiumError::AiUnavailable(
                             "Gemini: no API keys configured and OAuth session expired.\n  \
                              Fix (choose one):\n  \
                              • fetchium provider set gemini --key AIza...        (set primary key)\n  \
@@ -213,7 +214,7 @@ async fn call_provider(
             // Priority: 1) config/env  2) ~/.openrouter/config.json
             let key = entry.resolve_api_key("OPENROUTER_API_KEY")
                 .or_else(crate::ai::credentials::read_openrouter_key)
-                .ok_or_else(|| HsxError::AiUnavailable(
+                .ok_or_else(|| FetchiumError::AiUnavailable(
                     "OpenRouter API key not set. Set OPENROUTER_API_KEY or run `fetchium provider setup openrouter`.".into(),
                 ))?;
             let base = entry
@@ -233,7 +234,7 @@ async fn call_provider(
                 .await
                 .unwrap_or(None);
             let (access_token, project_id) = token_result.ok_or_else(|| {
-                HsxError::AiUnavailable(
+                FetchiumError::AiUnavailable(
                     "Antigravity: no OpenCode account found.\n  \
                      Install OpenCode and add an account: https://opencode.ai\n  \
                      Then install the plugin: npm i -g opencode-antigravity-auth\n  \
@@ -263,11 +264,11 @@ async fn call_ollama(
     ai_config: &AiConfig,
     streaming: bool,
     on_token: &mut dyn FnMut(&str),
-) -> Result<ChatResult, HsxError> {
+) -> Result<ChatResult, FetchiumError> {
     let ollama = OllamaClient::new(ai_config);
 
     if !ollama.is_available().await {
-        return Err(HsxError::AiUnavailable(
+        return Err(FetchiumError::AiUnavailable(
             "Ollama is not running. Start it with: ollama serve".into(),
         ));
     }
@@ -285,7 +286,7 @@ async fn call_ollama(
         );
         first.name.clone()
     } else {
-        return Err(HsxError::AiUnavailable(format!(
+        return Err(FetchiumError::AiUnavailable(format!(
             "No models installed in Ollama. Run: ollama pull {model}"
         )));
     };
@@ -346,7 +347,7 @@ async fn call_openai_compat(
     ai_config: &AiConfig,
     streaming: bool,
     on_token: &mut dyn FnMut(&str),
-) -> Result<ChatResult, HsxError> {
+) -> Result<ChatResult, FetchiumError> {
     let url = format!("{}/v1/chat/completions", base_url.trim_end_matches('/'));
     let oai_msgs: Vec<serde_json::Value> = messages
         .iter()
@@ -363,7 +364,7 @@ async fn call_openai_compat(
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(ai_config.timeout_secs))
         .build()
-        .map_err(|e| HsxError::AiUnavailable(format!("HTTP client build error: {e}")))?;
+        .map_err(|e| FetchiumError::AiUnavailable(format!("HTTP client build error: {e}")))?;
 
     let mut req = client
         .post(&url)
@@ -378,13 +379,13 @@ async fn call_openai_compat(
     }
 
     let resp = req.json(&body).send().await.map_err(|e| {
-        HsxError::AiUnavailable(format!("Request to {} failed: {e}", kind.display_name()))
+        FetchiumError::AiUnavailable(format!("Request to {} failed: {e}", kind.display_name()))
     })?;
 
     if !resp.status().is_success() {
         let status = resp.status();
         let body_text = resp.text().await.unwrap_or_default();
-        return Err(HsxError::AiUnavailable(format!(
+        return Err(FetchiumError::AiUnavailable(format!(
             "{} API error {status}: {body_text}",
             kind.display_name()
         )));
@@ -396,7 +397,8 @@ async fn call_openai_compat(
         let mut buf = Vec::<u8>::new();
 
         while let Some(chunk) = stream.next().await {
-            let bytes = chunk.map_err(|e| HsxError::AiUnavailable(format!("Stream error: {e}")))?;
+            let bytes =
+                chunk.map_err(|e| FetchiumError::AiUnavailable(format!("Stream error: {e}")))?;
             buf.extend_from_slice(&bytes);
 
             while let Some(pos) = buf.iter().position(|&b| b == b'\n') {
@@ -430,7 +432,7 @@ async fn call_openai_compat(
         let parsed: OaiResponse = resp
             .json()
             .await
-            .map_err(|e| HsxError::AiUnavailable(format!("Invalid response: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Invalid response: {e}")))?;
         let content = parsed
             .choices
             .into_iter()
@@ -468,7 +470,7 @@ async fn call_anthropic(
     ai_config: &AiConfig,
     streaming: bool,
     on_token: &mut dyn FnMut(&str),
-) -> Result<ChatResult, HsxError> {
+) -> Result<ChatResult, FetchiumError> {
     let mut system_text = String::new();
     let mut anth_msgs: Vec<serde_json::Value> = Vec::new();
 
@@ -497,7 +499,7 @@ async fn call_anthropic(
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(ai_config.timeout_secs))
         .build()
-        .map_err(|e| HsxError::AiUnavailable(format!("HTTP client build error: {e}")))?;
+        .map_err(|e| FetchiumError::AiUnavailable(format!("HTTP client build error: {e}")))?;
 
     let mut req = client
         .post("https://api.anthropic.com/v1/messages")
@@ -516,12 +518,12 @@ async fn call_anthropic(
         .json(&body)
         .send()
         .await
-        .map_err(|e| HsxError::AiUnavailable(format!("Anthropic request failed: {e}")))?;
+        .map_err(|e| FetchiumError::AiUnavailable(format!("Anthropic request failed: {e}")))?;
 
     if !resp.status().is_success() {
         let status = resp.status();
         let body_text = resp.text().await.unwrap_or_default();
-        return Err(HsxError::AiUnavailable(format!(
+        return Err(FetchiumError::AiUnavailable(format!(
             "Anthropic API error {status}: {body_text}"
         )));
     }
@@ -532,7 +534,8 @@ async fn call_anthropic(
         let mut buf = Vec::<u8>::new();
 
         while let Some(chunk) = stream.next().await {
-            let bytes = chunk.map_err(|e| HsxError::AiUnavailable(format!("Stream error: {e}")))?;
+            let bytes =
+                chunk.map_err(|e| FetchiumError::AiUnavailable(format!("Stream error: {e}")))?;
             buf.extend_from_slice(&bytes);
 
             while let Some(pos) = buf.iter().position(|&b| b == b'\n') {
@@ -556,10 +559,9 @@ async fn call_anthropic(
             provider: ProviderKind::Anthropic,
         })
     } else {
-        let parsed: AnthropicResponse = resp
-            .json()
-            .await
-            .map_err(|e| HsxError::AiUnavailable(format!("Invalid Anthropic response: {e}")))?;
+        let parsed: AnthropicResponse = resp.json().await.map_err(|e| {
+            FetchiumError::AiUnavailable(format!("Invalid Anthropic response: {e}"))
+        })?;
         let content = parsed
             .content
             .into_iter()
@@ -635,7 +637,7 @@ async fn gemini_read_stream(
     resp: reqwest::Response,
     model: &str,
     on_token: &mut dyn FnMut(&str),
-) -> Result<ChatResult, HsxError> {
+) -> Result<ChatResult, FetchiumError> {
     gemini_read_stream_with_provider(resp, model, ProviderKind::Gemini, on_token).await
 }
 
@@ -645,13 +647,14 @@ async fn gemini_read_stream_with_provider(
     model: &str,
     provider: ProviderKind,
     on_token: &mut dyn FnMut(&str),
-) -> Result<ChatResult, HsxError> {
+) -> Result<ChatResult, FetchiumError> {
     let mut stream = resp.bytes_stream();
     let mut full = String::new();
     let mut buf = Vec::<u8>::new();
 
     while let Some(chunk) = stream.next().await {
-        let bytes = chunk.map_err(|e| HsxError::AiUnavailable(format!("Stream error: {e}")))?;
+        let bytes =
+            chunk.map_err(|e| FetchiumError::AiUnavailable(format!("Stream error: {e}")))?;
         buf.extend_from_slice(&bytes);
 
         while let Some(pos) = buf.iter().position(|&b| b == b'\n') {
@@ -737,7 +740,7 @@ fn collect_gemini_keys(entry: &crate::ai::providers::ProviderEntry) -> Vec<Strin
     }
 
     // 5. Auth store (Api single or ApiPool)
-    if let Some(auth) = crate::ai::credentials::hsx_auth_get("gemini") {
+    if let Some(auth) = crate::ai::credentials::fetchium_auth_get("gemini") {
         for k in auth.api_keys() {
             push(k.to_string());
         }
@@ -782,7 +785,7 @@ async fn call_gemini_api_key_pool(
     ai_config: &AiConfig,
     streaming: bool,
     on_token: &mut dyn FnMut(&str),
-) -> Result<ChatResult, HsxError> {
+) -> Result<ChatResult, FetchiumError> {
     let pool_size = keys.len();
     let start_idx =
         GEMINI_KEY_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % pool_size;
@@ -837,7 +840,7 @@ async fn call_gemini_api_key_pool(
                 return Ok(result);
             }
             // 429 / RESOURCE_EXHAUSTED → put key in cooldown, try next
-            Err(HsxError::AiUnavailable(ref msg))
+            Err(FetchiumError::AiUnavailable(ref msg))
                 if msg.contains("429") || msg.contains("RESOURCE_EXHAUSTED") =>
             {
                 rate_limited_count += 1;
@@ -857,7 +860,7 @@ async fn call_gemini_api_key_pool(
     }
 
     if tried == 0 {
-        Err(HsxError::AiUnavailable(format!(
+        Err(FetchiumError::AiUnavailable(format!(
             "All {} Gemini API key(s) are in cooldown (rate limited).\n  \
              Cooldown expires in ~60s. Add more keys for uninterrupted service:\n  \
              • Config: [ai.providers.gemini] api_keys = [\"key1\", \"key2\", ...]\n  \
@@ -866,7 +869,7 @@ async fn call_gemini_api_key_pool(
             pool_size
         )))
     } else {
-        Err(HsxError::AiUnavailable(format!(
+        Err(FetchiumError::AiUnavailable(format!(
             "All {} Gemini API key(s) are rate limited (HTTP 429).\n  \
              Add more keys for uninterrupted service:\n  \
              • Config: [ai.providers.gemini] api_keys = [\"key1\", \"key2\", ...]\n  \
@@ -885,7 +888,7 @@ async fn call_gemini_api_key(
     ai_config: &AiConfig,
     streaming: bool,
     on_token: &mut dyn FnMut(&str),
-) -> Result<ChatResult, HsxError> {
+) -> Result<ChatResult, FetchiumError> {
     let contents = gemini_build_contents(messages);
 
     // Gemini 2.5+ models use "thinking" by default, adding 5-10s of latency.
@@ -924,7 +927,7 @@ async fn call_gemini_api_key(
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(ai_config.timeout_secs))
         .build()
-        .map_err(|e| HsxError::AiUnavailable(format!("HTTP client build error: {e}")))?;
+        .map_err(|e| FetchiumError::AiUnavailable(format!("HTTP client build error: {e}")))?;
 
     let resp = client
         .post(&url)
@@ -932,12 +935,12 @@ async fn call_gemini_api_key(
         .json(&body)
         .send()
         .await
-        .map_err(|e| HsxError::AiUnavailable(format!("Gemini request failed: {e}")))?;
+        .map_err(|e| FetchiumError::AiUnavailable(format!("Gemini request failed: {e}")))?;
 
     if !resp.status().is_success() {
         let status = resp.status();
         let body_text = resp.text().await.unwrap_or_default();
-        return Err(HsxError::AiUnavailable(format!(
+        return Err(FetchiumError::AiUnavailable(format!(
             "Gemini API error {status}: {body_text}"
         )));
     }
@@ -948,7 +951,7 @@ async fn call_gemini_api_key(
         let parsed: GeminiResponse = resp
             .json()
             .await
-            .map_err(|e| HsxError::AiUnavailable(format!("Invalid Gemini response: {e}")))?;
+            .map_err(|e| FetchiumError::AiUnavailable(format!("Invalid Gemini response: {e}")))?;
         let content = parsed
             .candidates
             .into_iter()
@@ -980,7 +983,7 @@ async fn call_gemini_oauth(
     ai_config: &AiConfig,
     streaming: bool,
     on_token: &mut dyn FnMut(&str),
-) -> Result<ChatResult, HsxError> {
+) -> Result<ChatResult, FetchiumError> {
     let contents = gemini_build_contents(messages);
     let is_thinking_model = model.contains("2.5") || model.contains("thinking");
     let body = if is_thinking_model {
@@ -1013,7 +1016,7 @@ async fn call_gemini_oauth(
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(ai_config.timeout_secs))
         .build()
-        .map_err(|e| HsxError::AiUnavailable(format!("HTTP client build error: {e}")))?;
+        .map_err(|e| FetchiumError::AiUnavailable(format!("HTTP client build error: {e}")))?;
 
     let resp = client
         .post(&url)
@@ -1022,7 +1025,7 @@ async fn call_gemini_oauth(
         .json(&body)
         .send()
         .await
-        .map_err(|e| HsxError::AiUnavailable(format!("Gemini OAuth request failed: {e}")))?;
+        .map_err(|e| FetchiumError::AiUnavailable(format!("Gemini OAuth request failed: {e}")))?;
 
     if !resp.status().is_success() {
         let status = resp.status();
@@ -1033,7 +1036,7 @@ async fn call_gemini_oauth(
         if status == reqwest::StatusCode::FORBIDDEN
             && body_text.contains("ACCESS_TOKEN_SCOPE_INSUFFICIENT")
         {
-            return Err(HsxError::AiUnavailable(
+            return Err(FetchiumError::AiUnavailable(
                 "Gemini OAuth token has insufficient scopes for the REST API.
                    Fix (choose one):
                    • fetchium provider auth gemini       (interactive setup — API key or OAuth)
@@ -1042,7 +1045,7 @@ async fn call_gemini_oauth(
                     .into(),
             ));
         }
-        return Err(HsxError::AiUnavailable(format!(
+        return Err(FetchiumError::AiUnavailable(format!(
             "Gemini OAuth API error {status}: {body_text}"
         )));
     }
@@ -1050,10 +1053,9 @@ async fn call_gemini_oauth(
     if streaming {
         gemini_read_stream(resp, model, on_token).await
     } else {
-        let parsed: GeminiResponse = resp
-            .json()
-            .await
-            .map_err(|e| HsxError::AiUnavailable(format!("Invalid Gemini OAuth response: {e}")))?;
+        let parsed: GeminiResponse = resp.json().await.map_err(|e| {
+            FetchiumError::AiUnavailable(format!("Invalid Gemini OAuth response: {e}"))
+        })?;
         let content = parsed
             .candidates
             .into_iter()
@@ -1175,7 +1177,7 @@ async fn call_antigravity(
     ai_config: &AiConfig,
     streaming: bool,
     on_token: &mut dyn FnMut(&str),
-) -> Result<ChatResult, HsxError> {
+) -> Result<ChatResult, FetchiumError> {
     let contents = gemini_build_contents(messages);
     let is_thinking_model = model.contains("2.5") || model.contains("thinking");
     let body = if is_thinking_model {
@@ -1209,7 +1211,7 @@ async fn call_antigravity(
         .timeout(std::time::Duration::from_secs(ai_config.timeout_secs))
         .user_agent(&ua)
         .build()
-        .map_err(|e| HsxError::AiUnavailable(format!("HTTP client build error: {e}")))?;
+        .map_err(|e| FetchiumError::AiUnavailable(format!("HTTP client build error: {e}")))?;
 
     let action = if streaming {
         "generateContent?alt=sse"
@@ -1243,7 +1245,7 @@ async fn call_antigravity(
 
         let status = resp.status();
         if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
-            return Err(HsxError::AiUnavailable(
+            return Err(FetchiumError::AiUnavailable(
                 "Antigravity: authentication failed — re-run OpenCode to refresh your session.\n  \
                  Run `opencode` once, then retry."
                     .into(),
@@ -1261,7 +1263,7 @@ async fn call_antigravity(
             gemini_read_stream_with_provider(resp, model, ProviderKind::Antigravity, on_token).await
         } else {
             let parsed: GeminiResponse = resp.json().await.map_err(|e| {
-                HsxError::AiUnavailable(format!("Invalid Antigravity response: {e}"))
+                FetchiumError::AiUnavailable(format!("Invalid Antigravity response: {e}"))
             })?;
             let content = parsed
                 .candidates
@@ -1284,7 +1286,7 @@ async fn call_antigravity(
         };
     }
 
-    Err(HsxError::AiUnavailable(format!(
+    Err(FetchiumError::AiUnavailable(format!(
         "Antigravity: all endpoints failed. Last error: {last_err}\n  \
          Ensure your OpenCode session is active and the antigravity plugin is installed."
     )))
@@ -1296,7 +1298,7 @@ async fn call_gemini_cli(
     model: &str,
     messages: &[crate::ai::types::ChatMessage],
     on_token: &mut dyn FnMut(&str),
-) -> Result<ChatResult, HsxError> {
+) -> Result<ChatResult, FetchiumError> {
     let prompt = messages
         .iter()
         .map(|m| {
@@ -1322,7 +1324,7 @@ async fn call_gemini_cli(
         vec![model.to_string(), CAPACITY_FALLBACK.to_string()]
     };
 
-    let mut last_err: Option<HsxError> = None;
+    let mut last_err: Option<FetchiumError> = None;
 
     for try_model in &models_to_try {
         let args = vec![
@@ -1340,7 +1342,7 @@ async fn call_gemini_cli(
             .output()
             .await
             .map_err(|e| {
-                HsxError::ExternalTool(format!(
+                FetchiumError::ExternalTool(format!(
                     "Gemini CLI not found: {e}\nInstall: npm install -g @google/gemini-cli"
                 ))
             })?;
@@ -1355,12 +1357,12 @@ async fn call_gemini_cli(
                 tracing::warn!(
                     "GeminiCli: '{try_model}' capacity exhausted, retrying with '{CAPACITY_FALLBACK}'"
                 );
-                last_err = Some(HsxError::ExternalTool(format!(
+                last_err = Some(FetchiumError::ExternalTool(format!(
                     "Gemini CLI error: {stderr}"
                 )));
                 continue;
             }
-            return Err(HsxError::ExternalTool(format!(
+            return Err(FetchiumError::ExternalTool(format!(
                 "Gemini CLI error: {stderr}"
             )));
         }
@@ -1376,7 +1378,7 @@ async fn call_gemini_cli(
     }
 
     Err(last_err.unwrap_or_else(|| {
-        HsxError::ExternalTool("GeminiCli: all models capacity-exhausted".into())
+        FetchiumError::ExternalTool("GeminiCli: all models capacity-exhausted".into())
     }))
 }
 

@@ -16,6 +16,9 @@ Thumbs.db
 # Environment
 .env
 .env.local
+.env.production.local
+apps/dashboard/.env.production.local
+infra/*.local
 
 # Dependencies
 node_modules/
@@ -32,3 +35,32 @@ bun.lock
 # Data
 *.db
 *.sqlite
+__pycache__/
+*.pyc
+.agentic/
+
+# Local reports and logs
+report.json
+server.log
+stream.out
+
+# Benchmark and quality artifacts
+tests/benchmark/*.log
+tests/benchmark/*results*.json
+tests/competitive/results/
+tests/quality/results/
+
+# Secret / production config — never commit
+secrets.yml
+infra/fetchium.env.production
+*.env.production
+infra/*.env.production
+
+# Browser/debug artifacts & cruft
+.playwright-cli/
+*.log
+**/defunct*
+*.dat
+.DS_Store
+graphify-out/
+packages/npm/bin/fetchium

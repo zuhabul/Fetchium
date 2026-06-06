@@ -17,12 +17,12 @@
 ---
 
 ## PHASE A: PRODUCTION REST API
-**Goal**: hsx-api exposes the full engine via authenticated HTTP endpoints
+**Goal**: fetchium-api exposes the full engine via authenticated HTTP endpoints
 **Stack**: Rust + axum + PostgreSQL + Redis
 **ETA**: 1-2 weeks
 
 ### A1: Database & Schema 🔴
-- [ ] Add `sqlx` + `tokio-postgres` to `crates/hsx-api/Cargo.toml`
+- [ ] Add `sqlx` + `tokio-postgres` to `crates/fetchium-api/Cargo.toml`
 - [ ] Create `infra/migrations/` directory
 - [ ] Migration `001_users.sql` — `users` table (id, email, password_hash, created_at, plan_tier)
 - [ ] Migration `002_api_keys.sql` — `api_keys` table (id, user_id, key_hash, name, created_at, last_used_at, revoked_at)
@@ -92,7 +92,7 @@
   ```json
   { "type": "...", "title": "...", "status": 429, "detail": "..." }
   ```
-- [ ] Map `HsxError` variants → HTTP status codes
+- [ ] Map `FetchiumError` variants → HTTP status codes
 - [ ] Validation error responses with field-level detail
 - [ ] Never expose internal stack traces in production
 
@@ -110,13 +110,13 @@
 - [x] Update root `.gitignore` (node_modules/, .turbo/, .next/)
 
 ### B2: Shared UI Package 🟡
-- [ ] `packages/ui/package.json` (`@hsx/ui`)
+- [ ] `packages/ui/package.json` (`@fetchium/ui`)
 - [ ] Install shadcn/ui components (button, card, badge, input, etc.)
 - [ ] Design tokens: brand colors, typography, spacing
 - [ ] Export from `packages/ui/index.ts`
 
 ### B3: Shared Config Package 🟡
-- [ ] `packages/config/package.json` (`@hsx/config`)
+- [ ] `packages/config/package.json` (`@fetchium/config`)
 - [ ] `eslint.config.js` (shared ESLint)
 - [ ] `tsconfig.base.json` (shared TypeScript)
 - [ ] `tailwind.config.ts` (shared Tailwind)
@@ -304,12 +304,12 @@ class Fetchium {
 from fetchium import Fetchium
 
 # Sync
-hsx = Fetchium(api_key="hsx_...")
-results = hsx.search("rust async programming")
+fetchium = Fetchium(api_key="hsx_...")
+results = fetchium.search("rust async programming")
 
 # Async
-async with Fetchium(api_key="hsx_...") as hsx:
-    results = await hsx.search("rust async programming")
+async with Fetchium(api_key="hsx_...") as fetchium:
+    results = await fetchium.search("rust async programming")
 ```
 - [ ] All endpoints matching JS SDK
 - [ ] Pydantic models with validation
@@ -366,11 +366,11 @@ async with Fetchium(api_key="hsx_...") as hsx:
 **Goal**: Production-ready deployment on server.zuhabul.com
 
 ### I1: Docker Stack 🔴
-- [ ] `Dockerfile` for hsx-api (multi-stage: builder + runtime, ~50MB image)
+- [ ] `Dockerfile` for fetchium-api (multi-stage: builder + runtime, ~50MB image)
 - [ ] `infra/docker-compose.yml` — development stack
   ```yaml
   services:
-    hsx-api:     # port 8000
+    fetchium-api:     # port 8000
     postgres:    # port 5432 (internal only)
     redis:       # port 6379 (internal only)
     searxng:     # port 4040 (already running)
@@ -398,7 +398,7 @@ async with Fetchium(api_key="hsx_...") as hsx:
   - SSH to server, `docker compose pull && docker compose up -d`
 
 ### I3: Traefik Integration 🔴
-- [ ] Add `hsx-api` to `/etc/traefik/dynamic/services.yml`:
+- [ ] Add `fetchium-api` to `/etc/traefik/dynamic/services.yml`:
   - `api.fetchium.server.zuhabul.com` → `localhost:8000`
   - `fetchium.server.zuhabul.com` → Next.js app
 - [ ] SSL certificate auto-provisioning
@@ -406,7 +406,7 @@ async with Fetchium(api_key="hsx_...") as hsx:
 - [ ] Rate limit headers passthrough
 
 ### I4: Monitoring & Observability 🟡
-- [ ] Prometheus metrics endpoint (`GET /metrics`) in hsx-api
+- [ ] Prometheus metrics endpoint (`GET /metrics`) in fetchium-api
   - Total requests counter (by endpoint, status)
   - Latency histogram (P50, P95, P99)
   - Active connections gauge
@@ -430,7 +430,7 @@ async with Fetchium(api_key="hsx_...") as hsx:
 - [ ] GitHub README complete overhaul:
   - Badges: CI, tests passing, license, stars
   - Feature overview with GIF demo
-  - Quick install: `cargo install hsx-cli`
+  - Quick install: `cargo install fetchium-cli`
   - Comparison table vs Firecrawl/Tavily
   - "Hosted API" badge linking to pricing
 - [ ] GitHub topics: `search`, `ai`, `scraping`, `rust`, `llm`, `mcp`
@@ -454,7 +454,7 @@ async with Fetchium(api_key="hsx_...") as hsx:
 
 ### J4: Launch Day 🔴
 - [ ] Hacker News "Show HN" post (Tuesday-Thursday 9am ET for max visibility)
-  - Title: "Show HN: Fetchium – open-source Firecrawl alternative, 11 backends, 8-signal ranking"
+  - Title: "Show HN: Fetchium – open-source Firecrawl alternative, 17 backends, 8-signal ranking"
 - [ ] Product Hunt launch (same day, cross-post community)
 - [ ] Post to r/MachineLearning, r/LocalLLaMA, r/rust, r/programming
 - [ ] Tweet from @fetchium with demo video
@@ -526,10 +526,10 @@ async with Fetchium(api_key="hsx_...") as hsx:
 
 ```bash
 # API Server
-HSX_DATABASE_URL=postgresql://hsx:password@localhost:5432/fetchium
-HSX_REDIS_URL=redis://localhost:6379
-HSX_JWT_SECRET=<64-char random hex>
-HSX_API_KEY_PREFIX=hsx_
+FETCHIUM_DATABASE_URL=postgresql://fetchium:password@localhost:5432/fetchium
+FETCHIUM_REDIS_URL=redis://localhost:6379
+FETCHIUM_JWT_SECRET=<64-char random hex>
+FETCHIUM_API_KEY_PREFIX=hsx_
 
 # Stripe
 STRIPE_SECRET_KEY=sk_live_...
@@ -551,8 +551,8 @@ GITHUB_TOKEN=...
 SEARXNG_URL=http://localhost:4040
 
 # AI providers (optional - users bring their own)
-HSX_ANTHROPIC_KEY=...
-HSX_OPENAI_KEY=...
+FETCHIUM_ANTHROPIC_KEY=...
+FETCHIUM_OPENAI_KEY=...
 
 # Observability
 SENTRY_DSN=...

@@ -16,13 +16,12 @@ const nav: Record<string, { label: string; href: string }[]> = {
     { label: "Status", href: "/status" },
   ],
   Developers: [
-    { label: "Documentation", href: "/docs" },
-    { label: "API Reference", href: "/docs/api/search" },
-    { label: "Quickstart", href: "/docs/quickstart" },
-    { label: "TypeScript SDK", href: "/docs/sdk/typescript" },
-    { label: "Python SDK", href: "/docs/sdk/python" },
-    { label: "Algorithm Docs", href: "/docs/algorithms" },
-    { label: "Self-hosting", href: "/docs/self-hosting/docker" },
+    { label: "Documentation", href: "https://docs.fetchium.com" },
+    { label: "API Reference", href: "https://docs.fetchium.com/api/search" },
+    { label: "Quickstart", href: "https://docs.fetchium.com/quickstart" },
+    { label: "TypeScript SDK", href: "https://docs.fetchium.com/sdk/typescript" },
+    { label: "Python SDK", href: "https://docs.fetchium.com/sdk/python" },
+    { label: "Algorithm Docs", href: "https://docs.fetchium.com/algorithms" },
   ],
   Compare: [
     { label: "vs Tavily", href: "/compare/tavily" },
@@ -60,7 +59,7 @@ const socialLinks = [
 
 export default function Footer() {
   return (
-    <footer className="relative overflow-hidden border-t border-white/5 pt-12 sm:pt-20 pb-8 sm:pb-10 px-4">
+    <footer className="relative overflow-hidden border-t border-slate-900 pt-12 sm:pt-20 pb-8 sm:pb-10 px-4">
       {/* Background glow */}
       <div className="pointer-events-none absolute bottom-0 left-1/2 h-[300px] w-[800px] -translate-x-1/2 rounded-full bg-indigo-500/5 blur-[120px]" />
 
@@ -89,18 +88,18 @@ export default function Footer() {
               </span>
             </Link>
 
-            <p className="mt-4 max-w-[220px] text-[12px] sm:text-[13px] leading-relaxed text-slate-500">
-              The search API that thinks. 17 novel algorithms. 11+ federated
-              backends. Cheapest full-pipeline search API on the market.
+            <p className="mt-4 max-w-[240px] text-[13px] sm:text-[14px] leading-relaxed text-slate-300">
+              The search API that thinks. 17 algorithms, 17+ federated
+              backends, and docs at docs.fetchium.com.
             </p>
 
             {/* Status indicator */}
-            <div className="mt-4 sm:mt-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-3 py-1.5 text-[11px] font-medium text-emerald-400">
+            <div className="mt-4 sm:mt-5 inline-flex items-center gap-2 rounded-full border border-indigo-500/25 bg-indigo-500/10 px-3 py-1.5 text-[12px] font-semibold text-indigo-300">
               <Circle
-                className="h-2 w-2 fill-emerald-400 text-emerald-400"
+                className="h-2 w-2 fill-indigo-400 text-indigo-400"
                 style={{ animation: "pulse 2s ease-in-out infinite" }}
               />
-              All systems operational
+              Documentation on docs.fetchium.com
             </div>
 
             {/* Social links */}
@@ -114,7 +113,7 @@ export default function Footer() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={s.label}
-                    className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/8 bg-white/3 text-slate-500 transition-all duration-200 hover:border-indigo-500/30 hover:bg-indigo-500/10 hover:text-indigo-300"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/60 bg-slate-900/40 text-slate-400 transition-all duration-200 hover:border-indigo-500/40 hover:bg-indigo-500/10 hover:text-indigo-300"
                   >
                     <Icon className="h-4 w-4" />
                   </Link>
@@ -132,17 +131,17 @@ export default function Footer() {
               viewport={{ once: true }}
               transition={{ delay: 0.08 * colIdx, duration: 0.5 }}
             >
-              <h4 className="mb-3 sm:mb-4 text-[11px] sm:text-[12px] font-semibold uppercase tracking-widest text-slate-500">
+              <h4 className="mb-3 sm:mb-4 text-[13px] font-bold uppercase tracking-widest text-slate-300">
                 {section}
               </h4>
-              <ul className="space-y-2 sm:space-y-2.5">
+              <ul className="space-y-2 sm:space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.href}
                       target={link.href.startsWith("http") ? "_blank" : undefined}
                       rel={link.href.startsWith("http") ? "noopener noreferrer" : undefined}
-                      className="text-[12px] sm:text-[13px] text-slate-600 transition-colors duration-150 hover:text-slate-200"
+                      className="text-[14px] text-slate-400 transition-colors duration-150 hover:text-slate-200 font-medium"
                     >
                       {link.label}
                     </Link>
@@ -155,23 +154,23 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <motion.div
-          className="mt-10 sm:mt-16 flex flex-col items-center justify-between gap-3 border-t border-white/5 pt-6 sm:pt-8 sm:flex-row"
+          className="mt-10 sm:mt-16 flex flex-col items-center justify-between gap-3 border-t border-slate-900 pt-6 sm:pt-8 sm:flex-row"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.3, duration: 0.5 }}
         >
-          <p className="text-[11px] sm:text-[12px] text-slate-700">
+          <p className="text-[13px] sm:text-[14px] text-slate-400">
             &copy; 2026 Fetchium. All rights reserved.
           </p>
 
           {/* Tech badges */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            {["Rust", "563+ tests", "17 algos", "~500ms P50"].map(
+            {["Rust", "1,100+ tests", "17 algos", "12 MCP tools"].map(
               (badge) => (
                 <span
                   key={badge}
-                  className="rounded-md border border-white/6 bg-white/2 px-2 py-1 text-[10px] sm:text-[11px] font-medium text-slate-700"
+                  className="rounded-md border border-slate-700 bg-slate-900/60 px-2.5 py-1 text-[12px] sm:text-[13px] font-semibold text-slate-300"
                 >
                   {badge}
                 </span>
@@ -179,7 +178,7 @@ export default function Footer() {
             )}
           </div>
 
-          <p className="text-[11px] sm:text-[12px] text-slate-700">
+          <p className="text-[13px] sm:text-[14px] text-slate-400">
             Built with Rust + Next.js
           </p>
         </motion.div>

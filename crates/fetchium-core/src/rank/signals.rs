@@ -19,52 +19,20 @@ pub struct ScoringContext {
     /// All snippets/titles from the result set (for consensus scoring).
     pub all_text: Vec<String>,
     /// URL → index into `all_text` for zero-copy per-result text lookup.
-    ///
-    /// Avoids repeated `format!("{} {}", title, snippet).to_lowercase()` in every
-    /// signal function (BM25, semantic, consensus). Pre-computed once in `new()`.
     pub result_text_index: HashMap<String, usize>,
-    /// Pre-computed query embedding (populated when `embeddings` feature is enabled).
-    #[cfg(feature = "embeddings")]
-    pub query_embedding: Option<Vec<f32>>,
-    /// Placeholder for non-embedding builds (keeps struct layout consistent).
-    #[cfg(not(feature = "embeddings"))]
+    /// Pre-tokenized and lowercased words for each result.
+    pub result_words: Vec<Vec<String>>,
+    /// Word frequencies for each result (word -> count).
+    pub result_term_freqs: Vec<HashMap<String, u32>>,
+    /// Pre-computed query embedding.
     pub query_embedding: Option<Vec<f32>>,
     /// Pre-computed result embeddings, keyed by URL.
-    ///
-    /// Populated via a single `embed_batch()` call in `ScoringContext::new()`, replacing the
-    /// previous per-result `embed()` approach (N×15ms → 1×20ms; 7.5× speedup for 10 results).
     pub result_embeddings: std::collections::HashMap<String, Vec<f32>>,
 }
 
 impl ScoringContext {
-    /// Build context from a query string and the full result set.
-    ///
-    /// When the `embeddings` feature is enabled, this pre-computes embeddings for
-    /// **all** results in a single `embed_batch()` call. This is a 7.5× speedup
-    /// over per-result embedding (N×15ms → 1×20ms for 10 results).
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use fetchium_core::rank::signals::ScoringContext;
-    /// use fetchium_core::types::{BackendId, ResultItem};
-    ///
-    /// let results = vec![ResultItem {
-    ///     title: "Rust memory safety".into(),
-    ///     url: "https://example.com/rust".into(),
-    ///     snippet: "Ownership and borrowing guarantee memory safety without GC.".into(),
-    ///     rank: 0,
-    ///     backend: BackendId::DuckDuckGo,
-    ///     score: None,
-    ///     published_date: None,
-    /// }];
-    ///
-    /// let ctx = ScoringContext::new("rust memory safety", &results);
-    /// assert!(!ctx.query_terms.is_empty());
-    /// assert!(!ctx.all_text.is_empty());
-    /// ```
     pub fn new(query: &str, results: &[ResultItem]) -> Self {
-        let query_terms = query
+        let query_terms: Vec<String> = query
             .to_lowercase()
             .split(|c: char| !c.is_alphanumeric())
             .filter(|t| t.len() >= 2)
@@ -76,7 +44,19 @@ impl ScoringContext {
             .map(|r| format!("{} {}", r.title, r.snippet).to_lowercase())
             .collect();
 
-        // Build URL→index map for O(1) zero-copy text lookup in signal functions.
+        let mut result_words = Vec::with_capacity(results.len());
+        let mut result_term_freqs = Vec::with_capacity(results.len());
+
+        for text in &all_text {
+            let words: Vec<String> = text.split_whitespace().map(|s| s.to_string()).collect();
+            let mut freqs = HashMap::new();
+            for word in &words {
+                *freqs.entry(word.clone()).or_insert(0) += 1;
+            }
+            result_words.push(words);
+            result_term_freqs.push(freqs);
+        }
+
         let result_text_index: HashMap<String, usize> = results
             .iter()
             .enumerate()
@@ -117,6 +97,8 @@ impl ScoringContext {
             seen_domains: HashSet::new(),
             all_text,
             result_text_index,
+            result_words,
+            result_term_freqs,
             query_embedding,
             result_embeddings,
         }
@@ -136,23 +118,23 @@ pub fn bm25_score(result: &ResultItem, ctx: &ScoringContext) -> f64 {
         return 0.0;
     }
 
-    // Use pre-computed lowercased text from context index (zero-copy).
-    let owned;
-    let text: &str = if let Some(&idx) = ctx.result_text_index.get(&result.url) {
-        &ctx.all_text[idx]
-    } else {
-        owned = format!("{} {}", result.title, result.snippet).to_lowercase();
-        &owned
+    let idx = match ctx.result_text_index.get(&result.url) {
+        Some(&i) => i,
+        None => return 0.0,
     };
-    let words: Vec<&str> = text.split_whitespace().collect();
-    let doc_len = words.len() as f64;
+
+    let doc_len = ctx.result_words[idx].len() as f64;
+    let freqs = &ctx.result_term_freqs[idx];
 
     let mut score = 0.0f64;
     for term in &ctx.query_terms {
-        let tf = words.iter().filter(|w| **w == term.as_str()).count() as f64;
+        let tf = freqs.get(term).copied().unwrap_or(0) as f64;
         if tf == 0.0 {
-            // Half-weight for substring match
-            let partial = words.iter().filter(|w| w.contains(term.as_str())).count() as f64;
+            // Half-weight for substring match (still O(N) but better than before)
+            let partial = ctx.result_words[idx]
+                .iter()
+                .filter(|w| w.contains(term))
+                .count() as f64;
             if partial > 0.0 {
                 let denom = partial * 0.5 + K1 * (1.0 - B + B * doc_len / AVG_DL);
                 score += 0.5 * (partial * 0.5 * (K1 + 1.0)) / denom;
@@ -197,23 +179,26 @@ fn jaccard_semantic(result: &ResultItem, ctx: &ScoringContext) -> f64 {
         return 0.5;
     }
 
-    // Use pre-computed lowercased text from context index (zero-copy).
-    let owned;
-    let text: &str = if let Some(&idx) = ctx.result_text_index.get(&result.url) {
-        &ctx.all_text[idx]
-    } else {
-        owned = format!("{} {}", result.title, result.snippet).to_lowercase();
-        &owned
+    let idx = match ctx.result_text_index.get(&result.url) {
+        Some(&i) => i,
+        None => return 0.0,
     };
-    let doc_terms: HashSet<&str> = text.split_whitespace().collect();
-    let query_set: HashSet<&str> = ctx.query_terms.iter().map(|s| s.as_str()).collect();
 
-    let intersection = query_set.intersection(&doc_terms).count();
-    let union = query_set.union(&doc_terms).count();
+    let doc_words = &ctx.result_words[idx];
+    if doc_words.is_empty() {
+        return 0.0;
+    }
+
+    let query_set: HashSet<&str> = ctx.query_terms.iter().map(|s| s.as_str()).collect();
+    let doc_set: HashSet<&str> = doc_words.iter().map(|s| s.as_str()).collect();
+
+    let intersection = query_set.intersection(&doc_set).count();
+    let union = query_set.len() + doc_set.len() - intersection;
 
     if union == 0 {
         return 0.0;
     }
+
     (intersection as f64 / union as f64).min(1.0)
 }
 
@@ -304,28 +289,176 @@ fn domain_ends_with_dot(host: &str, domain: &str) -> bool {
 
 fn domain_tier_score(domain: &str) -> f64 {
     const HIGH_AUTHORITY: &[&str] = &[
+        // Knowledge & reference
         "wikipedia.org",
-        "github.com",
+        "britannica.com",
+        // Academic & scientific
         "arxiv.org",
         "nature.com",
         "nih.gov",
         "pubmed.ncbi.nlm.nih.gov",
         "scholar.google.com",
+        "sciencedirect.com",
+        "springer.com",
+        // Developer
+        "github.com",
         "docs.rs",
         "crates.io",
         "rust-lang.org",
+        "python.org",
+        "developer.mozilla.org",
+        "docs.microsoft.com",
+        "learn.microsoft.com",
+        "kubernetes.io",
+        "docs.docker.com",
+        "cloud.google.com",
+        "w3.org",
+        "tc39.es",
+        "whatwg.org",
+        "docs.python.org",
+        "cppreference.com",
+        "devdocs.io",
+        // AI/ML research
+        "huggingface.co",
+        "paperswithcode.com",
+        "openai.com",
+        "deepmind.google",
+        "research.google",
+        "ai.meta.com",
+        // Standards bodies (missed previously)
+        "rfc-editor.org",
+        "ietf.org",
+        "iso.org",
+        "acm.org",
+        "ieee.org",
+        // Major news
+        "nytimes.com",
+        "bbc.com",
+        "reuters.com",
+        "apnews.com",
     ];
     const MEDIUM_AUTHORITY: &[&str] = &[
+        // Tech & developer
         "stackoverflow.com",
         "medium.com",
-        "bbc.com",
-        "nytimes.com",
-        "reuters.com",
-        "theguardian.com",
+        "dev.to",
         "techcrunch.com",
         "arstechnica.com",
         "wired.com",
-        "ieee.org",
+        "theverge.com",
+        "hackernoon.com",
+        "realpython.com",
+        "digitalocean.com",
+        "css-tricks.com",
+        "smashingmagazine.com",
+        "baeldung.com",
+        "testdriven.io",
+        "digital-trends.com",
+        "techradar.com",
+        "tomsguide.com",
+        "pcmag.com",
+        "cnet.com",
+        "zdnet.com",
+        "theregister.com",
+        "infoq.com",
+        "cisco.com",
+        "owasp.org",
+        "sans.org",
+        "hbr.org",
+        "reddit.com",
+        "npr.org",
+        "ft.com",
+        "wsj.com",
+        "statista.com",
+        "ourworldindata.org",
+        "law.cornell.edu",
+        // News & journalism
+        "theguardian.com",
+        "washingtonpost.com",
+        "forbes.com",
+        "bloomberg.com",
+        "cnbc.com",
+        // Consumer & lifestyle
+        "healthline.com",
+        "webmd.com",
+        "mayoclinic.org",
+        "investopedia.com",
+        "nerdwallet.com",
+        "wirecutter.com",
+        "consumerreports.org",
+        "tripadvisor.com",
+        "yelp.com",
+        "allrecipes.com",
+        "epicurious.com",
+        "kayak.com",
+        "skyscanner.com",
+        "timeout.com",
+        "eater.com",
+        "tastingtable.com",
+        "seriouseats.com",
+        "theinfatuation.com",
+        // HowTo brand authorities
+        "tide.com",
+        "maytag.com",
+        "familyhandyman.com",
+        "thisoldhouse.com",
+        "instructables.com",
+        "wikihow.com",
+        "howtocleanstuff.net",
+        // Finance
+        "bankrate.com",
+        "fool.com",
+        "kiplinger.com",
+        "morningstar.com",
+        // Security
+        "krebsonsecurity.com",
+        "darkreading.com",
+        // Academic/learning
+        "khanacademy.org",
+        "coursera.org",
+        "edx.org",
+        "mit.edu",
+        "stanford.edu",
+        // Finance & investment
+        "vanguard.com",
+        "fidelity.com",
+        "schwab.com",
+        "investor.gov",
+        "sec.gov",
+        "federalreserve.gov",
+        // Consumer tech reviews
+        "soundguys.com",
+        "rtings.com",
+        "tomsguide.com",
+        "anandtech.com",
+        "gsmarena.com",
+        // Cooking & dining
+        "seriouseats.com",
+        "bonappetit.com",
+        "foodnetwork.com",
+        "guide.michelin.com",
+        // Travel & local
+        "lonelyplanet.com",
+        "frommers.com",
+        "fodors.com",
+        // Multilingual / international news
+        "lemonde.fr",
+        "lefigaro.fr",
+        "tv5monde.com",
+        "spektrum.de",
+        "spiegel.de",
+        "elpais.com",
+        "bbc.co.uk",
+        "theguardian.com",
+        // Medical
+        "cdc.gov",
+        "who.int",
+        "medlineplus.gov",
+        "clevelandclinic.org",
+        // Developer docs
+        "docs.github.com",
+        "developer.apple.com",
+        "developer.android.com",
     ];
 
     if HIGH_AUTHORITY

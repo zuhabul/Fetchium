@@ -11,7 +11,7 @@ use std::path::PathBuf;
 /// Top-level configuration.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
-pub struct HsxConfig {
+pub struct FetchiumConfig {
     pub general: GeneralConfig,
     pub search: SearchConfig,
     pub fetch: FetchConfig,
@@ -22,6 +22,74 @@ pub struct HsxConfig {
     pub youtube: YouTubeConfig,
     pub social: SocialConfig,
     pub headless: HeadlessConfig,
+    pub proxy: ProxyConfig,
+    pub dataimpulse: DataImpulseConfig,
+}
+
+/// DataImpulse residential proxy configuration.
+///
+/// Country targeting: `{username}__cr.{cc}:{password}@{host}:{port}`
+/// Only activates for scraper backends blocked by datacenter IPs (Google, DDG, Bing, Brave).
+/// API backends (Serper, Exa, Tavily) are never routed through DataImpulse.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DataImpulseConfig {
+    /// Enable DataImpulse residential proxy routing.
+    pub enabled: bool,
+    /// DataImpulse account username.
+    pub username: String,
+    /// DataImpulse account password.
+    pub password: String,
+    /// Gateway host (default: gw.dataimpulse.com).
+    pub host: String,
+    /// Gateway port (default: 823).
+    pub port: u16,
+    /// Domains to route through DataImpulse (empty = use built-in blocked-domain list).
+    #[serde(default)]
+    pub proxy_domains: Vec<String>,
+}
+
+impl Default for DataImpulseConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            username: String::new(),
+            password: String::new(),
+            host: "gw.dataimpulse.com".into(),
+            port: 823,
+            proxy_domains: Vec::new(),
+        }
+    }
+}
+
+/// Proxy rotation configuration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ProxyConfig {
+    /// Enable proxy rotation for search backends.
+    pub enabled: bool,
+    /// Path to proxy list file (default: ~/.fetchium/proxies.txt).
+    pub proxy_file: Option<PathBuf>,
+    /// Proxy protocol (http, https, socks5).
+    pub protocol: String,
+    /// Domains that should use proxies (empty = all search backends).
+    #[serde(default)]
+    pub proxy_domains: Vec<String>,
+    /// Domains that should never use proxies.
+    #[serde(default)]
+    pub bypass_domains: Vec<String>,
+}
+
+impl Default for ProxyConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            proxy_file: None,
+            protocol: "http".into(),
+            proxy_domains: Vec::new(),
+            bypass_domains: vec!["localhost".into(), "127.0.0.1".into()],
+        }
+    }
 }
 
 /// Headless browser configuration.
@@ -55,6 +123,22 @@ pub struct GeneralConfig {
 pub struct SearchConfig {
     /// Enabled backends.
     pub backends: Vec<String>,
+    /// Tavily API key.
+    pub tavily_api_key: Option<String>,
+    /// Tavily API keys for rotation.
+    pub tavily_api_keys: Vec<String>,
+    /// Serper API key.
+    pub serper_api_key: Option<String>,
+    /// Serper API keys for rotation.
+    pub serper_api_keys: Vec<String>,
+    /// Exa API key.
+    pub exa_api_key: Option<String>,
+    /// Exa API keys for rotation.
+    pub exa_api_keys: Vec<String>,
+    /// Firecrawl API key.
+    pub firecrawl_api_key: Option<String>,
+    /// Firecrawl API keys for rotation.
+    pub firecrawl_api_keys: Vec<String>,
     /// Default token budget for agent commands.
     pub default_budget: u32,
     /// Default PDS tier.
@@ -65,26 +149,6 @@ pub struct SearchConfig {
     pub timeout_secs: u64,
     /// SearXNG instance URL (if configured).
     pub searxng_url: Option<String>,
-    /// Tavily API key (set via TAVILY_API_KEY env var or config).
-    pub tavily_api_key: Option<String>,
-    /// Extra Tavily keys for pool rotation.
-    #[serde(default)]
-    pub tavily_api_keys: Vec<String>,
-    /// Serper API key (set via SERPER_API_KEY env var or config).
-    pub serper_api_key: Option<String>,
-    /// Extra Serper keys for pool rotation.
-    #[serde(default)]
-    pub serper_api_keys: Vec<String>,
-    /// Exa API key (set via EXA_API_KEY env var or config).
-    pub exa_api_key: Option<String>,
-    /// Extra Exa keys for pool rotation.
-    #[serde(default)]
-    pub exa_api_keys: Vec<String>,
-    /// Firecrawl API key (set via FIRECRAWL_API_KEY env var or config).
-    pub firecrawl_api_key: Option<String>,
-    /// Extra Firecrawl keys for pool rotation.
-    #[serde(default)]
-    pub firecrawl_api_keys: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -197,7 +261,7 @@ pub struct SocialConfig {
     pub facebook_graph_token: Option<String>,
 }
 
-impl HsxConfig {
+impl FetchiumConfig {
     /// Returns the Facebook Graph API token from config or env var.
     ///
     /// Checks `FETCHIUM_FACEBOOK_TOKEN`, then the config file value.
@@ -268,10 +332,6 @@ impl Default for SearchConfig {
             // Direct Bing/DDG/Google scrapers excluded — they CAPTCHA-block server IPs.
             backends: vec![
                 "searxng".into(),
-                "tavily".into(),
-                "serper".into(),
-                "exa".into(),
-                "firecrawl".into(),
                 "wikipedia".into(),
                 "hackernews".into(),
                 "reddit".into(),
@@ -279,11 +339,6 @@ impl Default for SearchConfig {
                 "arxiv".into(),
                 "github".into(),
             ],
-            default_budget: 4000,
-            default_tier: PdsTier::Summary,
-            max_concurrent: 10,
-            timeout_secs: 30,
-            searxng_url: Some("http://localhost:4040".into()),
             tavily_api_key: None,
             tavily_api_keys: Vec::new(),
             serper_api_key: None,
@@ -292,6 +347,11 @@ impl Default for SearchConfig {
             exa_api_keys: Vec::new(),
             firecrawl_api_key: None,
             firecrawl_api_keys: Vec::new(),
+            default_budget: 4000,
+            default_tier: PdsTier::Summary,
+            max_concurrent: 100,
+            timeout_secs: 60,
+            searxng_url: Some("http://localhost:4040".into()),
         }
     }
 }
@@ -346,7 +406,7 @@ impl Default for OutputConfig {
 
 // ─── Validation ──────────────────────────────────────────────────
 
-impl HsxConfig {
+impl FetchiumConfig {
     /// Validate all configuration values are within acceptable bounds.
     /// Returns a list of warnings for non-fatal issues or an error for fatal ones.
     pub fn validate(&self) -> Result<Vec<String>, String> {
@@ -436,7 +496,7 @@ impl HsxConfig {
 
 // ─── Loading ─────────────────────────────────────────────────────
 
-impl HsxConfig {
+impl FetchiumConfig {
     /// Get the data directory, creating it if it doesn't exist.
     ///
     /// Resolution order:
@@ -578,27 +638,6 @@ impl HsxConfig {
                 self.fetch.respect_robots = b;
             }
         }
-        // Search backend API keys (premium backends)
-        if let Ok(val) = std::env::var("TAVILY_API_KEY") {
-            if !val.is_empty() {
-                self.search.tavily_api_key = Some(val);
-            }
-        }
-        if let Ok(val) = std::env::var("SERPER_API_KEY") {
-            if !val.is_empty() {
-                self.search.serper_api_key = Some(val);
-            }
-        }
-        if let Ok(val) = std::env::var("EXA_API_KEY") {
-            if !val.is_empty() {
-                self.search.exa_api_key = Some(val);
-            }
-        }
-        if let Ok(val) = std::env::var("FIRECRAWL_API_KEY") {
-            if !val.is_empty() {
-                self.search.firecrawl_api_key = Some(val);
-            }
-        }
         // Provider API key overrides (also read directly by ProviderEntry::resolve_api_key)
         if let Ok(val) = std::env::var("OPENAI_API_KEY") {
             if !val.is_empty() {
@@ -671,7 +710,7 @@ mod tests {
 
     #[test]
     fn default_config_is_valid() {
-        let config = HsxConfig::default();
+        let config = FetchiumConfig::default();
         assert_eq!(config.search.default_budget, 4000);
         assert!(config.fetch.respect_robots);
         assert!(config.cache.enabled);
@@ -679,15 +718,15 @@ mod tests {
 
     #[test]
     fn config_roundtrip_toml() {
-        let config = HsxConfig::default();
+        let config = FetchiumConfig::default();
         let toml_str = toml::to_string_pretty(&config).unwrap();
-        let back: HsxConfig = toml::from_str(&toml_str).unwrap();
+        let back: FetchiumConfig = toml::from_str(&toml_str).unwrap();
         assert_eq!(back.search.default_budget, config.search.default_budget);
     }
 
     #[test]
     fn data_dir_default() {
-        let config = HsxConfig::default();
+        let config = FetchiumConfig::default();
         let dir = config.data_dir();
         // The canonical default is ~/.fetchium.
         let s = dir.to_string_lossy();
@@ -697,7 +736,7 @@ mod tests {
     #[test]
     fn env_override_budget_new_prefix() {
         std::env::set_var("FETCHIUM_SEARCH_DEFAULT_BUDGET", "8000");
-        let mut config = HsxConfig::default();
+        let mut config = FetchiumConfig::default();
         config.apply_env_overrides();
         assert_eq!(config.search.default_budget, 8000);
         std::env::remove_var("FETCHIUM_SEARCH_DEFAULT_BUDGET");
@@ -706,7 +745,7 @@ mod tests {
     #[test]
     fn env_override_cache_disabled() {
         std::env::set_var("FETCHIUM_CACHE_ENABLED", "false");
-        let mut config = HsxConfig::default();
+        let mut config = FetchiumConfig::default();
         config.apply_env_overrides();
         assert!(!config.cache.enabled);
         std::env::remove_var("FETCHIUM_CACHE_ENABLED");
@@ -717,7 +756,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let config_path = dir.path().join("config.toml");
 
-        let mut config = HsxConfig::default();
+        let mut config = FetchiumConfig::default();
         config.search.default_budget = 9999;
 
         // Save
@@ -725,13 +764,13 @@ mod tests {
         std::fs::write(&config_path, &toml_str).unwrap();
 
         // Reload
-        let loaded = HsxConfig::load_from(Some(&config_path));
+        let loaded = FetchiumConfig::load_from(Some(&config_path));
         assert_eq!(loaded.search.default_budget, 9999);
     }
 
     #[test]
     fn config_file_path_is_fetchium() {
-        let path = HsxConfig::config_file_path();
+        let path = FetchiumConfig::config_file_path();
         let s = path.to_string_lossy();
         assert!(s.contains(".fetchium"));
         assert!(s.ends_with("config.toml"));

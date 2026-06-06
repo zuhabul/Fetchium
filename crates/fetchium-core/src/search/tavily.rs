@@ -3,7 +3,7 @@
 //! Returns relevance-scored results with content extraction in one call.
 //! API key required: set `TAVILY_API_KEY` env var or `search.tavily_api_key` in config.
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::HttpClient;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
@@ -41,15 +41,36 @@ struct TavilyResult {
     score: Option<f64>,
 }
 
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 /// Tavily search backend — returns pre-ranked, content-rich results.
 pub struct TavilyBackend {
     http: HttpClient,
-    api_key: String,
+    api_keys: Vec<String>,
+    current_key_index: AtomicUsize,
 }
 
 impl TavilyBackend {
-    pub fn new(http: HttpClient, api_key: String) -> Self {
-        Self { http, api_key }
+    pub fn new(http: HttpClient, api_keys: Vec<String>) -> Self {
+        Self {
+            http,
+            api_keys,
+            current_key_index: AtomicUsize::new(0),
+        }
+    }
+
+    fn get_key(&self) -> &str {
+        if self.api_keys.is_empty() {
+            return "";
+        }
+        let idx = self.current_key_index.load(Ordering::Relaxed) % self.api_keys.len();
+        &self.api_keys[idx]
+    }
+
+    fn rotate_key(&self) {
+        if !self.api_keys.is_empty() {
+            self.current_key_index.fetch_add(1, Ordering::Relaxed);
+        }
     }
 }
 
@@ -59,51 +80,82 @@ impl TavilyBackend {
         query: &str,
         max_results: u32,
         days: Option<u32>,
-    ) -> HsxResult<Vec<ResultItem>> {
-        let request = TavilyRequest {
-            api_key: &self.api_key,
-            query,
-            search_depth: "advanced",
-            include_answer: false,
-            include_raw_content: false,
-            max_results: max_results.min(20),
-            days,
-        };
+    ) -> FetchiumResult<Vec<ResultItem>> {
+        let mut last_err = None;
+        let num_keys = self.api_keys.len().max(1);
 
-        let body = serde_json::to_string(&request)
-            .map_err(|e| HsxError::Search(format!("Tavily serialization: {e}")))?;
+        // Try each key once if we get a credit/usage error
+        for _ in 0..num_keys {
+            let api_key = self.get_key();
+            let request = TavilyRequest {
+                api_key,
+                query,
+                search_depth: "advanced",
+                include_answer: false,
+                include_raw_content: false,
+                max_results: max_results.min(20),
+                days,
+            };
 
-        let response = self
-            .http
-            .post_json("https://api.tavily.com/search", &body)
-            .await?;
+            let body = serde_json::to_string(&request)
+                .map_err(|e| FetchiumError::Search(format!("Tavily serialization: {e}")))?;
 
-        let parsed: TavilyResponse = serde_json::from_str(&response)
-            .map_err(|e| HsxError::Search(format!("Tavily parse: {e}")))?;
+            let result = self
+                .http
+                .post_json("https://api.tavily.com/search", &body)
+                .await;
 
-        debug!(
-            "Tavily: {} results in {:.2}s [days={:?}]",
-            parsed.results.len(),
-            parsed.response_time.unwrap_or(0.0),
-            days,
-        );
+            match result {
+                Ok(response) => {
+                    let parsed: TavilyResponse = serde_json::from_str(&response)
+                        .map_err(|e| FetchiumError::Search(format!("Tavily parse: {e}")))?;
 
-        let results = parsed
-            .results
-            .into_iter()
-            .enumerate()
-            .map(|(i, r)| ResultItem {
-                title: r.title,
-                url: r.url,
-                snippet: r.content,
-                rank: (i + 1) as u32,
-                backend: BackendId::Tavily,
-                score: r.score,
-                published_date: None,
-            })
-            .collect();
+                    debug!(
+                        "Tavily: {} results in {:.2}s [days={:?}]",
+                        parsed.results.len(),
+                        parsed.response_time.unwrap_or(0.0),
+                        days,
+                    );
 
-        Ok(results)
+                    let results = parsed
+                        .results
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, r)| ResultItem {
+                            title: r.title,
+                            url: r.url,
+                            snippet: r.content,
+                            rank: (i + 1) as u32,
+                            backend: BackendId::Tavily,
+                            score: r.score,
+                            published_date: None,
+                        })
+                        .collect();
+
+                    return Ok(results);
+                }
+                Err(e) => {
+                    // If it's a usage/limit error, rotate and try again
+                    if let FetchiumError::Structured(ref se) = e {
+                        if se.message.contains("432")
+                            || se.message.contains("429")
+                            || se.message.contains("limit")
+                        {
+                            tracing::warn!(
+                                "Tavily key exhausted or limited, rotating... Error: {}",
+                                se.message
+                            );
+                            self.rotate_key();
+                            last_err = Some(e);
+                            continue;
+                        }
+                    }
+                    return Err(e);
+                }
+            }
+        }
+
+        Err(last_err.unwrap_or(FetchiumError::Search("Tavily: All keys exhausted".into())))
     }
 
     fn time_range_to_days(tr: Option<TimeRange>) -> Option<u32> {
@@ -123,7 +175,7 @@ impl SearchBackend for TavilyBackend {
         BackendId::Tavily
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
         self.search_inner(query, max_results, None).await
     }
 
@@ -132,7 +184,7 @@ impl SearchBackend for TavilyBackend {
         query: &str,
         max_results: u32,
         ctx: &SearchContext,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let days = Self::time_range_to_days(ctx.time_range);
         self.search_inner(query, max_results, days).await
     }

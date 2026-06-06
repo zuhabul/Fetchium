@@ -1,6 +1,6 @@
 //! Plugin registry — in-process store for loaded plugins.
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use crate::plugin::manifest::PluginManifest;
 use std::collections::HashMap;
 
@@ -33,7 +33,7 @@ impl PluginRegistry {
     }
 
     /// Scan the plugin directory and register all found manifests.
-    pub fn discover(&mut self, plugin_dir: &std::path::Path) -> Result<usize, HsxError> {
+    pub fn discover(&mut self, plugin_dir: &std::path::Path) -> Result<usize, FetchiumError> {
         if !plugin_dir.exists() {
             return Ok(0);
         }

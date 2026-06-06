@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 use rusqlite::Connection;
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use crate::intelligence::enable_wal;
 
 // ─── Domain half-lives (in days) ─────────────────────────────────────────────
@@ -144,7 +144,7 @@ impl EvidenceDecayFunction {
     }
 
     /// Create with a calibration database that persists half-life adjustments.
-    pub fn with_calibration(db_path: &std::path::Path) -> Result<Self, HsxError> {
+    pub fn with_calibration(db_path: &std::path::Path) -> Result<Self, FetchiumError> {
         let conn = Connection::open(db_path)?;
         enable_wal(&conn)?;
         conn.execute_batch(
@@ -227,7 +227,7 @@ impl EvidenceDecayFunction {
         domain_category: &str,
         was_flagged_stale: bool,
         actually_still_valid: bool,
-    ) -> Result<(), HsxError> {
+    ) -> Result<(), FetchiumError> {
         if let Some(conn) = &self.calibration_db {
             conn.execute(
                 "INSERT INTO calibration_events (domain_category, flagged_stale, actually_valid)

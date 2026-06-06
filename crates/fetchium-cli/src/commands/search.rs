@@ -15,7 +15,7 @@ use fetchium_core::ai::provider_client::chat_with_fallback;
 use fetchium_core::ai::providers::ProviderKind;
 use fetchium_core::ai::types::{AiConfig, ChatMessage};
 use fetchium_core::cache::{search_key, MemoryCache};
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::output::{format_search_json, format_search_markdown};
 use fetchium_core::query::expansion::ai_perspective_expand;
@@ -33,7 +33,7 @@ use tracing::info;
 /// Run the `fetchium search "<query>"` command.
 pub async fn run(
     args: SearchArgs,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     format: Format,
     quiet: bool,
 ) -> anyhow::Result<()> {
@@ -41,7 +41,7 @@ pub async fn run(
     let max_results = args.max_results;
 
     // ── Build orchestrator config ─────────────────────────────────────────
-    let mut orch_config = OrchestratorConfig::from_hsx_config(config, max_results);
+    let mut orch_config = OrchestratorConfig::from_fetchium_config(config, max_results);
 
     // Override backends if the user specified --backends
     if !args.backends.is_empty() {
@@ -84,7 +84,7 @@ pub async fn run(
     // For multi-domain queries (scientific, religious, philosophical, etc.),
     // generate 3-4 perspective-specific sub-queries to cover all angles.
     // Runs concurrently with a 6s timeout; gracefully skips if AI unavailable.
-    let ai_config_for_expand = AiConfig::from_hsx_config(config);
+    let ai_config_for_expand = AiConfig::from_fetchium_config(config);
     let has_ai = has_reachable_ai_for_expand(&ai_config_for_expand, config).await;
     let perspective_enabled = std::env::var("FETCHIUM_ENABLE_PERSPECTIVE")
         .map(|v| v == "1")
@@ -105,7 +105,7 @@ pub async fn run(
     let orchestrator = {
         use fetchium_core::browser::pool::{BrowserPool, BrowserTier};
         use std::sync::Arc;
-        let tier = match fetchium_core::config::HsxConfig::detect_resource_tier() {
+        let tier = match fetchium_core::config::FetchiumConfig::detect_resource_tier() {
             fetchium_core::types::ResourceTier::Minimal => BrowserTier::Minimal,
             fetchium_core::types::ResourceTier::Standard => BrowserTier::Standard,
             _ => BrowserTier::Performance,
@@ -351,7 +351,7 @@ pub async fn run(
         use fetchium_core::rank::QueryIntent;
         let should_synthesize = !matches!(intent, QueryIntent::Code | QueryIntent::HowTo);
         if should_synthesize {
-            let ai_config = AiConfig::from_hsx_config(config);
+            let ai_config = AiConfig::from_fetchium_config(config);
             let has_ai =
                 !ai_config.providers.fallback_chain.is_empty() || ai_config.default_model.is_some();
             if has_ai {
@@ -481,7 +481,7 @@ fn count_unique_domains(items: &[fetchium_core::types::ResultItem]) -> usize {
         .len()
 }
 
-async fn has_reachable_ai_for_expand(ai_config: &AiConfig, config: &HsxConfig) -> bool {
+async fn has_reachable_ai_for_expand(ai_config: &AiConfig, config: &FetchiumConfig) -> bool {
     let configured = ai_config.providers.configured_providers();
     if configured.is_empty() {
         return false;

@@ -1,7 +1,7 @@
 //! Video transcript extraction — YouTube timedtext API (no API key required).
 
 use super::{ContentType, MultimodalContent, MultimodalSegment};
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 
 /// Extract YouTube video transcript via the timedtext API.
 ///
@@ -10,13 +10,13 @@ use crate::error::{HsxError, HsxResult};
 pub async fn extract_youtube_transcript(
     url: &str,
     http: &crate::http::client::HttpClient,
-) -> HsxResult<MultimodalContent> {
+) -> FetchiumResult<MultimodalContent> {
     let video_id = extract_video_id(url)?;
     let api_url = format!("https://video.google.com/timedtext?lang=en&v={video_id}");
 
     let resp = http.fetch_text(&api_url).await?;
     if resp.is_empty() {
-        return Err(HsxError::Extraction(
+        return Err(FetchiumError::Extraction(
             "No transcript available for this video".into(),
         ));
     }
@@ -43,7 +43,7 @@ pub async fn extract_youtube_transcript(
 }
 
 /// Extract YouTube video ID from various URL formats.
-pub fn extract_video_id(url: &str) -> HsxResult<String> {
+pub fn extract_video_id(url: &str) -> FetchiumResult<String> {
     // Standard: https://www.youtube.com/watch?v=VIDEO_ID
     if let Some(pos) = url.find("v=") {
         let rest = &url[pos + 2..];
@@ -66,7 +66,7 @@ pub fn extract_video_id(url: &str) -> HsxResult<String> {
             return Ok(id);
         }
     }
-    Err(HsxError::Extraction(
+    Err(FetchiumError::Extraction(
         "Could not extract YouTube video ID from URL".into(),
     ))
 }
@@ -74,7 +74,7 @@ pub fn extract_video_id(url: &str) -> HsxResult<String> {
 /// Parse YouTube timedtext XML into segments.
 ///
 /// Format: `<transcript><text start="0.5" dur="2.1">Hello world</text>...</transcript>`
-fn parse_timedtext_xml(xml: &str) -> HsxResult<Vec<MultimodalSegment>> {
+fn parse_timedtext_xml(xml: &str) -> FetchiumResult<Vec<MultimodalSegment>> {
     let mut segments = Vec::new();
     let text_re = once_cell::sync::Lazy::new(|| {
         regex::Regex::new(r#"<text[^>]*start="([0-9.]+)"[^>]*>([^<]*)</text>"#).unwrap()

@@ -14,7 +14,7 @@
 //!
 //! Set `SEARXNG_URL=http://localhost:4040` to make this the exclusive source.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::http::HttpClient;
 use crate::search::{SearchBackend, SearchContext, TimeRange};
 use crate::types::{BackendId, ResultItem};
@@ -38,10 +38,12 @@ const PUBLIC_SEARXNG_INSTANCES: &[&str] = &[
     "https://search.sapti.me",   // Intermittent; kept as last resort
 ];
 
-/// Fast high-signal engines for ultra-low latency with strong quality.
+/// Fast high-signal engines for low-latency recall on the local SearXNG instance.
 ///
-/// Includes Google as requested, plus other robust web engines.
-const FAST_ENGINE_SET: &str = "google,bing,brave,duckduckgo";
+/// In practice, Brave/DuckDuckGo/Startpage are frequently suspended by CAPTCHA
+/// or rate limits on self-hosted instances. Bias toward engines that remain
+/// usable under load, then fall back to unrestricted search for extra recall.
+const FAST_ENGINE_SET: &str = "google,bing,yandex,wikipedia";
 
 #[derive(Debug, Deserialize)]
 struct SearxResponse {
@@ -141,6 +143,25 @@ impl SearxngBackend {
 }
 
 impl SearxngBackend {
+    fn searx_language(ctx: Option<&SearchContext>) -> &'static str {
+        match ctx.and_then(|ctx| ctx.language.as_deref()) {
+            Some("fr") => "fr",
+            Some("de") => "de",
+            Some("es") => "es",
+            Some("it") => "it",
+            Some("pt") => "pt",
+            Some("ru") => "ru",
+            Some("jp") => "ja",
+            Some("kr") => "ko",
+            Some("cn") => "zh",
+            Some("ae") => "ar",
+            Some("in") => "hi",
+            Some("th") => "th",
+            Some("gr") => "el",
+            _ => "auto",
+        }
+    }
+
     /// Internal search with optional time range and category filtering.
     async fn search_inner(
         &self,
@@ -149,9 +170,11 @@ impl SearxngBackend {
         time_range: Option<TimeRange>,
         categories: Option<&str>,
         engines: Option<&str>,
-    ) -> HsxResult<Vec<ResultItem>> {
+        ctx: Option<&SearchContext>,
+    ) -> FetchiumResult<Vec<ResultItem>> {
         let instances = self.instance_list();
         let is_local_first = self.custom_url.is_none();
+        let language = Self::searx_language(ctx);
 
         let time_param = match time_range {
             Some(TimeRange::Day) => "&time_range=day",
@@ -173,9 +196,10 @@ impl SearxngBackend {
         for (i, instance) in instances.iter().enumerate() {
             let is_local = instance.contains("localhost") || instance.contains("127.0.0.1");
             let url_primary = format!(
-                "{}/search?q={}&format=json&pageno=1&language=en{}{}{}",
+                "{}/search?q={}&format=json&pageno=1&language={}{}{}{}",
                 instance,
                 urlencoding_encode(query),
+                language,
                 time_param,
                 cat_param,
                 engines_param,
@@ -206,9 +230,10 @@ impl SearxngBackend {
             // restriction on the same instance for recall.
             if !engines_param.is_empty() {
                 let url_fallback = format!(
-                    "{}/search?q={}&format=json&pageno=1&language=en{}{}",
+                    "{}/search?q={}&format=json&pageno=1&language={}{}{}",
                     instance,
                     urlencoding_encode(query),
+                    language,
                     time_param,
                     cat_param,
                 );
@@ -243,8 +268,8 @@ impl SearchBackend for SearxngBackend {
         BackendId::Searxng
     }
 
-    async fn search(&self, query: &str, max_results: u32) -> HsxResult<Vec<ResultItem>> {
-        self.search_inner(query, max_results, None, None, Some(FAST_ENGINE_SET))
+    async fn search(&self, query: &str, max_results: u32) -> FetchiumResult<Vec<ResultItem>> {
+        self.search_inner(query, max_results, None, None, Some(FAST_ENGINE_SET), None)
             .await
     }
 
@@ -253,7 +278,7 @@ impl SearchBackend for SearxngBackend {
         query: &str,
         max_results: u32,
         ctx: &SearchContext,
-    ) -> HsxResult<Vec<ResultItem>> {
+    ) -> FetchiumResult<Vec<ResultItem>> {
         use crate::rank::fusion::QueryIntent;
 
         match ctx.intent {
@@ -268,6 +293,7 @@ impl SearchBackend for SearxngBackend {
                         ctx.time_range,
                         Some("news"),
                         Some(FAST_ENGINE_SET),
+                        Some(ctx),
                     ),
                 )
                 .await
@@ -286,6 +312,7 @@ impl SearchBackend for SearxngBackend {
                         ctx.time_range,
                         Some("general"),
                         Some(FAST_ENGINE_SET),
+                        Some(ctx),
                     ),
                 )
                 .await
@@ -303,6 +330,7 @@ impl SearchBackend for SearxngBackend {
                     ctx.time_range,
                     Some("it,general"),
                     Some(FAST_ENGINE_SET),
+                    Some(ctx),
                 )
                 .await
             }
@@ -313,6 +341,7 @@ impl SearchBackend for SearxngBackend {
                     ctx.time_range,
                     Some("science,general"),
                     Some(FAST_ENGINE_SET),
+                    Some(ctx),
                 )
                 .await
             }
@@ -323,6 +352,7 @@ impl SearchBackend for SearxngBackend {
                     ctx.time_range,
                     None,
                     Some(FAST_ENGINE_SET),
+                    Some(ctx),
                 )
                 .await
             }
@@ -389,11 +419,27 @@ mod tests {
     }
 
     #[test]
+    fn searx_language_defaults_to_auto() {
+        assert_eq!(SearxngBackend::searx_language(None), "auto");
+    }
+
+    #[test]
+    fn searx_language_maps_detected_languages() {
+        let ctx = SearchContext {
+            intent: crate::rank::fusion::QueryIntent::Factual,
+            time_range: None,
+            locale: Some("jp".to_string()),
+            language: Some("jp".to_string()),
+        };
+        assert_eq!(SearxngBackend::searx_language(Some(&ctx)), "ja");
+    }
+
+    #[test]
     fn instance_list_local_first_by_default() {
         // Without env var, localhost:4040 should be first
         std::env::remove_var("SEARXNG_URL");
         let backend = SearxngBackend {
-            http: crate::http::HttpClient::new(&crate::config::HsxConfig::default()).unwrap(),
+            http: crate::http::HttpClient::new(&crate::config::FetchiumConfig::default()).unwrap(),
             custom_url: None,
         };
         let instances = backend.instance_list();
@@ -405,7 +451,7 @@ mod tests {
     fn instance_list_custom_url_exclusive() {
         // With custom_url set, only that instance should be returned
         let backend = SearxngBackend {
-            http: crate::http::HttpClient::new(&crate::config::HsxConfig::default()).unwrap(),
+            http: crate::http::HttpClient::new(&crate::config::FetchiumConfig::default()).unwrap(),
             custom_url: Some("http://my-searxng.example.com".to_string()),
         };
         let instances = backend.instance_list();

@@ -3,7 +3,7 @@
 use crate::cli::AgentResearchArgs;
 use fetchium_core::citation::evidence_graph::EvidenceGraph;
 use fetchium_core::citation::types::CitationStyle as CoreCitationStyle;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::research::pipeline::ResearchPipeline;
 use fetchium_core::research::ResearchConfig;
 use fetchium_core::validate::types::{Contradiction, ValidationMode};
@@ -49,7 +49,7 @@ pub struct AgentSource {
     pub content_hash: String,
 }
 
-pub async fn run(args: AgentResearchArgs, config_obj: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(args: AgentResearchArgs, config_obj: &FetchiumConfig) -> anyhow::Result<()> {
     let tier_str = format!("{:?}", args.tier).to_lowercase();
 
     let config = ResearchConfig {

@@ -2,7 +2,7 @@
 
 > **Phase:** 0 of 8 | **Priority:** P0 (Critical Path) | **Duration:** Week 1
 > **Depends on:** Nothing -- this is the root of the dependency graph
-> **PRD Reference:** `prd.md` v4.0.0 -- Sections 11 (CLI Interface), 12 (System Architecture), 13 (Resource Awareness), 43 (Data Model), 44 (Error Handling)
+> **PRD Reference:** `prd.md` v4.0.0 -- Sections 17 (CLI Interface), 12 (System Architecture), 13 (Resource Awareness), 43 (Data Model), 44 (Error Handling)
 > **Epics:** 3 | **Tasks:** 8
 
 ---
@@ -30,24 +30,24 @@ Before implementing, note what is **already scaffolded** in the repository:
 |-----------|--------|-------|
 | `Cargo.toml` (workspace root) | **DONE** | 4 crates, workspace deps, release profile configured |
 | `rust-toolchain.toml` | **DONE** | Pinned to stable with rustfmt + clippy |
-| `crates/hsx-core/Cargo.toml` | **DONE** | Features (headless, embeddings, etc.), all deps declared |
-| `crates/hsx-cli/Cargo.toml` | **DONE** | Binary `hsx`, depends on hsx-core |
-| `crates/hsx-mcp/Cargo.toml` | **DONE** | Stub package |
-| `crates/hsx-api/Cargo.toml` | **DONE** | Stub package |
-| `crates/hsx-core/src/lib.rs` | **DONE** | All modules declared, prelude re-exports |
-| `crates/hsx-core/src/types.rs` | **DONE** | Full types: `AgentSearchResult`, `SearchMeta`, `Segment`, `SegmentType`, `Finding`, `EvidenceLink`, `Contradiction`, `Source`, `FetchMethod`, `Citation`, `CitationStyle`, `EvidenceGraph`, `AuditEntry`, `SearchMode`, `PdsTier`, `ResourceTier`, `BackendId`, `OutputFormat`, `CepLayer` -- all with serde, tests |
-| `crates/hsx-core/src/error.rs` | **DONE** | `ErrorKind` (19 variants), `StructuredError`, `HsxError` (thiserror), `HsxResult`, `is_retryable()`, `to_structured()`, tests |
-| `crates/hsx-core/src/config.rs` | **DONE** | `HsxConfig` with `GeneralConfig`, `SearchConfig`, `FetchConfig`, `CacheConfig`, `AiConfig`, `OutputConfig`, all defaults, `load()`, `load_from()`, `data_dir()`, `detect_resource_tier()`, tests |
-| `crates/hsx-core/src/http/client.rs` | **DONE** | `HttpClient` with pooled reqwest, `fetch_text()`, test |
-| `crates/hsx-core/src/search/mod.rs` | **DONE** | `SearchBackend` trait |
-| `crates/hsx-core/src/extract/mod.rs` | **DONE** | `ExtractedContent`, `ContentMetadata` structs |
-| `crates/hsx-core/src/resource/mod.rs` | **DONE** | `detect_tier()` wrapper |
+| `crates/fetchium-core/Cargo.toml` | **DONE** | Features (headless, embeddings, etc.), all deps declared |
+| `crates/fetchium-cli/Cargo.toml` | **DONE** | Binary `fetchium`, depends on fetchium-core |
+| `crates/fetchium-mcp/Cargo.toml` | **DONE** | Stub package |
+| `crates/fetchium-api/Cargo.toml` | **DONE** | Stub package |
+| `crates/fetchium-core/src/lib.rs` | **DONE** | All modules declared, prelude re-exports |
+| `crates/fetchium-core/src/types.rs` | **DONE** | Full types: `AgentSearchResult`, `SearchMeta`, `Segment`, `SegmentType`, `Finding`, `EvidenceLink`, `Contradiction`, `Source`, `FetchMethod`, `Citation`, `CitationStyle`, `EvidenceGraph`, `AuditEntry`, `SearchMode`, `PdsTier`, `ResourceTier`, `BackendId`, `OutputFormat`, `CepLayer` -- all with serde, tests |
+| `crates/fetchium-core/src/error.rs` | **DONE** | `ErrorKind` (19 variants), `StructuredError`, `FetchiumError` (thiserror), `FetchiumResult`, `is_retryable()`, `to_structured()`, tests |
+| `crates/fetchium-core/src/config.rs` | **DONE** | `FetchiumConfig` with `GeneralConfig`, `SearchConfig`, `FetchConfig`, `CacheConfig`, `AiConfig`, `OutputConfig`, all defaults, `load()`, `load_from()`, `data_dir()`, `detect_resource_tier()`, tests |
+| `crates/fetchium-core/src/http/client.rs` | **DONE** | `HttpClient` with pooled reqwest, `fetch_text()`, test |
+| `crates/fetchium-core/src/search/mod.rs` | **DONE** | `SearchBackend` trait |
+| `crates/fetchium-core/src/extract/mod.rs` | **DONE** | `ExtractedContent`, `ContentMetadata` structs |
+| `crates/fetchium-core/src/resource/mod.rs` | **DONE** | `detect_tier()` wrapper |
 | Other `mod.rs` stubs | **DONE** | `cache`, `index`, `output`, `rank`, `token`, `validate`, `citation`, `research`, `ai`, `intelligence`, `plugin`, `privacy`, `collab`, `domain` -- all declared as empty or minimal |
-| `crates/hsx-cli/src/main.rs` | **DONE** | `tokio::main`, tracing init, config loading, full command dispatch |
-| `crates/hsx-cli/src/cli.rs` | **DONE** | Full clap derive CLI: `Cli`, `Commands` (12 subcommands), all arg structs, value enums |
-| `crates/hsx-cli/src/output.rs` | **DONE** | `header()`, `error()`, `warning()`, `info()`, `success()` helpers |
-| `crates/hsx-cli/src/commands/*.rs` | **DONE** | All 12 command files exist as stubs (search, fetch, research, ai, deep, agent_search, agent_fetch, agent_research, doctor, config, cache, serve) |
-| `crates/hsx-cli/src/commands/doctor.rs` | **DONE** | Full doctor: resource tier, data dir, Chromium detection, Ollama check |
+| `crates/fetchium-cli/src/main.rs` | **DONE** | `tokio::main`, tracing init, config loading, full command dispatch |
+| `crates/fetchium-cli/src/cli.rs` | **DONE** | Full clap derive CLI: `Cli`, `Commands` (12 subcommands), all arg structs, value enums |
+| `crates/fetchium-cli/src/output.rs` | **DONE** | `header()`, `error()`, `warning()`, `info()`, `success()` helpers |
+| `crates/fetchium-cli/src/commands/*.rs` | **DONE** | All 12 command files exist as stubs (search, fetch, research, ai, deep, agent_search, agent_fetch, agent_research, doctor, config, cache, serve) |
+| `crates/fetchium-cli/src/commands/doctor.rs` | **DONE** | Full doctor: resource tier, data dir, Chromium detection, Ollama check |
 | `.github/workflows/` | **MISSING** | No CI/CD yet |
 | `npm/` | **MISSING** | No npm wrapper package yet |
 
@@ -64,7 +64,7 @@ None. Phase 0 is the root of the dependency graph.
 ## Epic 0.1: Workspace, Core Types & Configuration
 
 > **PRD Sections:** SS11, SS12, SS13, SS43, SS44
-> **Crate:** `hsx-core` -- `src/types.rs`, `src/error.rs`, `src/config.rs`
+> **Crate:** `fetchium-core` -- `src/types.rs`, `src/error.rs`, `src/config.rs`
 > **Priority:** P0 | **Tasks:** 3
 
 ### P0-E1-T1: Cargo Workspace Setup
@@ -75,15 +75,15 @@ None. Phase 0 is the root of the dependency graph.
 **Estimated effort:** 0.5 day (already complete)
 
 **Description:**
-Establish the Cargo workspace with four crates (`hsx-core`, `hsx-cli`, `hsx-mcp`, `hsx-api`), workspace-level shared dependencies, release profile, and `rust-toolchain.toml`.
+Establish the Cargo workspace with four crates (`fetchium-core`, `fetchium-cli`, `fetchium-mcp`, `fetchium-api`), workspace-level shared dependencies, release profile, and `rust-toolchain.toml`.
 
 **What already exists:**
 - `/Cargo.toml` -- workspace root with all 4 members, 40+ workspace dependencies, release LTO profile
 - `/rust-toolchain.toml` -- stable channel, rustfmt + clippy components
-- `/crates/hsx-core/Cargo.toml` -- feature flags (`headless`, `embeddings`, `vector-search`, `mcp`, `llama`), all dependencies
-- `/crates/hsx-cli/Cargo.toml` -- binary `hsx`, clap + indicatif + console + colored
-- `/crates/hsx-mcp/Cargo.toml` -- MCP stub
-- `/crates/hsx-api/Cargo.toml` -- API stub
+- `/crates/fetchium-core/Cargo.toml` -- feature flags (`headless`, `embeddings`, `vector-search`, `mcp`, `llama`), all dependencies
+- `/crates/fetchium-cli/Cargo.toml` -- binary `fetchium`, clap + indicatif + console + colored
+- `/crates/fetchium-mcp/Cargo.toml` -- MCP stub
+- `/crates/fetchium-api/Cargo.toml` -- API stub
 
 **What still needs verification:**
 
@@ -95,10 +95,10 @@ Establish the Cargo workspace with four crates (`hsx-core`, `hsx-cli`, `hsx-mcp`
 ```
 Cargo.toml                      # EXISTING -- workspace root
 rust-toolchain.toml             # EXISTING -- toolchain pinning
-crates/hsx-core/Cargo.toml     # EXISTING -- core library
-crates/hsx-cli/Cargo.toml      # EXISTING -- CLI binary
-crates/hsx-mcp/Cargo.toml      # EXISTING -- MCP server stub
-crates/hsx-api/Cargo.toml      # EXISTING -- REST API stub
+crates/fetchium-core/Cargo.toml     # EXISTING -- core library
+crates/fetchium-cli/Cargo.toml      # EXISTING -- CLI binary
+crates/fetchium-mcp/Cargo.toml      # EXISTING -- MCP server stub
+crates/fetchium-api/Cargo.toml      # EXISTING -- REST API stub
 ```
 
 **Step-by-step verification:**
@@ -148,7 +148,7 @@ touch tests/fixtures/.gitkeep tests/integration/.gitkeep tests/e2e/.gitkeep benc
 - [ ] `cargo build --workspace` succeeds with zero errors
 - [ ] `cargo clippy --workspace -- -D warnings` produces zero warnings
 - [ ] `cargo test --workspace` passes all tests
-- [ ] Workspace has 4 crate members: `hsx-core`, `hsx-cli`, `hsx-mcp`, `hsx-api`
+- [ ] Workspace has 4 crate members: `fetchium-core`, `fetchium-cli`, `fetchium-mcp`, `fetchium-api`
 - [ ] Release profile has `lto = "thin"`, `codegen-units = 1`, `strip = true`
 - [ ] `rust-toolchain.toml` pins stable with rustfmt + clippy
 - [ ] Directory structure matches PRD SS12 layout
@@ -164,10 +164,10 @@ touch tests/fixtures/.gitkeep tests/integration/.gitkeep tests/e2e/.gitkeep benc
 **Dependencies:** `P0-E1-T1`
 
 **Description:**
-Define all foundational data types from PRD SS43 in `crates/hsx-core/src/types.rs`. These types flow through the entire pipeline: search -> extract -> rank -> validate -> output.
+Define all foundational data types from PRD SS43 in `crates/fetchium-core/src/types.rs`. These types flow through the entire pipeline: search -> extract -> rank -> validate -> output.
 
 **What already exists:**
-The file `crates/hsx-core/src/types.rs` is **fully implemented** with all types from PRD SS43:
+The file `crates/fetchium-core/src/types.rs` is **fully implemented** with all types from PRD SS43:
 
 | Type | Status | PRD Ref |
 |------|--------|---------|
@@ -206,19 +206,19 @@ The following enhancements are NOT required for Phase 0 completion but may be us
 
 **Step 1: Review type coverage**
 
-Read through `crates/hsx-core/src/types.rs` and cross-reference against PRD SS43 to ensure all entities exist.
+Read through `crates/fetchium-core/src/types.rs` and cross-reference against PRD SS43 to ensure all entities exist.
 
 **Step 2: Run existing tests**
 
 ```bash
-cargo test -p hsx-core types::tests 2>&1
+cargo test -p fetchium-core types::tests 2>&1
 ```
 
 Expected: 4 tests pass (segment_type_roundtrip, backend_id_display, search_meta_serialization, cep_layer_ordering).
 
 **Step 3: Verify serde roundtrip for all major types**
 
-If you want to add additional coverage, add these tests to `crates/hsx-core/src/types.rs`:
+If you want to add additional coverage, add these tests to `crates/fetchium-core/src/types.rs`:
 
 ```rust
 #[test]
@@ -298,11 +298,11 @@ fn pds_tier_default_is_summary() {
 Build the layered configuration system per PRD SS11: defaults -> `~/.fetchium/config.toml` -> environment variables -> CLI args. The config file covers search, fetch, cache, AI, and output settings.
 
 **What already exists:**
-The file `crates/hsx-core/src/config.rs` is **fully implemented** with:
+The file `crates/fetchium-core/src/config.rs` is **fully implemented** with:
 
 | Component | Status |
 |-----------|--------|
-| `HsxConfig` (top-level) | DONE |
+| `FetchiumConfig` (top-level) | DONE |
 | `GeneralConfig` (max_results, format, verbose, data_dir) | DONE |
 | `SearchConfig` (backends, budget, tier, concurrency, timeout, searxng_url) | DONE |
 | `FetchConfig` (user_agent, robots, page size, timeout, redirects) | DONE |
@@ -323,54 +323,54 @@ The following additions make the config system more robust. These are recommende
 
 **Step 1: Add environment variable override support**
 
-The PRD SS11 specifies a layered config: defaults -> file -> **env vars** -> CLI args. Currently env var support is missing. Add it to `crates/hsx-core/src/config.rs`:
+The PRD SS11 specifies a layered config: defaults -> file -> **env vars** -> CLI args. Currently env var support is missing. Add it to `crates/fetchium-core/src/config.rs`:
 
 ```rust
-impl HsxConfig {
+impl FetchiumConfig {
     /// Apply environment variable overrides.
-    /// Convention: `HSX_SECTION_KEY` (uppercase, underscore-separated).
-    /// Examples: HSX_SEARCH_DEFAULT_BUDGET=8000, HSX_CACHE_ENABLED=false
+    /// Convention: `FETCHIUM_SECTION_KEY` (uppercase, underscore-separated).
+    /// Examples: FETCHIUM_SEARCH_DEFAULT_BUDGET=8000, FETCHIUM_CACHE_ENABLED=false
     pub fn apply_env_overrides(&mut self) {
-        if let Ok(val) = std::env::var("HSX_SEARCH_DEFAULT_BUDGET") {
+        if let Ok(val) = std::env::var("FETCHIUM_SEARCH_DEFAULT_BUDGET") {
             if let Ok(budget) = val.parse::<u32>() {
                 self.search.default_budget = budget;
             }
         }
-        if let Ok(val) = std::env::var("HSX_SEARCH_MAX_CONCURRENT") {
+        if let Ok(val) = std::env::var("FETCHIUM_SEARCH_MAX_CONCURRENT") {
             if let Ok(n) = val.parse::<u32>() {
                 self.search.max_concurrent = n;
             }
         }
-        if let Ok(val) = std::env::var("HSX_SEARCH_TIMEOUT_SECS") {
+        if let Ok(val) = std::env::var("FETCHIUM_SEARCH_TIMEOUT_SECS") {
             if let Ok(n) = val.parse::<u64>() {
                 self.search.timeout_secs = n;
             }
         }
-        if let Ok(val) = std::env::var("HSX_CACHE_ENABLED") {
+        if let Ok(val) = std::env::var("FETCHIUM_CACHE_ENABLED") {
             if let Ok(b) = val.parse::<bool>() {
                 self.cache.enabled = b;
             }
         }
-        if let Ok(val) = std::env::var("HSX_CACHE_TTL_SECS") {
+        if let Ok(val) = std::env::var("FETCHIUM_CACHE_TTL_SECS") {
             if let Ok(n) = val.parse::<u64>() {
                 self.cache.ttl_secs = n;
             }
         }
-        if let Ok(val) = std::env::var("HSX_AI_OLLAMA_HOST") {
+        if let Ok(val) = std::env::var("FETCHIUM_AI_OLLAMA_HOST") {
             self.ai.ollama_host = val;
         }
-        if let Ok(val) = std::env::var("HSX_AI_DEFAULT_MODEL") {
+        if let Ok(val) = std::env::var("FETCHIUM_AI_DEFAULT_MODEL") {
             self.ai.default_model = val;
         }
-        if let Ok(val) = std::env::var("HSX_GENERAL_VERBOSE") {
+        if let Ok(val) = std::env::var("FETCHIUM_GENERAL_VERBOSE") {
             if let Ok(b) = val.parse::<bool>() {
                 self.general.verbose = b;
             }
         }
-        if let Ok(val) = std::env::var("HSX_FETCH_USER_AGENT") {
+        if let Ok(val) = std::env::var("FETCHIUM_FETCH_USER_AGENT") {
             self.fetch.user_agent = val;
         }
-        if let Ok(val) = std::env::var("HSX_FETCH_RESPECT_ROBOTS") {
+        if let Ok(val) = std::env::var("FETCHIUM_FETCH_RESPECT_ROBOTS") {
             if let Ok(b) = val.parse::<bool>() {
                 self.fetch.respect_robots = b;
             }
@@ -381,7 +381,7 @@ impl HsxConfig {
 
 **Step 2: Integrate env overrides into `load()` and `load_from()`**
 
-Modify the existing `load_from` method in `crates/hsx-core/src/config.rs`:
+Modify the existing `load_from` method in `crates/fetchium-core/src/config.rs`:
 
 ```rust
 pub fn load_from(path: Option<&std::path::Path>) -> Self {
@@ -420,7 +420,7 @@ pub fn load_from(path: Option<&std::path::Path>) -> Self {
 **Step 3: Add `ensure_data_dir()` method**
 
 ```rust
-impl HsxConfig {
+impl FetchiumConfig {
     /// Ensure the data directory exists, creating it if necessary.
     pub fn ensure_data_dir(&self) -> std::io::Result<PathBuf> {
         let dir = self.data_dir();
@@ -438,7 +438,7 @@ impl HsxConfig {
             .join("config.toml")
     }
 
-    /// Write the current config to the config file (for `hsx config set`).
+    /// Write the current config to the config file (for `fetchium config set`).
     pub fn save(&self) -> std::io::Result<()> {
         let path = Self::config_file_path();
         if let Some(parent) = path.parent() {
@@ -456,20 +456,20 @@ impl HsxConfig {
 ```rust
 #[test]
 fn env_override_budget() {
-    std::env::set_var("HSX_SEARCH_DEFAULT_BUDGET", "8000");
-    let mut config = HsxConfig::default();
+    std::env::set_var("FETCHIUM_SEARCH_DEFAULT_BUDGET", "8000");
+    let mut config = FetchiumConfig::default();
     config.apply_env_overrides();
     assert_eq!(config.search.default_budget, 8000);
-    std::env::remove_var("HSX_SEARCH_DEFAULT_BUDGET");
+    std::env::remove_var("FETCHIUM_SEARCH_DEFAULT_BUDGET");
 }
 
 #[test]
 fn env_override_cache_disabled() {
-    std::env::set_var("HSX_CACHE_ENABLED", "false");
-    let mut config = HsxConfig::default();
+    std::env::set_var("FETCHIUM_CACHE_ENABLED", "false");
+    let mut config = FetchiumConfig::default();
     config.apply_env_overrides();
     assert!(!config.cache.enabled);
-    std::env::remove_var("HSX_CACHE_ENABLED");
+    std::env::remove_var("FETCHIUM_CACHE_ENABLED");
 }
 
 #[test]
@@ -477,7 +477,7 @@ fn save_and_reload() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = dir.path().join("config.toml");
 
-    let mut config = HsxConfig::default();
+    let mut config = FetchiumConfig::default();
     config.search.default_budget = 9999;
 
     // Save
@@ -485,13 +485,13 @@ fn save_and_reload() {
     std::fs::write(&config_path, &toml_str).unwrap();
 
     // Reload
-    let loaded = HsxConfig::load_from(Some(&config_path));
+    let loaded = FetchiumConfig::load_from(Some(&config_path));
     assert_eq!(loaded.search.default_budget, 9999);
 }
 
 #[test]
 fn config_file_path_contains_fetchium() {
-    let path = HsxConfig::config_file_path();
+    let path = FetchiumConfig::config_file_path();
     assert!(path.to_string_lossy().contains(".fetchium"));
     assert!(path.to_string_lossy().ends_with("config.toml"));
 }
@@ -499,14 +499,14 @@ fn config_file_path_contains_fetchium() {
 
 **Files modified:**
 ```
-crates/hsx-core/src/config.rs   # Add env overrides, ensure_data_dir, save, config_file_path
+crates/fetchium-core/src/config.rs   # Add env overrides, ensure_data_dir, save, config_file_path
 ```
 
 **Acceptance criteria:**
 
 - [ ] Config loads from `~/.fetchium/config.toml` when file exists
 - [ ] Config falls back to defaults when file is missing
-- [ ] Config applies environment variable overrides (HSX_SEARCH_DEFAULT_BUDGET, etc.)
+- [ ] Config applies environment variable overrides (FETCHIUM_SEARCH_DEFAULT_BUDGET, etc.)
 - [ ] `data_dir()` returns `~/.fetchium` by default
 - [ ] `ensure_data_dir()` creates the directory if missing
 - [ ] `save()` writes current config to TOML file
@@ -517,7 +517,7 @@ crates/hsx-core/src/config.rs   # Add env overrides, ensure_data_dir, save, conf
 **Testing:**
 
 ```bash
-cargo test -p hsx-core config::tests
+cargo test -p fetchium-core config::tests
 ```
 
 ---
@@ -769,20 +769,20 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            artifact: hsx-linux-x64
+            artifact: fetchium-linux-x64
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
-            artifact: hsx-linux-arm64
+            artifact: fetchium-linux-arm64
             cross: true
           - target: x86_64-apple-darwin
             os: macos-latest
-            artifact: hsx-darwin-x64
+            artifact: fetchium-darwin-x64
           - target: aarch64-apple-darwin
             os: macos-latest
-            artifact: hsx-darwin-arm64
+            artifact: fetchium-darwin-arm64
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-            artifact: hsx-win-x64
+            artifact: fetchium-win-x64
 
     steps:
       - uses: actions/checkout@v4
@@ -799,9 +799,9 @@ jobs:
       - name: Build release binary
         run: |
           if [ "${{ matrix.cross }}" = "true" ]; then
-            cross build --release --target ${{ matrix.target }} -p hsx-cli
+            cross build --release --target ${{ matrix.target }} -p fetchium-cli
           else
-            cargo build --release --target ${{ matrix.target }} -p hsx-cli
+            cargo build --release --target ${{ matrix.target }} -p fetchium-cli
           fi
         shell: bash
 
@@ -809,7 +809,7 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           cd target/${{ matrix.target }}/release
-          tar czf ../../../${{ matrix.artifact }}.tar.gz hsx
+          tar czf ../../../${{ matrix.artifact }}.tar.gz fetchium
           cd ../../..
           sha256sum ${{ matrix.artifact }}.tar.gz > ${{ matrix.artifact }}.tar.gz.sha256
 
@@ -817,7 +817,7 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           cd target/${{ matrix.target }}/release
-          7z a ../../../${{ matrix.artifact }}.zip hsx.exe
+          7z a ../../../${{ matrix.artifact }}.zip fetchium.exe
           cd ../../..
           certutil -hashfile ${{ matrix.artifact }}.zip SHA256 > ${{ matrix.artifact }}.zip.sha256
 
@@ -866,12 +866,12 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Publish hsx-core
-        run: cargo publish -p hsx-core --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      - name: Publish fetchium-core
+        run: cargo publish -p fetchium-core --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
         continue-on-error: true
 
-      - name: Publish hsx-cli
-        run: cargo publish -p hsx-cli --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      - name: Publish fetchium-cli
+        run: cargo publish -p fetchium-cli --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
         continue-on-error: true
 ```
 
@@ -890,8 +890,8 @@ opt-level = 3
 **Step 3: Test a local release build**
 
 ```bash
-cargo build --release -p hsx-cli
-ls -lh target/release/hsx
+cargo build --release -p fetchium-cli
+ls -lh target/release/fetchium
 # Should produce a small, stripped binary
 ```
 
@@ -911,12 +911,12 @@ ls -lh target/release/hsx
 
 ```bash
 # Test local release build
-cargo build --release -p hsx-cli
-file target/release/hsx
+cargo build --release -p fetchium-cli
+file target/release/fetchium
 # Should show: "Mach-O 64-bit executable arm64" (on Apple Silicon) or equivalent
 
 # Test binary size
-ls -lh target/release/hsx
+ls -lh target/release/fetchium
 # Should be <15MB thanks to strip + LTO
 
 # Validate YAML
@@ -934,18 +934,18 @@ python3 -c "import yaml; yaml.safe_load(open('.github/workflows/release.yml'))"
 **Dependencies:** `P0-E2-T2`
 
 **Description:**
-Create the npm wrapper package that allows `npm install -g fetchium` (or pnpm/bun). The package contains a `postinstall` script that downloads the platform-specific binary from GitHub Releases, and bin stubs (`hsx`, `hyper`) that invoke the native binary.
+Create the npm wrapper package that allows `npm install -g fetchium` (or pnpm/bun). The package contains a `postinstall` script that downloads the platform-specific binary from GitHub Releases, and bin stubs (`fetchium`, `hyper`) that invoke the native binary.
 
 **PRD References:**
 - SS12 "npm/pnpm/bun Compatibility": `npm install -g fetchium`, `pnpm add -g fetchium`, `bun add -g fetchium`
-- SS11 "Binary Names": Primary `hsx`, Alias `hyper`
+- SS11 "Binary Names": Primary `fetchium`, Alias `hyper`
 
 **Files to create:**
 ```
 npm/
   package.json              # npm package manifest
   scripts/install-binary.js # postinstall script to download platform binary
-  bin/hsx.js                # bin stub for 'hsx' command
+  bin/fetchium.js                # bin stub for 'fetchium' command
   bin/hyper.js              # bin stub for 'hyper' alias
   README.md                 # npm package readme (minimal)
 ```
@@ -972,11 +972,11 @@ npm/
   "license": "MIT OR Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fetchium/fetchium"
+    "url": "https://github.com/zuhabul/Fetchium"
   },
-  "homepage": "https://github.com/fetchium/fetchium",
+  "homepage": "https://github.com/zuhabul/Fetchium",
   "bin": {
-    "hsx": "bin/hsx.js",
+    "fetchium": "bin/fetchium.js",
     "hyper": "bin/hyper.js"
   },
   "scripts": {
@@ -1020,7 +1020,7 @@ const zlib = require("zlib");
 const { createGunzip } = require("zlib");
 
 const REPO = "fetchium/fetchium";
-const BINARY_NAME = "hsx";
+const BINARY_NAME = "fetchium";
 
 /**
  * Map Node.js platform/arch to our release artifact names.
@@ -1030,11 +1030,11 @@ function getArtifactName() {
   const arch = os.arch();
 
   const map = {
-    "darwin-x64": "hsx-darwin-x64",
-    "darwin-arm64": "hsx-darwin-arm64",
-    "linux-x64": "hsx-linux-x64",
-    "linux-arm64": "hsx-linux-arm64",
-    "win32-x64": "hsx-win-x64",
+    "darwin-x64": "fetchium-darwin-x64",
+    "darwin-arm64": "fetchium-darwin-arm64",
+    "linux-x64": "fetchium-linux-x64",
+    "linux-arm64": "fetchium-linux-arm64",
+    "win32-x64": "fetchium-win-x64",
   };
 
   const key = `${platform}-${arch}`;
@@ -1109,7 +1109,7 @@ async function install() {
 
   const downloadUrl = `https://github.com/${REPO}/releases/download/${tag}/${artifact}.${ext}`;
   const binDir = path.join(__dirname, "..", "bin");
-  const tmpDir = path.join(os.tmpdir(), `hsx-install-${Date.now()}`);
+  const tmpDir = path.join(os.tmpdir(), `fetchium-install-${Date.now()}`);
 
   console.log(`Fetchium: Downloading ${artifact} (${tag})...`);
   console.log(`  URL: ${downloadUrl}`);
@@ -1174,7 +1174,7 @@ async function install() {
 install();
 ```
 
-**Step 3: Create `npm/bin/hsx.js`**
+**Step 3: Create `npm/bin/fetchium.js`**
 
 ```javascript
 #!/usr/bin/env node
@@ -1187,7 +1187,7 @@ const os = require("os");
 const path = require("path");
 
 const binaryExt = os.platform() === "win32" ? ".exe" : "";
-const binaryPath = path.join(__dirname, `hsx${binaryExt}`);
+const binaryPath = path.join(__dirname, `fetchium${binaryExt}`);
 
 if (!fs.existsSync(binaryPath)) {
   console.error("Error: Fetchium binary not found.");
@@ -1200,7 +1200,7 @@ if (!fs.existsSync(binaryPath)) {
   console.error("  cargo install fetchium");
   console.error("");
   console.error("Or download from GitHub Releases:");
-  console.error("  https://github.com/fetchium/fetchium/releases");
+  console.error("  https://github.com/zuhabul/Fetchium/releases");
   process.exit(1);
 }
 
@@ -1224,8 +1224,8 @@ try {
 
 "use strict";
 
-// 'hyper' is an alias for 'hsx' per PRD SS11
-require("./hsx.js");
+// 'hyper' is an alias for 'fetchium' per PRD SS11
+require("./fetchium.js");
 ```
 
 **Step 5: Create minimal `npm/README.md`**
@@ -1244,12 +1244,12 @@ npm install -g fetchium
 ## Usage
 
 ```bash
-hsx search "your query"
-hsx fetch https://example.com
-hsx doctor
+fetchium search "your query"
+fetchium fetch https://example.com
+fetchium doctor
 ```
 
-See [GitHub](https://github.com/fetchium/fetchium) for full documentation.
+See [GitHub](https://github.com/zuhabul/Fetchium) for full documentation.
 ```
 
 **Step 6: Test the npm package structure locally**
@@ -1257,14 +1257,14 @@ See [GitHub](https://github.com/fetchium/fetchium) for full documentation.
 ```bash
 cd npm
 node -e "const pkg = require('./package.json'); console.log(pkg.name, pkg.version, pkg.bin);"
-# Should output: fetchium 0.1.0 { hsx: 'bin/hsx.js', hyper: 'bin/hyper.js' }
+# Should output: fetchium 0.1.0 { fetchium: 'bin/fetchium.js', hyper: 'bin/hyper.js' }
 
 # Verify postinstall script syntax
 node -c scripts/install-binary.js
 # Should output nothing (no syntax errors)
 
 # Verify bin stubs syntax
-node -c bin/hsx.js
+node -c bin/fetchium.js
 node -c bin/hyper.js
 ```
 
@@ -1273,8 +1273,8 @@ node -c bin/hyper.js
 - [ ] `npm/package.json` exists with name `fetchium`, correct version, bin stubs
 - [ ] `npm/scripts/install-binary.js` downloads platform-specific binary from GitHub Releases
 - [ ] Supports 5 platforms: darwin-x64, darwin-arm64, linux-x64, linux-arm64, win32-x64
-- [ ] `npm/bin/hsx.js` forwards all args to the native binary
-- [ ] `npm/bin/hyper.js` is an alias for `hsx.js`
+- [ ] `npm/bin/fetchium.js` forwards all args to the native binary
+- [ ] `npm/bin/hyper.js` is an alias for `fetchium.js`
 - [ ] Graceful error message if binary download fails (suggests `cargo install`)
 - [ ] Graceful error message if binary is not found at runtime
 - [ ] `postinstall` script does not fail npm install on download errors (exits 0)
@@ -1286,11 +1286,11 @@ node -c bin/hyper.js
 ```bash
 # Verify package structure
 cd npm && npm pack --dry-run
-# Should list: package.json, scripts/install-binary.js, bin/hsx.js, bin/hyper.js, README.md
+# Should list: package.json, scripts/install-binary.js, bin/fetchium.js, bin/hyper.js, README.md
 
 # Syntax checks
 node -c npm/scripts/install-binary.js
-node -c npm/bin/hsx.js
+node -c npm/bin/fetchium.js
 node -c npm/bin/hyper.js
 ```
 
@@ -1299,7 +1299,7 @@ node -c npm/bin/hyper.js
 ## Epic 0.3: CLI Skeleton
 
 > **PRD Sections:** SS10 (Modes of Operation), SS11 (CLI Interface Design), SS13 (Resource Awareness)
-> **Crate:** `hsx-cli` -- `src/main.rs`, `src/cli.rs`, `src/commands/`
+> **Crate:** `fetchium-cli` -- `src/main.rs`, `src/cli.rs`, `src/commands/`
 > **Priority:** P0 | **Tasks:** 2
 
 ### P0-E3-T1: clap Derive CLI
@@ -1314,7 +1314,7 @@ node -c npm/bin/hyper.js
 Build the full CLI skeleton using clap derive with all commands from PRD SS11, global flags, per-command args, and value enums. Every command is stubbed to print a placeholder message, ready for Phase 1+ implementation.
 
 **What already exists:**
-The CLI is **fully implemented** in `crates/hsx-cli/src/`:
+The CLI is **fully implemented** in `crates/fetchium-cli/src/`:
 
 | File | Status | Contents |
 |------|--------|----------|
@@ -1339,12 +1339,12 @@ The CLI is **fully implemented** in `crates/hsx-cli/src/`:
 
 **Step 1: Add `--no-cache` and `--quiet` global flags**
 
-PRD SS11 specifies these global flags. Add them to `crates/hsx-cli/src/cli.rs`:
+PRD SS11 specifies these global flags. Add them to `crates/fetchium-cli/src/cli.rs`:
 
 ```rust
 /// Fetchium -- AI-native search engine for humans and agents.
 #[derive(Debug, Parser)]
-#[command(name = "hsx", version, about, long_about = None)]
+#[command(name = "fetchium", version, about, long_about = None)]
 #[command(propagate_version = true)]
 pub struct Cli {
     #[command(subcommand)]
@@ -1420,7 +1420,7 @@ pub struct FetchArgs {
 
 **Step 3: Update `main.rs` to pass `--quiet` and `--no-cache` to config**
 
-In `crates/hsx-cli/src/main.rs`, after loading config, apply CLI overrides:
+In `crates/fetchium-cli/src/main.rs`, after loading config, apply CLI overrides:
 
 ```rust
 #[tokio::main]
@@ -1429,11 +1429,11 @@ async fn main() -> anyhow::Result<()> {
 
     // Initialize tracing
     let filter = if cli.verbose {
-        "hsx=debug,hsx_core=debug"
+        "fetchium=debug,hsx_core=debug"
     } else if cli.quiet {
-        "hsx=error,hsx_core=error"
+        "fetchium=error,hsx_core=error"
     } else {
-        "hsx=info,hsx_core=warn"
+        "fetchium=info,hsx_core=warn"
     };
     tracing_subscriber::fmt()
         .with_env_filter(
@@ -1445,8 +1445,8 @@ async fn main() -> anyhow::Result<()> {
 
     // Load config (file -> env -> CLI overrides)
     let mut config = match &cli.config {
-        Some(path) => hsx_core::config::HsxConfig::load_from(Some(std::path::Path::new(path))),
-        None => hsx_core::config::HsxConfig::load(),
+        Some(path) => hsx_core::config::FetchiumConfig::load_from(Some(std::path::Path::new(path))),
+        None => hsx_core::config::FetchiumConfig::load(),
     };
 
     // CLI flag overrides
@@ -1479,9 +1479,9 @@ async fn main() -> anyhow::Result<()> {
 
 **Step 4: Add basic E2E test for CLI**
 
-Create a test in `tests/e2e/` (or inline in `hsx-cli`). Add to `crates/hsx-cli/tests/cli_smoke.rs`:
+Create a test in `tests/e2e/` (or inline in `fetchium-cli`). Add to `crates/fetchium-cli/tests/cli_smoke.rs`:
 
-This file needs to be created at `crates/hsx-cli/tests/cli_smoke.rs`:
+This file needs to be created at `crates/fetchium-cli/tests/cli_smoke.rs`:
 
 ```rust
 use assert_cmd::Command;
@@ -1489,17 +1489,17 @@ use predicates::prelude::*;
 
 #[test]
 fn cli_version() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .arg("--version")
         .assert()
         .success()
-        .stdout(predicate::str::contains("hsx"));
+        .stdout(predicate::str::contains("fetchium"));
 }
 
 #[test]
 fn cli_help() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .arg("--help")
         .assert()
@@ -1512,7 +1512,7 @@ fn cli_help() {
 
 #[test]
 fn cli_search_help() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .args(["search", "--help"])
         .assert()
@@ -1522,7 +1522,7 @@ fn cli_search_help() {
 
 #[test]
 fn cli_unknown_command() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .arg("nonexistent")
         .assert()
@@ -1531,7 +1531,7 @@ fn cli_unknown_command() {
 
 #[test]
 fn cli_doctor_runs() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .arg("doctor")
         .assert()
@@ -1542,19 +1542,19 @@ fn cli_doctor_runs() {
 
 **Files modified/created:**
 ```
-crates/hsx-cli/src/cli.rs            # Add --quiet, --no-cache flags, --output on SearchArgs/FetchArgs
-crates/hsx-cli/src/main.rs           # Apply --quiet, --no-cache to config
-crates/hsx-cli/tests/cli_smoke.rs    # NEW: E2E smoke tests (5 tests)
+crates/fetchium-cli/src/cli.rs            # Add --quiet, --no-cache flags, --output on SearchArgs/FetchArgs
+crates/fetchium-cli/src/main.rs           # Apply --quiet, --no-cache to config
+crates/fetchium-cli/tests/cli_smoke.rs    # NEW: E2E smoke tests (5 tests)
 ```
 
 **Acceptance criteria:**
 
-- [ ] `hsx --version` prints the version
-- [ ] `hsx --help` lists all 12 commands with descriptions
-- [ ] `hsx search --help` shows all search flags (query, max-results, backends, output)
-- [ ] `hsx fetch --help` shows all fetch flags (url, budget, tier, query, output)
-- [ ] `hsx doctor` runs and prints system diagnostics
-- [ ] `hsx nonexistent` exits with error code
+- [ ] `fetchium --version` prints the version
+- [ ] `fetchium --help` lists all 12 commands with descriptions
+- [ ] `fetchium search --help` shows all search flags (query, max-results, backends, output)
+- [ ] `fetchium fetch --help` shows all fetch flags (url, budget, tier, query, output)
+- [ ] `fetchium doctor` runs and prints system diagnostics
+- [ ] `fetchium nonexistent` exits with error code
 - [ ] All 12 commands dispatch correctly (even though most are stubs)
 - [ ] Global flags (`--verbose`, `--quiet`, `--format`, `--no-cache`, `--config`) work
 - [ ] `--no-cache` disables cache in config
@@ -1566,14 +1566,14 @@ crates/hsx-cli/tests/cli_smoke.rs    # NEW: E2E smoke tests (5 tests)
 
 ```bash
 # Build and test CLI
-cargo build -p hsx-cli
-cargo test -p hsx-cli
+cargo build -p fetchium-cli
+cargo test -p fetchium-cli
 
 # Manual smoke tests
-cargo run -p hsx-cli -- --version
-cargo run -p hsx-cli -- --help
-cargo run -p hsx-cli -- search --help
-cargo run -p hsx-cli -- doctor
+cargo run -p fetchium-cli -- --version
+cargo run -p fetchium-cli -- --help
+cargo run -p fetchium-cli -- search --help
+cargo run -p fetchium-cli -- doctor
 ```
 
 ---
@@ -1587,15 +1587,15 @@ cargo run -p hsx-cli -- doctor
 **Dependencies:** `P0-E3-T1`, `P0-E1-T3`
 
 **Description:**
-Implement `hsx doctor` -- a system health check that detects CPU, RAM, GPU, network, available browsers, Ollama status, config validity, and recommends an execution tier per PRD SS13.
+Implement `fetchium doctor` -- a system health check that detects CPU, RAM, GPU, network, available browsers, Ollama status, config validity, and recommends an execution tier per PRD SS13.
 
 **What already exists:**
-The file `crates/hsx-cli/src/commands/doctor.rs` is **implemented** with:
+The file `crates/fetchium-cli/src/commands/doctor.rs` is **implemented** with:
 
 | Check | Status |
 |-------|--------|
 | Rust toolchain | DONE (always true since binary is compiled) |
-| Resource tier detection | DONE (via `HsxConfig::detect_resource_tier()`) |
+| Resource tier detection | DONE (via `FetchiumConfig::detect_resource_tier()`) |
 | Data directory existence | DONE |
 | Chromium/Chrome detection | DONE (checks 4 paths) |
 | Ollama availability | DONE (HTTP check to localhost:11434) |
@@ -1604,16 +1604,16 @@ The file `crates/hsx-cli/src/commands/doctor.rs` is **implemented** with:
 
 **Step 1: Add detailed system info display**
 
-Enhance `crates/hsx-cli/src/commands/doctor.rs` with more detailed system info using `sysinfo`:
+Enhance `crates/fetchium-cli/src/commands/doctor.rs` with more detailed system info using `sysinfo`:
 
 ```rust
-//! `hsx doctor` -- system health check (PRD SS13).
+//! `fetchium doctor` -- system health check (PRD SS13).
 
 use colored::Colorize;
-use hsx_core::config::HsxConfig;
+use hsx_core::config::FetchiumConfig;
 use sysinfo::System;
 
-pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(config: &FetchiumConfig) -> anyhow::Result<()> {
     println!("{}", "Fetchium Doctor".bold().cyan());
     println!("{}", "=".repeat(50));
     println!();
@@ -1639,7 +1639,7 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
     ));
 
     // ---- Resource Tier ----
-    let tier = HsxConfig::detect_resource_tier();
+    let tier = FetchiumConfig::detect_resource_tier();
     let tier_detail = match tier {
         hsx_core::types::ResourceTier::Minimal => "Minimal (< 4 GB RAM)",
         hsx_core::types::ResourceTier::Standard => "Standard (4-16 GB RAM)",
@@ -1660,7 +1660,7 @@ pub async fn run(config: &HsxConfig) -> anyhow::Result<()> {
         &format!("{} {}", data_dir.display(), if dir_exists { "(exists)" } else { "(will be created)" }),
     );
 
-    let config_path = HsxConfig::config_file_path();
+    let config_path = FetchiumConfig::config_file_path();
     let config_exists = config_path.exists();
     check(
         "Config file",
@@ -1791,12 +1791,12 @@ async fn check_ollama(host: &str) -> Option<String> {
 
 **Step 2: Add test for doctor output**
 
-Add to `crates/hsx-cli/tests/cli_smoke.rs` (or the existing test file):
+Add to `crates/fetchium-cli/tests/cli_smoke.rs` (or the existing test file):
 
 ```rust
 #[test]
 fn doctor_shows_system_info() {
-    Command::cargo_bin("hsx")
+    Command::cargo_bin("fetchium")
         .unwrap()
         .arg("doctor")
         .assert()
@@ -1812,22 +1812,22 @@ fn doctor_shows_system_info() {
 
 **Files modified/created:**
 ```
-crates/hsx-cli/src/commands/doctor.rs   # Enhanced doctor with full system info
-crates/hsx-cli/tests/cli_smoke.rs       # Add doctor output test
+crates/fetchium-cli/src/commands/doctor.rs   # Enhanced doctor with full system info
+crates/fetchium-cli/tests/cli_smoke.rs       # Add doctor output test
 ```
 
 **Acceptance criteria:**
 
-- [ ] `hsx doctor` displays CPU model and core count
-- [ ] `hsx doctor` displays total RAM, free RAM, and usage percentage
-- [ ] `hsx doctor` displays detected resource tier with description
-- [ ] `hsx doctor` checks data directory existence
-- [ ] `hsx doctor` checks config file existence
-- [ ] `hsx doctor` shows default budget and cache status from config
-- [ ] `hsx doctor` detects Chrome/Chromium on macOS, Linux, and Windows
-- [ ] `hsx doctor` checks Ollama availability and reports model count
-- [ ] `hsx doctor` shows recommended parallel fetches and browser pool size
-- [ ] `hsx doctor` suggests installing missing tools (Chrome, Ollama)
+- [ ] `fetchium doctor` displays CPU model and core count
+- [ ] `fetchium doctor` displays total RAM, free RAM, and usage percentage
+- [ ] `fetchium doctor` displays detected resource tier with description
+- [ ] `fetchium doctor` checks data directory existence
+- [ ] `fetchium doctor` checks config file existence
+- [ ] `fetchium doctor` shows default budget and cache status from config
+- [ ] `fetchium doctor` detects Chrome/Chromium on macOS, Linux, and Windows
+- [ ] `fetchium doctor` checks Ollama availability and reports model count
+- [ ] `fetchium doctor` shows recommended parallel fetches and browser pool size
+- [ ] `fetchium doctor` suggests installing missing tools (Chrome, Ollama)
 - [ ] Output is color-coded: green OK, yellow WARN
 - [ ] Doctor command completes in < 5 seconds
 - [ ] E2E test verifies all major sections appear in output
@@ -1836,7 +1836,7 @@ crates/hsx-cli/tests/cli_smoke.rs       # Add doctor output test
 
 ```bash
 # Run doctor
-cargo run -p hsx-cli -- doctor
+cargo run -p fetchium-cli -- doctor
 
 # Expected output structure:
 # Fetchium Doctor
@@ -1863,7 +1863,7 @@ cargo run -p hsx-cli -- doctor
 #   Install Ollama for AI features: https://ollama.ai
 
 # Run E2E tests
-cargo test -p hsx-cli
+cargo test -p fetchium-cli
 ```
 
 ---
@@ -1902,10 +1902,10 @@ When all tasks are done, verify the following holistic acceptance criteria:
 - [ ] `cargo clippy --workspace -- -D warnings` -- zero warnings
 - [ ] `cargo fmt --all -- --check` -- formatting is consistent
 - [ ] `cargo doc --workspace --no-deps` -- documentation builds
-- [ ] `cargo run -p hsx-cli -- --version` -- prints version
-- [ ] `cargo run -p hsx-cli -- --help` -- shows all commands
-- [ ] `cargo run -p hsx-cli -- doctor` -- shows full system diagnostics
-- [ ] `cargo run -p hsx-cli -- search "test"` -- runs without crash (stub OK)
+- [ ] `cargo run -p fetchium-cli -- --version` -- prints version
+- [ ] `cargo run -p fetchium-cli -- --help` -- shows all commands
+- [ ] `cargo run -p fetchium-cli -- doctor` -- shows full system diagnostics
+- [ ] `cargo run -p fetchium-cli -- search "test"` -- runs without crash (stub OK)
 - [ ] `.github/workflows/ci.yml` -- valid, tests on 3 platforms
 - [ ] `.github/workflows/release.yml` -- valid, builds for 5 targets
 - [ ] `npm/package.json` -- valid, `npm pack --dry-run` lists correct files
@@ -1940,10 +1940,10 @@ When all tasks are done, verify the following holistic acceptance criteria:
 .github/workflows/release.yml              # P0-E2-T2
 npm/package.json                            # P0-E2-T3
 npm/scripts/install-binary.js               # P0-E2-T3
-npm/bin/hsx.js                              # P0-E2-T3
+npm/bin/fetchium.js                              # P0-E2-T3
 npm/bin/hyper.js                            # P0-E2-T3
 npm/README.md                               # P0-E2-T3
-crates/hsx-cli/tests/cli_smoke.rs           # P0-E3-T1
+crates/fetchium-cli/tests/cli_smoke.rs           # P0-E3-T1
 tests/fixtures/.gitkeep                     # P0-E1-T1
 tests/integration/.gitkeep                  # P0-E1-T1
 tests/e2e/.gitkeep                          # P0-E1-T1
@@ -1953,29 +1953,29 @@ docs/.gitkeep                               # P0-E1-T1
 
 ### Modified Files
 ```
-crates/hsx-core/src/config.rs               # P0-E1-T3 (env overrides, save, ensure_data_dir)
-crates/hsx-core/src/types.rs                # P0-E1-T2 (optional: extra tests)
-crates/hsx-cli/src/cli.rs                   # P0-E3-T1 (--quiet, --no-cache, --output flags)
-crates/hsx-cli/src/main.rs                  # P0-E3-T1 (quiet/no-cache handling)
-crates/hsx-cli/src/commands/doctor.rs       # P0-E3-T2 (enhanced system info)
+crates/fetchium-core/src/config.rs               # P0-E1-T3 (env overrides, save, ensure_data_dir)
+crates/fetchium-core/src/types.rs                # P0-E1-T2 (optional: extra tests)
+crates/fetchium-cli/src/cli.rs                   # P0-E3-T1 (--quiet, --no-cache, --output flags)
+crates/fetchium-cli/src/main.rs                  # P0-E3-T1 (quiet/no-cache handling)
+crates/fetchium-cli/src/commands/doctor.rs       # P0-E3-T2 (enhanced system info)
 ```
 
 ### Already Complete (no changes needed)
 ```
 Cargo.toml                                  # P0-E1-T1
 rust-toolchain.toml                         # P0-E1-T1
-crates/hsx-core/Cargo.toml                 # P0-E1-T1
-crates/hsx-cli/Cargo.toml                  # P0-E1-T1
-crates/hsx-mcp/Cargo.toml                  # P0-E1-T1
-crates/hsx-api/Cargo.toml                  # P0-E1-T1
-crates/hsx-core/src/lib.rs                 # P0-E1-T1
-crates/hsx-core/src/error.rs               # P0-E1-T2
-crates/hsx-core/src/http/mod.rs            # Existing
-crates/hsx-core/src/http/client.rs         # Existing
-crates/hsx-core/src/search/mod.rs          # Existing
-crates/hsx-core/src/extract/mod.rs         # Existing
-crates/hsx-core/src/resource/mod.rs        # Existing
-crates/hsx-cli/src/output.rs              # P0-E3-T1
-crates/hsx-cli/src/commands/mod.rs        # P0-E3-T1
-crates/hsx-cli/src/commands/*.rs           # All command stubs
+crates/fetchium-core/Cargo.toml                 # P0-E1-T1
+crates/fetchium-cli/Cargo.toml                  # P0-E1-T1
+crates/fetchium-mcp/Cargo.toml                  # P0-E1-T1
+crates/fetchium-api/Cargo.toml                  # P0-E1-T1
+crates/fetchium-core/src/lib.rs                 # P0-E1-T1
+crates/fetchium-core/src/error.rs               # P0-E1-T2
+crates/fetchium-core/src/http/mod.rs            # Existing
+crates/fetchium-core/src/http/client.rs         # Existing
+crates/fetchium-core/src/search/mod.rs          # Existing
+crates/fetchium-core/src/extract/mod.rs         # Existing
+crates/fetchium-core/src/resource/mod.rs        # Existing
+crates/fetchium-cli/src/output.rs              # P0-E3-T1
+crates/fetchium-cli/src/commands/mod.rs        # P0-E3-T1
+crates/fetchium-cli/src/commands/*.rs           # All command stubs
 ```

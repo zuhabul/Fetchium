@@ -1,6 +1,6 @@
 //! Plugin loader — installs plugins from filesystem paths.
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use crate::plugin::manifest::PluginManifest;
 
 /// Install a plugin from a source directory into the plugin directory.
@@ -10,10 +10,10 @@ use crate::plugin::manifest::PluginManifest;
 pub fn install_plugin(
     source_path: &std::path::Path,
     plugin_dir: &std::path::Path,
-) -> Result<PluginManifest, HsxError> {
+) -> Result<PluginManifest, FetchiumError> {
     let manifest_path = source_path.join("plugin.toml");
     if !manifest_path.exists() {
-        return Err(HsxError::Config(format!(
+        return Err(FetchiumError::Config(format!(
             "No plugin.toml found at {:?}",
             source_path
         )));
@@ -21,7 +21,7 @@ pub fn install_plugin(
     let manifest = PluginManifest::load(&manifest_path)?;
     let dest = plugin_dir.join(&manifest.name);
     if dest.exists() {
-        return Err(HsxError::Config(format!(
+        return Err(FetchiumError::Config(format!(
             "Plugin '{}' is already installed at {:?}. Remove it first.",
             manifest.name, dest
         )));
@@ -32,10 +32,10 @@ pub fn install_plugin(
 }
 
 /// Remove an installed plugin.
-pub fn remove_plugin(name: &str, plugin_dir: &std::path::Path) -> Result<(), HsxError> {
+pub fn remove_plugin(name: &str, plugin_dir: &std::path::Path) -> Result<(), FetchiumError> {
     let dest = plugin_dir.join(name);
     if !dest.exists() {
-        return Err(HsxError::Config(format!(
+        return Err(FetchiumError::Config(format!(
             "Plugin '{name}' is not installed"
         )));
     }
@@ -49,7 +49,7 @@ pub fn create_plugin_scaffold(
     name: &str,
     plugin_type: &str,
     dest_path: &std::path::Path,
-) -> Result<(), HsxError> {
+) -> Result<(), FetchiumError> {
     std::fs::create_dir_all(dest_path)?;
     PluginManifest::scaffold(name, plugin_type, &dest_path.join("plugin.toml"))?;
     // Write a minimal README
@@ -61,7 +61,7 @@ pub fn create_plugin_scaffold(
     Ok(())
 }
 
-fn copy_dir(src: &std::path::Path, dst: &std::path::Path) -> Result<(), HsxError> {
+fn copy_dir(src: &std::path::Path, dst: &std::path::Path) -> Result<(), FetchiumError> {
     std::fs::create_dir_all(dst)?;
     for entry in std::fs::read_dir(src)? {
         let entry = entry?;

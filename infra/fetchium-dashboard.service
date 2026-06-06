@@ -1,0 +1,44 @@
+[Unit]
+Description=Fetchium Dashboard
+After=network.target fetchium-api.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=echo
+WorkingDirectory=/home/echo/projects/Fetchium/apps/dashboard
+Environment=PORT=3200
+Environment=HOSTNAME=127.0.0.1
+Environment=NODE_ENV=production
+EnvironmentFile=/home/echo/.fetchium/env
+ExecStart=/home/echo/.bun/bin/bun run start
+
+TimeoutStopSec=15
+KillMode=mixed
+KillSignal=SIGTERM
+Restart=always
+RestartSec=5
+
+MemoryMax=1G
+MemorySwapMax=0
+CPUQuota=50%
+TasksMax=256
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=fetchium-dashboard
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/echo/projects/Fetchium/apps/dashboard
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

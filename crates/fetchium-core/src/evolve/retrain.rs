@@ -3,7 +3,7 @@
 //! Analyses the CEP ML predictor's performance over recent extractions
 //! and generates a report recommending whether retraining is needed.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use serde::{Deserialize, Serialize};
 
 /// A data point for the retrain analysis.
@@ -41,7 +41,7 @@ pub struct LayerConfusion {
 
 impl RetrainReport {
     /// Build a retrain report from a set of extraction records.
-    pub fn from_records(records: &[ExtractionRecord]) -> HsxResult<Self> {
+    pub fn from_records(records: &[ExtractionRecord]) -> FetchiumResult<Self> {
         let total = records.len();
         if total == 0 {
             return Ok(Self {

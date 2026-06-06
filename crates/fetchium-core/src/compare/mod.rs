@@ -264,13 +264,13 @@ pub async fn build_comparison_ai_unified(
     query: &ComparisonQuery,
     snippet_text: &str,
     sources: &[String],
-    hsx_config: &crate::config::HsxConfig,
+    fetchium_config: &crate::config::FetchiumConfig,
 ) -> ComparisonResult {
     use crate::ai::types::{AiConfig, ChatMessage};
 
     let items: Vec<String> = query.items.clone();
     let dimensions: Vec<String> = STANDARD_DIMENSIONS.iter().map(|s| s.to_string()).collect();
-    let ai_config = AiConfig::from_hsx_config(hsx_config);
+    let ai_config = AiConfig::from_fetchium_config(fetchium_config);
     let providers = ai_config.providers.clone();
 
     let items_str = items
@@ -431,14 +431,14 @@ fn parse_unified_response(response: &str, item: &str, dimension: &str) -> String
 pub async fn build_comparison_ai(
     query: &ComparisonQuery,
     item_data: &[(String, String, Vec<String>)],
-    hsx_config: &crate::config::HsxConfig,
+    fetchium_config: &crate::config::FetchiumConfig,
 ) -> ComparisonResult {
     use crate::ai::types::{AiConfig, ChatMessage};
 
     let items: Vec<String> = query.items.clone();
     let dimensions: Vec<String> = STANDARD_DIMENSIONS.iter().map(|s| s.to_string()).collect();
     let mut cells = Vec::new();
-    let ai_config = AiConfig::from_hsx_config(hsx_config);
+    let ai_config = AiConfig::from_fetchium_config(fetchium_config);
     let providers = ai_config.providers.clone();
 
     for (item, summary, sources) in item_data {

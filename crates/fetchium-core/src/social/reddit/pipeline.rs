@@ -1,7 +1,7 @@
 //! Reddit intelligence pipeline — full orchestration.
 
-use crate::config::HsxConfig;
-use crate::error::HsxResult;
+use crate::config::FetchiumConfig;
+use crate::error::FetchiumResult;
 use crate::http::client::HttpClient;
 use crate::social::reddit::{analysis, search, types::*};
 use std::time::Instant;
@@ -9,9 +9,9 @@ use std::time::Instant;
 /// Run the full Reddit intelligence pipeline.
 pub async fn run_reddit_pipeline(
     config_rd: &RedditPipelineConfig,
-    _config: &HsxConfig,
+    _config: &FetchiumConfig,
     http: &HttpClient,
-) -> HsxResult<RedditPipelineResult> {
+) -> FetchiumResult<RedditPipelineResult> {
     let started = Instant::now();
 
     // Search posts

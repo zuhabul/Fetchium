@@ -3,14 +3,15 @@
 //! PRD SS14: Domain-aware scheduler with per-domain concurrency caps.
 //! PRD SS44: Structured errors with retry info.
 
-use crate::config::HsxConfig;
-use crate::error::{ErrorKind, HsxError, HsxResult, StructuredError};
+use crate::config::FetchiumConfig;
+use crate::error::{ErrorKind, FetchiumError, FetchiumResult, StructuredError};
+use crate::proxy::{DataImpulseClient, ProxyPool};
 use dashmap::DashMap;
 use reqwest::{Client, StatusCode};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
-use tracing::debug;
+use tracing::{debug, info};
 use url::Url;
 
 /// Maximum retry attempts for transient errors.
@@ -29,13 +30,22 @@ struct DomainState {
     min_delay: Duration,
 }
 
+/// Domains that are blocked hard enough to justify the expensive residential path.
+/// API-based backends (Serper, Exa, Tavily, Gemini) are NOT in this list.
+/// Everything else should use the cheaper fixed proxy pool or direct traffic.
+const RESIDENTIAL_REQUIRED_DOMAINS: &[&str] = &["google.com", "www.google.com"];
+
 /// Shared HTTP client with connection pooling, retries, and rate limiting.
 #[derive(Clone)]
 pub struct HttpClient {
     inner: Client,
-    config: Arc<HsxConfig>,
+    config: Arc<FetchiumConfig>,
     /// Per-domain rate limiting state.
     domain_delays: Arc<DashMap<String, DomainState>>,
+    /// Optional Webshare proxy pool (datacenter — legacy fallback).
+    proxy_pool: Option<ProxyPool>,
+    /// DataImpulse residential proxy client (country-targeted, pay-per-GB).
+    dataimpulse: Option<DataImpulseClient>,
 }
 
 /// Fetch result with metadata about the request.
@@ -52,7 +62,7 @@ pub struct FetchResult {
 
 impl HttpClient {
     /// Create a new HTTP client from config.
-    pub fn new(config: &HsxConfig) -> HsxResult<Self> {
+    pub fn new(config: &FetchiumConfig) -> FetchiumResult<Self> {
         let client = Client::builder()
             .user_agent(&config.fetch.user_agent)
             .timeout(Duration::from_secs(config.fetch.timeout_secs))
@@ -62,15 +72,70 @@ impl HttpClient {
             ))
             .gzip(true)
             .brotli(true)
-            .pool_max_idle_per_host(10)
+            .pool_max_idle_per_host(100)
             .pool_idle_timeout(Duration::from_secs(90))
             .build()
-            .map_err(HsxError::Network)?;
+            .map_err(FetchiumError::Network)?;
+
+        // Load proxy pool if configured
+        let proxy_pool = if config.proxy.enabled {
+            let proxy_file = config
+                .proxy
+                .proxy_file
+                .clone()
+                .unwrap_or_else(|| config.data_dir().join("proxies.txt"));
+            if proxy_file.exists() {
+                match ProxyPool::load_from_file(&proxy_file) {
+                    Ok(pool) if !pool.is_empty() => {
+                        info!(
+                            "Proxy pool loaded: {} proxies from {}",
+                            pool.len(),
+                            proxy_file.display()
+                        );
+                        Some(pool)
+                    }
+                    Ok(_) => {
+                        tracing::warn!("Proxy file is empty: {}", proxy_file.display());
+                        None
+                    }
+                    Err(e) => {
+                        tracing::warn!("Failed to load proxy file {}: {e}", proxy_file.display());
+                        None
+                    }
+                }
+            } else {
+                tracing::warn!("Proxy file not found: {}", proxy_file.display());
+                None
+            }
+        } else {
+            None
+        };
+
+        // Build DataImpulse residential proxy client if configured
+        let dataimpulse = if config.dataimpulse.enabled && !config.dataimpulse.username.is_empty() {
+            let di = DataImpulseClient::new(
+                &config.dataimpulse.username,
+                &config.dataimpulse.password,
+                &config.dataimpulse.host,
+                config.dataimpulse.port,
+                &config.fetch.user_agent,
+                Duration::from_secs(config.fetch.timeout_secs),
+            );
+            info!(
+                "DataImpulse residential proxy enabled ({}:{})",
+                config.dataimpulse.host, config.dataimpulse.port
+            );
+            Some(di)
+        } else {
+            None
+        };
 
         Ok(Self {
             inner: client,
             config: Arc::new(config.clone()),
             domain_delays: Arc::new(DashMap::new()),
+            proxy_pool,
+            dataimpulse,
         })
     }
 
@@ -79,13 +144,140 @@ impl HttpClient {
         &self.inner
     }
 
+    /// Get a reqwest client for a specific domain.
+    ///
+    /// Priority order:
+    /// 1. DataImpulse residential proxy (country-targeted) — Google only
+    /// 2. Direct connection — default path for everything else
+    ///
+    /// Cheap path by default: non-Google traffic stays direct until a backend
+    /// explicitly asks for proxy escalation.
+    pub fn client_for_domain_with_locale(&self, domain: &str, locale: Option<&str>) -> Client {
+        let needs_residential = self.needs_residential_proxy(domain);
+
+        // Google uses residential immediately.
+        if needs_residential {
+            if let Some(ref di) = self.dataimpulse {
+                if di.is_configured() {
+                    debug!("DataImpulse residential proxy for {domain} locale={locale:?}");
+                    return di.client(locale);
+                }
+            }
+        }
+
+        // Everyone else uses the cheapest path first.
+        self.inner.clone()
+    }
+
+    /// Backwards-compatible wrapper — no locale hint.
+    pub fn client_for_domain(&self, domain: &str) -> Client {
+        self.client_for_domain_with_locale(domain, None)
+    }
+
+    /// Direct client — bypasses ALL proxy routing (residential and datacenter).
+    ///
+    /// Use for first-attempt requests where proxy is not yet needed.
+    /// If the direct attempt fails, escalate to `client_for_domain_with_locale`.
+    /// Saves DataImpulse GB when direct connections succeed (majority of requests).
+    pub fn client_direct(&self) -> Client {
+        self.inner.clone()
+    }
+
+    /// Get a forced proxy client for a domain.
+    ///
+    /// Google uses residential. All other proxy-eligible domains use the fixed
+    /// proxy pool. Falls back to direct when no proxy is available.
+    pub fn proxy_client_for_domain_with_locale(
+        &self,
+        domain: &str,
+        locale: Option<&str>,
+    ) -> Client {
+        if self.needs_residential_proxy(domain) {
+            if let Some(ref di) = self.dataimpulse {
+                if di.is_configured() {
+                    return di.client(locale);
+                }
+            }
+            return self.inner.clone();
+        }
+
+        if let Some(ref pool) = self.proxy_pool {
+            if self.should_proxy_domain(domain) {
+                if let Some(proxy) = pool.proxy_for_domain(domain) {
+                    if let Ok(client) = ProxyPool::build_client_with_proxy(
+                        &proxy,
+                        &self.config.fetch.user_agent,
+                        Duration::from_secs(self.config.fetch.timeout_secs),
+                    ) {
+                        return client;
+                    }
+                }
+            }
+        }
+
+        self.inner.clone()
+    }
+
+    /// Get a **fresh** client that forces a new residential IP on the next request.
+    ///
+    /// Use when a previous request was blocked (CAPTCHA, 403, empty SERP).
+    /// The fresh client has no connection pool, so DataImpulse assigns a new
+    /// residential IP. Falls back to `client_for_domain_with_locale` if not residential.
+    pub fn fresh_client_for_domain_with_locale(
+        &self,
+        domain: &str,
+        locale: Option<&str>,
+    ) -> Client {
+        if self.needs_residential_proxy(domain) {
+            if let Some(ref di) = self.dataimpulse {
+                if di.is_configured() {
+                    return di.fresh_client(locale);
+                }
+            }
+        }
+        // Non-residential: force a new datacenter proxy assignment on retry if possible.
+        if let Some(ref pool) = self.proxy_pool {
+            if self.should_proxy_domain(domain) {
+                if let Some(proxy) = pool.fresh_proxy_for_domain(domain) {
+                    if let Ok(client) = ProxyPool::build_client_with_proxy(
+                        &proxy,
+                        &self.config.fetch.user_agent,
+                        Duration::from_secs(self.config.fetch.timeout_secs),
+                    ) {
+                        return client;
+                    }
+                }
+            }
+        }
+
+        // Fall back to the normal path (direct).
+        self.client_for_domain_with_locale(domain, locale)
+    }
+
+    /// Whether a domain requires residential IPs to avoid blocks.
+    fn needs_residential_proxy(&self, domain: &str) -> bool {
+        // Check user-configured override list first
+        if !self.config.dataimpulse.proxy_domains.is_empty() {
+            return self
+                .config
+                .dataimpulse
+                .proxy_domains
+                .iter()
+                .any(|d| domain.ends_with(d.as_str()) || domain == d.as_str());
+        }
+        // Built-in list of search engines blocked by datacenter IPs
+        RESIDENTIAL_REQUIRED_DOMAINS
+            .iter()
+            .any(|&d| domain == d || domain.ends_with(&format!(".{d}")))
+    }
+
     /// Get the config reference.
-    pub fn config(&self) -> &HsxConfig {
+    pub fn config(&self) -> &FetchiumConfig {
         &self.config
     }
 
     /// Extract domain from a URL for rate limiting.
-    fn extract_domain(url: &str) -> String {
+    pub fn extract_domain(url: &str) -> String {
         Url::parse(url)
             .map(|u| u.host_str().unwrap_or("unknown").to_string())
             .unwrap_or_else(|_| "unknown".to_string())
@@ -147,11 +339,11 @@ impl HttpClient {
 
     /// Fetch a URL with retries, rate limiting, and size enforcement.
     /// Returns the response body as a string along with metadata.
-    pub async fn fetch(&self, url: &str) -> HsxResult<FetchResult> {
+    pub async fn fetch(&self, url: &str) -> FetchiumResult<FetchResult> {
         let domain = Self::extract_domain(url);
         let start = Instant::now();
         let max_size = self.config.fetch.max_page_size;
-        let mut last_err: Option<HsxError> = None;
+        let mut last_err: Option<FetchiumError> = None;
 
         for attempt in 0..=MAX_RETRIES {
             if attempt > 0 {
@@ -171,7 +363,7 @@ impl HttpClient {
                     if !status.is_success() {
                         if Self::is_retryable_status(status) && attempt < MAX_RETRIES {
                             debug!("Retryable status {status} for {url} (attempt {attempt}/{MAX_RETRIES})");
-                            last_err = Some(HsxError::Structured(StructuredError {
+                            last_err = Some(FetchiumError::Structured(StructuredError {
                                 kind: Self::status_to_error_kind(status),
                                 retryable: true,
                                 message: format!("HTTP {status} from {url}"),
@@ -182,7 +374,7 @@ impl HttpClient {
                             continue;
                         }
 
-                        return Err(HsxError::Structured(StructuredError {
+                        return Err(FetchiumError::Structured(StructuredError {
                             kind: Self::status_to_error_kind(status),
                             retryable: false,
                             message: format!("HTTP {status} from {url}"),
@@ -199,7 +391,7 @@ impl HttpClient {
                     let content_length = resp.content_length();
                     if let Some(len) = content_length {
                         if len > max_size {
-                            return Err(HsxError::Structured(StructuredError {
+                            return Err(FetchiumError::Structured(StructuredError {
                                 kind: ErrorKind::ExtractionFailed,
                                 retryable: false,
                                 message: format!(
@@ -221,10 +413,10 @@ impl HttpClient {
 
                     let final_url = resp.url().to_string();
 
-                    let body = resp.text().await.map_err(HsxError::Network)?;
+                    let body = resp.text().await.map_err(FetchiumError::Network)?;
 
                     if body.len() as u64 > max_size {
-                        return Err(HsxError::Structured(StructuredError {
+                        return Err(FetchiumError::Structured(StructuredError {
                             kind: ErrorKind::ExtractionFailed,
                             retryable: false,
                             message: format!("Body too large: {} bytes", body.len()),
@@ -247,16 +439,16 @@ impl HttpClient {
                 Err(e) => {
                     if (e.is_timeout() || e.is_connect()) && attempt < MAX_RETRIES {
                         debug!("Transient error for {url}: {e}");
-                        last_err = Some(HsxError::Network(e));
+                        last_err = Some(FetchiumError::Network(e));
                         continue;
                     }
-                    return Err(HsxError::Network(e));
+                    return Err(FetchiumError::Network(e));
                 }
             }
         }
 
         Err(last_err.unwrap_or_else(|| {
-            HsxError::Structured(StructuredError {
+            FetchiumError::Structured(StructuredError {
                 kind: ErrorKind::NetworkTimeout,
                 retryable: false,
                 message: format!("All {MAX_RETRIES} retries exhausted for {url}"),
@@ -268,8 +460,159 @@ impl HttpClient {
     }
 
     /// Convenience: fetch a URL and return just the body text.
-    pub async fn fetch_text(&self, url: &str) -> HsxResult<String> {
+    pub async fn fetch_text(&self, url: &str) -> FetchiumResult<String> {
         let result = self.fetch(url).await?;
+        Ok(result.body)
+    }
+
+    /// Get the proxy pool (if configured).
+    pub fn proxy_pool(&self) -> Option<&ProxyPool> {
+        self.proxy_pool.as_ref()
+    }
+
+    /// Check if a domain should use proxies.
+    fn should_proxy_domain(&self, domain: &str) -> bool {
+        // Never proxy bypass domains
+        if self
+            .config
+            .proxy
+            .bypass_domains
+            .iter()
+            .any(|d| domain.contains(d.as_str()))
+        {
+            return false;
+        }
+        // If proxy_domains is specified, only proxy those
+        if !self.config.proxy.proxy_domains.is_empty() {
+            return self
+                .config
+                .proxy
+                .proxy_domains
+                .iter()
+                .any(|d| domain.contains(d.as_str()));
+        }
+        // Default: proxy everything
+        true
+    }
+
+    /// Fetch a URL through a rotating proxy. Falls back to direct if no proxy available.
+    pub async fn fetch_via_proxy(&self, url: &str) -> FetchiumResult<FetchResult> {
+        let domain = Self::extract_domain(url);
+
+        let pool = match &self.proxy_pool {
+            Some(p) if !p.is_empty() && self.should_proxy_domain(&domain) => p,
+            _ => return self.fetch(url).await,
+        };
+
+        let proxy = match pool.proxy_for_domain(&domain) {
+            Some(p) => p,
+            None => {
+                debug!("No available proxy for {domain}, falling back to direct");
+                return self.fetch(url).await;
+            }
+        };
+
+        let start = Instant::now();
+        let client = ProxyPool::build_client_with_proxy(
+            &proxy,
+            &self.config.fetch.user_agent,
+            Duration::from_secs(self.config.fetch.timeout_secs),
+        )
+        .map_err(FetchiumError::Network)?;
+
+        match client.get(url).send().await {
+            Ok(resp) => {
+                let status = resp.status();
+                let latency = start.elapsed().as_millis() as u64;
+
+                if status.is_success() {
+                    proxy.record_success(latency);
+                    let content_type = resp
+                        .headers()
+                        .get("content-type")
+                        .and_then(|v| v.to_str().ok())
+                        .unwrap_or("text/html")
+                        .to_string();
+                    let content_length = resp.content_length();
+                    let final_url = resp.url().to_string();
+                    let body = resp.text().await.map_err(FetchiumError::Network)?;
+
+                    Ok(FetchResult {
+                        body,
+                        status: status.as_u16(),
+                        content_type,
+                        content_length,
+                        url: final_url,
+                        elapsed_ms: latency,
+                        retries: 0,
+                    })
+                } else if status == StatusCode::FORBIDDEN || status == StatusCode::TOO_MANY_REQUESTS
+                {
+                    // Proxy got blocked — record failure and retry with next proxy
+                    proxy.record_failure();
+                    debug!(
+                        "Proxy {}:{} blocked (HTTP {}) for {domain}, trying next",
+                        proxy.host, proxy.port, status
+                    );
+                    // One retry with a different proxy
+                    if let Some(next_proxy) = pool.next_proxy() {
+                        let client2 = ProxyPool::build_client_with_proxy(
+                            &next_proxy,
+                            &self.config.fetch.user_agent,
+                            Duration::from_secs(self.config.fetch.timeout_secs),
+                        )
+                        .map_err(FetchiumError::Network)?;
+
+                        let start2 = Instant::now();
+                        match client2.get(url).send().await {
+                            Ok(resp2) if resp2.status().is_success() => {
+                                next_proxy.record_success(start2.elapsed().as_millis() as u64);
+                                let body = resp2.text().await.map_err(FetchiumError::Network)?;
+                                Ok(FetchResult {
+                                    body,
+                                    status: 200,
+                                    content_type: "text/html".into(),
+                                    content_length: None,
+                                    url: url.to_string(),
+                                    elapsed_ms: start.elapsed().as_millis() as u64,
+                                    retries: 1,
+                                })
+                            }
+                            _ => {
+                                next_proxy.record_failure();
+                                self.fetch(url).await // fall back to direct
+                            }
+                        }
+                    } else {
+                        self.fetch(url).await
+                    }
+                } else {
+                    proxy.record_failure();
+                    Err(FetchiumError::Structured(StructuredError {
+                        kind: Self::status_to_error_kind(status),
+                        retryable: false,
+                        message: format!("HTTP {status} via proxy for {url}"),
+                        source_url: Some(url.to_string()),
+                        suggested_action: "Try different proxy or direct".into(),
+                        alternatives: vec![],
+                    }))
+                }
+            }
+            Err(e) => {
+                proxy.record_failure();
+                debug!(
+                    "Proxy {}:{} connection failed for {domain}: {e}",
+                    proxy.host, proxy.port
+                );
+                // Fall back to direct connection
+                self.fetch(url).await
+            }
+        }
+    }
+
+    /// Convenience: fetch text through a proxy.
+    pub async fn fetch_text_via_proxy(&self, url: &str) -> FetchiumResult<String> {
+        let result = self.fetch_via_proxy(url).await?;
         Ok(result.body)
     }
 
@@ -278,16 +621,16 @@ impl HttpClient {
     /// Use this for sources where connection errors are *expected* (e.g. third-party
     /// Piped/Invidious instances that may be down). A single fast attempt is better
     /// than burning 3.5s on retry sleeps when we're racing many sources in parallel.
-    pub async fn fetch_text_once(&self, url: &str) -> HsxResult<String> {
+    pub async fn fetch_text_once(&self, url: &str) -> FetchiumResult<String> {
         let resp = self
             .inner
             .get(url)
             .send()
             .await
-            .map_err(HsxError::Network)?;
+            .map_err(FetchiumError::Network)?;
 
         if !resp.status().is_success() {
-            return Err(HsxError::Structured(crate::error::StructuredError {
+            return Err(FetchiumError::Structured(crate::error::StructuredError {
                 kind: Self::status_to_error_kind(resp.status()),
                 retryable: false,
                 message: format!("HTTP {} from {url}", resp.status()),
@@ -297,14 +640,14 @@ impl HttpClient {
             }));
         }
 
-        resp.text().await.map_err(HsxError::Network)
+        resp.text().await.map_err(FetchiumError::Network)
     }
 
     /// Single-shot POST — no retries, no rate limiting.
     ///
     /// Like `fetch_text_once` but sends a JSON POST body. Used for YouTube Innertube
     /// API calls where each call is time-sensitive and retries are not desired.
-    pub async fn post_json_once(&self, url: &str, body: String) -> HsxResult<String> {
+    pub async fn post_json_once(&self, url: &str, body: String) -> FetchiumResult<String> {
         let resp = self
             .inner
             .post(url)
@@ -312,10 +655,10 @@ impl HttpClient {
             .body(body)
             .send()
             .await
-            .map_err(HsxError::Network)?;
+            .map_err(FetchiumError::Network)?;
 
         if !resp.status().is_success() {
-            return Err(HsxError::Structured(crate::error::StructuredError {
+            return Err(FetchiumError::Structured(crate::error::StructuredError {
                 kind: Self::status_to_error_kind(resp.status()),
                 retryable: false,
                 message: format!("HTTP {} from {url}", resp.status()),
@@ -325,11 +668,11 @@ impl HttpClient {
             }));
         }
 
-        resp.text().await.map_err(HsxError::Network)
+        resp.text().await.map_err(FetchiumError::Network)
     }
 
     /// POST JSON with retry support (uses the standard retry/rate-limit pipeline).
-    pub async fn post_json(&self, url: &str, body: &str) -> HsxResult<String> {
+    pub async fn post_json(&self, url: &str, body: &str) -> FetchiumResult<String> {
         let resp = self
             .inner
             .post(url)
@@ -337,10 +680,10 @@ impl HttpClient {
             .body(body.to_string())
             .send()
             .await
-            .map_err(HsxError::Network)?;
+            .map_err(FetchiumError::Network)?;
 
         if !resp.status().is_success() {
-            return Err(HsxError::Structured(crate::error::StructuredError {
+            return Err(FetchiumError::Structured(crate::error::StructuredError {
                 kind: Self::status_to_error_kind(resp.status()),
                 retryable: resp.status().is_server_error(),
                 message: format!("HTTP {} from {url}", resp.status()),
@@ -350,7 +693,7 @@ impl HttpClient {
             }));
         }
 
-        resp.text().await.map_err(HsxError::Network)
+        resp.text().await.map_err(FetchiumError::Network)
     }
 
     /// POST JSON with a custom header (e.g., API key in non-standard header).
@@ -360,7 +703,7 @@ impl HttpClient {
         body: &str,
         header_name: &str,
         header_value: &str,
-    ) -> HsxResult<String> {
+    ) -> FetchiumResult<String> {
         let resp = self
             .inner
             .post(url)
@@ -369,10 +712,10 @@ impl HttpClient {
             .body(body.to_string())
             .send()
             .await
-            .map_err(HsxError::Network)?;
+            .map_err(FetchiumError::Network)?;
 
         if !resp.status().is_success() {
-            return Err(HsxError::Structured(crate::error::StructuredError {
+            return Err(FetchiumError::Structured(crate::error::StructuredError {
                 kind: Self::status_to_error_kind(resp.status()),
                 retryable: resp.status().is_server_error(),
                 message: format!("HTTP {} from {url}", resp.status()),
@@ -382,7 +725,7 @@ impl HttpClient {
             }));
         }
 
-        resp.text().await.map_err(HsxError::Network)
+        resp.text().await.map_err(FetchiumError::Network)
     }
 }
 
@@ -392,7 +735,7 @@ mod tests {
 
     #[test]
     fn client_creation() {
-        let config = HsxConfig::default();
+        let config = FetchiumConfig::default();
         let client = HttpClient::new(&config);
         assert!(client.is_ok());
     }
@@ -431,5 +774,24 @@ mod tests {
         ));
         assert!(!HttpClient::is_retryable_status(StatusCode::NOT_FOUND));
         assert!(!HttpClient::is_retryable_status(StatusCode::FORBIDDEN));
+    }
+
+    #[test]
+    fn residential_proxy_is_google_only_by_default() {
+        let client = HttpClient::new(&FetchiumConfig::default()).unwrap();
+        assert!(client.needs_residential_proxy("google.com"));
+        assert!(client.needs_residential_proxy("www.google.com"));
+        assert!(!client.needs_residential_proxy("duckduckgo.com"));
+        assert!(!client.needs_residential_proxy("html.duckduckgo.com"));
+        assert!(!client.needs_residential_proxy("bing.com"));
+    }
+
+    #[test]
+    fn explicit_residential_domain_override_wins() {
+        let mut config = FetchiumConfig::default();
+        config.dataimpulse.proxy_domains = vec!["example.com".into()];
+        let client = HttpClient::new(&config).unwrap();
+        assert!(client.needs_residential_proxy("www.example.com"));
+        assert!(!client.needs_residential_proxy("google.com"));
     }
 }

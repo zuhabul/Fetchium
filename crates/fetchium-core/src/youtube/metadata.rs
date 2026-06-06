@@ -2,7 +2,7 @@
 //!
 //! All functions are pure (no I/O) except `fetch_metadata` which calls APIs.
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::client::HttpClient;
 use crate::youtube::types::*;
 use chrono::{Duration as ChronoDuration, Utc};
@@ -181,8 +181,8 @@ pub fn score_channel_credibility(channel: &ChannelInfo) -> ChannelCredibility {
 pub async fn fetch_metadata(
     video_id: &str,
     http: &HttpClient,
-    config: &crate::config::HsxConfig,
-) -> HsxResult<VideoMetadata> {
+    config: &crate::config::FetchiumConfig,
+) -> FetchiumResult<VideoMetadata> {
     let (tx, mut rx) = tokio::sync::mpsc::channel::<VideoMetadata>(10);
     let timeout = Duration::from_secs(config.youtube.timeout_secs);
 
@@ -275,7 +275,7 @@ pub async fn fetch_metadata(
     }
 
     let mut best = best.ok_or_else(|| {
-        HsxError::YouTube(format!("All metadata sources timed out for {video_id}"))
+        FetchiumError::YouTube(format!("All metadata sources timed out for {video_id}"))
     })?;
 
     // Final enrichment pass: if important fields are still sparse, try yt-dlp.
@@ -357,7 +357,7 @@ fn enrich_metadata(base: &mut VideoMetadata, extra: VideoMetadata) {
     }
 }
 
-async fn fetch_metadata_ytdlp(video_id: &str, timeout: Duration) -> HsxResult<VideoMetadata> {
+async fn fetch_metadata_ytdlp(video_id: &str, timeout: Duration) -> FetchiumResult<VideoMetadata> {
     use tokio::process::Command;
 
     let url = format!("https://www.youtube.com/watch?v={video_id}");
@@ -370,22 +370,22 @@ async fn fetch_metadata_ytdlp(video_id: &str, timeout: Duration) -> HsxResult<Vi
 
     let out = tokio::time::timeout(timeout, fut)
         .await
-        .map_err(|_| HsxError::YouTube(format!("yt-dlp metadata timeout for {video_id}")))?
-        .map_err(|e| HsxError::YouTube(format!("yt-dlp metadata spawn failed: {e}")))?;
+        .map_err(|_| FetchiumError::YouTube(format!("yt-dlp metadata timeout for {video_id}")))?
+        .map_err(|e| FetchiumError::YouTube(format!("yt-dlp metadata spawn failed: {e}")))?;
 
     if !out.status.success() {
-        return Err(HsxError::YouTube(format!(
+        return Err(FetchiumError::YouTube(format!(
             "yt-dlp metadata failed for {video_id}: {}",
             String::from_utf8_lossy(&out.stderr)
         )));
     }
 
     let v: Value = serde_json::from_slice(&out.stdout)
-        .map_err(|e| HsxError::YouTube(format!("yt-dlp metadata JSON parse error: {e}")))?;
+        .map_err(|e| FetchiumError::YouTube(format!("yt-dlp metadata JSON parse error: {e}")))?;
 
     let title = v["title"].as_str().unwrap_or("").to_string();
     if title.is_empty() {
-        return Err(HsxError::YouTube(format!(
+        return Err(FetchiumError::YouTube(format!(
             "yt-dlp metadata empty title for {video_id}"
         )));
     }
@@ -456,7 +456,7 @@ async fn fetch_metadata_innertube(
     video_id: &str,
     http: &HttpClient,
     timeout: Duration,
-) -> HsxResult<VideoMetadata> {
+) -> FetchiumResult<VideoMetadata> {
     let body = serde_json::json!({
         "context": {
             "client": {
@@ -482,27 +482,30 @@ async fn fetch_metadata_innertube(
             .body(body)
             .send()
             .await
-            .map_err(HsxError::Network)?
+            .map_err(FetchiumError::Network)?
             .text()
             .await
-            .map_err(HsxError::Network)
+            .map_err(FetchiumError::Network)
     })
     .await
-    .map_err(|_| HsxError::YouTube(format!("Innertube metadata timeout for {video_id}")))??;
+    .map_err(|_| FetchiumError::YouTube(format!("Innertube metadata timeout for {video_id}")))??;
 
     parse_innertube_player_metadata(&response_text, video_id)
 }
 
 /// Parse video metadata from Innertube player API response.
-fn parse_innertube_player_metadata(json_str: &str, video_id: &str) -> HsxResult<VideoMetadata> {
+fn parse_innertube_player_metadata(
+    json_str: &str,
+    video_id: &str,
+) -> FetchiumResult<VideoMetadata> {
     let v: serde_json::Value = serde_json::from_str(json_str)
-        .map_err(|e| HsxError::YouTube(format!("Innertube metadata JSON: {e}")))?;
+        .map_err(|e| FetchiumError::YouTube(format!("Innertube metadata JSON: {e}")))?;
 
     let vd = &v["videoDetails"];
     let title = vd["title"].as_str().unwrap_or("").to_string();
 
     if title.is_empty() {
-        return Err(HsxError::YouTube(format!(
+        return Err(FetchiumError::YouTube(format!(
             "Innertube returned empty title for {video_id}"
         )));
     }
@@ -575,7 +578,7 @@ async fn fetch_metadata_oembed_direct(
     video_id: &str,
     http: &HttpClient,
     timeout: Duration,
-) -> HsxResult<VideoMetadata> {
+) -> FetchiumResult<VideoMetadata> {
     let encoded_url: String = url::form_urlencoded::byte_serialize(
         format!("https://www.youtube.com/watch?v={video_id}").as_bytes(),
     )
@@ -587,16 +590,16 @@ async fn fetch_metadata_oembed_direct(
             .get(&url)
             .send()
             .await
-            .map_err(HsxError::Network)?
+            .map_err(FetchiumError::Network)?
             .text()
             .await
-            .map_err(HsxError::Network)
+            .map_err(FetchiumError::Network)
     })
     .await
-    .map_err(|_| HsxError::YouTube(format!("oEmbed timeout for {video_id}")))??;
+    .map_err(|_| FetchiumError::YouTube(format!("oEmbed timeout for {video_id}")))??;
 
-    let v: serde_json::Value =
-        serde_json::from_str(&body).map_err(|e| HsxError::YouTube(format!("oEmbed JSON: {e}")))?;
+    let v: serde_json::Value = serde_json::from_str(&body)
+        .map_err(|e| FetchiumError::YouTube(format!("oEmbed JSON: {e}")))?;
 
     let title = v["title"]
         .as_str()
@@ -606,7 +609,7 @@ async fn fetch_metadata_oembed_direct(
     let author = v["author_name"].as_str().unwrap_or("").to_string();
 
     if title.is_empty() {
-        return Err(HsxError::YouTube(format!(
+        return Err(FetchiumError::YouTube(format!(
             "oEmbed empty title for {video_id}"
         )));
     }
@@ -634,9 +637,9 @@ async fn fetch_metadata_oembed_direct(
 }
 
 /// Parse Invidious `/api/v1/videos/{id}` JSON into VideoMetadata.
-fn parse_invidious_video(json_str: &str, video_id: &str) -> HsxResult<VideoMetadata> {
+fn parse_invidious_video(json_str: &str, video_id: &str) -> FetchiumResult<VideoMetadata> {
     let v: Value = serde_json::from_str(json_str)
-        .map_err(|e| HsxError::YouTube(format!("Invidious JSON parse error: {e}")))?;
+        .map_err(|e| FetchiumError::YouTube(format!("Invidious JSON parse error: {e}")))?;
 
     let title = v["title"].as_str().unwrap_or("").to_string();
     let description = v["description"].as_str().unwrap_or("").to_string();
@@ -690,9 +693,9 @@ fn parse_invidious_video(json_str: &str, video_id: &str) -> HsxResult<VideoMetad
 }
 
 /// Parse Piped `/streams/{id}` JSON into VideoMetadata.
-fn parse_piped_video(json_str: &str, video_id: &str) -> HsxResult<VideoMetadata> {
+fn parse_piped_video(json_str: &str, video_id: &str) -> FetchiumResult<VideoMetadata> {
     let v: Value = serde_json::from_str(json_str)
-        .map_err(|e| HsxError::YouTube(format!("Piped JSON parse error: {e}")))?;
+        .map_err(|e| FetchiumError::YouTube(format!("Piped JSON parse error: {e}")))?;
 
     let title = v["title"].as_str().unwrap_or("").to_string();
     let description = v["description"].as_str().unwrap_or("").to_string();

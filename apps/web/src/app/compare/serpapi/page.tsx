@@ -27,7 +27,6 @@ const rows = [
   { feature: "Multi-agent deep research", f: "yes", s: "no" },
   { feature: "YouTube & social search", f: "yes", s: "yes", note: "SerpAPI has YouTube and Google Shopping; Fetchium has dedicated endpoints" },
   { feature: "MCP protocol support", f: "yes", s: "no" },
-  { feature: "Self-hostable", f: "yes", s: "no" },
   { feature: "Google-independent backends", f: "yes", s: "no", note: "SerpAPI depends entirely on Google; Fetchium uses DDG, Brave, SearXNG, etc." },
   { feature: "Legal risk (Google lawsuit)", f: "none", s: "active", note: "Google filed DMCA lawsuit vs SerpAPI, December 2025. Case ongoing." },
   { feature: "Free tier (renewing)", f: "yes", s: "partial", note: "SerpAPI: 100 free searches/month. Fetchium: 1,000/month." },
@@ -139,7 +138,7 @@ export default function CompareSerpAPIPage() {
               <Link href="https://app.fetchium.com/register" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_24px_rgba(99,102,241,0.3)] transition-all">
                 Get API Key Free →
               </Link>
-              <Link href="/docs/quickstart" className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/3 px-6 py-3 text-sm font-semibold text-slate-300 hover:bg-white/6 transition-all">
+              <Link href="https://docs.fetchium.com/quickstart" className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/3 px-6 py-3 text-sm font-semibold text-slate-300 hover:bg-white/6 transition-all">
                 Migration Guide
               </Link>
             </div>

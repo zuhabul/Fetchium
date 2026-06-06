@@ -31,7 +31,6 @@ const rows = [
   { feature: "Cross-session learning", f: "yes", fc: "no" },
   { feature: "YouTube & social search", f: "yes", fc: "no" },
   { feature: "MCP protocol support", f: "yes", fc: "no" },
-  { feature: "Self-hostable", f: "yes", fc: "yes", note: "Firecrawl is open-source (43K+ GitHub stars); Fetchium is also self-hostable" },
   { feature: "Open source", f: "partial", fc: "yes", note: "Firecrawl core is Apache-2.0 open source; Fetchium CLI and core are source-available" },
   { feature: "Free tier (renewing)", f: "yes", fc: "partial", note: "Fetchium: 1K/mo forever. Firecrawl: 500 one-time credits (not renewing)." },
   { feature: "Price per 1K operations", f: "$0.58", fc: "$0.83", note: "Fetchium Growth ($29/mo, 50K) vs Firecrawl Standard ($83/mo, 100K pages)" },
@@ -82,7 +81,7 @@ export default function CompareFirecrawlPage() {
             <p className="text-[13px] text-slate-400 leading-relaxed">
               <strong className="text-slate-300">Firecrawl</strong>: You provide URLs → get clean markdown. Best for crawling known sites, building knowledge bases, structured data extraction.
               <br />
-              <strong className="text-slate-300">Fetchium</strong>: You provide a query → get ranked, extracted, cited results from 11+ backends. Best for RAG pipelines, AI agents, research workflows.
+              <strong className="text-slate-300">Fetchium</strong>: You provide a query → get ranked, extracted, cited results from 17 backends. Best for RAG pipelines, AI agents, research workflows.
             </p>
           </div>
 

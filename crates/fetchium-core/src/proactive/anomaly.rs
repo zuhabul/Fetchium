@@ -3,7 +3,7 @@
 //! Flags significant content changes by comparing the ContentDiff produced
 //! by the monitor module against configurable thresholds.
 
-use crate::error::HsxResult;
+use crate::error::FetchiumResult;
 use crate::monitor::diff::ContentDiff;
 use serde::{Deserialize, Serialize};
 
@@ -41,7 +41,7 @@ pub fn check_anomaly(
     url: &str,
     diff: &ContentDiff,
     cfg: &AnomalyConfig,
-) -> HsxResult<AnomalyReport> {
+) -> FetchiumResult<AnomalyReport> {
     let changed_lines = diff.additions + diff.deletions;
     let is_anomalous =
         diff.similarity < cfg.similarity_threshold || changed_lines >= cfg.min_changed_lines;

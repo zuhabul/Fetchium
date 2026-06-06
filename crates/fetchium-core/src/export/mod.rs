@@ -12,7 +12,7 @@ pub mod pandoc;
 pub use bibtex::generate_bibtex;
 pub use pandoc::{check_pandoc, export_docx, export_pdf};
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use std::path::Path;
 
 /// Supported export formats.
@@ -43,7 +43,7 @@ pub fn export(
     format: ExportFormat,
     output_path: &Path,
     title: Option<&str>,
-) -> Result<(), HsxError> {
+) -> Result<(), FetchiumError> {
     match format {
         ExportFormat::Pdf => export_pdf(content, output_path, title),
         ExportFormat::Docx => export_docx(content, output_path),
@@ -53,7 +53,7 @@ pub fn export(
         }
         ExportFormat::Bibtex => {
             // BibTeX export requires sources — caller must use generate_bibtex() directly.
-            Err(HsxError::Internal(
+            Err(FetchiumError::Internal(
                 "BibTeX export requires sources list — use generate_bibtex() directly".into(),
             ))
         }

@@ -13,7 +13,7 @@ pub mod pkg;
 pub mod qpm;
 pub mod stm;
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use crate::intelligence::intelligence_data_dir;
 
 /// Aggregate statistics across all 4 PIE layers.
@@ -36,10 +36,10 @@ pub struct PersistentIntelligenceEngine {
 
 impl PersistentIntelligenceEngine {
     /// Open all 4 layers from the default intelligence data directory.
-    pub fn new() -> Result<Self, HsxError> {
+    pub fn new() -> Result<Self, FetchiumError> {
         let base = intelligence_data_dir();
         std::fs::create_dir_all(&base).map_err(|e| {
-            HsxError::Io(std::io::Error::new(
+            FetchiumError::Io(std::io::Error::new(
                 e.kind(),
                 format!("Failed to create intelligence dir {}: {e}", base.display()),
             ))
@@ -58,7 +58,7 @@ impl PersistentIntelligenceEngine {
         query: &str,
         result_domains: &[&str],
         topic: &str,
-    ) -> Result<(), HsxError> {
+    ) -> Result<(), FetchiumError> {
         for domain in result_domains {
             self.stm.update_trust(domain, true, 0.7)?;
         }
@@ -77,7 +77,7 @@ impl PersistentIntelligenceEngine {
         error: Option<&str>,
         duration_ms: u64,
         relevance: f64,
-    ) -> Result<(), HsxError> {
+    ) -> Result<(), FetchiumError> {
         let _ = url; // stored implicitly via domain
         self.stm.update_trust(domain, success, relevance)?;
         self.fpm
@@ -86,7 +86,7 @@ impl PersistentIntelligenceEngine {
     }
 
     /// Aggregate statistics across all 4 layers.
-    pub fn stats(&self) -> Result<PieStats, HsxError> {
+    pub fn stats(&self) -> Result<PieStats, FetchiumError> {
         Ok(PieStats {
             entities: self.pkg.entity_count()?,
             relationships: self.pkg.relationship_count()?,
@@ -97,7 +97,7 @@ impl PersistentIntelligenceEngine {
     }
 
     /// Reset all learned data across all layers.
-    pub fn reset_all(&self) -> Result<(), HsxError> {
+    pub fn reset_all(&self) -> Result<(), FetchiumError> {
         self.pkg.reset()?;
         self.stm.reset()?;
         self.fpm.reset()?;
@@ -106,7 +106,7 @@ impl PersistentIntelligenceEngine {
     }
 
     /// Export a human-readable JSON summary of all layers.
-    pub fn export_json(&self) -> Result<String, HsxError> {
+    pub fn export_json(&self) -> Result<String, FetchiumError> {
         let stats = self.stats()?;
         let top_entities = self.pkg.top_entities(20)?;
         let top_domains = self.stm.top_trusted(20)?;

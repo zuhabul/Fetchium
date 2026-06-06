@@ -3,7 +3,7 @@
 use crate::tools::{EstimateInput, ExpandInput, FetchInput, ResearchInput, SearchInput};
 use fetchium_core::cache::MemoryCache;
 use fetchium_core::citation::types::CitationStyle;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::research::pipeline::ResearchPipeline;
 use fetchium_core::research::ResearchConfig;
@@ -12,7 +12,7 @@ use serde_json::{json, Value};
 
 pub async fn handle_search(
     input: SearchInput,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     cache: Option<&MemoryCache>,
 ) -> Value {
@@ -20,11 +20,15 @@ pub async fn handle_search(
     let tier = input.tier.as_deref().unwrap_or("summary");
     let token_budget = input.token_budget.unwrap_or(2000);
 
+    let include_content = input.include_content.unwrap_or(false);
     match fetchium_core::api_facade::search(
-        &input.query,
-        max_sources,
-        tier,
-        token_budget,
+        fetchium_core::api_facade::SearchRequest {
+            query: &input.query,
+            max_sources,
+            tier,
+            token_budget,
+            include_content,
+        },
         config,
         http,
         cache,
@@ -38,14 +42,14 @@ pub async fn handle_search(
 
 pub async fn handle_fetch(
     input: FetchInput,
-    _config: &HsxConfig,
+    _config: &FetchiumConfig,
     http: &HttpClient,
     cache: Option<&MemoryCache>,
 ) -> Value {
     let budget = input.token_budget.unwrap_or(3000);
     let format = input.format.as_deref().unwrap_or("markdown");
 
-    match fetchium_core::api_facade::fetch(&input.url, budget, format, http, cache).await {
+    match fetchium_core::api_facade::fetch(&input.url, budget, format, http, cache, None).await {
         Ok(v) => v,
         Err(e) => json!({ "error": e.to_string() }),
     }
@@ -53,7 +57,7 @@ pub async fn handle_fetch(
 
 pub async fn handle_research(
     input: ResearchInput,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     _cache: Option<&MemoryCache>,
 ) -> Value {
@@ -117,7 +121,7 @@ pub async fn handle_research(
 
 pub async fn handle_estimate(
     input: EstimateInput,
-    _config: &HsxConfig,
+    _config: &FetchiumConfig,
     http: &HttpClient,
     _cache: Option<&MemoryCache>,
 ) -> Value {
@@ -143,7 +147,7 @@ pub async fn handle_estimate(
 
 pub async fn handle_expand(
     input: ExpandInput,
-    _config: &HsxConfig,
+    _config: &FetchiumConfig,
     _http: &HttpClient,
     cache: Option<&MemoryCache>,
 ) -> Value {

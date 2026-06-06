@@ -3,7 +3,7 @@
 use crate::cli::Format;
 use anyhow::Result;
 use colored::Colorize;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::social::twitter::{
     oembed, pipeline as twitter_pipeline, realtime, search, sentiment, trends,
@@ -12,7 +12,11 @@ use fetchium_core::social::twitter::{
 use std::time::Instant;
 
 /// Run the `fetchium twitter` subcommand.
-pub async fn run(args: crate::cli::TwitterArgs, config: &HsxConfig, format: Format) -> Result<()> {
+pub async fn run(
+    args: crate::cli::TwitterArgs,
+    config: &FetchiumConfig,
+    format: Format,
+) -> Result<()> {
     let start = Instant::now();
     let http = HttpClient::new(config)?;
 

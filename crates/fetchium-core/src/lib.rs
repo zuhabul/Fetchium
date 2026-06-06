@@ -72,7 +72,6 @@
 //! | `vector-search` | `usearch` | HNSW approximate nearest-neighbor index |
 //! | `headless` | `chromiumoxide` | CEP layers 3+5, JS rendering, screenshot OCR |
 //! | `mcp` | `rmcp` | MCP protocol support |
-//! | `llama` | `llama-cpp-2` | Local LLaMA inference |
 //!
 //! ## Prelude
 //!
@@ -81,6 +80,12 @@
 //! ```rust
 //! use fetchium_core::prelude::*;
 //! ```
+
+// Stylistic lints introduced by newer clippy toolchains; the flagged call sites are
+// intentional/borrow-sensitive. Allow crate-wide to keep CI stable across toolchain
+// updates; revisit opportunistically.
+#![allow(clippy::unnecessary_sort_by)]
+#![allow(clippy::manual_checked_ops)]
 
 pub mod api_facade;
 pub mod config;
@@ -140,6 +145,7 @@ pub mod multimodal;
 pub mod plugin;
 pub mod privacy;
 pub mod proactive;
+pub mod proxy;
 
 // Environment setup utilities (Chromium download, path resolution, checks)
 pub mod setup;
@@ -155,8 +161,8 @@ pub mod test_utils;
 
 /// Re-export commonly used types.
 pub mod prelude {
-    pub use crate::config::HsxConfig;
-    pub use crate::error::{HsxError, HsxResult};
+    pub use crate::config::FetchiumConfig;
+    pub use crate::error::{FetchiumError, FetchiumResult};
     pub use crate::rank::{detect_intent, hyperfusion_rank, QueryIntent};
     pub use crate::types::*;
 }

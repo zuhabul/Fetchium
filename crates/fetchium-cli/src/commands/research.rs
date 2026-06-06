@@ -2,14 +2,14 @@
 
 use crate::cli::ResearchArgs;
 use fetchium_core::citation::types::CitationStyle as CoreCitationStyle;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::research::pipeline::ResearchPipeline;
 use fetchium_core::research::ResearchConfig;
 use fetchium_core::validate::types::ValidationMode;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::{Duration, Instant};
 
-pub async fn run(args: ResearchArgs, config_obj: &HsxConfig) -> anyhow::Result<()> {
+pub async fn run(args: ResearchArgs, config_obj: &FetchiumConfig) -> anyhow::Result<()> {
     let start = Instant::now();
 
     let citation_style = match args.citations {

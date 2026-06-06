@@ -3,7 +3,7 @@
 //! Stores SHA-256 content hashes + full content snapshots in SQLite.
 //! Change detection is O(1) via hash comparison.
 
-use crate::error::HsxError;
+use crate::error::FetchiumError;
 use rusqlite::{Connection, OptionalExtension};
 use sha2::{Digest, Sha256};
 use std::path::PathBuf;
@@ -36,7 +36,7 @@ pub struct SnapshotStore {
 
 impl SnapshotStore {
     /// Open or create the snapshot database.
-    pub fn new() -> Result<Self, HsxError> {
+    pub fn new() -> Result<Self, FetchiumError> {
         let path = default_db_path();
         if let Some(p) = path.parent() {
             std::fs::create_dir_all(p)?;
@@ -65,7 +65,7 @@ impl SnapshotStore {
     }
 
     /// Open the snapshot database at a custom path (useful for tests).
-    pub fn new_at(path: &std::path::Path) -> Result<Self, HsxError> {
+    pub fn new_at(path: &std::path::Path) -> Result<Self, FetchiumError> {
         if let Some(p) = path.parent() {
             std::fs::create_dir_all(p)?;
         }
@@ -93,7 +93,7 @@ impl SnapshotStore {
     }
 
     /// Save a new snapshot. Returns `true` if the content changed since last snapshot.
-    pub fn save_snapshot(&self, url: &str, content: &str) -> Result<bool, HsxError> {
+    pub fn save_snapshot(&self, url: &str, content: &str) -> Result<bool, FetchiumError> {
         let hash = sha256_hex(content);
         let conn = self.conn.lock().unwrap();
 
@@ -122,7 +122,7 @@ impl SnapshotStore {
     }
 
     /// Get the most recent snapshot for a URL.
-    pub fn get_latest(&self, url: &str) -> Result<Option<Snapshot>, HsxError> {
+    pub fn get_latest(&self, url: &str) -> Result<Option<Snapshot>, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let result = conn
             .query_row(
@@ -144,7 +144,7 @@ impl SnapshotStore {
     }
 
     /// Get the previous snapshot (second-latest) for a URL.
-    pub fn get_previous(&self, url: &str) -> Result<Option<Snapshot>, HsxError> {
+    pub fn get_previous(&self, url: &str) -> Result<Option<Snapshot>, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let result = conn
             .query_row(
@@ -171,7 +171,7 @@ impl SnapshotStore {
         url: &str,
         interval_secs: u64,
         notify_method: Option<&str>,
-    ) -> Result<(), HsxError> {
+    ) -> Result<(), FetchiumError> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
             "INSERT INTO monitors (url, interval_secs, notify_method) VALUES (?1, ?2, ?3)
@@ -183,14 +183,14 @@ impl SnapshotStore {
     }
 
     /// Unregister a URL from monitoring.
-    pub fn unregister(&self, url: &str) -> Result<bool, HsxError> {
+    pub fn unregister(&self, url: &str) -> Result<bool, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let rows = conn.execute("DELETE FROM monitors WHERE url = ?1", [url])?;
         Ok(rows > 0)
     }
 
     /// List all monitored URLs.
-    pub fn list_monitors(&self) -> Result<Vec<MonitorEntry>, HsxError> {
+    pub fn list_monitors(&self) -> Result<Vec<MonitorEntry>, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let mut stmt =
             conn.prepare("SELECT url, interval_secs, last_checked, notify_method FROM monitors")?;
@@ -208,7 +208,7 @@ impl SnapshotStore {
     }
 
     /// Prune old snapshots, keeping at most `keep` per URL.
-    pub fn prune_old_snapshots(&self, keep: usize) -> Result<usize, HsxError> {
+    pub fn prune_old_snapshots(&self, keep: usize) -> Result<usize, FetchiumError> {
         let conn = self.conn.lock().unwrap();
         let deleted = conn.execute(
             &format!(

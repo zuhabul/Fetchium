@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "query": "what are the symptoms of long covid in adults 2025",
+    "mode": "search",
+    "tier": "summary",
+    "tokens_used": 0,
+    "tokens_budget": 4000,
+    "sources_fetched": 3,
+    "sources_validated": 3,
+    "validation_pass_rate": 1.0,
+    "duration_ms": 3436,
+    "resource_tier": "standard",
+    "timestamp": "2026-03-10T14:09:34.181482940+00:00",
+    "result_id": "b3da331c-3ebc-4598-b800-ba0b9fbf80d1",
+    "content_hashes": {}
+  },
+  "items": [
+    {
+      "title": "Long COVID Signs and Symptoms",
+      "url": "https://www.cdc.gov/long-covid/signs-symptoms/index.html",
+      "snippet": ". Most people with Long COVID symptoms see significant improvement after 3 months, while others may see improvement up to 6 months after symptoms first appear. Some people may experience health problems from different types and combinations of symptoms that require comprehensive  ...    Long COVID symptoms and conditions can result in disability. Talk to your healthcare provider if you think you or your child has Long COVID.\n\n## Signs and symptoms Long COVID symptoms can last weeks, months, or even years. People with Long COVID can have a wide variety of symptoms that can range from mild to severe and may be similar to symptoms from other illnesses. Symptoms can last weeks, months, or years after COVID-19 illness and can emerge, persist, resolve, and reemerge over different lengths of time. Long COVID may not affect everyone the same way. Some people can experience health problems from different types and combinations of symptoms that may: - Result in disability\n- Require comprehensive care\n- Be difficult to recognize or diagnose\n\n### Fact Fatigue, brain fog, and post-exertional malaise (PEM) are commonly reported symptoms, but more than 200 Long COVID symptoms have been identified. 123 Other commonly reported symptoms (not a comprehensive list):\n\nGeneral symptoms - Fever\n- Symptoms that get worse after physical or mental effort - Tiredness or fatigue that interferes with daily life Respiratory and heart symptoms - Fast-beating or pounding heart (also known as heart palpitations)\n- Chest pain\n- Coughing - Difficulty breathing or shortness of breath Neurological symptoms - Depression or anxiety\n- Change in smell or taste\n- Pins-and-needles feelings - Dizziness when you stand up (lightheadedness)\n- Sleep problems\n- Headaches - Difficulty thinking or concentrating (sometimes referred to as \"brain fog\") Digestive Symptoms\n\n- Constipation\n- Stomach pain\n- Diarrhea\n\nOther symptoms  ...    Some people with Long COVID have symptoms that are hard to explain or difficult to manage. There is no laboratory  ...    lasting weeks, months, or even years after COVID-19 illness. 45 Multi-organ effects can involve many body systems, including the heart, lungs, kidneys, skin, and brain. 3 Symptoms for many of these multi-organ complications are similar to commonly reported Long COVID symptoms. As a result of these effects, people who have had COVID-19 may be  ...    (PICS). While PICS is not specific to infection with SARS-CoV-2, the virus that causes COVID-19, it may  ...    ## Resources\n\n### Disability\n\n- Guidance on \"Long COVID\" as a Disability Under the ADA  ...    ### Mental Health\n\n- For patients with long COVID, look out for psychiatric sequelae\n\nJuly 24, 2025 Sources Print Share\n\nContent Source:\n\nNational Center for Immunization and Respiratory Diseases (NCIRD)  ...    1. Wood MS, Halmer N, Bertolli J, et al. (2024) Impact of COVID-19 on myalgic encephalomyelitis/chronic fatigue  ...    https://doi.org/10.1371/journal.pone.0309810.  ...    3. Hatakeyama J, Inoue S, Liu K, et al. Prevalence and Risk Factor Analysis of Post-Intensive Care Syndrome in Patients  ...    4. Iqbal P, Ata F, Chaudhry H, et al. Post-COVID-19-associated multiorgan complications or \"long COVID\" with literature review and management strategy discussion: A meta-analysis. Health Sci Rep. 2023 Apr 14;6(4):e1211. doi:  ...    https://doi.org/10.17226/27768. 7. Thaweethai T, Jolley SE, Karlson EW, et al. Development of a Definition of Postacute Sequelae of SARS-CoV-2 Infection. JAMA. 2023;329(22):1934–1946. doi: 10.1001/jama.2023.8823. 8. Perlis RH, Santillana M, Ognyanova K, et al. Prevalence and Correlates of Long COVID Symptoms Among US Adults. JAMA Netw Open. 2022;5(10):e2238804. doi: [10.1001/jamanetworkopen.2022.38804",
+      "rank": 1,
+      "backend": "exa",
+      "score": 1.0
+    },
+    {
+      "title": "Long COVID: Lasting effects of COVID-19 - Mayo Clinic",
+      "url": "https://www.mayoclinic.org/diseases-conditions/coronavirus/in-depth/coronavirus-long-term-effects/art-20490351",
+      "snippet": "What are the most common symptoms of long COVID? · Sleep problems. · Shortness of breath. · Cough. · Headache. · Fast or irregular heartbeat.",
+      "rank": 2,
+      "backend": "firecrawl",
+      "score": 0.5126666390168263
+    },
+    {
+      "title": "Long COVID 2025: Symptoms, diagnosis, post-COVID treatments ...",
+      "url": "https://www.ama-assn.org/public-health/infectious-diseases/long-covid-2025-symptoms-diagnosis-post-covid-treatments-and",
+      "snippet": "There's post-exertional malaise and hormonal dysregulation and sleep disturbance. These are all common manifestations of long COVID that are not ...",
+      "rank": 3,
+      "backend": "firecrawl",
+      "score": 0.0
+    }
+  ]
+}

@@ -3,7 +3,7 @@
 use anyhow::{Context, Result};
 use fetchium_core::compare::parser::parse_comparison_query;
 use fetchium_core::compare::{build_comparison, build_comparison_ai_unified};
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::search::orchestrator::{OrchestratorConfig, SearchOrchestrator};
 use std::sync::Arc;
@@ -11,7 +11,7 @@ use std::time::Instant;
 
 use crate::cli::{CompareArgs, Format};
 
-pub async fn run(args: CompareArgs, config: &HsxConfig, format: Format) -> Result<()> {
+pub async fn run(args: CompareArgs, config: &FetchiumConfig, format: Format) -> Result<()> {
     let start = Instant::now();
     let parsed = parse_comparison_query(&args.query);
 
@@ -34,7 +34,7 @@ pub async fn run(args: CompareArgs, config: &HsxConfig, format: Format) -> Resul
     spinner.enable_steady_tick(std::time::Duration::from_millis(100));
 
     let http = HttpClient::new(config).context("Failed to build HTTP client")?;
-    let orch_config = OrchestratorConfig::from_hsx_config(config, args.max_sources as u32);
+    let orch_config = OrchestratorConfig::from_fetchium_config(config, args.max_sources as u32);
     let orchestrator = Arc::new(SearchOrchestrator::new(http.clone(), orch_config));
 
     // Detect the comparison domain from the original query for disambiguation.

@@ -17,6 +17,9 @@ description = "Fetchium — the universal retrieval layer for the internet"
 
 
 [workspace.dependencies]
+# System
+libc = "0.2"
+
 # Async runtime
 tokio = { version = "1", features = ["full"] }
 
@@ -85,6 +88,8 @@ similar = "2"
 # Encryption (privacy module)
 aes-gcm = "0.10"
 argon2 = "0.5"
+totp-rs = { version = "5", features = ["otpauth"] }
+base32 = "0.4"
 
 # TUI
 ratatui = "0.29"
@@ -110,12 +115,12 @@ zip = { version = "2", default-features = false, features = ["deflate"] }
 ammonia = "4"
 
 # HTTP API server
-axum = { version = "0.7", features = ["json", "macros"] }
+axum = { version = "0.7", features = ["json", "macros", "ws"] }
 tower = { version = "0.4" }
 tower-http = { version = "0.5", features = ["cors", "trace", "timeout", "limit", "request-id", "set-header"] }
 
 # Core library (internal)
-fetchium-core = { path = "crates/fetchium-core" }
+fetchium-core = { path = "crates/fetchium-core", features = ["embeddings"] }
 
 [profile.release]
 opt-level = 3

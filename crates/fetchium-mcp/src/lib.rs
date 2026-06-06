@@ -3,12 +3,7 @@
 //! Implements the MCP protocol as JSON-RPC 2.0 over stdio.
 //! All log output goes to stderr; all MCP protocol output goes to stdout.
 //!
-//! Provides 5 composite tools:
-//! - `hypersearch_search`   — multi-backend search + ranking
-//! - `hypersearch_fetch`    — URL fetching + CEP extraction
-//! - `hypersearch_research` — full research pipeline with citations
-//! - `hypersearch_estimate` — token cost estimation
-//! - `hypersearch_expand`   — PDS tier expansion of previous results
+//! Provides Fetchium-branded composite tools over MCP.
 
 pub mod handlers;
 pub mod tools;
@@ -18,13 +13,21 @@ use crate::tools::{
     ResearchInput, SearchInput, SocialResearchInput, YouTubeAnalyzeInput, YouTubeSearchInput,
     YouTubeTranscriptInput, YouTubeWatchInput,
 };
+use axum::{
+    extract::State,
+    http::StatusCode,
+    routing::{get, post},
+    Json, Router,
+};
 use fetchium_core::cache::MemoryCache;
-use fetchium_core::config::HsxConfig;
+use fetchium_core::config::FetchiumConfig;
 use fetchium_core::http::client::HttpClient;
 use fetchium_core::summarize::SummarizeConfig;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::io::{self, BufRead, Write};
+use std::sync::Arc;
+use tower_http::trace::{DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 
 // ─── JSON-RPC 2.0 types ──────────────────────────────────────────
 
@@ -53,6 +56,13 @@ struct JsonRpcError {
     message: String,
 }
 
+#[derive(Clone)]
+struct McpHttpState {
+    config: FetchiumConfig,
+    http: HttpClient,
+    cache: MemoryCache,
+}
+
 impl JsonRpcResponse {
     fn ok(id: Value, result: Value) -> Self {
         Self {
@@ -77,7 +87,7 @@ impl JsonRpcResponse {
 ///
 /// Reads JSON-RPC requests from stdin line by line, dispatches to handlers,
 /// and writes JSON-RPC responses to stdout. All diagnostics go to stderr.
-pub async fn run_mcp_stdio(config: HsxConfig) -> anyhow::Result<()> {
+pub async fn run_mcp_stdio(config: FetchiumConfig) -> anyhow::Result<()> {
     eprintln!("[fetchium-mcp] Fetchium MCP server starting (stdio transport)");
 
     let http = HttpClient::new(&config)?;
@@ -114,10 +124,38 @@ pub async fn run_mcp_stdio(config: HsxConfig) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Run the MCP server over HTTP JSON-RPC on `/mcp`.
+pub async fn run_mcp_http(config: FetchiumConfig, port: u16) -> anyhow::Result<()> {
+    let http = HttpClient::new(&config)?;
+    let cache = MemoryCache::new(50, 3600, true);
+    let state = Arc::new(McpHttpState {
+        config,
+        http,
+        cache,
+    });
+
+    let app = Router::new()
+        .route("/health", get(mcp_health))
+        .route("/mcp", post(mcp_http_handler))
+        .layer(
+            TraceLayer::new_for_http()
+                .on_request(DefaultOnRequest::new().level(tracing::Level::INFO))
+                .on_response(DefaultOnResponse::new().level(tracing::Level::INFO))
+                .on_failure(DefaultOnFailure::new().level(tracing::Level::ERROR)),
+        )
+        .with_state(state);
+
+    let addr = format!("0.0.0.0:{port}");
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    eprintln!("[fetchium-mcp] Fetchium MCP server starting (http transport) on http://{addr}/mcp");
+    axum::serve(listener, app).await?;
+    Ok(())
+}
+
 /// Dispatch a single JSON-RPC message line and return the response.
 async fn handle_message(
     line: &str,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     cache: &MemoryCache,
 ) -> JsonRpcResponse {
@@ -128,6 +166,15 @@ async fn handle_message(
         }
     };
 
+    handle_request(req, config, http, cache).await
+}
+
+async fn handle_request(
+    req: JsonRpcRequest,
+    config: &FetchiumConfig,
+    http: &HttpClient,
+    cache: &MemoryCache,
+) -> JsonRpcResponse {
     let id = req.id.clone().unwrap_or(Value::Null);
     let params = req.params.unwrap_or(Value::Null);
 
@@ -183,32 +230,49 @@ async fn handle_message(
     }
 }
 
+async fn mcp_health() -> Json<Value> {
+    Json(json!({
+        "status": "ok",
+        "service": "fetchium-mcp",
+        "transport": "http",
+        "version": env!("CARGO_PKG_VERSION"),
+    }))
+}
+
+async fn mcp_http_handler(
+    State(state): State<Arc<McpHttpState>>,
+    Json(req): Json<JsonRpcRequest>,
+) -> (StatusCode, Json<JsonRpcResponse>) {
+    let response = handle_request(req, &state.config, &state.http, &state.cache).await;
+    (StatusCode::OK, Json(response))
+}
+
 /// Dispatch a `tools/call` to the appropriate handler.
 async fn dispatch_tool(
     name: &str,
     args: Value,
-    config: &HsxConfig,
+    config: &FetchiumConfig,
     http: &HttpClient,
     cache: &MemoryCache,
 ) -> Value {
     match name {
-        "hypersearch_search" => match serde_json::from_value::<SearchInput>(args) {
+        "fetchium_search" => match serde_json::from_value::<SearchInput>(args) {
             Ok(input) => handlers::handle_search(input, config, http, Some(cache)).await,
             Err(e) => json!({ "error": format!("Invalid input: {e}") }),
         },
-        "hypersearch_fetch" => match serde_json::from_value::<FetchInput>(args) {
+        "fetchium_fetch" => match serde_json::from_value::<FetchInput>(args) {
             Ok(input) => handlers::handle_fetch(input, config, http, Some(cache)).await,
             Err(e) => json!({ "error": format!("Invalid input: {e}") }),
         },
-        "hypersearch_research" => match serde_json::from_value::<ResearchInput>(args) {
+        "fetchium_research" => match serde_json::from_value::<ResearchInput>(args) {
             Ok(input) => handlers::handle_research(input, config, http, Some(cache)).await,
             Err(e) => json!({ "error": format!("Invalid input: {e}") }),
         },
-        "hypersearch_estimate" => match serde_json::from_value::<EstimateInput>(args) {
+        "fetchium_estimate" => match serde_json::from_value::<EstimateInput>(args) {
             Ok(input) => handlers::handle_estimate(input, config, http, Some(cache)).await,
             Err(e) => json!({ "error": format!("Invalid input: {e}") }),
         },
-        "hypersearch_expand" => match serde_json::from_value::<ExpandInput>(args) {
+        "fetchium_expand" => match serde_json::from_value::<ExpandInput>(args) {
             Ok(input) => handlers::handle_expand(input, config, http, Some(cache)).await,
             Err(e) => json!({ "error": format!("Invalid input: {e}") }),
         },
@@ -424,11 +488,12 @@ async fn dispatch_tool(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use fetchium_core::config::FetchiumConfig;
 
     #[test]
     fn tool_definitions_has_correct_count() {
         let tools = tools::tool_definitions();
-        // 5 original + 4 YouTube + 3 social tools
+        // 5 fetchium core + 4 YouTube + 3 social tools
         assert_eq!(tools.len(), 12);
     }
 
@@ -439,10 +504,32 @@ mod tests {
             .iter()
             .filter_map(|t| t.get("name").and_then(|n| n.as_str()))
             .collect();
-        assert!(names.contains(&"hypersearch_search"));
-        assert!(names.contains(&"hypersearch_fetch"));
-        assert!(names.contains(&"hypersearch_research"));
-        assert!(names.contains(&"hypersearch_estimate"));
-        assert!(names.contains(&"hypersearch_expand"));
+        assert!(names.contains(&"fetchium_search"));
+        assert!(names.contains(&"fetchium_fetch"));
+        assert!(names.contains(&"fetchium_research"));
+        assert!(names.contains(&"fetchium_estimate"));
+        assert!(names.contains(&"fetchium_expand"));
+    }
+
+    #[tokio::test]
+    async fn initialize_request_returns_fetchium_server_info() {
+        let config = FetchiumConfig::default();
+        let http = HttpClient::new(&config).unwrap();
+        let cache = MemoryCache::new(10, 60, true);
+        let response = handle_request(
+            JsonRpcRequest {
+                jsonrpc: "2.0".into(),
+                id: Some(json!(1)),
+                method: "initialize".into(),
+                params: Some(json!({})),
+            },
+            &config,
+            &http,
+            &cache,
+        )
+        .await;
+
+        let result = response.result.unwrap();
+        assert_eq!(result["serverInfo"]["name"], "fetchium");
     }
 }

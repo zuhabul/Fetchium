@@ -2,7 +2,7 @@
 
 > **"Make all the world's information instantly accessible, deeply understood, and reliably verified."**
 
-*Formerly HyperSearchX. Now Fetchium: the universal retrieval layer for the internet.*
+*Formerly Fetchium. Now Fetchium: the universal retrieval layer for the internet.*
 
 ---
 
@@ -146,7 +146,7 @@ Fetchium is built on four non-negotiable values. These are not aspirations. They
 - **Connection pooling**: HTTP connections are pooled and reused. Repeated queries to the same backends do not pay TCP handshake costs.
 - **Lock-free telemetry**: Metrics collection uses atomic operations, never mutexes. Measuring performance does not cost performance.
 
-**The result:** On a standard developer laptop, `hsx ai "what is the capital of France"` completes in under 3 seconds end-to-end (search: 800ms, fetch: 200ms, AI synthesis: 1.5s). On a server with SearXNG colocated, total latency drops to under 1.5 seconds.
+**The result:** On a standard developer laptop, `fetchium ai "what is the capital of France"` completes in under 3 seconds end-to-end (search: 800ms, fetch: 200ms, AI synthesis: 1.5s). On a server with SearXNG colocated, total latency drops to under 1.5 seconds.
 
 **The commitment:** Every new feature is benchmarked. If it makes the happy path slower, it does not ship in its current form.
 
@@ -191,7 +191,7 @@ Fetchium is built on four non-negotiable values. These are not aspirations. They
 
 **What we built:**
 
-- **MIT-licensed core**: `hsx-core` and `hsx-cli` are MIT-licensed. Use them in commercial products. Modify them. Build on them. No restrictions.
+- **MIT-licensed core**: `fetchium-core` and `fetchium-cli` are MIT-licensed. Use them in commercial products. Modify them. Build on them. No restrictions.
 - **Public algorithms**: All 20+ novel algorithms are documented in the PRD. The implementation is in the open. Competitors can read our code. We improve by being challenged, not by being opaque.
 - **Plugin architecture**: The system is designed for extensibility. Custom backends, custom extractors, custom ranking signals — all can be added without forking the core.
 - **Community governance**: RFC process for major changes. Public roadmap. Community voting on feature priorities. No decisions made in private that affect the open-source users.
@@ -284,13 +284,13 @@ Fetchium unifies information retrieval across every domain through a single inte
 
 **The unified interface:**
 ```bash
-hsx fetch --mode web "your question"
-hsx fetch --mode video "your question"
-hsx fetch --mode research "your question"
-hsx fetch --mode social "your question"
-hsx fetch --mode data "your question"
-hsx fetch --mode deep "your question"
-hsx fetch --mode monitor "your topic" --interval 1h
+fetchium fetch --mode web "your question"
+fetchium fetch --mode video "your question"
+fetchium fetch --mode research "your question"
+fetchium fetch --mode social "your question"
+fetchium fetch --mode data "your question"
+fetchium fetch --mode deep "your question"
+fetchium fetch --mode monitor "your topic" --interval 1h
 ```
 
 Or through the API:
@@ -544,7 +544,7 @@ Information retrieval that improves over time is qualitatively different from re
 - **Query prediction**: Based on query history and in-progress query context, Fetchium can prefetch likely follow-up sources before you ask the follow-up question.
 - **Failure pattern learning**: When a backend fails, extraction fails, or AI synthesis produces a low-quality result, the failure is recorded. Future queries avoid the same failure modes.
 
-**Privacy guarantee:** All PIE data is stored locally in `~/.hypersearchx/pie.db`. A single `hsx forget --all` command deletes it. The data is never sent to any external service.
+**Privacy guarantee:** All PIE data is stored locally in `~/.fetchium/pie.db`. A single `fetchium forget --all` command deletes it. The data is never sent to any external service.
 
 **LP (Latency Predictor):** Predicts expected latency for a given query based on backend health history, recent latency measurements, and query complexity. Informs timeout settings and user-facing progress indicators.
 
@@ -567,14 +567,14 @@ Knowledge that cannot be acted on is not useful. ACT is the layer that makes Fet
 - Works with Claude Desktop, Claude Code, and any MCP client
 
 **CLI:**
-- `hsx` binary — zero dependencies, single statically-linked binary
+- `fetchium` binary — zero dependencies, single statically-linked binary
 - Full feature parity with the API
 - Shell completion for bash, zsh, fish
 - Structured output modes: JSON, table, markdown, plain
 - TUI mode for interactive exploration
 
 **SDK (planned, Phase 4):**
-- Rust crate (`hsx-core`) — use the full pipeline in your Rust application
+- Rust crate (`fetchium-core`) — use the full pipeline in your Rust application
 - Python bindings (`fetchium-py`) — via PyO3
 - Node.js bindings (`fetchium-node`) — via Neon
 - TypeScript types for the REST API (auto-generated)
@@ -1162,11 +1162,11 @@ This goal is not just marketing aspiration. It is a product constraint. The prod
 
 *Wrong:* "Oops! We couldn't find that! 🙈 Try searching again later!"
 
-*Right:* "No results matched. The query may be too narrow or the sources may be temporarily unavailable. Try broadening the query or checking `hsx doctor`."
+*Right:* "No results matched. The query may be too narrow or the sources may be temporarily unavailable. Try broadening the query or checking `fetchium doctor`."
 
 *Wrong:* "Our proprietary algorithms ensure maximum retrieval quality."
 
-*Right:* "We use BM25 + semantic + temporal + authority scoring. You can read the algorithm source in `crates/hsx-core/src/rank/fusion.rs`."
+*Right:* "We use BM25 + semantic + temporal + authority scoring. You can read the algorithm source in `crates/fetchium-core/src/rank/fusion.rs`."
 
 ---
 
@@ -1204,7 +1204,7 @@ Fetchium follows this playbook precisely. The product is the marketing. The deve
 **Goal: 100,000 developers using the free tier**
 
 **How:**
-- Launch CLI on Homebrew, `cargo install hsx`, npm install hypersearchx
+- Launch CLI on Homebrew, `cargo install fetchium`, npm install fetchium
 - Submit to Hacker News Show HN, Reddit r/rust, r/MachineLearning, r/LocalLLaMA
 - Publish technical deep-dives: "How we built a 5-layer content extraction pipeline in Rust"
 - LangChain and LlamaIndex integrations in the standard library
@@ -1632,7 +1632,7 @@ The brand evolves in four stages, each reflecting where Fetchium is in its journ
 
 **Key assets:**
 - An exceptional GitHub README that demonstrates the product in the first scroll
-- A compelling `hsx` CLI that impresses on first use
+- A compelling `fetchium` CLI that impresses on first use
 - Technical blog posts that show the algorithms
 - A Show HN post that generates top-100 comments
 
@@ -1741,11 +1741,11 @@ The product has to earn each message. The tagline does not evolve because of a m
 | Milestone | Target Date | Success Metric |
 |-----------|------------|---------------|
 | 20 algorithms implemented, 941 tests passing | Complete | Cargo test: 0 failures |
-| Production deployment (API + web) | Complete | https://api.hypersearchx.zuhabul.com live |
-| Rename HyperSearchX → Fetchium | Q1 2026 | Brand migration complete |
+| Production deployment (API + web) | Complete | https://api.fetchium.zuhabul.com live |
+| Rename Fetchium → Fetchium | Q1 2026 | Brand migration complete |
 | LangChain integration | Q1 2026 | PR merged to langchain repo |
 | LlamaIndex integration | Q1 2026 | PR merged to llamaindex repo |
-| MCP server (Phase 4) | Q2 2026 | `hsx serve --mode mcp` works |
+| MCP server (Phase 4) | Q2 2026 | `fetchium serve --mode mcp` works |
 | Embeddings support (ONNX) | Q2 2026 | `cargo build --features embeddings` |
 | Python bindings | Q3 2026 | `pip install fetchium` works |
 | Kubernetes Helm chart | Q3 2026 | `helm install fetchium fetchium/fetchium` |
@@ -1785,4 +1785,4 @@ That is the promise. Everything else — the algorithms, the architecture, the b
 
 *Fetchium — The Universal Retrieval Layer*
 *Document version: 1.0 | February 2026*
-*Contact: zuhabul@hypersearchx.com | https://hypersearchx.zuhabul.com*
+*Contact: zuhabul@fetchium.com | https://fetchium.zuhabul.com*

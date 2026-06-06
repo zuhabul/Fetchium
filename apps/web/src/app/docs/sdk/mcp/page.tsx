@@ -15,16 +15,21 @@ export default function McpSDK() {
         the REST API.
       </p>
 
+      <p>
+        Use stdio for local agent integration, or run the HTTP MCP endpoint on <code>/mcp</code>
+        for remote deployments with <code>fetchium serve --mode mcp --transport http</code>.
+      </p>
+
       <h2>Available MCP tools (12)</h2>
       <table>
         <thead><tr><th>Tool name</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td><code>hypersearch_search</code></td><td>Web search with ranking + extraction</td></tr>
-          <tr><td><code>hypersearch_fetch</code></td><td>Query-aware URL extraction</td></tr>
-          <tr><td><code>hypersearch_research</code></td><td>Deep multi-source research</td></tr>
-          <tr><td><code>hypersearch_estimate</code></td><td>Token cost estimate before fetch</td></tr>
-          <tr><td><code>hypersearch_expand</code></td><td>Progressive detail expansion</td></tr>
-          <tr><td><code>youtube_search</code></td><td>YouTube search with VideoFusion ranking</td></tr>
+          <tr><td><code>fetchium_search</code></td><td>Web search with ranking + extraction</td></tr>
+          <tr><td><code>fetchium_fetch</code></td><td>Query-aware URL extraction</td></tr>
+          <tr><td><code>fetchium_research</code></td><td>Deep multi-source research</td></tr>
+          <tr><td><code>fetchium_estimate</code></td><td>Token cost estimate before fetch</td></tr>
+          <tr><td><code>fetchium_expand</code></td><td>Progressive detail expansion</td></tr>
+        <tr><td><code>youtube_search</code></td><td>YouTube search with VideoFusion ranking</td></tr>
           <tr><td><code>youtube_analyze</code></td><td>Single-video deep analysis</td></tr>
           <tr><td><code>youtube_watch</code></td><td>Unified watch report (metadata + transcript + moments)</td></tr>
           <tr><td><code>youtube_transcript</code></td><td>Transcript extraction with quality and key moments</td></tr>
@@ -55,15 +60,18 @@ export default function McpSDK() {
 }`} />
 
       <h2>Smoke test</h2>
-      <CodeBlock language="bash" code={`fetchium serve --mode mcp`} />
+      <CodeBlock language="bash" code={`fetchium serve --mode mcp --transport http --port 3471
+curl -X POST http://127.0.0.1:3471/mcp \\
+  -H "Content-Type: application/json" \\
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'`} />
 
       <h2>Next steps</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 not-prose">
         {[
-          { href: "/docs/api/search", title: "Search API", desc: "REST endpoint reference" },
-          { href: "/docs/api/youtube", title: "YouTube API", desc: "Video search and analysis" },
-          { href: "/docs/api/social", title: "Social API", desc: "Cross-platform social research" },
-          { href: "/docs/quickstart", title: "Quick Start", desc: "Get started fast" },
+          { href: "https://docs.fetchium.com/api/search", title: "Search API", desc: "REST endpoint reference" },
+          { href: "https://docs.fetchium.com/api/youtube", title: "YouTube API", desc: "Video search and analysis" },
+          { href: "https://docs.fetchium.com/api/social", title: "Social API", desc: "Cross-platform social research" },
+          { href: "https://docs.fetchium.com/quickstart", title: "Quick Start", desc: "Get started fast" },
         ].map((l) => (
           <Link key={l.href} href={l.href} className="glass-card rounded-xl p-4 no-underline group">
             <div className="font-medium text-slate-200 text-sm group-hover:text-indigo-300 transition-colors">{l.title} →</div>

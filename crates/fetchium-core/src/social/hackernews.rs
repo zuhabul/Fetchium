@@ -6,7 +6,7 @@
 //! - Firebase: `https://hacker-news.firebaseio.com/v0/`
 //! - Algolia: `https://hn.algolia.com/api/v1/search?query=...`
 
-use crate::error::{HsxError, HsxResult};
+use crate::error::{FetchiumError, FetchiumResult};
 use crate::http::client::HttpClient;
 use crate::social::types::{score_sentiment, EngagementMetrics, SocialPlatform, SocialPost};
 use serde::{Deserialize, Serialize};
@@ -53,7 +53,7 @@ pub async fn search_stories(
     max: usize,
     http: &HttpClient,
     timeout_secs: u64,
-) -> HsxResult<Vec<HnStory>> {
+) -> FetchiumResult<Vec<HnStory>> {
     let encoded: String = url::form_urlencoded::byte_serialize(query.as_bytes()).collect();
     // Sort by relevance, only stories
     let url = format!(
@@ -62,11 +62,11 @@ pub async fn search_stories(
 
     let body = tokio::time::timeout(Duration::from_secs(timeout_secs), http.fetch_text(&url))
         .await
-        .map_err(|_| HsxError::Internal("Request timeout".into()))?
-        .map_err(|e| HsxError::Search(e.to_string()))?;
+        .map_err(|_| FetchiumError::Internal("Request timeout".into()))?
+        .map_err(|e| FetchiumError::Search(e.to_string()))?;
 
     let v: Value = serde_json::from_str(&body)
-        .map_err(|e| HsxError::Internal(format!("HN Algolia JSON: {e}")))?;
+        .map_err(|e| FetchiumError::Internal(format!("HN Algolia JSON: {e}")))?;
 
     let hits = match v["hits"].as_array() {
         Some(h) => h,
@@ -98,17 +98,17 @@ pub async fn fetch_category(
     max: usize,
     http: &HttpClient,
     timeout_secs: u64,
-) -> HsxResult<Vec<HnStory>> {
+) -> FetchiumResult<Vec<HnStory>> {
     let cat_str = category.as_str();
     let url = format!("https://hacker-news.firebaseio.com/v0/{cat_str}.json");
 
     let body = tokio::time::timeout(Duration::from_secs(timeout_secs), http.fetch_text(&url))
         .await
-        .map_err(|_| HsxError::Internal("Request timeout".into()))?
-        .map_err(|e| HsxError::Search(e.to_string()))?;
+        .map_err(|_| FetchiumError::Internal("Request timeout".into()))?
+        .map_err(|e| FetchiumError::Search(e.to_string()))?;
 
     let ids: Vec<u64> =
-        serde_json::from_str(&body).map_err(|e| HsxError::Internal(format!("HN IDs: {e}")))?;
+        serde_json::from_str(&body).map_err(|e| FetchiumError::Internal(format!("HN IDs: {e}")))?;
 
     // Fetch top `max` items in parallel
     let ids = ids.into_iter().take(max).collect::<Vec<_>>();
@@ -156,15 +156,15 @@ impl HnCategory {
 }
 
 /// Fetch a single HN item by ID.
-pub async fn fetch_item(id: u64, http: &HttpClient, timeout_secs: u64) -> HsxResult<HnStory> {
+pub async fn fetch_item(id: u64, http: &HttpClient, timeout_secs: u64) -> FetchiumResult<HnStory> {
     let url = format!("https://hacker-news.firebaseio.com/v0/item/{id}.json");
     let body = tokio::time::timeout(Duration::from_secs(timeout_secs), http.fetch_text(&url))
         .await
-        .map_err(|_| HsxError::Internal("Request timeout".into()))?
-        .map_err(|e| HsxError::Search(e.to_string()))?;
+        .map_err(|_| FetchiumError::Internal("Request timeout".into()))?
+        .map_err(|e| FetchiumError::Search(e.to_string()))?;
 
     let v: Value = serde_json::from_str(&body)
-        .map_err(|e| HsxError::Internal(format!("HN item {id}: {e}")))?;
+        .map_err(|e| FetchiumError::Internal(format!("HN item {id}: {e}")))?;
 
     let story_type = match v["type"].as_str() {
         Some("ask") => HnStoryType::Ask,
