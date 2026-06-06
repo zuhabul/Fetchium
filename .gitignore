@@ -71,3 +71,15 @@ output/playwright/
 npm/bin/fetchium
 # No PHP in this project — block accidental/malicious additions
 *.php
+
+# Dev scratch / ad-hoc run output (never commit)
+/log_*.txt
+/result_*.json
+/search_results_*.json
+/benchmark_output.txt
+/debug_log.txt
+/server_log.txt
+/*_log.txt
+/reports/
+Screenshot*.png
+*.orig
