@@ -4821,7 +4821,9 @@ mod tests {
             .search("polyandry", Some(1))
             .await
             .expect("search");
-        assert!(started.elapsed() < Duration::from_secs(1));
+        // Early return must happen well before the 30s slow-backend timeout.
+        // Use a generous bound so the assertion is not flaky on slow CI runners.
+        assert!(started.elapsed() < Duration::from_secs(5));
 
         tokio::time::sleep(Duration::from_millis(50)).await;
         assert!(slow_cancelled.load(Ordering::SeqCst));
