@@ -185,7 +185,8 @@ fetchium hackernews search "open source tools"       # Hacker News
 fetchium tiktok search "programming tips"            # TikTok trends
 
 # ── Productivity / monitoring ─────────────────────────────────────────────────
-fetchium monitor https://example.com                 # watch URL for content changes
+fetchium monitor add https://example.com             # watch URL for content changes
+fetchium monitor check                               # check all monitored URLs now
 fetchium digest "AI weekly"                          # generate a research digest
 fetchium radar                                       # personalized research radar from history
 
