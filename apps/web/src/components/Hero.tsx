@@ -41,10 +41,10 @@ const SOURCES = [
   { label: "DuckDuckGo", color: "#f06292" },
   { label: "Brave Search", color: "#fb8c00" },
   { label: "Bing",        color: "#4fc3f7" },
-  { label: "Kagi",        color: "#a78bfa" },
+  { label: "Serper",      color: "#a78bfa" },
   { label: "YouTube",     color: "#ff5252" },
   { label: "Arxiv",       color: "#66bb6a" },
-  { label: "+5 more…",   color: "#546e7a" },
+  { label: "+11 more…",  color: "#546e7a" },
 ];
 
 const OUTPUTS = [
