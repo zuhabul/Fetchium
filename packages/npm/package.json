@@ -1,23 +1,24 @@
 {
-  "name": "fetchium",
+  "name": "fetchium-cli",
   "version": "1.0.0",
-  "description": "Fetchium CLI — AI-native federated search. Federated multi-backend search with neural ranking, token-budgeted extraction, and a full research pipeline.",
+  "description": "Fetchium — the universal retrieval layer for humans and AI agents. Federated multi-backend search, adaptive content extraction, multi-signal ranking, and cited research, as a CLI / REST API / MCP server.",
   "keywords": [
     "search",
     "ai",
     "cli",
+    "mcp",
     "federated-search",
     "rag",
     "rust",
     "fetchium"
   ],
-  "homepage": "https://fetchium.com",
-  "bugs": "https://github.com/zuhabul/fetchium/issues",
+  "homepage": "https://github.com/zuhabul/Fetchium#readme",
+  "bugs": "https://github.com/zuhabul/Fetchium/issues",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zuhabul/fetchium.git"
+    "url": "https://github.com/zuhabul/Fetchium.git"
   },
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT OR Apache-2.0",
   "engines": {
     "node": ">=18"
   },
