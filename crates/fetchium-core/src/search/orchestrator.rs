@@ -4780,7 +4780,7 @@ mod tests {
         let slow_cancelled = Arc::new(AtomicBool::new(false));
         let slow = TestBackend {
             id: BackendId::Searxng,
-            delay: Duration::from_secs(5),
+            delay: Duration::from_secs(30),
             results: vec![ResultItem {
                 title: "Slow".into(),
                 url: "https://example.com/slow".into(),

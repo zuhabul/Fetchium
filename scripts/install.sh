@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # Fetchium CLI installer
-# Usage: curl -sSf https://install.fetchium.com | sh
+# Usage: curl -sSfL https://install.fetchium.com | sh
 # Options:
 #   FETCHIUM_INSTALL_DIR  - Installation directory (default: /usr/local/bin)
 #   FETCHIUM_VERSION      - Pin a specific version (default: latest)

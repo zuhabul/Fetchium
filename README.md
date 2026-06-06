@@ -136,7 +136,7 @@ search/ → extract/ (CEP + QADD) → token/ (QATBE/SCS) → rank/ (HyperFusion)
 
 ```bash
 # Shell installer (Linux + macOS — all architectures)
-curl -sSf https://install.fetchium.com | sh
+curl -sSfL https://install.fetchium.com | sh
 
 # Cargo
 cargo install fetchium-cli
