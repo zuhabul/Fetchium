@@ -35,7 +35,6 @@ jobs:
 
       - name: Validate npm package syntax
         run: |
-          node -c npm/scripts/install-binary.js
           node -c packages/npm/install.js
           node -c packages/npm/bin/fetchium.js
 
