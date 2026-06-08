@@ -1,0 +1,33 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      geminiApiKey:
+        type: string
+        title: Gemini API Key
+        description: "Optional: Gemini API key for AI-powered synthesis in research and deep commands. Get one free at https://aistudio.google.com"
+      tavilyApiKey:
+        type: string
+        title: Tavily API Key
+        description: "Optional: Tavily premium search API key for higher-quality results. Get one at https://tavily.com"
+      serperApiKey:
+        type: string
+        title: Serper API Key
+        description: "Optional: Serper Google Search API key. Get one at https://serper.dev"
+      exaApiKey:
+        type: string
+        title: Exa API Key
+        description: "Optional: Exa neural search API key. Get one at https://exa.ai"
+    required: []
+  commandFunction: |-
+    (config) => ({
+      command: "fetchium",
+      args: ["serve", "--mode", "mcp"],
+      env: {
+        ...(config.geminiApiKey  ? { GEMINI_API_KEY:  config.geminiApiKey  } : {}),
+        ...(config.tavilyApiKey  ? { TAVILY_API_KEY:  config.tavilyApiKey  } : {}),
+        ...(config.serperApiKey  ? { SERPER_API_KEY:  config.serperApiKey  } : {}),
+        ...(config.exaApiKey     ? { EXA_API_KEY:     config.exaApiKey     } : {}),
+      }
+    })

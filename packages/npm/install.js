@@ -41,10 +41,7 @@ function getArtifact() {
   const filename = `${info.name}${info.ext}`;
   return {
     filename,
-    // Primary: GitHub Releases
     url: `https://github.com/${REPO}/releases/download/v${VERSION}/${filename}`,
-    // Fallback: same URL (kept for future CDN swap)
-    fallbackUrl: `https://github.com/${REPO}/releases/download/v${VERSION}/${filename}`,
     binName: info.bin,
     isZip: info.ext === ".zip",
   };
@@ -52,20 +49,20 @@ function getArtifact() {
 
 // ── Download helper ───────────────────────────────────────────────────────────
 
-function download(url, dest) {
+function downloadOnce(url, dest) {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(dest);
     let redirectCount = 0;
 
-    function request(url) {
+    function request(currentUrl) {
       if (++redirectCount > 5) return reject(new Error("Too many redirects"));
-      https.get(url, { headers: { "User-Agent": `fetchium-npm-installer/${VERSION}` } }, (res) => {
+      https.get(currentUrl, { headers: { "User-Agent": `fetchium-npm-installer/${VERSION}` } }, (res) => {
         if ([301, 302, 307, 308].includes(res.statusCode)) {
           return request(res.headers.location);
         }
         if (res.statusCode !== 200) {
           file.destroy();
-          return reject(new Error(`HTTP ${res.statusCode} downloading from:\n  ${url}`));
+          return reject(new Error(`HTTP ${res.statusCode} from ${currentUrl}`));
         }
         let downloaded = 0;
         res.on("data", (chunk) => {
@@ -80,6 +77,26 @@ function download(url, dest) {
 
     request(url);
   });
+}
+
+// Retries with exponential backoff — 504/transient CDN errors clear within seconds.
+async function download(url, dest) {
+  const delays = [0, 5000, 15000]; // immediate, 5s, 15s
+  let lastErr;
+  for (let i = 0; i < delays.length; i++) {
+    if (delays[i] > 0) {
+      process.stdout.write(`  Retry ${i}/${delays.length - 1} in ${delays[i] / 1000}s...\n`);
+      await new Promise((r) => setTimeout(r, delays[i]));
+    }
+    try {
+      await downloadOnce(url, dest);
+      return;
+    } catch (err) {
+      lastErr = err;
+      if (fs.existsSync(dest)) { try { fs.unlinkSync(dest); } catch {} }
+    }
+  }
+  throw lastErr;
 }
 
 // ── Extract helper ────────────────────────────────────────────────────────────
@@ -164,8 +181,13 @@ async function main() {
   } catch {
     console.log(`\n✓ fetchium v${VERSION} installed`);
   }
-  console.log(`  Run: fetchium --help`);
-  console.log("  Docs: https://docs.fetchium.com\n");
+  console.log("\nQuick start:");
+  console.log('  fetchium search "your query"');
+  console.log('  fetchium research "explain quantum computing"');
+  console.log("\nAdd to Claude Desktop (MCP):");
+  console.log('  { "mcpServers": { "fetchium": { "command": "fetchium", "args": ["serve","--mode","mcp"] } } }');
+  console.log("\nDocs:   https://github.com/zuhabul/Fetchium");
+  console.log("Health: fetchium doctor\n");
 }
 
 main().catch((err) => {

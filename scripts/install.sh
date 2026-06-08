@@ -37,15 +37,24 @@ detect_platform() {
 }
 
 # ── Download helper ───────────────────────────────────────────────────────────
+# Retries with exponential backoff; 504s from GitHub CDN clear within seconds.
 download() {
   URL="$1"; DEST="$2"
-  if command -v curl >/dev/null 2>&1; then
-    curl -fsSL --retry 3 --retry-delay 2 -o "$DEST" "$URL"
-  elif command -v wget >/dev/null 2>&1; then
-    wget -q --tries=3 --waitretry=2 -O "$DEST" "$URL"
-  else
-    error "curl or wget is required. Install one and try again."
-  fi
+  ATTEMPTS=3; DELAY=5
+  for i in $(seq 1 $ATTEMPTS); do
+    if command -v curl >/dev/null 2>&1; then
+      curl -fsSL --max-time 120 -o "$DEST" "$URL" && return 0
+    elif command -v wget >/dev/null 2>&1; then
+      wget -q --timeout=120 -O "$DEST" "$URL" && return 0
+    else
+      error "curl or wget is required. Install one and try again."
+    fi
+    if [ "$i" -lt "$ATTEMPTS" ]; then
+      warn "Download failed (attempt $i/$ATTEMPTS), retrying in ${DELAY}s..."
+      sleep "$DELAY"; DELAY=$((DELAY * 3))
+    fi
+  done
+  return 1
 }
 
 # ── Version resolution ────────────────────────────────────────────────────────
@@ -104,7 +113,14 @@ main() {
   trap "rm -rf '$TMP_DIR'" EXIT
 
   info "Downloading fetchium ${VERSION} for ${PLATFORM}/${ARCH}..."
-  download "$ARCHIVE_URL" "$ARCHIVE"
+  if ! download "$ARCHIVE_URL" "$ARCHIVE"; then
+    warn "GitHub CDN download failed after retries."
+    if command -v npm >/dev/null 2>&1; then
+      warn "Falling back to: npm install -g fetchium-cli"
+      npm install -g fetchium-cli && exit 0 || true
+    fi
+    error "Download failed. Try manually:\n  npm install -g fetchium-cli\n  cargo install fetchium-cli"
+  fi
   download "$SHA_URL" "$CHECKSUM"
   verify_checksum "$ARCHIVE" "$CHECKSUM"
 
@@ -123,12 +139,15 @@ main() {
   printf "\n"
   success "fetchium ${VERSION} installed to ${INSTALL_DIR}/fetchium"
   printf "\n"
-  printf "  ${BOLD}Get started:${RESET}\n"
-  printf "  fetchium --help\n"
+  printf "  ${BOLD}Quick start:${RESET}\n"
   printf "  fetchium search \"your query\"\n"
+  printf "  fetchium research \"explain quantum computing\"\n"
   printf "\n"
-  printf "  ${BOLD}Docs:${RESET} https://docs.fetchium.com\n"
-  printf "  ${BOLD}API key:${RESET} https://app.fetchium.com\n\n"
+  printf "  ${BOLD}Add to Claude Desktop (MCP):${RESET}\n"
+  printf '  { "mcpServers": { "fetchium": { "command": "fetchium", "args": ["serve","--mode","mcp"] } } }\n'
+  printf "\n"
+  printf "  ${BOLD}Docs:${RESET}   https://github.com/zuhabul/Fetchium\n"
+  printf "  ${BOLD}Health:${RESET} fetchium doctor\n\n"
 }
 
 main "$@"
