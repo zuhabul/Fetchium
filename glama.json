@@ -1,0 +1,72 @@
+{
+  "$schema": "https://glama.ai/mcp/schema",
+  "name": "Fetchium",
+  "description": "Token-efficient web search, extraction, and AI research as an MCP server. 12 tools: multi-backend search (15+ engines), query-aware content extraction, multi-source research with citations, YouTube analysis, Reddit/HN search. Rust-native, zero-install via npx.",
+  "license": "MIT",
+  "homepage": "https://github.com/zuhabul/Fetchium",
+  "repository": "https://github.com/zuhabul/Fetchium",
+  "icon": "https://raw.githubusercontent.com/zuhabul/Fetchium/main/assets/logo.svg",
+  "keywords": ["search", "web", "extraction", "research", "rag", "mcp", "rust", "youtube", "reddit"],
+  "categories": ["search", "web-scraping", "rag"],
+  "tools": [
+    {
+      "name": "search",
+      "description": "Search the web with multi-backend support (Google, DuckDuckGo, Brave, Bing, Tavily, Serper, Exa, and more). Returns ranked, deduplicated results with scores."
+    },
+    {
+      "name": "fetch",
+      "description": "Fetch and extract clean content from any URL using the 5-layer CEP cascade: CSS selectors → readability → headless JS → PDF → OCR."
+    },
+    {
+      "name": "summarize",
+      "description": "Summarize content from a URL or text in a token-efficient format with optional AI synthesis."
+    },
+    {
+      "name": "research",
+      "description": "Multi-source research pipeline: search, fetch top sources, extract, rank, and synthesize a cited report."
+    },
+    {
+      "name": "compare",
+      "description": "Compare multiple products, topics, or items across sources with evidence-backed analysis."
+    },
+    {
+      "name": "extract",
+      "description": "Extract structured data (facts, tables, lists) from a URL using query-aware QATBE extraction."
+    },
+    {
+      "name": "youtube",
+      "description": "Analyze YouTube videos: get transcripts, summaries, chapter breakdowns, and key insights."
+    },
+    {
+      "name": "reddit",
+      "description": "Search Reddit for community discussions, opinions, and recommendations on any topic."
+    },
+    {
+      "name": "news",
+      "description": "Get recent news and current events from multiple news sources with temporal ranking."
+    },
+    {
+      "name": "academic",
+      "description": "Search academic papers, research, and scientific literature from multiple scholarly sources."
+    },
+    {
+      "name": "validate",
+      "description": "Validate claims and facts by cross-referencing multiple sources with confidence scoring."
+    },
+    {
+      "name": "doctor",
+      "description": "Run a health check on the Fetchium server, verifying backend connectivity and configuration."
+    }
+  ],
+  "installation": {
+    "npm": "npm install -g fetchium-cli",
+    "npx": "npx -y fetchium-cli serve --mode mcp",
+    "cargo": "cargo install fetchium-cli",
+    "homebrew": "brew install zuhabul/fetchium/fetchium"
+  },
+  "mcp": {
+    "command": "fetchium",
+    "args": ["serve", "--mode", "mcp"],
+    "transport": "stdio"
+  }
+}
