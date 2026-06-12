@@ -1,7 +1,11 @@
 {
-  "$schema": "https://glama.ai/mcp/schema",
+  "$schema": "https://glama.ai/mcp/schemas/server.json",
+  "maintainers": ["zuhabul"],
   "name": "Fetchium",
-  "description": "Token-efficient web search, extraction, and AI research as an MCP server. 12 tools: multi-backend search (15+ engines), query-aware content extraction, multi-source research with citations, YouTube analysis, Reddit/HN search. Rust-native, zero-install via npx.",
+  "description": "Token-efficient web search, extraction, social research, and AI research as an MCP server. 12 tools: multi-backend search, query-aware content extraction, multi-source research with citations, YouTube analysis, Reddit, and Hacker News search. Rust-native, zero-install via npx.",
+  "type": "mcp_server",
+  "status": "stable",
+  "transport": ["stdio"],
   "license": "MIT",
   "homepage": "https://github.com/zuhabul/Fetchium",
   "repository": "https://github.com/zuhabul/Fetchium",
@@ -10,52 +14,52 @@
   "categories": ["search", "web-scraping", "rag"],
   "tools": [
     {
-      "name": "search",
+      "name": "fetchium_search",
       "description": "Search the web with multi-backend support (Google, DuckDuckGo, Brave, Bing, Tavily, Serper, Exa, and more). Returns ranked, deduplicated results with scores."
     },
     {
-      "name": "fetch",
+      "name": "fetchium_fetch",
       "description": "Fetch and extract clean content from any URL using the 5-layer CEP cascade: CSS selectors → readability → headless JS → PDF → OCR."
     },
     {
-      "name": "summarize",
-      "description": "Summarize content from a URL or text in a token-efficient format with optional AI synthesis."
+      "name": "fetchium_research",
+      "description": "Conduct multi-source research with citations and evidence tracking. Searches, extracts, ranks, validates, and synthesizes findings with citation chains."
     },
     {
-      "name": "research",
-      "description": "Multi-source research pipeline: search, fetch top sources, extract, rank, and synthesize a cited report."
+      "name": "fetchium_estimate",
+      "description": "Estimate the token cost of fetching a URL before spending extraction budget."
     },
     {
-      "name": "compare",
-      "description": "Compare multiple products, topics, or items across sources with evidence-backed analysis."
+      "name": "fetchium_expand",
+      "description": "Expand a previous result by result_id using Progressive Detail Streaming tiers."
     },
     {
-      "name": "extract",
-      "description": "Extract structured data (facts, tables, lists) from a URL using query-aware QATBE extraction."
+      "name": "youtube_search",
+      "description": "Search YouTube videos with VideoFusion ranking across relevance, freshness, authority, engagement, and educational scores."
     },
     {
-      "name": "youtube",
-      "description": "Analyze YouTube videos: get transcripts, summaries, chapter breakdowns, and key insights."
+      "name": "youtube_analyze",
+      "description": "Analyze one YouTube video with metadata, transcript, comments, credibility, clickbait detection, and educational scoring."
     },
     {
-      "name": "reddit",
-      "description": "Search Reddit for community discussions, opinions, and recommendations on any topic."
+      "name": "youtube_watch",
+      "description": "Produce a unified YouTube watch report with metadata, transcript, summary, key moments, and comment signals."
     },
     {
-      "name": "news",
-      "description": "Get recent news and current events from multiple news sources with temporal ranking."
+      "name": "youtube_transcript",
+      "description": "Extract a YouTube transcript with key moments and transcript quality scoring."
     },
     {
-      "name": "academic",
-      "description": "Search academic papers, research, and scientific literature from multiple scholarly sources."
+      "name": "social_research",
+      "description": "Run cross-platform social research across Twitter/X, Reddit, TikTok, Hacker News, and YouTube."
     },
     {
-      "name": "validate",
-      "description": "Validate claims and facts by cross-referencing multiple sources with confidence scoring."
+      "name": "reddit_search",
+      "description": "Search Reddit posts with sentiment analysis, subreddit clustering, and viral detection."
     },
     {
-      "name": "doctor",
-      "description": "Run a health check on the Fetchium server, verifying backend connectivity and configuration."
+      "name": "hackernews_search",
+      "description": "Search Hacker News stories via Algolia and Firebase APIs, returning ranked stories with engagement metrics."
     }
   ],
   "installation": {

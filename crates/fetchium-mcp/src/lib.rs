@@ -163,7 +163,11 @@ async fn handle_message(
     let req: JsonRpcRequest = match serde_json::from_str(line) {
         Ok(r) => r,
         Err(e) => {
-            return Some(JsonRpcResponse::err(Value::Null, -32700, format!("Parse error: {e}")));
+            return Some(JsonRpcResponse::err(
+                Value::Null,
+                -32700,
+                format!("Parse error: {e}"),
+            ));
         }
     };
 
