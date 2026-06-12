@@ -15,8 +15,11 @@ use tracing::debug;
 
 /// Reddit search JSON endpoint.
 const REDDIT_SEARCH: &str = "https://www.reddit.com/search.json";
-/// Backoff window for Reddit rate-limit / anti-bot bursts.
-const REDDIT_COOLDOWN_SECS: u64 = 180;
+/// Backoff for 429 rate-limit (back off long enough for Reddit's window to reset).
+const REDDIT_RATELIMIT_COOLDOWN_SECS: u64 = 180;
+/// Backoff for 403 access-denied (IP-level block — retrying sooner doesn't help,
+/// but waiting 3 minutes is too long; 30s matches the network-error cooldown).
+const REDDIT_FORBIDDEN_COOLDOWN_SECS: u64 = 30;
 static REDDIT_COOLDOWN_UNTIL_MS: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug, Deserialize)]
@@ -104,12 +107,20 @@ impl SearchBackend for RedditBackend {
 
         if !resp.status().is_success() {
             let status = resp.status();
-            if status.as_u16() == 429 || status.as_u16() == 403 {
-                let until = now_ms() + REDDIT_COOLDOWN_SECS * 1000;
+            if status.as_u16() == 429 {
+                let until = now_ms() + REDDIT_RATELIMIT_COOLDOWN_SECS * 1000;
                 REDDIT_COOLDOWN_UNTIL_MS.store(until, Ordering::Relaxed);
                 return Err(FetchiumError::Search(format!(
                     "Reddit HTTP {status} — cooling down for {}s",
-                    REDDIT_COOLDOWN_SECS
+                    REDDIT_RATELIMIT_COOLDOWN_SECS
+                )));
+            }
+            if status.as_u16() == 403 {
+                let until = now_ms() + REDDIT_FORBIDDEN_COOLDOWN_SECS * 1000;
+                REDDIT_COOLDOWN_UNTIL_MS.store(until, Ordering::Relaxed);
+                return Err(FetchiumError::Search(format!(
+                    "Reddit HTTP {status} — cooling down for {}s",
+                    REDDIT_FORBIDDEN_COOLDOWN_SECS
                 )));
             }
             debug!("Reddit non-success HTTP {status}, skipping");

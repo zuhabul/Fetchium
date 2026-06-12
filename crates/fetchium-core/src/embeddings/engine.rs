@@ -7,6 +7,7 @@
 
 use crate::error::FetchiumError;
 use once_cell::sync::Lazy;
+use tokio::sync::Semaphore;
 use tracing::{debug, warn};
 
 /// Ollama endpoint (configurable via env var).
@@ -17,11 +18,15 @@ static OLLAMA_URL: Lazy<String> = Lazy::new(|| {
 /// Embedding model to use.
 const EMBED_MODEL: &str = "nomic-embed-text";
 
+/// Ollama runs single-threaded inference — concurrent requests cause connection
+/// errors on the second/third caller. One permit serializes embed calls.
+static OLLAMA_SEMAPHORE: Lazy<Semaphore> = Lazy::new(|| Semaphore::new(1));
+
 /// Shared async HTTP client (connection pooling).
 static HTTP_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
     reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
-        .pool_max_idle_per_host(4)
+        .pool_max_idle_per_host(1)
         .build()
         .expect("Failed to create HTTP client")
 });
@@ -101,6 +106,13 @@ pub async fn embed_batch_async(texts: &[&str]) -> Result<Vec<Vec<f32>>, Fetchium
     if texts.is_empty() {
         return Ok(Vec::new());
     }
+    // Ollama is single-threaded — concurrent requests cause connection errors.
+    // Acquire permit before sending; dropped automatically when the fn returns.
+    let _permit = OLLAMA_SEMAPHORE
+        .acquire()
+        .await
+        .map_err(|_| FetchiumError::Internal("Ollama semaphore closed".into()))?;
+
     debug!(
         "Embedding batch of {} texts via Ollama (async)",
         texts.len()

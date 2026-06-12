@@ -19,6 +19,8 @@ Rust-native search, extraction, ranking, and synthesis — delivered as a CLI, a
 [![Crates.io](https://img.shields.io/crates/v/fetchium-cli.svg)](https://crates.io/crates/fetchium-cli)
 [![npm](https://img.shields.io/npm/v/fetchium-cli.svg)](https://www.npmjs.com/package/fetchium-cli)
 [![Downloads](https://img.shields.io/crates/d/fetchium-cli.svg)](https://crates.io/crates/fetchium-cli)
+[![Glama](https://glama.ai/mcp/servers/zuhabul/Fetchium/badges/score.svg)](https://glama.ai/mcp/servers/zuhabul/Fetchium)
+[![smithery badge](https://smithery.ai/badge/fetchium)](https://smithery.ai/server/fetchium)
 
 [Install](#installation) · [Architecture & innovations](#architecture--innovations) · [Quick start](#quick-start) · [For AI agents](#for-ai-agents) · [Docs](docs/)
 
@@ -203,12 +205,88 @@ Full command reference: [docs/guide/commands.md](docs/guide/commands.md).
 
 ## For AI agents
 
-- **MCP server** (`fetchium-mcp`) exposes retrieval as Model Context Protocol tools for Codex,
-  Claude, and other MCP clients.
-- **REST API** (`fetchium-api`) serves the same engine over HTTP — `fetchium serve`.
-- **Adapters** for [LangChain](adapters/langchain) and [CrewAI](adapters/crewai) live in `adapters/`.
+Fetchium ships a first-class **MCP server** — add it to any MCP-compatible client and your agent
+can search, fetch, research, and watch YouTube/social content without custom glue code.
 
-See [docs/guide/agent-integration.md](docs/guide/agent-integration.md).
+### 30-second setup — Claude Desktop
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or
+`%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "fetchium": {
+      "command": "fetchium",
+      "args": ["serve", "--mode", "mcp"]
+    }
+  }
+}
+```
+
+No `fetchium` binary yet? Use `npx` for zero-install:
+
+```json
+{
+  "mcpServers": {
+    "fetchium": {
+      "command": "npx",
+      "args": ["-y", "fetchium-cli", "serve", "--mode", "mcp"]
+    }
+  }
+}
+```
+
+### Cursor / Windsurf / VS Code (Cline)
+
+Add the same block to your editor's MCP settings, or run:
+
+```bash
+fetchium serve --mode mcp --port 3001   # HTTP transport for editors that prefer it
+```
+
+Then point the editor at `http://localhost:3001/mcp`.
+
+### One-click via Smithery
+
+[![Install on Smithery](https://smithery.ai/badge/fetchium)](https://smithery.ai/server/fetchium)
+
+```bash
+npx -y @smithery/cli install fetchium --client claude
+```
+
+### Available MCP tools (12 total)
+
+| Tool | What it does |
+|------|-------------|
+| `fetchium_search` | Multi-backend web search with HyperFusion ranking + dedup |
+| `fetchium_fetch` | Query-aware content extraction with token budgeting |
+| `fetchium_research` | Multi-source research with citations and evidence tracking |
+| `fetchium_estimate` | Token-cost estimate for a URL (HEAD only, no download) |
+| `fetchium_expand` | Expand a previous result to a deeper PDS tier |
+| `youtube_search` | Search YouTube with VideoFusion ranking |
+| `youtube_analyze` | Full video analysis: transcript, comments, credibility |
+| `youtube_watch` | Summary + key moments for any YouTube URL |
+| `youtube_transcript` | Raw transcript with timestamps and highlights |
+| `social_research` | Trend research across Reddit, HN, Twitter, TikTok |
+| `reddit_search` | Search Reddit posts and comments |
+| `hackernews_search` | Search Hacker News stories and discussions |
+
+### REST API
+
+```bash
+fetchium serve          # start REST API on :3000
+curl localhost:3000/v1/search -d '{"query":"rust async"}'
+```
+
+### LangChain / CrewAI adapters
+
+```python
+from fetchium_langchain import FetchiumSearchTool, FetchiumResearchTool
+from fetchium_crewai import FetchiumSearchTool
+```
+
+See [docs/guide/agent-integration.md](docs/guide/agent-integration.md) for full examples.
 
 ## Configuration
 

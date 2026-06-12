@@ -1,10 +1,12 @@
-# SearXNG settings for Fetchium — residential proxy unlocks Google, DDG, Brave.
-# DataImpulse residential IPs: 95-99% success vs 40-60% for datacenter.
+# SearXNG settings for Fetchium.
+# NOTE: DataImpulse HTTP proxy returns 407 NO_USER inside Docker (httpx CONNECT
+# tunnel does not forward Proxy-Authorization). Proxy removed — Google/DDG may
+# CAPTCHA but Yahoo, Yandex, Bing, Brave, Startpage work reliably direct.
+# fetchium-core's own scrapers handle Google/DDG with working residential proxy.
 
 use_default_settings:
   engines:
     keep_only:
-      - google
       - startpage
       - duckduckgo
       - brave
@@ -39,34 +41,29 @@ search:
   safe_search: 0
   autocomplete: ""
   default_lang: "auto"
-  ban_time_on_fail: 2
-  max_ban_time_on_fail: 30
+  ban_time_on_fail: 5
+  max_ban_time_on_fail: 60
   suspended_times:
-    SearxEngineAccessDenied: 30
-    SearxEngineCaptcha: 60
-    SearxEngineTooManyRequests: 30
-    cf_SearxEngineCaptcha: 120
-    cf_SearxEngineAccessDenied: 60
-    recaptcha_SearxEngineCaptcha: 300
+    SearxEngineAccessDenied: 60
+    SearxEngineCaptcha: 120
+    SearxEngineTooManyRequests: 60
+    cf_SearxEngineCaptcha: 300
+    cf_SearxEngineAccessDenied: 120
+    recaptcha_SearxEngineCaptcha: 600
   formats:
     - html
     - json
 
 engines:
-  # Google — highest quality (residential proxy bypasses blocks)
-  - name: google
-    timeout: 2.5
-    weight: 4.0
-
-  # Startpage — Google proxy, excellent fallback when Google suspends
+  # Startpage — Google proxy, works without residential IP
   - name: startpage
-    timeout: 2.0
-    weight: 2.0
+    timeout: 3.0
+    weight: 2.5
 
-  # DuckDuckGo — residential IPs bypass CAPTCHA, diverse results
+  # DuckDuckGo — works direct for most queries
   - name: duckduckgo
-    timeout: 2.0
-    weight: 1.8
+    timeout: 3.0
+    weight: 2.0
 
   # YouTube — video results for how-to, tutorials, and current events
   - name: youtube
@@ -75,41 +72,30 @@ engines:
 
   # Brave — independent index, good for privacy/tech queries
   - name: brave
-    timeout: 2.0
+    timeout: 3.0
     weight: 1.5
 
-  # Yahoo — reliable, fast
+  # Yahoo — reliable, fast, no blocks direct
   - name: yahoo
-    timeout: 1.5
+    timeout: 2.0
     weight: 1.2
 
   # Yandex — strong for non-English, Cyrillic, multilingual
   - name: yandex
-    timeout: 1.5
+    timeout: 2.0
     weight: 0.8
 
-  # Bing — supplementary coverage
+  # Bing — supplementary coverage, no blocks direct
   - name: bing
-    timeout: 1.0
-    weight: 0.5
+    timeout: 2.0
+    weight: 0.8
 
 outgoing:
-  request_timeout: 2.5
-  max_request_timeout: 5.0
+  request_timeout: 3.0
+  max_request_timeout: 6.0
   useragent_suffix: ""
-  pool_connections: 500
-  pool_maxsize: 128
+  pool_connections: 100
+  pool_maxsize: 32
   keepalive_expiry: 30.0
   retries: 1
   enable_http2: true
-  # DataImpulse residential proxy — ONLY Google and DDG need residential IPs.
-  # Bing, Brave, Yahoo, Yandex, Startpage work fine direct → eliminates ~80% waste.
-  proxies:
-    https://google.com:
-      - http://75e0e5b80d4d887e2f36:6703f7fe0e9ea89c@gw.dataimpulse.com:823
-    https://www.google.com:
-      - http://75e0e5b80d4d887e2f36:6703f7fe0e9ea89c@gw.dataimpulse.com:823
-    https://html.duckduckgo.com:
-      - http://75e0e5b80d4d887e2f36:6703f7fe0e9ea89c@gw.dataimpulse.com:823
-    https://lite.duckduckgo.com:
-      - http://75e0e5b80d4d887e2f36:6703f7fe0e9ea89c@gw.dataimpulse.com:823

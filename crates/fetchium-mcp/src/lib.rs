@@ -106,18 +106,18 @@ pub async fn run_mcp_stdio(config: FetchiumConfig) -> anyhow::Result<()> {
             }
         };
 
-        let response = handle_message(&line, &config, &http, &cache).await;
+        if let Some(response) = handle_message(&line, &config, &http, &cache).await {
+            let json_out = serde_json::to_string(&response).unwrap_or_else(|e| {
+                format!(
+                    r#"{{"jsonrpc":"2.0","id":null,"error":{{"code":-32603,"message":"{}"}}}}"#,
+                    e
+                )
+            });
 
-        let json_out = serde_json::to_string(&response).unwrap_or_else(|e| {
-            format!(
-                r#"{{"jsonrpc":"2.0","id":null,"error":{{"code":-32603,"message":"{}"}}}}"#,
-                e
-            )
-        });
-
-        let mut out = stdout.lock();
-        let _ = writeln!(out, "{json_out}");
-        let _ = out.flush();
+            let mut out = stdout.lock();
+            let _ = writeln!(out, "{json_out}");
+            let _ = out.flush();
+        }
     }
 
     eprintln!("[fetchium-mcp] Server shutting down.");
@@ -152,21 +152,32 @@ pub async fn run_mcp_http(config: FetchiumConfig, port: u16) -> anyhow::Result<(
     Ok(())
 }
 
-/// Dispatch a single JSON-RPC message line and return the response.
+/// Dispatch a single JSON-RPC message line. Returns `None` for notifications
+/// (which must not receive a response per the JSON-RPC 2.0 / MCP spec).
 async fn handle_message(
     line: &str,
     config: &FetchiumConfig,
     http: &HttpClient,
     cache: &MemoryCache,
-) -> JsonRpcResponse {
+) -> Option<JsonRpcResponse> {
     let req: JsonRpcRequest = match serde_json::from_str(line) {
         Ok(r) => r,
         Err(e) => {
-            return JsonRpcResponse::err(Value::Null, -32700, format!("Parse error: {e}"));
+            return Some(JsonRpcResponse::err(
+                Value::Null,
+                -32700,
+                format!("Parse error: {e}"),
+            ));
         }
     };
 
-    handle_request(req, config, http, cache).await
+    // JSON-RPC 2.0: notifications have no `id` and must not receive a response.
+    if req.id.is_none() {
+        eprintln!("[fetchium-mcp] notification: {}", req.method);
+        return None;
+    }
+
+    Some(handle_request(req, config, http, cache).await)
 }
 
 async fn handle_request(
@@ -195,12 +206,6 @@ async fn handle_request(
                     }
                 }),
             )
-        }
-
-        "notifications/initialized" => {
-            // Notification — no response needed; return empty result
-            eprintln!("[fetchium-mcp] initialized");
-            JsonRpcResponse::ok(id, Value::Null)
         }
 
         // List available tools
